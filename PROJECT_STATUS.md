@@ -278,3 +278,5 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - 该结论把 IIPS 步的“受阻（需提权）”从推断变成已证实的根因；用户醒后用管理员会话即可越过。
 
 - **补充（10.6）**：用 `RunAsInvoker` 启动 Host 后，其 "Error" 窗口的子控件文本为 `SetPrivilege()失败。`——Host 在启动时调用 `SetPrivilege`（调整令牌特权，推测用于 `SeDebugPrivilege` 等以访问游戏进程/全局对象），Medium 令牌没有该特权；`RunAsInvoker` 只能绕过 manifest 的 UAC 提示，不能赋予特权，因此必然失败。
+
+- **补充（10.6）**：实测在 Medium + `__COMPAT_LAYER=RunAsInvoker` 下观察 14 秒，**游戏从未创建 `IIPSHostApp.exe` 进程**（`Get-Process` 无结果）。说明游戏启动 Host 时被 UAC 拒绝（`ERROR_ELEVATION_REQUIRED`），兼容层环境变量没有传递到游戏内部的启动调用。IIPS 失败链因此闭合：**Host 必须由提权进程创建 → 游戏必须管理员运行 → IIPS 必须管理员**。对 Host 做文件级补丁（`0x4140E5` 的 `SetPrivilege` 结果判定）也不能改变“进程根本没启动”的事实（补丁已恢复，Host 原件 SHA-256 `b507b47a…`）。

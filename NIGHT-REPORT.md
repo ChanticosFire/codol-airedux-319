@@ -27,7 +27,7 @@
 - IIPS 文件列表多出 `readme.txt`：移出后仍报 `8189fec`。
 - 目录权限 / UAC 虚拟化：可写可删，VirtualStore 无重定向。
 
-**结论**：IIPS 的 `8189fec` 不是文件、配置或目录权限问题，根因已确认：`IIPS\IIPSHostApp.exe` 的 manifest 是 `requireAdministrator`，且 Host 运行时也检查管理员（`RunAsInvoker` 能让它以 Medium 启动，但 Host 弹 `SetPrivilege()失败。` 后退出（它需要调整令牌特权））。管理员令牌下 Host 正常，IIPS 通过。
+**结论**：IIPS 的 `8189fec` 不是文件、配置或目录权限问题，根因已确认：`IIPS\IIPSHostApp.exe` 的 manifest 是 `requireAdministrator`，且 Host 运行时也检查管理员（`RunAsInvoker` 能让它以 Medium 启动，但 Host 弹 `SetPrivilege()失败。` 后退出（它需要调整令牌特权））。管理员令牌下 Host 正常，IIPS 通过。实测 Medium 下 14 秒内游戏**从未创建 Host 进程**（UAC 拒绝），根因链闭合。
 
 ## 你醒后做什么（三步）
 
@@ -51,5 +51,6 @@ pwsh -NoProfile -File tools\run_session.ps1 -RunId 20261020-session01 -Seconds 1
 - 隔离副本配置已恢复到原始 pre-image（`dwauth.ini` 为本轮新建的重定向文件，`iips.ini`/`stun.ini`/`cacert.pem` 的改动与恢复见 [PROJECT_STATUS.md](PROJECT_STATUS.md) 8.3）。
 - 无残留游戏进程、无监听端口、未改防火墙/代理/DNS/路由、未加载驱动、未修改原件。
 - 工作树干净；`runs/` 下保留全部原始证据（未提交）。
+
 
 
