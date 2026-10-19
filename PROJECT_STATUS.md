@@ -1,7 +1,7 @@
 # 阶段状态与证据
 
-更新：2026-10-19（Asia/Shanghai）；追加关闭系统代理后的主机核查。
-阶段：M0 完成；M1 进行中；M2 已获得首轮客户端运行证据但发现网络隔离缺口，须在可靠隔离环境重测；M3 仅有无业务应答的服务骨架。
+更新：2026-10-19（Asia/Shanghai）23:35；追加关闭系统代理后的主机核查，以及 23:30 后的接手核查、静态侦察与隔离/交接工具增量。
+阶段：M0 完成；M1 进行中（新增同 Build 静态侦察与合成交接启动工具）；M2 受阻（主机级隔离工具已实现并自测，等待一次管理员 Apply/Verify/Restore）；M3 仅有无业务应答的服务骨架。
 目标：针对用户保留的停服版本 3.19.26.22 建立可核验的离线复活路线。版本名称来自用户及归档文件名；本轮通过文件身份独立确认的是 Build 1649370。
 
 仓库：`E:\GAME\COD\codol-airedux\319` 已初始化为独立 `main` Git 仓库；GitHub 私有远端为 <https://github.com/ChanticosFire/codol-airedux-319>，API 回报 `PRIVATE`。本项目只提交自有源码、文档和文件身份清单；客户端副本、运行后像、第三方参考与协作仓库克隆由 [.gitignore](.gitignore) 排除。范围见 [REPOSITORY.md](REPOSITORY.md)。
@@ -84,3 +84,37 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - 用户关闭 Clash 系统代理后的只读核查见 [代理关闭后摘要](evidence/experiments/20261019-proxy-off-check.json)：`ProxyEnable=0`、WinHTTP 为 direct，但 Clash GUI 与 `clash-win64.exe` 仍在运行，`7890` 仍监听；当前终端的 `HTTPS_PROXY`、`ALL_PROXY` 也仍指向该端口。物理以太网仍为 Up。**未再次运行客户端**；关闭系统代理不足以证明离线，且即使完全退出 Clash，物理网卡仍可能直连外网。
 - 对已锁定 SHA-256 `4C19A7DB7C217AF342963B343487FE5679538AB99F76766F7376D2BBAFB48DCE` 的 `TCLS/Client.exe` 做只读字节扫描：UTF-16 字符串 `..//WeGameLauncher//launcher.exe`（偏移 `0x1E350`、`0x1E428`）及 `\\WeGameLauncher\\launcher.exe`（`0x1E3EC`），附近有 `[Client] run exe` 状态串；隔离副本中该 `launcher.exe` 确实存在。由此可把 TCLS `Client.exe` → WeGameLauncher 作为**静态候选启动链**，尚未确认运行时分支、参数或完整游戏交接。REA 深度分析提供者在当前主机不可用（未配置 Ghidra/IDA）；没有把字符串观察写成反编译结论。
 - 用户指出主机整体断网会中断协作、VM 增加动态调试负担，后续优先研究**主机在线、目标进程受限**的运行条件。静态 PE/Capstone 复核进一步确认 TCLS `Client.exe` 的 `0x4011B2` 是导入 `CreateProcessW` 调用；`0x40133A/0x4013DD/0x401459` 引用三个 WeGameLauncher 路径常量，属于三个路径回退分支。游戏 EXE 的 `.tp3/.tvm0` 保护布局下，磁盘 `WIN_NO_TCLS` 字符串没有普通绝对指针引用；不能从 1604220 RVA 推出本 Build 原字节。摘要见 [tcls-static-check](evidence/experiments/20261019-tcls-static-check.json)。合成 TCLS 映射为首选诊断候选，结果未知；若失败才考虑解密后的同 Build 内存定位与可恢复改动。
+
+## 7. 2026-10-19 23:30 接手核查与静态侦察
+
+### 7.1 接手状态
+
+- 本地 `319` 仓库 `HEAD=290dfa3`（"Confirm TCLS process creation and adopt host-local startup path"），`main` 与 `origin/main` 同步，工作树干净；注释标签 `checkpoint/1649370-m0-clean-20261019` 存在。
+- 协作仓库 `codol-ember` 本地固定在 `84a6e1014a7e593796b0e01261bdb3a4d07f18b9`；本轮 `git ls-remote --symref origin` 查询远端 `main` 仍为该提交，未发现新合并成果。浅克隆工作树干净，未 pull、未运行其代码。
+- 当前会话实测 `H2O\Administrator`、**Medium 完整性、非 elevated**；`HTTP_PROXY/HTTPS_PROXY/ALL_PROXY` 在本终端为空，但 WinInet `ProxyEnable=1`、`ProxyServer=127.0.0.1:7890`，Clash GUI 与 `clash-win64` 共五个进程仍在，`7890` 仍监听。Windows 防火墙三个 profile 均启用、默认出站 `AllowOutbound`，无组策略覆盖（`AllowLocalPolicyMerge` 未禁用）。另发现 4 条 `codol_dedrun_next` 入站允许规则指向已删除的 2.6.9.7 项目路径，属历史弹窗残留，非本仓库创建，本轮未改动。
+
+### 7.2 同 Build 静态侦察（只读）
+
+[机器摘要](evidence/experiments/20261019-static-recon.json) 由 [static_recon.py](tools/static_recon.py) 生成，只读 PE 与字节检索，不启动目标。要点：
+
+- 游戏 EXE：ImageBase `0x400000`、入口 `0xE5DC690`；6 个 `.tp3` 节 + 1 个 `.tvm0` 节；**导入目录 size 为 0**（运行时重建），TLS 目录 RVA `0x9E8EB8`；`.tvm0` 为入口所在的可执行节。`WIN_NO_TCLS`、`-src=tgp`、`WIN_ERROR`、`+unattended` 均位于只读数据节 `.tp3`，彼此的 4 字节绝对引用计数为 0。这支持“启动门槛的判定代码在运行时解包/保护代码中，文件级检索不能定位”。
+- `codoMP_client_shipRetailBase.dll`：ImageBase `0x10000000`，`.text` 7.4 MB 明文、`.tls` 15.5 MB 与 `.tvm0` 32.8 MB 可执行保护节。`TCLS_SHAREDMEMEMORY` 与 `TCLS_TASMEMORY_` 在 `.rdata`，ASCII 与 UTF-16 各一份，没有绝对引用；而 TAS 事件名 `TAS-3AAC03A5-7D57-4c80-A175-0E4BEA43EE41-` 的 3 个绝对引用**全部位于 `.tls` 保护节**。这把 TAS/TCLS 消费逻辑进一步限定到保护节，与“需运行时解密后定位”的判断一致。
+- `TCLS/ClientBase.dll`（12,714,952 字节）：`.text` 1.8 MB 明文 + `.tvm0` 9.1 MB，3 个无名导出（RVA `0x44D49E/0x5193E3/0x364F39`）。`.rdata` 的 `0x1D4F00-0x1D5120` 有一段 TCLS 字符串表：`TCLS_SHAREDMEMEMORY`、`TCLS_TASMEMORY_`、`\Global\TenP_TS_%d`（宽字符）、`%s%d`、`%s-%d`、`TAS-…-%u`、`PT-…-%u`、`%allusersprofile%\application data\tencent\tas\TASData.dat`、`tensafe`、`LdrLoadDll` 等；表内嵌 7 个指向 `.text` 的指针，但字符串本身没有直接绝对引用。`\Global\TenP_TS_%d` 是本轮新记录的第二类命名共享内存线索，语义尚未验证。
+- `TCLS/Client.exe`（955,592 字节）是普通 PE：仅导入 `CreateProcessW`、`ShellExecuteExW`、`GetFileAttributesW` 等；PDB 路径 `I:\Work\launcher_proj\trunk\build\bin\Release\client.pdb`；没有 `TCLS_SHAREDMEMEMORY`/`-src=tgp` 字符串。它是 WeGameLauncher 转发器，不直接创建游戏侧共享映射。
+- `WeGameLauncher/config/*.json` 为加密内容，未逆向；`Tenio.ini` 明文列出 `TenioTPF.dll,June.dll,xRender.dll,MemoryAlloctor.dll`。
+
+结论范围：以上只有文件位置、节归属和引用计数；没有证明任何检查的通过条件、没有恢复标记格式、没有证明 1649370 接受 1604220 的 `+0x10=0x14/+0x14=30/+0x18` 布局。`WIN_NO_TCLS` 旁出现 `-src=tgp` 与 `+unattended`，使“命令行标记”成为与共享映射并列的首个可测变量。
+
+### 7.3 本轮新增工具
+
+- [isolate_host.ps1](tools/isolate_host.ps1)：取代已拒绝安装的按程序规则方案。`Apply` 在唯一规则组内加入一条出站 Block-All 规则（不改 profile 策略、不改注册表、不碰 GPO），随后**实测**外网 TCP/DNS/直连 HTTPS/经 `127.0.0.1:7890` 代理均失败、临时回环监听仍可连接；任一项不符即自动删除该组并退出 3。`Restore` 只删除 receipt 中记录的组。`Status/Snapshot/Verify` 可在非管理员下运行。设计依据：Windows 防火墙不评估 loopback，因此 Block-All 不能替代“回环也阻断”的判断，只能与“代理上游被同一条规则阻断”组合证明目标进程没有外网出口。
+- [launch_synthetic_tcls.py](tools/launch_synthetic_tcls.py)：四锚点 Build 守卫 + 受限 client root（只接受 `runtime\client-1649370`）+ 三种模式（`direct`/`tgp`/`tgp-sign`）。`tgp-sign` 在挂起进程创建后、`ResumeThread` 前写入 `TCLS_SHAREDMEMEMORY<PID>`（view `0xC8`，`+0x10=0x14`、`+0x14=30`、`+0x18` 起 30 字节确定性合成标记），观察窗口结束后按映像路径清理自有进程。它**不**读进程内存、不注入、不改保护段。
+- [test_launch_synthetic_tcls.py](tools/test_launch_synthetic_tcls.py)：6 项合成测试通过（字节序、TCP 表、映射布局回读、Build 锚点、标记长度）。
+- [static_recon.py](tools/static_recon.py)：生成上述只读侦察 JSON。
+
+### 7.4 未执行与原阻断
+
+- 未启动客户端、未安装/删除防火墙规则、未加载驱动、未运行协作仓库或第三方代码。
+- 未取得管理员令牌；`isolate_host.ps1 -Action Apply/Restore` 尚未执行，因此 M2 的严格隔离验收仍未完成。
+- 未验证 `-src=tgp`、合成映射或二者组合是否改变 `WIN_NO_TCLS` 行为；这是隔离达标后的第一组对照实验。
+- 未验证管理员令牌或已有 TesSafe 是否为本 Build 门槛的必要条件；社区 1604220 的成功组合含管理员与已有 TesSafe，但其普通权限对照仍停在另一告警，不能直接外推。

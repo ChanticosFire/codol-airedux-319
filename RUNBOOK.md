@@ -33,3 +33,42 @@ Medium 启动通道已建立，但独立 `curl.exe` 探针证明本机程序防�
 成功建立启动通道后，每次运行先固定 EXE/Base 和 IIPS 两 DLL 的哈希，并建立新的 `runs\<run-id>`。仅在隔离副本上安装并验证程序出站规则，确认服务监听 127.0.0.1，记录新进程 PID/创建时间、端口归属、阶段事件与退出。无论结果如何，按本次专属 `firewall.json` 执行 `Remove`，独立查询规则组剩余 0 条，核对副本改动的 pre-image/恢复结果。不能把强制 UI、空应答、监听日志或静态字符串算作认证、进房和一局验收。
 
 首个有价值的动态记录是 1649370 **自然**到达的最早阻断：窗口/对话框、模块、端口、原始帧长度与 hash、客户端消费/失败。随后才能逐项验证 1604220 的加密与协议候选；每个偏移必须绑定目标原字节、调用关系和实际消费。首局模式暂以训练靶场为调查候选，待入口和自然结算证据决定。
+
+## 2026-10-19 接手增量与下一次实验
+
+### 本轮状态
+
+- 接手时 `HEAD=290dfa3`，工作树干净；协作仓库远端 `main` 仍为 `84a6e10`。当前会话 Medium、非 elevated；WinInet 代理仍为 `127.0.0.1:7890`，Clash 五进程与 `7890` 监听仍在。
+- 旧的按程序规则工具 [isolate_client.ps1](tools/isolate_client.ps1) 继续**拒绝 Install**：它无法阻断回环，且本机已实测该类规则对 `127.0.0.1:7890` 无效。
+- 新工具 [isolate_host.ps1](tools/isolate_host.ps1) 以单条出站 Block-All 规则实现“主机在线、目标进程受限”。它不改 profile 策略、不改注册表、不碰 GPO，并在 Apply 后**实测**外网 TCP/DNS/直连 HTTPS/经本地代理均失败、临时回环监听仍可连；任一项不符即自动删除该组并退出 3。
+- 新工具 [launch_synthetic_tcls.py](tools/launch_synthetic_tcls.py) 只接受 `runtime\client-1649370`，先核四锚点，再按 `direct`/`tgp`/`tgp-sign` 模式挂起创建、可选写合成映射、恢复并观察。它不读内存、不注入。
+
+### 下一次实验的前置与步骤
+
+1. **需要一次用户配合的管理员操作**（当前会话无管理员令牌，不能自行提权）：
+   ```powershell
+   pwsh -NoProfile -File tools\isolate_host.ps1 -Action Snapshot -EvidenceDir runs\<run-id>
+   pwsh -NoProfile -File tools\isolate_host.ps1 -Action Apply   -EvidenceDir runs\<run-id>
+   pwsh -NoProfile -File tools\isolate_host.ps1 -Action Verify  -EvidenceDir runs\<run-id>
+   ```
+   期望 `Apply` 返回 `success=true`、`externalBlocked=true`、`loopbackSurvived=true`。若失败，工具已回滚，不要继续启动客户端。
+2. **三组对照，每组独立 run 目录**（Medium 会话即可，子进程继承 Medium）：
+   ```powershell
+   python tools\launch_synthetic_tcls.py --client-dir runtime\client-1649370 --evidence runs\<run-id>\direct.json --mode direct --seconds 30
+   python tools\launch_synthetic_tcls.py --client-dir runtime\client-1649370 --evidence runs\<run-id>\tgp.json --mode tgp --seconds 30
+   python tools\launch_synthetic_tcls.py --client-dir runtime\client-1649370 --evidence runs\<run-id>\tgp-sign.json --mode tgp-sign --seconds 30
+   ```
+   判据只看：进程存活时长、窗口标题/句柄、自有 TCP 连接、退出码、以及 `WIN_NO_TCLS` 弹窗是否仍出现（需人工截图或窗口枚举）。**没有窗口消失不等于验收通过**，也不等于进入 Auth。
+3. **恢复**：
+   ```powershell
+   pwsh -NoProfile -File tools\isolate_host.ps1 -Action Restore -EvidenceDir runs\<run-id>
+   ```
+   确认 `remainingRules=0`、外网恢复；把关键截图与三份 JSON 脱敏后摘要到 `evidence/experiments/`。
+4. 若三组仍全部停在 `WIN_NO_TCLS`：(a) 记录弹窗归属与时间线；(b) 再评估管理员令牌 + 已有保护组件是否为必要条件（社区 1604220 的成功组合含管理员与已有 TesSafe，但不可外推）；(c) 才考虑解密后同 Build 内存定位。不要移植 1604220 RVA。
+
+### 注意
+
+- `Apply` 期间本机外网会整体被阻断（含 git/web），这是预期；GUI 与本地服务走回环，不受影响。
+- 三组实验都必须**在隔离 Verify 通过之后**开始；任何一组若观察到非回环出站，立即停止并记录，不把该组计入验收。
+- 不运行 `他人文件参考` 与 `codol-ember` 中的代码；只引用其已注明 Build 的结论。
+

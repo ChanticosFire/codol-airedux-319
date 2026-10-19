@@ -1,0 +1,594 @@
+{
+  "build": 1649370,
+  "client_dir": "E:\\GAME\\COD\\codol-airedux\\319\\runtime\\client-1649370",
+  "method": "read-only pefile + raw byte search; no process started",
+  "limitations": [
+    "Absolute reference counts only cover file-backed bytes.",
+    "Protected sections (.tp3/.tvm0/.tls) may decrypt consumers at runtime.",
+    "A zero count does not prove the string is unused."
+  ],
+  "targets": [
+    {
+      "path": "codoMP_client_shipRetail.exe",
+      "exists": true,
+      "bytes": 7841344,
+      "sha256": "36997674b18f2896de5e9d755686f6922af10708f355175714058d0a0172b537",
+      "machine": "0x14c",
+      "image_base": 4194304,
+      "entry_point_rva": 241026704,
+      "sections": [
+        {
+          "name": ".tp3",
+          "virtual_address": 4096,
+          "virtual_size": 9070746,
+          "raw_pointer": 4096,
+          "raw_size": 5844992,
+          "characteristics": 1610612768
+        },
+        {
+          "name": ".tp3",
+          "virtual_address": 9076736,
+          "virtual_size": 1497712,
+          "raw_pointer": 5849088,
+          "raw_size": 1499136,
+          "characteristics": 1073741888
+        },
+        {
+          "name": ".tp3",
+          "virtual_address": 10575872,
+          "virtual_size": 230366400,
+          "raw_pointer": 7348224,
+          "raw_size": 401408,
+          "characteristics": 3221225536
+        },
+        {
+          "name": ".tp3",
+          "virtual_address": 240943104,
+          "virtual_size": 49,
+          "raw_pointer": 7749632,
+          "raw_size": 4096,
+          "characteristics": 3221225536
+        },
+        {
+          "name": ".tp3",
+          "virtual_address": 240947200,
+          "virtual_size": 37416,
+          "raw_pointer": 7753728,
+          "raw_size": 40960,
+          "characteristics": 1073741888
+        },
+        {
+          "name": ".tvm0",
+          "virtual_address": 240988160,
+          "virtual_size": 16384,
+          "raw_pointer": 7794688,
+          "raw_size": 8192,
+          "characteristics": 1610612768
+        },
+        {
+          "name": ".tp3",
+          "virtual_address": 241004544,
+          "virtual_size": 532480,
+          "raw_pointer": 7802880,
+          "raw_size": 24576,
+          "characteristics": 3758096416
+        }
+      ],
+      "data_directories": [
+        {
+          "index": 0,
+          "name": "export",
+          "virtual_address": 10573232,
+          "size": 1216
+        },
+        {
+          "index": 1,
+          "name": "import",
+          "virtual_address": 241026613,
+          "size": 0
+        },
+        {
+          "index": 2,
+          "name": "resource",
+          "virtual_address": 240947200,
+          "size": 0
+        },
+        {
+          "index": 4,
+          "name": "certificate",
+          "virtual_address": 7827528,
+          "size": 13816
+        },
+        {
+          "index": 6,
+          "name": "debug",
+          "virtual_address": 9099872,
+          "size": 28
+        },
+        {
+          "index": 9,
+          "name": "tls",
+          "virtual_address": 10391224,
+          "size": 24
+        }
+      ],
+      "anchor_strings": [
+        {
+          "pattern": "WIN_NO_TCLS",
+          "file_offset": 7110528,
+          "section": ".tp3",
+          "rva": 7110528,
+          "va": 11304832,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        },
+        {
+          "pattern": "WIN_ERROR",
+          "file_offset": 7110516,
+          "section": ".tp3",
+          "rva": 7110516,
+          "va": 11304820,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        },
+        {
+          "pattern": "-src=tgp",
+          "file_offset": 7110504,
+          "section": ".tp3",
+          "rva": 7110504,
+          "va": 11304808,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        },
+        {
+          "pattern": "+unattended",
+          "file_offset": 7110572,
+          "section": ".tp3",
+          "rva": 7110572,
+          "va": 11304876,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        }
+      ],
+      "anchor_strings_utf16": []
+    },
+    {
+      "path": "codoMP_client_shipRetailBase.dll",
+      "exists": true,
+      "bytes": 60327992,
+      "sha256": "ef75220de1d6973f34c7069f5bf211b11bd61520c6c0de1882f7359fa5bc6a20",
+      "machine": "0x14c",
+      "image_base": 268435456,
+      "entry_point_rva": 5276,
+      "sections": [
+        {
+          "name": ".text",
+          "virtual_address": 4096,
+          "virtual_size": 7610368,
+          "raw_pointer": 1024,
+          "raw_size": 7609344,
+          "characteristics": 1610612768
+        },
+        {
+          "name": ".rdata",
+          "virtual_address": 7614464,
+          "virtual_size": 2539520,
+          "raw_pointer": 7610368,
+          "raw_size": 2535936,
+          "characteristics": 1073741888
+        },
+        {
+          "name": ".data",
+          "virtual_address": 10153984,
+          "virtual_size": 1388544,
+          "raw_pointer": 10146304,
+          "raw_size": 1354240,
+          "characteristics": 3221225536
+        },
+        {
+          "name": ".idata2",
+          "virtual_address": 11542528,
+          "virtual_size": 20154,
+          "raw_pointer": 11500544,
+          "raw_size": 20480,
+          "characteristics": 3221225504
+        },
+        {
+          "name": ".rsrc2",
+          "virtual_address": 11563008,
+          "virtual_size": 11164,
+          "raw_pointer": 11521024,
+          "raw_size": 11264,
+          "characteristics": 3221225504
+        },
+        {
+          "name": ".tls",
+          "virtual_address": 11575296,
+          "virtual_size": 15544320,
+          "raw_pointer": 11532288,
+          "raw_size": 15541760,
+          "characteristics": 1610612768
+        },
+        {
+          "name": ".tvm0",
+          "virtual_address": 27119616,
+          "virtual_size": 32890880,
+          "raw_pointer": 27074048,
+          "raw_size": 32888320,
+          "characteristics": 1610612768
+        },
+        {
+          "name": ".reloc",
+          "virtual_address": 60010496,
+          "virtual_size": 352256,
+          "raw_pointer": 59962368,
+          "raw_size": 351744,
+          "characteristics": 1107296320
+        }
+      ],
+      "data_directories": [
+        {
+          "index": 0,
+          "name": "export",
+          "virtual_address": 9776480,
+          "size": 65
+        },
+        {
+          "index": 1,
+          "name": "import",
+          "virtual_address": 10446776,
+          "size": 60
+        },
+        {
+          "index": 2,
+          "name": "resource",
+          "virtual_address": 11563008,
+          "size": 11164
+        },
+        {
+          "index": 4,
+          "name": "certificate",
+          "virtual_address": 60314184,
+          "size": 13808
+        },
+        {
+          "index": 5,
+          "name": "basereloc",
+          "virtual_address": 60010496,
+          "size": 351564
+        },
+        {
+          "index": 6,
+          "name": "debug",
+          "virtual_address": 7626848,
+          "size": 28
+        },
+        {
+          "index": 12,
+          "name": "iat",
+          "virtual_address": 11542528,
+          "size": 3072
+        }
+      ],
+      "anchor_strings": [
+        {
+          "pattern": "TCLS_SHAREDMEMEMORY",
+          "file_offset": 8974332,
+          "section": ".rdata",
+          "rva": 8978428,
+          "va": 277413884,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        },
+        {
+          "pattern": "TCLS_TASMEMORY_",
+          "file_offset": 8974684,
+          "section": ".rdata",
+          "rva": 8978780,
+          "va": 277414236,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        },
+        {
+          "pattern": "TAS-3AAC03A5-7D57-4c80-A175-0E4BEA43EE41-",
+          "file_offset": 8974352,
+          "section": ".rdata",
+          "rva": 8978448,
+          "va": 277413904,
+          "absolute_reference_count": 3,
+          "absolute_reference_sites": [
+            {
+              "file_offset": 19693874,
+              "section": ".tls"
+            },
+            {
+              "file_offset": 21113848,
+              "section": ".tls"
+            },
+            {
+              "file_offset": 21620508,
+              "section": ".tls"
+            }
+          ]
+        },
+        {
+          "pattern": "PT-81634493-9d70-46be-8157-9e032cc0fd86-",
+          "file_offset": 8974444,
+          "section": ".rdata",
+          "rva": 8978540,
+          "va": 277413996,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        }
+      ],
+      "anchor_strings_utf16": [
+        {
+          "pattern": "TCLS_SHAREDMEMEMORY",
+          "encoding": "utf-16le",
+          "file_offset": 8974600,
+          "section": ".rdata"
+        },
+        {
+          "pattern": "TCLS_TASMEMORY_",
+          "encoding": "utf-16le",
+          "file_offset": 8974652,
+          "section": ".rdata"
+        }
+      ]
+    },
+    {
+      "path": "TCLS/ClientBase.dll",
+      "exists": true,
+      "bytes": 12714952,
+      "sha256": "209382da2481218eb0f2ba9f23b374fe5a4beaff043e389c6af86f74ac621111",
+      "machine": "0x14c",
+      "image_base": 268435456,
+      "entry_point_rva": 4096,
+      "sections": [
+        {
+          "name": ".text",
+          "virtual_address": 4096,
+          "virtual_size": 1855488,
+          "raw_pointer": 1024,
+          "raw_size": 1853440,
+          "characteristics": 1610612768
+        },
+        {
+          "name": ".rdata",
+          "virtual_address": 1859584,
+          "virtual_size": 221184,
+          "raw_pointer": 1854464,
+          "raw_size": 220672,
+          "characteristics": 1073741888
+        },
+        {
+          "name": ".data",
+          "virtual_address": 2080768,
+          "virtual_size": 880640,
+          "raw_pointer": 2075136,
+          "raw_size": 870400,
+          "characteristics": 3221225536
+        },
+        {
+          "name": ".idata2",
+          "virtual_address": 2961408,
+          "virtual_size": 12380,
+          "raw_pointer": 2945536,
+          "raw_size": 12800,
+          "characteristics": 3221225504
+        },
+        {
+          "name": ".rsrc2",
+          "virtual_address": 2977792,
+          "virtual_size": 10948,
+          "raw_pointer": 2958336,
+          "raw_size": 11264,
+          "characteristics": 3221225504
+        },
+        {
+          "name": ".tls",
+          "virtual_address": 2990080,
+          "virtual_size": 102400,
+          "raw_pointer": 2969600,
+          "raw_size": 101888,
+          "characteristics": 1610612768
+        },
+        {
+          "name": ".tvm0",
+          "virtual_address": 3092480,
+          "virtual_size": 9314304,
+          "raw_pointer": 3071488,
+          "raw_size": 9313792,
+          "characteristics": 1610612768
+        },
+        {
+          "name": ".reloc",
+          "virtual_address": 12406784,
+          "virtual_size": 131072,
+          "raw_pointer": 12385280,
+          "raw_size": 129536,
+          "characteristics": 1107296320
+        }
+      ],
+      "data_directories": [
+        {
+          "index": 0,
+          "name": "export",
+          "virtual_address": 2046512,
+          "size": 65
+        },
+        {
+          "index": 1,
+          "name": "import",
+          "virtual_address": 2183296,
+          "size": 40
+        },
+        {
+          "index": 2,
+          "name": "resource",
+          "virtual_address": 2977792,
+          "size": 10948
+        },
+        {
+          "index": 4,
+          "name": "certificate",
+          "virtual_address": 12514816,
+          "size": 200136
+        },
+        {
+          "index": 5,
+          "name": "basereloc",
+          "virtual_address": 12406784,
+          "size": 129420
+        },
+        {
+          "index": 6,
+          "name": "debug",
+          "virtual_address": 1866400,
+          "size": 28
+        },
+        {
+          "index": 12,
+          "name": "iat",
+          "virtual_address": 2961408,
+          "size": 1804
+        }
+      ],
+      "anchor_strings": [
+        {
+          "pattern": "TCLS_SHAREDMEMEMORY",
+          "file_offset": 1915904,
+          "section": ".rdata",
+          "rva": 1921024,
+          "va": 270356480,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        },
+        {
+          "pattern": "TCLS_TASMEMORY_",
+          "file_offset": 1916128,
+          "section": ".rdata",
+          "rva": 1921248,
+          "va": 270356704,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        },
+        {
+          "pattern": "TAS-3AAC03A5-7D57-4c80-A175-0E4BEA43EE41-",
+          "file_offset": 1915924,
+          "section": ".rdata",
+          "rva": 1921044,
+          "va": 270356500,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        },
+        {
+          "pattern": "PT-81634493-9d70-46be-8157-9e032cc0fd86-",
+          "file_offset": 1915988,
+          "section": ".rdata",
+          "rva": 1921108,
+          "va": 270356564,
+          "absolute_reference_count": 0,
+          "absolute_reference_sites": []
+        }
+      ],
+      "anchor_strings_utf16": [
+        {
+          "pattern": "TCLS_SHAREDMEMEMORY",
+          "encoding": "utf-16le",
+          "file_offset": 1916044,
+          "section": ".rdata"
+        },
+        {
+          "pattern": "TCLS_TASMEMORY_",
+          "encoding": "utf-16le",
+          "file_offset": 1916096,
+          "section": ".rdata"
+        }
+      ]
+    },
+    {
+      "path": "TCLS/Client.exe",
+      "exists": true,
+      "bytes": 955592,
+      "sha256": "4c19a7db7c217af342963b343487fe5679538ab99f76766f7376d2bbafb48dce",
+      "machine": "0x14c",
+      "image_base": 4194304,
+      "entry_point_rva": 14098,
+      "sections": [
+        {
+          "name": ".text",
+          "virtual_address": 4096,
+          "virtual_size": 121233,
+          "raw_pointer": 1024,
+          "raw_size": 121344,
+          "characteristics": 1610612768
+        },
+        {
+          "name": ".rdata",
+          "virtual_address": 126976,
+          "virtual_size": 19022,
+          "raw_pointer": 122368,
+          "raw_size": 19456,
+          "characteristics": 1073741888
+        },
+        {
+          "name": ".data",
+          "virtual_address": 147456,
+          "virtual_size": 11748,
+          "raw_pointer": 141824,
+          "raw_size": 4096,
+          "characteristics": 3221225536
+        },
+        {
+          "name": ".rsrc",
+          "virtual_address": 159744,
+          "virtual_size": 794064,
+          "raw_pointer": 145920,
+          "raw_size": 794112,
+          "characteristics": 1073741888
+        }
+      ],
+      "data_directories": [
+        {
+          "index": 1,
+          "name": "import",
+          "virtual_address": 144124,
+          "size": 60
+        },
+        {
+          "index": 2,
+          "name": "resource",
+          "virtual_address": 159744,
+          "size": 794064
+        },
+        {
+          "index": 4,
+          "name": "certificate",
+          "virtual_address": 940032,
+          "size": 15560
+        },
+        {
+          "index": 6,
+          "name": "debug",
+          "virtual_address": 127360,
+          "size": 28
+        },
+        {
+          "index": 10,
+          "name": "loadconfig",
+          "virtual_address": 140152,
+          "size": 64
+        },
+        {
+          "index": 12,
+          "name": "iat",
+          "virtual_address": 126976,
+          "size": 324
+        }
+      ],
+      "anchor_strings": [],
+      "anchor_strings_utf16": []
+    }
+  ]
+}

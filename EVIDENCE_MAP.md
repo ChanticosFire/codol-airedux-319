@@ -43,6 +43,17 @@
 
 `他人文件参考/服务端.zip` 为 Python v0.0.1 本地认证/大厅桩，README 明示无对局层。服务端代码在未知 svc/task 上默认返回成功空结果，入站加密帧部分校验不足；这不能作为 1649370 成功证据。`客户端.zip` 通过配置改写、进程内写入和前台桩展示大厅，版本识别未锁定 EXE/Base 完整 hash，且远程写入有部分失败残留风险。二者只取可核验的结构线索，不直接运行或复制为本项目主干。2697 的 `codol_dedrun.exe` 属旧版独立宿主，不能假设可执行 1649370 内容。
 
+## 2026-10-19 同 Build 静态侦察（接手轮）
+
+[机器摘要](evidence/experiments/20261019-static-recon.json) 由 [static_recon.py](tools/static_recon.py) 只读生成。它把此前“只有字符串位置”的判断推进到**节归属与引用计数**，但仍不包含任何检查语义：
+
+- 游戏 EXE 的导入目录 size 为 0（运行时重建）、TLS 目录在 RVA `0x9E8EB8`、入口在 `.tvm0`；`WIN_NO_TCLS`、`-src=tgp`、`WIN_ERROR`、`+unattended` 都在只读 `.tp3` 数据节，直接绝对引用为 0。启动判定与这些字符串之间没有文件级指针链。
+- Base DLL 的 `TCLS_SHAREDMEMEMORY`/`TCLS_TASMEMORY_` 同样没有绝对引用；而 TAS 事件名 `TAS-3AAC03A5-…-` 的 3 个绝对引用全部落在 `.tls` 保护节（15.5 MB 可执行），这支持 TAS/TCLS 逻辑在保护节内、需运行时解密后再定位。
+- `TCLS/ClientBase.dll` `.rdata` 的 `0x1D4F00-0x1D5120` 是 TCLS 字符串表（ASCII 与宽字符成对），含 `\Global\TenP_TS_%d`、`%s%d`、`TASData.dat`、`tensafe`、`LdrLoadDll`；表内指针指向 `.text`，字符串本身无直接引用。`\Global\TenP_TS_%d` 是新增的第二类命名共享内存线索，语义未验证。
+- `TCLS/Client.exe` 是普通转发器（仅 `CreateProcessW`/`ShellExecuteExW` 等），不含共享映射名；`WeGameLauncher/config/*.json` 加密未逆向。
+
+由此，`WIN_NO_TCLS` 的两条候选判别路径收敛为：(a) 命令行 `-src=tgp` 与 (b) `TCLS_SHAREDMEMEMORY<PID>` 交接。二者都必须在隔离后的运行时实验中对照，静态文件不能替代。`+0x10/+0x14/+0x18` 布局仍只有 1604220 参考来源，不能写成 1649370 已确认格式。
+
 ## 本阶段任务顺序
 
 1. 归档完整性和解压目录逐文件摘要对照，保存机器清单及差异。
