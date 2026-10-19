@@ -280,3 +280,11 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - **补充（10.6）**：用 `RunAsInvoker` 启动 Host 后，其 "Error" 窗口的子控件文本为 `SetPrivilege()失败。`——Host 在启动时调用 `SetPrivilege`（调整令牌特权，推测用于 `SeDebugPrivilege` 等以访问游戏进程/全局对象），Medium 令牌没有该特权；`RunAsInvoker` 只能绕过 manifest 的 UAC 提示，不能赋予特权，因此必然失败。
 
 - **补充（10.6）**：实测在 Medium + `__COMPAT_LAYER=RunAsInvoker` 下观察 14 秒，**游戏从未创建 `IIPSHostApp.exe` 进程**（`Get-Process` 无结果）。说明游戏启动 Host 时被 UAC 拒绝（`ERROR_ELEVATION_REQUIRED`），兼容层环境变量没有传递到游戏内部的启动调用。IIPS 失败链因此闭合：**Host 必须由提权进程创建 → 游戏必须管理员运行 → IIPS 必须管理员**。对 Host 做文件级补丁（`0x4140E5` 的 `SetPrivilege` 结果判定）也不能改变“进程根本没启动”的事实（补丁已恢复，Host 原件 SHA-256 `b507b47a…`）。
+
+### 10.7 RunAsInvoker 注册表层 + Host SetPrivilege 补丁：半阳性
+
+- 给 `IIPSHostApp.exe` 加 AppCompat 注册表层（`HKCU\...\AppCompatFlags\Layers` = `RunAsInvoker`）后，Host 能无 UAC 启动（比 `__COMPAT_LAYER` 环境变量更可靠，不受游戏内部 `lpEnvironment` 影响）。
+- 在这个前提下把 Host 的 `SetPrivilege` 结果判定（文件偏移 `0x140E5`，`0F 95 C3`）补成 `B3 01 90`（`mov bl,1; nop`），Host 越过了 `SetPrivilege()失败。`，但**卡在下一个错误**：
+  `IIPSHostApp启动失败。 Error IIPS_SHARE_STATE_ERROR(4)`
+- 说明 Host 启动依赖**多个**管理员特权（至少 `SeDebugPrivilege` 一类 + 全局共享状态/命名对象特权），补丁单个检查不能让它在 Medium 下完整工作。
+- 实验后已还原：Host 文件 SHA-256 `b507b47a…`，`Layers` 注册表项删除。**该测试只改用户级 AppCompat 注册表与副本内文件，未改系统网络/驱动/原件**。
