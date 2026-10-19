@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "build": 1649370,
+  "exe_sha256": "36997674B18F2896DE5E9D755686F6922AF10708F355175714058D0A0172B537",
+  "evidence_type": "file-backed strings and resource filenames only",
+  "strings": {
+    "coop_train_mp_firingrange": [
+      {
+        "file_offset": 7104244,
+        "rva": 10331892,
+        "absolute_pointer_occurrences": [
+          {
+            "file_offset": 330815,
+            "rva": 330815
+          },
+          {
+            "file_offset": 823056,
+            "rva": 823056
+          }
+        ]
+      }
+    ],
+    "coop_training_mp_cargoship": [],
+    "CPP_TryLaunchTutorialMap": [
+      {
+        "file_offset": 7092280,
+        "rva": 10319928,
+        "absolute_pointer_occurrences": [
+          {
+            "file_offset": 2154065,
+            "rva": 2154065
+          }
+        ]
+      }
+    ],
+    "cppOpenTrainEOGMenu": [
+      {
+        "file_offset": 7013800,
+        "rva": 10241448,
+        "absolute_pointer_occurrences": []
+      }
+    ],
+    "scr_gameended": [
+      {
+        "file_offset": 6936320,
+        "rva": 10163968,
+        "absolute_pointer_occurrences": [
+          {
+            "file_offset": 217949,
+            "rva": 217949
+          },
+          {
+            "file_offset": 841483,
+            "rva": 841483
+          },
+          {
+            "file_offset": 904990,
+            "rva": 904990
+          },
+          {
+            "file_offset": 1259201,
+            "rva": 1259201
+          }
+        ]
+      }
+    ],
+    "botsAddAll": [
+      {
+        "file_offset": 7004420,
+        "rva": 10232068,
+        "absolute_pointer_occurrences": []
+      }
+    ],
+    "CoD4Host": [
+      {
+        "file_offset": 7097164,
+        "rva": 10324812,
+        "absolute_pointer_occurrences": []
+      }
+    ]
+  },
+  "resource_groups": {
+    "coop_train_mp_firingrange": [
+      {
+        "relative_path": "IIPS/IIPSDownload/ff_init_coop_train_mp_firingrange_V26.1.ifs",
+        "size": 49219,
+        "sha256": "27DE1FD4E49FF11BCD430744F4DB7C2B4E9B973AC31172E42A15BF528D427323",
+        "crc32": "5B6D91C9"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/ff_init_coop_train_mp_firingrange_V26.2.ifs",
+        "size": 49219,
+        "sha256": "0F7BC783A2460117BC176E445BA4CB21D58CED06231CCA4B653326164DAF126D",
+        "crc32": "9587AB9A"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/ff_init_coop_train_mp_firingrange_V26.ifs",
+        "size": 4133068,
+        "sha256": "A123B014DE86D3EEFFAB1421D4753BD07A8E235BADA9595A7C9F97666021A276",
+        "crc32": "04B01AD5"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_hi_init_coop_train_mp_firingrange_V2.ifs",
+        "size": 2771785,
+        "sha256": "CDFAA74343B476E8A969FFC892A2BAEE23B5122A3478E323991B3C41BCCC3C39",
+        "crc32": "87BC2653"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_init_coop_train_mp_firingrange_V2.1.ifs",
+        "size": 16417,
+        "sha256": "F4800714812BA2289E37293CA2E0CB67F20DB3CEDE564A0392E0E72DE36ED9D7",
+        "crc32": "274774EE"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_init_coop_train_mp_firingrange_V2.ifs",
+        "size": 6314401,
+        "sha256": "1AAE4E09A83A0D67B3F3DD6C2F329C53FAF52E473C001F8345AAB9C19B7CB31E",
+        "crc32": "373B76A0"
+      }
+    ],
+    "coop_training_mp_cargoship": [
+      {
+        "relative_path": "IIPS/IIPSDownload/ff_init_coop_training_mp_cargoship_V57.1.ifs",
+        "size": 49219,
+        "sha256": "79208EC6366831CB700F57B5D198D1FE0F106A4493FDE17AEF31B09438666FE7",
+        "crc32": "658F81BA"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/ff_init_coop_training_mp_cargoship_V57.2.ifs",
+        "size": 49219,
+        "sha256": "1F14230EBF85C98F1B3998F17B6794130C1B6C54E127BEED2C8AA276E9226EFD",
+        "crc32": "42B62DDA"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/ff_init_coop_training_mp_cargoship_V57.ifs",
+        "size": 13744054,
+        "sha256": "75AC989FD9ABBD42AFCA2C3674F884CCBF1D046EF23466B74B56D10E8DE6AC77",
+        "crc32": "17DEF616"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_hi_init_coop_training_mp_cargoship_V11.1.ifs",
+        "size": 705259,
+        "sha256": "6B2D55A30E4EF4B1967B7A6D8F182F180807D503147DAB772D7404CCE818B510",
+        "crc32": "12A949BF"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_hi_init_coop_training_mp_cargoship_V11.2.ifs",
+        "size": 639655,
+        "sha256": "EDD19A6C236FA5DBFAF411A40F623AE8A40BE8651EDFF4D50D38954D8DAB240B",
+        "crc32": "F8253C69"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_hi_init_coop_training_mp_cargoship_V11.3.ifs",
+        "size": 16417,
+        "sha256": "2C1044A666BFF0118EC6BF9EA69ABE5C73B460F8F07BD4D07029CD73F729A2BC",
+        "crc32": "3DA7FCF0"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_hi_init_coop_training_mp_cargoship_V11.4.ifs",
+        "size": 16417,
+        "sha256": "921A673213B17FB27521803697E396E0C1B78A04533D1C892FDBFAA9E46902BC",
+        "crc32": "BE77BE01"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_hi_init_coop_training_mp_cargoship_V11.ifs",
+        "size": 50219878,
+        "sha256": "45617B73AFDA4DF837CF36D7733179D84D369F1322B18C63558DDDAB8D9C92FF",
+        "crc32": "6CAFDE89"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_init_coop_training_mp_cargoship_V13.1.ifs",
+        "size": 16417,
+        "sha256": "08DF0B0EEF9E170882C7095137CEAA6D54AB0C29930DF550BBCA6E802384D1C7",
+        "crc32": "EBE548EF"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_init_coop_training_mp_cargoship_V13.2.ifs",
+        "size": 16417,
+        "sha256": "DF161F0D46F9377D2C0CCE7609C34F6BD5FE31C72EE119390086FA197DEDB896",
+        "crc32": "34FDCC88"
+      },
+      {
+        "relative_path": "IIPS/IIPSDownload/lf_init_coop_training_mp_cargoship_V13.ifs",
+        "size": 37656712,
+        "sha256": "0A392D091212C674290E016425D7ED0B0A2377DAA8F2A34AA63B8290C649F441",
+        "crc32": "758970CC"
+      }
+    ]
+  },
+  "limitations": [
+    "No call-chain or runtime reachability established",
+    "IFS filename is not proof of engine load or complete mode"
+  ]
+}
