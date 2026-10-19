@@ -91,3 +91,4 @@
 | 2026-10-20 11:25–11:35 | 最终端到端回归 | **通过**：四锚点 preflight 全 ok；21 项单元测试通过；11 md/26 py/6 JSON 审计 0 问题；工作树干净、无残留进程/端口 | 本机命令输出 | 待提交 |
 | 2026-10-20 11:40–12:05 | AppCompat `RunAsInvoker` 注册表层 + Host `SetPrivilege` 补丁 | **半阳性**：注册表层让 Host 无 UAC 启动（比环境变量强），补丁越过 `SetPrivilege()失败。`，但卡在下一个错误 `IIPS_SHARE_STATE_ERROR(4)`（共享状态/全局命名对象特权）。Host 已还原，注册表项已删除 | `runs/20261020-night05-IIPSHostApp.bak` | 待提交 |
 | 2026-10-20 12:10–12:25 | `IIPS_SHARE_STATE_ERROR(4)` 的对象与特权 | **确认**：`iips.dll` 引用 `SeCreateGlobalPrivilege`，需创建 `Global\IIPSShareState_MMF_` / `Global\IIPSShareState_Mutex_` 等全局对象；Medium 令牌无该特权，无法绕过 | `iips.dll` 字符串 | 待提交 |
+| 2026-10-20 12:25–12:40 | 里程碑补双重特权结论 | **完成**：MILESTONES M2 写入 `SeDebugPrivilege` + `SeCreateGlobalPrivilege` 的已证实根因；环境复查干净 | `MILESTONES.md` | 待提交 |
