@@ -78,3 +78,4 @@
 | 2026-10-20 05:40–06:05 | 社区成功组合的 `enable_iips=0` 能否在 Medium 下跑通 | **阴性**：`enable_iips=0` + `iips_url="http://127.0.0.1/"` + Auth 服务下，游戏只出现 `CoD Splash Screen`，4 秒后 exit `0xFFFFFFFF`，无 Auth 请求。参考组合依赖管理员会话 | `runs/20261020-night02/patch-iipsoff{,2}.json` | 待提交 |
 | 2026-10-20 06:10–06:30 | 离线补齐 LSG 捕获端点 | **完成**：`server319/lsg.py`（HTTPS 4174、记录 `/v1.0/...` 请求、404 占位）+ 端到端自测通过 | `runs/20261020-night03/lsg-e2e.jsonl` | 待提交 |
 | 2026-10-20 06:35–06:50 | `enable_iips=0` + 双 IIPS 补丁 + Auth 组合 | **阴性**：进程 3 秒退出（`CoD Splash Screen` 后），补丁来不及生效，无 Auth。IIPS 不能禁用（资源系统必需），只能真初始化 | `runs/20261020-night03/patch-combo.json` | 待提交 |
+| 2026-10-20 07:00–07:20 | 固化 M3 验收与复验手册 | **完成**：`M3-CHECKLIST.md`（五条判据当前状态、一键命令、证据判据、失败排查、恢复） | `M3-CHECKLIST.md` | 待提交 |
