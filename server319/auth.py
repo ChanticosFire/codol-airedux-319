@@ -120,6 +120,10 @@ class AuthEvidence:
     def __init__(self, path: Path):
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        # Create the file eagerly so an operator can tell "listener ran, no
+        # request" apart from "listener never started".
+        if not self.path.exists():
+            self.path.touch()
         self._lock = threading.Lock()
 
     def write(self, event: str, session: Session, **fields) -> None:
