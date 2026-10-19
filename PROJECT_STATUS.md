@@ -170,4 +170,36 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 
 ### 8.5 本轮新增工具
 
-`tools/isolate_client_program.ps1`（按程序出站规则，非全局）、`tools/stage_redirect.py`（配置重定向 + CA，pre-image/恢复）、`tools/lab_auth_server.py`（TLS Auth 监听/响应/明文分支）、`tools/lab_tcp_capture.py`、`tools/http_probe.py`、`tools/probe_no_tcls.py`、`tools/probe_dialog_stack.py`、`tools/probe_auth_fields.py`、`tools/patch_auth_bypass.py`、`tools/capture_window.ps1` / `capture_screen.ps1` / `front_capture.ps1`。
+`tools/isolate_client_program.ps1`（按程序出站规则，非全局）、`tools/stage_redirect.py`（配置重定向 + CA，pre-image/恢复）、`tools/lab_auth_server.py`（TLS Auth 监听/响应/明文分支）、`tools/lab_tcp_capture.py`、`tools/http_probe.py`、`tools/probe_no_tcls.py`、`tools/probe_dialog_stack.py`、`tools/probe_auth_fields.py`、`tools/patch_auth_bypass.py`、`tools/patch_runtime.py`（通用 RVA 字节补丁，带原字节校验）、`tools/capture_window.ps1` / `capture_screen.ps1` / `front_capture.ps1`。
+
+## 9. 2026-10-20 夜间轮次（目标模式，无提权）
+
+夜间按 [LONG-RUN-GOAL.md](LONG-RUN-GOAL.md) 的硬边界执行：**不使用 sudo/提权**，因此无法复现“管理员令牌 → IIPS 通过 → Auth”链路。本轮改做无提权可验证的问题。
+
+### 9.1 IIPS 不可绕过的阴性结果
+
+- Medium 下 `-q` 会弹 `初始化IIPS错误：8189fec。`。
+- 用 [patch_runtime.py](tools/patch_runtime.py) 把错误弹窗调用点 `RVA 0x3804F2`（`call 0x77FA70`，5 字节）改为 `90×5`：原字节 `e879f5ffff` 校验通过、写入与回读成功，进程**存活 40 秒**（未补丁时约 21 秒退出），但 `#32770` 弹窗**仍然出现**——说明该调用点不是唯一错误路径。
+- 再叠加“自动点掉弹窗”（`--dismiss-dialogs`）：点掉后 **2 秒内进程以 exit `0xFFFFFFFF` 退出**，说明 IIPS 初始化失败是**致命**的，不能靠跳过弹窗或单点补丁绕过。
+- 结论：**IIPS 门槛只能由管理员令牌满足**（与第 8 节一致）；夜间无法推进该链路，记录为用户待办。
+
+### 9.2 配置格式与 LSG 参数来源（静态）
+
+- EXE 明文数据节确认了配置文件解析格式串：`dwauth.ini` 后接 `%59s` + `%hu`（**host + 端口**，与当前 `127.0.0.1 4174` 写法一致）；`stun.ini` 用 `%59s` 逐行读取；`iips.ini` 支持 `enable_iips=%d`、`iips_url=%s`、`iips_enableOptionalDownloads=%s`；`buildconfig.ini` 支持 `build_version/stream/main_version`。文件偏移：`dwauth.ini@0x6C7D9C`、`stun.ini@0x6C7DBC`、`buildconfig.ini@0x6C7DC8`、`iips.ini@0x6C7E44`。
+- Auth 响应解析后的 LSG 初始化代码在 RVA `0x79A4B2–0x79A5AE`（VA `0xB984B2` 起）：读取 `iv_seed`、`lsg_server_ticket_size`、`lsg_server_ticket`；要求 `size ≤ 0x80` 且 base64 解码长度与声明一致；随后把配置对象 `[esi+0x2c]` 的 `+0x88..+0x9C` 复制到 `[esi+0x368..0x37C]` 并把状态置 2。**LSG 的 host/port 来自这个配置对象，不来自 Auth 响应字段**。
+- 因此“Auth 已过但 LSG 不连”的最可能原因是：配置对象里 LSG 的 host/port 未被正确填充或未被该线程消费。判别实验（需提权）：把 `dwauth.ini` 第一行端口改成明显不同值（如 `127.0.0.1 4999`），在补丁+管理员运行下观察是否连 4999。
+
+### 9.3 夜间未完成与用户待办
+
+1. **需要管理员令牌**：IIPS 初始化、Auth 请求、补丁后主窗口稳定都依赖提权运行；夜间硬边界禁止。
+2. 用户醒后的一键复验命令（在 `319` 下、管理员 PowerShell）：
+   ```powershell
+   python tools\lab_auth_server.py --cert runs\20261020-redirect01\tls\auth.crt --key runs\20261020-redirect01\tls\auth.key --port 4175 --log runs\<id>\auth.jsonl --seconds 180 --ciphers "ALL:@SECLEVEL=0"
+   sudo pwsh -NoProfile -Command "& 'C:\Python313\python.exe' 'tools\patch_auth_bypass.py' --client-dir 'runtime\client-1649370' --evidence 'runs\<id>\patch.json' --wait 13 --observe 60 --game-args=-q"
+   ```
+   （`sudo pwsh -Command` 已验证可运行；`sudo pwsh -File <脚本>` 在本机会静默失败，勿用。）
+3. 若 LSG 仍不连：按 9.2 的端口对照实验，并在 `0xB98620` 状态写入后检查 `[esi+0x368/+0x36C]` 的 host/port 实际值。
+
+### 9.4 本轮工具
+
+新增 [patch_runtime.py](tools/patch_runtime.py)：通用 RVA 字节补丁，支持多点、原字节校验、写后回读、窗口/TCP 观察与自动点弹窗；只改进程镜像，退出即恢复。 [probe_dialog_stack.py](tools/probe_dialog_stack.py) 增加 `--extra-args`，可直接对 `-q` 运行回溯 IIPS 弹窗调用栈（本轮得到 `RVA 0x3804F7 → 0x37C9ED → 0x25A4E5` 链）。
