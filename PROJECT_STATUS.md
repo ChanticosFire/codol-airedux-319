@@ -276,3 +276,5 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - 用 `__COMPAT_LAYER=RunAsInvoker` 启动该 Host：进程能以 Medium 成功创建（说明兼容层生效），但 **Host 自身弹出标题为 "Error" 的窗口并退出**——运行时权限检查失败，不只是 manifest 标记。
 - 因此游戏在 Medium 下启动 Host 失败 → IIPS 初始化失败 → `8189fec`；管理员令牌下 Host 正常启动 → IIPS 通过。**这是设计上的管理员依赖，不是文件/配置/目录问题**，也解释了为何夜间所有 Medium 侧绕过都失败。
 - 该结论把 IIPS 步的“受阻（需提权）”从推断变成已证实的根因；用户醒后用管理员会话即可越过。
+
+- **补充（10.6）**：用 `RunAsInvoker` 启动 Host 后，其 "Error" 窗口的子控件文本为 `SetPrivilege()失败。`——Host 在启动时调用 `SetPrivilege`（调整令牌特权，推测用于 `SeDebugPrivilege` 等以访问游戏进程/全局对象），Medium 令牌没有该特权；`RunAsInvoker` 只能绕过 manifest 的 UAC 提示，不能赋予特权，因此必然失败。
