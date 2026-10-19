@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | M0 文件及社区基线 | 完成 | [PROJECT_STATUS.md](PROJECT_STATUS.md) 记录客户端四项哈希与仓库提交；核对与 Build 1649370 清单一致；标明 1604220 资料的边界 |
 | M1 完整性与跨版本映射 | 进行中 | 归档完整性、2,445 文件核对已通过；[证据图](EVIDENCE_MAP.md) 与 [模式候选](evidence/mode-candidates.json) 已建；静态侦察记录 EXE 导入表清零/入口在 `.tvm0`、TAS 引用落在 `.tls` 保护节。本轮新增运行时定位：`-q` 参数判定代码 RVA `0x37F5C0`、Auth 解析器 RVA `0x79A6xx–0x79A7xx`；尚未恢复 `WIN_NO_TCLS` 的完整调用图 |
-| M2 最小离线启动链 | 进行中 | 已过三道门槛并留有证据：(a) `-q` 跳过 `WIN_NO_TCLS`；(b) 管理员令牌使 IIPS 初始化通过（Medium 固定 `8189fec`；夜间已验证“跳过错误”只能让进程存活、不能恢复主窗口，见 [PROJECT_STATUS.md](PROJECT_STATUS.md) 第 10 节）；(c) HTTP Auth 请求/响应完成，运行时补丁 `RVA 0x79A78E: 74 B2→90 90` 使错误弹窗消失、`CODO` 主窗口稳定 55 秒。**LSG/大厅连接尚未建立**，M2 验收未完成 |
+| M2 最小离线启动链 | 进行中 | 已过三道门槛并留有证据：(a) `-q` 跳过 `WIN_NO_TCLS`；(b) 管理员令牌使 IIPS 初始化通过——**根因已确认**：`IIPS\IIPSHostApp.exe` manifest 为 `requireAdministrator`，Medium 下游戏 14 秒内从未创建 Host 进程（UAC 拒绝），故 `8189fec` 是硬性管理员依赖，禁用/跳过/文件/权限/兼容层等 Medium 侧路径全部阴性（[PROJECT_STATUS.md](PROJECT_STATUS.md) 第 10 节）；(c) HTTP Auth 请求/响应完成，运行时补丁 `RVA 0x79A78E: 74 B2→90 90` 使错误弹窗消失、`CODO` 主窗口稳定 55 秒。**LSG/大厅连接尚未建立**，M2 验收未完成 |
 | M3 原生前台与大厅 | 未开始 | 目标 Build 的实机截图/轨迹、可见交互、持续时间、失败条件与独立复验；`CODO` 窗口存在与稳定运行不算大厅验收。LSG 由状态机驱动（虚表 `0xD5A0D8`），需要 UI/输入推进，判别实验需管理员会话 |
 | M4 玩法与数据 | 未开始 | 选定模式的真实进入、操作、数据保存和退出；逐项记录已通过、失败与未测，不把菜单显示等同于玩法完成 |
 | M5 成果整理与协作 | 进行中 | 私有 GitHub 仓库已创建并核验 `PRIVATE`；提交 `14027bd…99a3f37` 已推送；本轮协议成果随第 8 节提交。协作仓库远端 `main` 复查仍为 `84a6e10`；公开双语报告及投稿仍属独立后续步骤 |

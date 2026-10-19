@@ -87,3 +87,4 @@
 | 2026-10-20 09:30–09:55 | IIPS 根因：Host 的权限要求 | **确认**：`IIPSHostApp.exe` manifest 为 `requireAdministrator`；`__COMPAT_LAYER=RunAsInvoker` 能让它以 Medium 启动，但 Host 自身弹 "Error" 后退出。IIPS 必须管理员是设计使然，不是配置/文件问题 | `NIGHT-REPORT.md` 待更新 | 待提交 |
 | 2026-10-20 10:00–10:15 | Host "Error" 窗口内容 | **确认**：`SetPrivilege()失败。`——Host 需要调整令牌特权（如 SeDebugPrivilege），Medium 不可用；`RunAsInvoker` 无法绕过 | `runs/20261020-night04-host-error.txt` | 待提交 |
 | 2026-10-20 10:55–11:10 | Host 是否被游戏创建 | **关键确认**：Medium + `RunAsInvoker` 下 14 秒内**没有 IIPSHostApp 进程**——游戏创建 Host 时被 UAC 拒绝（requireAdministrator），IIPS 必然失败。根因链闭合 | `runs/20261020-night04-patch5.json` | 待提交 |
+| 2026-10-20 11:10–11:20 | 里程碑与验收清单补根因 | **完成**：MILESTONES M2 与 M3-CHECKLIST 第 2 条写入“Host requireAdministrator、Medium 从未创建 Host”的已确认根因 | `MILESTONES.md`、`M3-CHECKLIST.md` | 待提交 |
