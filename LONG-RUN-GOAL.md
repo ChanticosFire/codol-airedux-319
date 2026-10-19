@@ -74,3 +74,4 @@
 | 2026-10-20 02:20–02:35 | 一键复验脚本 | **完成**：`tools/run_session.ps1`（管理员会话：核锚点→server319 auth→`-q`+补丁→证据→停服务），语法检查通过 | `tools/run_session.ps1` | 待提交 |
 | 2026-10-20 02:40–03:00 | 定位 LSG 连接触发机制 | **成立**：LSG 服务虚表 `0xD5A0C4–0xD5A0E4`（连接 `0xB98B70`、状态机 `0xB98AD0`）；连接经虚表间接调用，由状态机在合适游戏状态驱动。补丁后无输入则状态机不进入连接阶段 | `runs/20261020-night01/lsg-callers2.json`、`lsg-trigger.json`、`lsg-pointer.json`、`lsg-connect.json` | 待提交 |
 | 2026-10-20 03:00–03:15 | UI 输入工具（LSG 状态机需要输入） | **完成**：`tools/send_input.ps1`（ENTER/SPACE/ESC/CLICK/ALT_ENTER，AttachThreadInput 前置；需管理员）；21 项测试仍通过 | `tools/send_input.ps1` | 待提交 |
+| 2026-10-20 03:20–05:40 | 跳过 IIPS 错误分支能否让 Medium 跑通 | **半阳性/受阻**：补丁 `0x25A4A0:7543→EB43` 在 wait 5 应用后 IIPS 弹窗消失、进程存活 70s，但无主窗口/Auth；深层链（`GetResourceManagerII`→vtable+4 `+0x197F0`→`+0x12760`）未收敛到可修条件。IIPS 标记“受阻（需提权）” | `runs/20261020-night02/` | 待提交 |

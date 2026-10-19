@@ -231,3 +231,22 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - [server319/__main__.py](server319/__main__.py) 增加 `--auth --cert --key --seconds`；[server319/test_auth.py](server319/test_auth.py) 9 项合成测试通过。
 - 端到端自测（不启动客户端）：老 TLS 客户端 → `100 Continue` → `200 OK` → 20 字段响应、`lsg_server_ticket` 128B、证据日志含请求行/头/长度/SHA-256。证据 `runs/20261020-night01/auth-e2e.jsonl`。
 - 全套测试：`python -m unittest server319.test_server319 server319.test_auth tools.test_launch_synthetic_tcls` 共 21 项通过。
+
+## 10. 2026-10-20 夜间轮次 2：IIPS 跳过为半阳性，深层链受阻
+
+### 10.1 实验（Medium、无提权，`runs/20261020-night02/`）
+
+- **半阳性**：补丁 `RVA 0x25A4A0: 75 43 → EB 43`（`0x65A4A0`，IIPS `Init` 失败分支强制走成功路径），在 `--wait 5` 时应用（原字节 `7543` 校验通过）。效果：**IIPS 弹窗消失**，进程存活 70 秒（此前必弹并退出），但**没有出现 `CODO` 主窗口，也没有 Auth 请求**；说明跳过错误只避免了退出，IIPS 对象状态仍不完整，启动流程卡在早期。
+- **对照**：`--wait 8` 时弹窗已存在，补丁后 2 秒退出；`--wait 5` 才能赶在弹窗之前。
+- **深层定位**（静态，iips.dll 为普通 PE）：
+  - `GetResourceManagerII`（`+0x1C80`）构造单例（0x410 字节，构造函数 `+0x11F20`），最终 vtable `+0x3934C`；Init = vtable+4 = `+0x197F0` → 核心 `+0x12760`。
+  - 核心初始化内部：路径解析 `+0x1AB00`（`[obj+0xD8]` 非零时继续）、目录提取 `+0x5130`（VirtualQuery/GetModuleFileNameW/wcsrchr）、随后 `+0x1BEE0` 等；失败点未收敛到可单独修补的条件。
+  - 运行时对象可读：`[0x779570C]` → 对象 vtable `iips.dll+0x3934C`，`[obj+0xD8]=0x18`、`[obj+0x5C]=0`、`[obj+0x60]=0`。
+  - 错误码 `0x8189FEC` 经 vtable+0x48（`+0x13B30`，GetLastError 包装）返回，非标准 Win32 码，未定位到具体 API。
+- **结论**：IIPS 初始化失败**不是单一可跳过点**，跳过会留下不完整状态；真实初始化仍需管理员令牌。按 LONG-RUN-GOAL 第 5 节，**IIPS 步标记为“受阻（需提权）”**，夜间不再原地重试。
+
+### 10.2 夜间轮次 2 的交付
+
+- [patch_runtime.py](tools/patch_runtime.py) 已验证可对 iips/EXE 多点补丁（原字节校验、写后回读）。
+- 证据：`runs/20261020-night02/patch-iips-bypass{,2,3}.json`、`iips-init.json`、`iips-fail.json`、`iips-caller.json`、`iips-object.json`、`iips_*.py` 分析脚本。
+- 下一可推进项（均需提权，留给用户醒后）：High 运行 + `run_session.ps1`、`send_input.ps1` 推进 LSG、画面截图。
