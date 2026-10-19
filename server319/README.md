@@ -7,8 +7,12 @@ client files before opening a listener. Two modes exist:
   records metadata for unknown frames and never fabricates a reply.
 - **auth** (`--auth`): the HTTP/JSON `POST /auth/` endpoint that the 1649370
   client actually calls, implemented from captured wire data.
+- **lsg** (`server319.lsg`): HTTPS lobby capture scaffold on the `dwauth.ini`
+  line-1 port (observed 4174). It records the request and answers 404; the
+  lobby contract is not implemented because no live request has been captured
+  yet.
 
-It has **no LSG/room/match/gameplay reply implementation** yet.
+It has **no room/match/gameplay reply implementation** yet.
 
 Run from `319`:
 
