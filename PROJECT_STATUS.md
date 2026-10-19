@@ -5,6 +5,7 @@
 目标：针对用户保留的停服版本 3.19.26.22 建立可核验的离线复活路线。版本名称来自用户及归档文件名；本轮通过文件身份独立确认的是 Build 1649370。
 
 仓库：`E:\GAME\COD\codol-airedux\319` 已初始化为独立 `main` Git 仓库；GitHub 私有远端为 <https://github.com/ChanticosFire/codol-airedux-319>，API 回报 `PRIVATE`。本项目只提交自有源码、文档和文件身份清单；客户端副本、运行后像、第三方参考与协作仓库克隆由 [.gitignore](.gitignore) 排除。范围见 [REPOSITORY.md](REPOSITORY.md)。
+初始基线提交 `14027bd` 已推送至 `origin/main`；该次提交跟踪 24 个文件，不含客户端可执行文件和商业资源。
 
 ## 1. 本地对象
 
