@@ -202,4 +202,17 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 
 ### 9.4 本轮工具
 
-新增 [patch_runtime.py](tools/patch_runtime.py)：通用 RVA 字节补丁，支持多点、原字节校验、写后回读、窗口/TCP 观察与自动点弹窗；只改进程镜像，退出即恢复。 [probe_dialog_stack.py](tools/probe_dialog_stack.py) 增加 `--extra-args`，可直接对 `-q` 运行回溯 IIPS 弹窗调用栈（本轮得到 `RVA 0x3804F7 → 0x37C9ED → 0x25A4E5` 链）。
+新增 [patch_runtime.py](tools/patch_runtime.py)：通用 RVA 字节补丁，支持多点、原字节校验、写后回读、窗口/TCP 观察与自动点弹窗；只改进程镜像，退出即恢复。 [probe_dialog_stack.py](tools/probe_dialog_stack.py) 增加 `--extra-args`，可直接对 `-q` 运行回溯 IIPS 弹窗调用栈（本轮得到 `RVA 0x3804F7 → 0x37C9ED → 0x25A4E5` 链）。新增 [probe_anchor.py](tools/probe_anchor.py)：任意 ascii/hex 内存锚点扫描 + 引用反汇编 + 区域 dump。
+
+### 9.5 `dwauth.ini` 解析已实测验证（Medium、无提权）
+
+- 配置加载函数在 RVA `0x37EEA0–0x37F143`：先读 `dwauth.ini`（`0x37EF41`），再读 `stun.ini`（`0x37EFF9`，循环 10 条、每条 0x3C 字节），再读 `buildconfig.ini`（`0x37F093`）。
+- `dwauth.ini` 字段落点（实测运行时全局）：第一行 host `0x81A7F34`、port `0x81A9780`；第二行 host `0x81A76A8`、port `0x81A9EC4`；另一字段 `0x81A9EB8`。
+- 运行时读回：`host1=127.0.0.1`、`port1=4174`、`host2=127.0.0.1`、`port2=4175`、`title=1002`。**说明配置确实被解析，第一行是 LSG、第二行是 Auth，与 1604220 参考一致**。证据：`runs/20261020-night01/config-globals.json`、`config-code.json`、`dwauth-anchor.json`。
+- LSG URL 构建函数在 RVA `0x79A6C0`（VA `0xB986C0`）：`movzx eax, word [esi+0x2004]` 取端口，用模板 `0xD5A150` 与 `https`（`0xD5A11C`）拼出 `https://<host>:<port>/v1.0/title/1002/queue/<..>/member/<..>`。也就是说 **LSG 连接参数已就位，缺的是触发条件**（需 High 运行时观察该函数是否被调用）。
+
+### 9.6 下一步（用户醒后，需管理员令牌）
+
+1. 用 9.3 的命令跑一次补丁+Auth；同时在 `runs/<id>` 下用 `probe_anchor` 扫描 `0x81A9780`（port1）确认未被覆盖。
+2. 若 LSG 仍不连，对 RVA `0x79A6C0` 下断点/或用 `patch_runtime` 在其入口写 `int3` 观察是否执行；不执行则说明 LSG 初始化未走到该函数，需回看 `0xB98620` 状态 2 后的调用者。
+3. 若执行但连接失败，起 4174 TLS 监听（`lab_auth_server --port 4174`）并用 `lab_tcp_capture` 对照，记录首帧。
