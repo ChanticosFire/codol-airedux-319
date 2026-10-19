@@ -250,3 +250,11 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - [patch_runtime.py](tools/patch_runtime.py) 已验证可对 iips/EXE 多点补丁（原字节校验、写后回读）。
 - 证据：`runs/20261020-night02/patch-iips-bypass{,2,3}.json`、`iips-init.json`、`iips-fail.json`、`iips-caller.json`、`iips-object.json`、`iips_*.py` 分析脚本。
 - 下一可推进项（均需提权，留给用户醒后）：High 运行 + `run_session.ps1`、`send_input.ps1` 推进 LSG、画面截图。
+
+### 10.3 夜间轮次 3–4：IIPS 相关组合全部阴性
+
+- `enable_iips=0` + `iips_url="http://127.0.0.1/"` + Auth 服务（Medium）：只到 `CoD Splash Screen`，4 秒后 `exit 0xFFFFFFFF`，无 Auth 请求。
+- `enable_iips=0` + 补丁 `0x25A4A0`（Init 失败跳过）+ `0x3804F2`（错误弹窗调用跳过）+ Auth：3 秒退出，补丁（5 秒应用）来不及生效。
+- **结论**：IIPS 是资源系统必需组件，禁用或跳过都会导致更早的静默退出；**必须真实初始化，而真实初始化需要管理员令牌**。夜间 4 轮均无法越过此边界，M3 剩余步骤全部需要提权。
+- `iips.ini` 已恢复原始值（`10.231.2.181`，SHA-256 `14defee9…`）。
+- 新增 [server319/lsg.py](server319/lsg.py)：HTTPS 大厅捕获骨架（4174，记录 `/v1.0/...` 请求，404 占位），端到端自测通过，见 `runs/20261020-night03/lsg-e2e.jsonl`。
