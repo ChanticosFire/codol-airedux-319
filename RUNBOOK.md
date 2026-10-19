@@ -77,3 +77,34 @@ Medium 启动通道已建立，但独立 `curl.exe` 探针证明本机程序防�
 - 三组实验都必须**在隔离 Verify 通过之后**开始；任何一组若观察到非回环出站，立即停止并记录，不把该组计入验收。
 - 不运行 `他人文件参考` 与 `codol-ember` 中的代码；只引用其已注明 Build 的结论。
 
+## 2026-10-20 协议实验配方（已执行，可复现）
+
+前置（已由 [stage_redirect.py](tools/stage_redirect.py) 完成，pre-image 在 `runs/20261020-redirect01/pre-image/`）：
+- 副本内新建 `dwauth.ini`（`127.0.0.1 4174` / `127.0.0.1 4175` / `03EA`）；
+- `stun.ini` 三行改为 `127.0.0.1`；`cacert.pem` 追加 `runs/20261020-redirect01/tls/ca.crt`；
+- `iips.ini` 已恢复原值；`IIPS/LogConfig.ini` 已恢复；`HostPid` 待恢复（备份 `HostPid.pre`）。
+
+启动顺序（每次实验独立 run 目录）：
+
+1. 起 Auth 监听（**TLSv1/1.2 + SECLEVEL=0**，否则老客户端报 `NO_SUITABLE_SIGNATURE_ALGORITHM`）：
+   ```powershell
+   python tools\lab_auth_server.py --cert runs\<id>\tls\auth.crt --key runs\<id>\tls\auth.key `
+       --port 4175 --log runs\<id>\auth.jsonl --seconds 180 --ciphers "ALL:@SECLEVEL=0"
+   ```
+   可选再起 4174（LSG HTTPS 候选）：同一脚本换 `--port 4174`。
+2. 以**管理员**、**无控制台**方式启动客户端并打补丁：
+   ```powershell
+   sudo C:\Python313\pythonw.exe tools\patch_auth_bypass.py `
+       --client-dir runtime\client-1649370 --evidence runs\<id>\patch.json `
+       --wait 13 --observe 55 --game-args "-q"
+   ```
+   `-q` 用于跳过 `WIN_NO_TCLS`；补丁把 `RVA 0x79A78E` 的 `74 B2` 改为 `90 90`，只存在于进程镜像，退出即恢复。
+3. 判据：`patch.original==74b2`、`verified_after==true`、进程存活、`CODO` + `D3DProxyWindow` 可见、无 `#32770` 错误弹窗、`127.0.0.1:4175` 有 Auth 请求。
+4. 观察 LSG：客户端是否连 `4174`，或向 `4175` 发 `/v1.0/title/1002/...` 请求。当前实测：**未发生**。
+
+已知限制：
+- 管理员启动的客户端窗口无法用 `PrintWindow`/桌面截屏取证（D3D 全黑或 sudo 控制台遮挡）；需无控制台提权（计划任务/`CreateProcessAsUser`）或用户手动截图。
+- 补丁只绕过 `server_ticket` 的虚表校验；`lsg_server_ticket`、加密/解码/退出路径可能还需对应补丁，须逐字节验证后再加。
+- 不要在没有 `-q` 的情况下启动：会直接弹 `WIN_NO_TCLS` 并退出。
+- 不要用 Medium 令牌：IIPS 会报 `8189fec`，到不了 Auth。
+

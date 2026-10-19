@@ -130,8 +130,16 @@ user32.EnumWindows.argtypes = [ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM), 
 user32.EnumWindows.restype = wt.BOOL
 user32.GetWindowThreadProcessId.argtypes = [wt.HWND, ctypes.POINTER(wt.DWORD)]
 user32.GetWindowTextW.argtypes = [wt.HWND, wt.LPWSTR, ctypes.c_int]
+user32.GetWindowTextA.argtypes = [wt.HWND, ctypes.c_char_p, ctypes.c_int]
+user32.GetWindowTextA.restype = ctypes.c_int
+user32.GetClassNameW.argtypes = [wt.HWND, wt.LPWSTR, ctypes.c_int]
+user32.GetClassNameW.restype = ctypes.c_int
+user32.EnumChildWindows.argtypes = [wt.HWND, ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM), wt.LPARAM]
+user32.EnumChildWindows.restype = wt.BOOL
 user32.IsWindowVisible.argtypes = [wt.HWND]
 user32.IsWindowVisible.restype = wt.BOOL
+user32.SendMessageW.argtypes = [wt.HWND, wt.UINT, wt.WPARAM, wt.LPARAM]
+user32.SendMessageW.restype = wt.LPARAM
 
 TCP_TABLE_OWNER_PID_ALL = 5
 AF_INET = 2
@@ -220,19 +228,50 @@ def process_alive(pid: int) -> tuple[bool, int | None]:
         k32.CloseHandle(handle)
 
 
+def window_titles(hwnd) -> dict:
+    """Read a window title in both encodings and its class name.
+
+    Some legacy dialogs hold a GBK/ANSI title even though the window is a
+    Unicode window, so GetWindowTextW returns mojibake. Recording both the raw
+    UTF-16 and the ANSI bytes (hex) keeps the evidence usable.
+    """
+    length = user32.GetWindowTextW(hwnd, None, 0)
+    wide = ctypes.create_unicode_buffer(max(length + 1, 2))
+    user32.GetWindowTextW(hwnd, wide, len(wide))
+    ansi_buffer = ctypes.create_string_buffer(512)
+    user32.GetWindowTextA(hwnd, ansi_buffer, len(ansi_buffer))
+    class_buffer = ctypes.create_unicode_buffer(256)
+    user32.GetClassNameW(hwnd, class_buffer, len(class_buffer))
+    return {
+        "title_w": wide.value,
+        "title_a_hex": ansi_buffer.value.hex() if ansi_buffer.value else "",
+        "class": class_buffer.value,
+    }
+
+
 def windows_of(pids: set[int]) -> list[dict]:
     found: list[dict] = []
+
+    @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+    def child_callback(hwnd, _lparam):
+        titles = window_titles(hwnd)
+        ansi_buffer = ctypes.create_string_buffer(512)
+        user32.GetWindowTextA(hwnd, ansi_buffer, len(ansi_buffer))
+        found[-1]["children"].append({"hwnd": int(hwnd), **titles,
+                                      "text_a_hex": ansi_buffer.value.hex() if ansi_buffer.value else "",
+                                      "visible": bool(user32.IsWindowVisible(hwnd))})
+        return True
 
     @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
     def callback(hwnd, _lparam):
         pid = wt.DWORD(0)
         user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
         if pid.value in pids:
-            length = user32.GetWindowTextW(hwnd, None, 0)
-            buffer = ctypes.create_unicode_buffer(max(length + 1, 2))
-            user32.GetWindowTextW(hwnd, buffer, len(buffer))
-            found.append({"pid": pid.value, "hwnd": int(hwnd), "title": buffer.value,
-                          "visible": bool(user32.IsWindowVisible(hwnd))})
+            entry = {"pid": pid.value, "hwnd": int(hwnd),
+                     "visible": bool(user32.IsWindowVisible(hwnd)),
+                     "children": [], **window_titles(hwnd)}
+            found.append(entry)
+            user32.EnumChildWindows(hwnd, child_callback, 0)
         return True
 
     user32.EnumWindows(callback, 0)
@@ -272,6 +311,38 @@ def write_mapping(pid: int, log: list[dict]) -> tuple[int | None, dict]:
     return mapping, record
 
 
+def find_dialog_button(hwnd) -> int | None:
+    """Return the HWND of the first button-like child of a dialog."""
+    found: list[int] = []
+
+    @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+    def callback(child, _lparam):
+        cls = ctypes.create_unicode_buffer(64)
+        user32.GetClassNameW(child, cls, len(cls))
+        if cls.value == "Button":
+            found.append(int(child))
+        return True
+
+    user32.EnumChildWindows(hwnd, callback, 0)
+    return found[0] if found else None
+
+
+def dismiss_dialogs(pids: set[int], dismissed: set[int], log: list[dict]) -> None:
+    """Click the default button of any new visible #32770 owned by the client."""
+    for window in windows_of(pids):
+        if window["class"] != "#32770" or not window["visible"]:
+            continue
+        if window["hwnd"] in dismissed:
+            continue
+        button = find_dialog_button(window["hwnd"])
+        if not button:
+            continue
+        user32.SendMessageW(button, 0x00F5, 0, 0)  # BM_CLICK
+        dismissed.add(window["hwnd"])
+        log.append({"event": "dismissed_dialog", "hwnd": window["hwnd"],
+                    "button": button, "title_hex": window["title_a_hex"], "pid": window["pid"]})
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--client-dir", required=True, type=Path)
@@ -280,6 +351,8 @@ def main() -> int:
     parser.add_argument("--seconds", type=int, default=40)
     parser.add_argument("--sample-ms", type=int, default=1000)
     parser.add_argument("--extra-args", default="")
+    parser.add_argument("--dismiss-dialogs", action="store_true",
+                        help="click the first button of new #32770 dialogs (records the event)")
     args = parser.parse_args()
 
     root = args.client_dir.resolve(strict=True)
@@ -304,6 +377,7 @@ def main() -> int:
 
     events: list[dict] = []
     owned: list[int] = []
+    dismissed: set[int] = set()
     mapping_handle = None
     started = time.time()
     record = {
@@ -354,6 +428,8 @@ def main() -> int:
                                 owned.append(item["pid"])
                         break
             rows = [row for row in tcp_rows() if row["pid"] in set(owned)]
+            if args.dismiss_dialogs:
+                dismiss_dialogs(set(owned), dismissed, events)
             events.append({
                 "event": "sample",
                 "elapsed_ms": int((time.time() - started) * 1000),
