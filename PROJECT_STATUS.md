@@ -192,11 +192,12 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 ### 9.3 夜间未完成与用户待办
 
 1. **需要管理员令牌**：IIPS 初始化、Auth 请求、补丁后主窗口稳定都依赖提权运行；夜间硬边界禁止。
-2. 用户醒后的一键复验命令（在 `319` 下、管理员 PowerShell）：
+2. 用户醒后的一键复验（**管理员 PowerShell**，在 `319` 下）：
    ```powershell
-   python tools\lab_auth_server.py --cert runs\20261020-redirect01\tls\auth.crt --key runs\20261020-redirect01\tls\auth.key --port 4175 --log runs\<id>\auth.jsonl --seconds 180 --ciphers "ALL:@SECLEVEL=0"
-   sudo pwsh -NoProfile -Command "& 'C:\Python313\python.exe' 'tools\patch_auth_bypass.py' --client-dir 'runtime\client-1649370' --evidence 'runs\<id>\patch.json' --wait 13 --observe 60 --game-args=-q"
+   pwsh -NoProfile -File tools\run_session.ps1 -RunId 20261020-session01 -Seconds 90
    ```
+   脚本会：核四锚点 → 起 `server319` Auth（127.0.0.1:4175）→ `-q` 启动客户端并打 `RVA 0x79A78E` 补丁 → 落 `runs\<RunId>\auth.jsonl` 与 `patch.json` → 停服务。证书默认取 `runs\<RunId>\tls\auth.crt`，可用 `-Cert/-Key` 指向旧 run 的证书。
+   若坚持手工命令：`python -m server319 --client-dir runtime\client-1649370 --auth --cert <crt> --key <key> --port 4175 --seconds 180 --evidence runs\<id>\auth.jsonl`，再在管理员会话运行 `python tools\patch_auth_bypass.py --client-dir runtime\client-1649370 --evidence runs\<id>\patch.json --wait 13 --observe 60 --game-args=-q`。
    （`sudo pwsh -Command` 已验证可运行；`sudo pwsh -File <脚本>` 在本机会静默失败，勿用。）
 3. 若 LSG 仍不连：按 9.2 的端口对照实验，并在 `0xB98620` 状态写入后检查 `[esi+0x368/+0x36C]` 的 host/port 实际值。
 

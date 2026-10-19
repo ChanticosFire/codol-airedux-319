@@ -71,3 +71,4 @@
 | 2026-10-20 01:35–01:45 | 静态确认 `dwauth.ini` 格式与 LSG 参数来源 | **成立**：`dwauth.ini`=%59s+%hu（host+port）；LSG 从配置对象 `[esi+0x2c]+0x88..0x9C` 复制 host/port，不来自 Auth 响应；`lsg_server_ticket` 仅校验 size≤0x80 与解码长度 | `auth-fields-dump.json`、EXE 字符串表 `0x6C7D9C` | 待提交 |
 | 2026-10-20 01:45–02:00 | `dwauth.ini` 是否真被解析并落到 LSG/Auth | **成立**：运行时读回 host1=127.0.0.1/port1=4174、host2=127.0.0.1/port2=4175、title=1002；LSG URL 构建函数在 RVA `0x79A6C0`，端口取 `[esi+0x2004]`，模板 `0xD5A150` | `runs/20261020-night01/config-globals.json`、`config-code.json`、`dwauth-anchor.json` | 待提交 |
 | 2026-10-20 02:00–02:20 | 把 Auth 协议正式化进 server319 | **完成**：`server319/auth.py` + `test_auth.py`（9 项）+ CLI `--auth`；端到端自测 100-continue→200、20 字段、ticket 128B；全套 21 项测试通过 | `runs/20261020-night01/auth-e2e.jsonl` | 待提交 |
+| 2026-10-20 02:20–02:35 | 一键复验脚本 | **完成**：`tools/run_session.ps1`（管理员会话：核锚点→server319 auth→`-q`+补丁→证据→停服务），语法检查通过 | `tools/run_session.ps1` | 待提交 |
