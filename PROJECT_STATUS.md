@@ -263,3 +263,9 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 
 - `IIPSFilelist.ini` 声明 974 项，磁盘 `IIPSDownload` 有 975 个文件，唯一多出的是 `readme.txt`（内容为构建流程说明，非 IFS）。把它临时移出后 Medium 仍弹 `8189fec`，已放回——**排除“额外文件导致校验失败”**。
 - 由此 IIPS 失败只剩“运行环境/权限”一类解释，与管理员成功、Medium 失败一致。
+
+### 10.5 其他阴性：目录权限与 UAC 虚拟化
+
+- `IIPSDownload` 目录可写、可删除单个文件（`Everyone` 的 Deny 仅覆盖 `DeleteSubdirectoriesAndFiles`，不阻止文件删除）；`%LOCALAPPDATA%\VirtualStore` 下没有 IIPS 重定向。
+- 因此 IIPS 失败与文件系统权限/虚拟化无关；结合管理员成功、Medium 失败，唯一剩余解释是该进程在 Medium 令牌下缺少某个运行环境条件（保护组件/服务/全局对象），而非文件或配置。
+- 夜间所有 Medium 侧 IIPS 假设（禁用、跳过、组合补丁、文件列表、权限）均已否定；该步维持“受阻（需提权）”。
