@@ -299,3 +299,6 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - **结果：实验从未执行**——`patch_runtime.py` 的四锚点校验发现 `iips.dll` 哈希不符（`72ddb9d1…` 期望值），直接 `refusing: anchor mismatch` 退出（exit 2，无 patch.json、无 Host、无 Auth）。这是**预期的安全行为**，副本未被破坏。
 - 已恢复：`iips.dll` 与 `IIPSHostApp.exe` 均为原件哈希，`Layers` 注册表项删除，无残留进程。
 - **结论**：该假设仍属“未测”，但即使改命名空间，Host 的 `SeDebugPrivilege` 一类需求仍在（`SetPrivilege` 补丁只是掩盖检查），因此它不是可靠的 Medium 绕过路径；维持“IIPS 需提权”的结论。
+
+- **补充（10.8）**：给 `patch_runtime.py` 增加显式 `--allow-anchor-mismatch` 后重跑该实验（iips.dll 6 处 `Global\`→`Local\X` + Host `SetPrivilege` 补丁 + `RunAsInvoker` 注册表层）。结果：游戏仍弹 `8189fec`，**14 秒内 `IIPSHostApp` 进程始终未出现**——即使有 AppCompat 层，游戏内部启动 Host 仍被 UAC 拒绝；共享状态/命名空间假设因此**无法验证**，且不是主因（主因仍是 Host 启动被拒）。
+- 恢复：`iips.dll` `72ddb9d1…`、`IIPSHostApp.exe` `b507b47a…` 均为原件；`Layers` 项删除。`patch_runtime.py` 的 `--allow-anchor-mismatch` 保留为显式实验开关（默认仍拒绝）。

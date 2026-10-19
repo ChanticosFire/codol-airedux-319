@@ -93,3 +93,4 @@
 | 2026-10-20 12:10–12:25 | `IIPS_SHARE_STATE_ERROR(4)` 的对象与特权 | **确认**：`iips.dll` 引用 `SeCreateGlobalPrivilege`，需创建 `Global\IIPSShareState_MMF_` / `Global\IIPSShareState_Mutex_` 等全局对象；Medium 令牌无该特权，无法绕过 | `iips.dll` 字符串 | 待提交 |
 | 2026-10-20 12:25–12:40 | 里程碑补双重特权结论 | **完成**：MILESTONES M2 写入 `SeDebugPrivilege` + `SeCreateGlobalPrivilege` 的已证实根因；环境复查干净 | `MILESTONES.md` | 待提交 |
 | 2026-10-20 12:45–13:20 | `Global\`→`Local\X` 命名空间替换 + Host 补丁 | **未测（安全拦截）**：修改 `iips.dll` 6 处对象名后，`patch_runtime.py` 的四锚点校验发现 `iips.dll` 哈希不符，拒绝启动（exit 2，无 JSON），实验从未执行。已全部恢复原件 | `runs/20261020-night05-*` | 待提交 |
+| 2026-10-20 13:35–14:00 | 显式绕过锚点后真正测试 Local 命名空间 | **阴性/不可测**：`--allow-anchor-mismatch` 下实验执行了，但游戏仍 `8189fec`，**Host 依然未被创建**（14 秒内无进程）——UAC 在 AppCompat 层之前就拒绝了 Host 启动，Local 命名空间假设无法验证 | `runs/20261020-night05/patch.json`、`iips.dll.pre`、`host.pre` | 待提交 |

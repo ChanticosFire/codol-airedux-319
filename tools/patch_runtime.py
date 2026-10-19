@@ -63,6 +63,9 @@ def main() -> int:
     parser.add_argument("--observe", type=float, default=40.0)
     parser.add_argument("--game-args", default="-q")
     parser.add_argument("--dismiss-dialogs", action="store_true")
+    parser.add_argument("--allow-anchor-mismatch", action="store_true",
+                        help="run even if the four Build anchors do not match (only for recorded, "
+                             "reversible edits to the staged copy)")
     args = parser.parse_args()
     patches = [parse_patch(spec) for spec in args.patch]
     root = args.client_dir.resolve(strict=True)
@@ -71,8 +74,10 @@ def main() -> int:
         return 2
     checks = verify_client(root)
     if not all(check.ok for check in checks):
-        print("refusing: anchor mismatch", file=sys.stderr)
-        return 2
+        if not args.allow_anchor_mismatch:
+            print("refusing: anchor mismatch", file=sys.stderr)
+            return 2
+        print("WARNING: anchor mismatch explicitly allowed for this experiment", file=sys.stderr)
     exe = root / "codoMP_client_shipRetail.exe"
     command = f'"{exe}" {args.game_args}'
     si = probe.STARTUPINFOW(); si.cb = ctypes.sizeof(probe.STARTUPINFOW)
