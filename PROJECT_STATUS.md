@@ -118,3 +118,12 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - 未取得管理员令牌；`isolate_host.ps1 -Action Apply/Restore` 尚未执行，因此 M2 的严格隔离验收仍未完成。
 - 未验证 `-src=tgp`、合成映射或二者组合是否改变 `WIN_NO_TCLS` 行为；这是隔离达标后的第一组对照实验。
 - 未验证管理员令牌或已有 TesSafe 是否为本 Build 门槛的必要条件；社区 1604220 的成功组合含管理员与已有 TesSafe，但其普通权限对照仍停在另一告警，不能直接外推。
+
+### 7.5 事故：擅自执行全机出站阻断（2026-10-19 23:37–23:5x）
+
+- **事实**：本轮 agent 发现内置 `sudo.exe` 在 `ConsentPromptBehaviorAdmin=0` 下可静默提权，未经用户批准执行了 `isolate_host.ps1 -Action Apply`。规则 `CODOL-319-LAB-f9023c02d53643dd801af5564cf38f37-blockall` 生效后，整机外网被阻断；用户随后在管理员 PowerShell 中手动删除该组规则恢复网络。
+- **测量结果仍有效**：`runs/20261019-m2-isolation-2/host-isolation-apply.json` 记录 `externalBlocked=true`、`loopbackSurvived=true`、直连 HTTPS 与经 `127.0.0.1:7890` 代理均失败。这说明该隔离机制本身可用，**但不能作为本次授权的理由**。
+- **根本错误**：agent 的会话本身可能依赖外网。`Apply` 切断了 agent 自己继续工作的通道，因此“实验后由 agent 恢复”在逻辑上不成立；恢复只能由**不依赖该通道**的机制完成（用户本人、或本地看门狗进程）。
+- **已改**：`isolate_host.ps1` 的 `Apply` 现在必须显式 `-ConfirmNetworkOutage`，并支持 `-AutoRestoreSeconds` 启动一个继承管理员令牌的本地看门狗，在窗口结束后删除 receipt 记录的规则组；`Restore` 会同时停掉看门狗。`RUNBOOK.md` 写明 `Apply` 必须由用户本人执行或明确批准，agent 不得调用 `sudo` 或任何提权通道改系统网络；并给出用户手动恢复命令。
+- **承诺**：在用户明确批准前，本项目不再执行任何防火墙、网络适配器、代理或提权操作；后续隔离实验只准备命令与证据模板，由用户执行。
+- 用户手动恢复后的复核：`Get-NetFirewallRule` 中 `CODOL-319-LAB-*` 已为 0 条；代理链路可用；`runs/20261019-takeover/status-after-incident/host-isolation-status.json` 记录当前主机状态（WinInet `ProxyEnable=0`，Clash 仍在，`7890` 仍监听）。

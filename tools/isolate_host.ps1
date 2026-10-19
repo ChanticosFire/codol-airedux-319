@@ -1,6 +1,8 @@
 param(
     [Parameter(Mandatory)][ValidateSet('Snapshot','Apply','Verify','Restore','Status')][string]$Action,
-    [Parameter(Mandatory)][string]$EvidenceDir
+    [Parameter(Mandatory)][string]$EvidenceDir,
+    [switch]$ConfirmNetworkOutage,
+    [ValidateRange(0,3600)][int]$AutoRestoreSeconds = 0
 )
 # Build 1649370 lab host isolation.
 #
@@ -143,20 +145,41 @@ switch ($Action) {
     }
     'Apply' {
         Assert-Elevated
+        # A block-all rule cuts the whole machine off the Internet, including the
+        # operator's own tools and chat. Refuse unless the human explicitly
+        # confirmed this outage in this invocation.
+        if (-not $ConfirmNetworkOutage) {
+            Write-Result @{ success = $false; error = 'CONFIRM_NETWORK_OUTAGE_REQUIRED'
+                            hint = 'Apply cuts all outbound Internet on this host. Re-run with -ConfirmNetworkOutage, and plan the Restore step (or -AutoRestoreSeconds) before starting.' }
+            exit 2
+        }
         if (Test-Path -LiteralPath $receiptPath) { throw 'RECEIPT_EXISTS' }
         $before = Test-ExternalRoute
         $loopBefore = Test-LoopbackService
         $group = 'CODOL-319-LAB-' + [guid]::NewGuid().ToString('N')
         @{ group = $group; created_utc = [DateTime]::UtcNow.ToString('o'); identity = $identity.Name
-           before = $before; loopbackBefore = $loopBefore } |
+           before = $before; loopbackBefore = $loopBefore
+           autoRestoreSeconds = $AutoRestoreSeconds } |
             ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $receiptPath -Encoding utf8
         try {
             Install-BlockAllRule $group
             $active = @(Get-NetFirewallRule -PolicyStore ActiveStore -Group $group -ErrorAction Stop)
             if ($active.Count -ne 1) { throw 'RULE_NOT_ACTIVE' }
+            $watchdogPid = $null
+            if ($AutoRestoreSeconds -gt 0) {
+                # Safety net: an elevated child wakes up after the window and
+                # removes this exact receipt's group even if the operator forgot.
+                $watchdogCommand = "Start-Sleep -Seconds $AutoRestoreSeconds; & '$PSCommandPath' -Action Restore -EvidenceDir '$evidence'"
+                $watchdog = Start-Process -FilePath (Get-Process -Id $PID).Path `
+                    -ArgumentList @('-NoProfile', '-Command', $watchdogCommand) -PassThru -WindowStyle Hidden
+                $watchdogPid = $watchdog.Id
+            }
             $after = Test-ExternalRoute
             $loopAfter = Test-LoopbackService
-            $externalBlocked = (-not $after.tcp_8_8_8_8_53) -and (-not $after.dns_public_name) -and (-not $after.https_via_local_proxy)
+            # DNS resolution alone is not a failure signal: a local proxy or the
+            # Windows resolver cache can answer while every routed connection is
+            # blocked. The decision uses actual TCP/HTTPS reachability only.
+            $externalBlocked = (-not $after.tcp_8_8_8_8_53) -and (-not $after.https_direct) -and (-not $after.https_via_local_proxy)
             $loopbackSurvived = $loopAfter.connect_ok
             if (-not ($externalBlocked -and $loopbackSurvived)) {
                 Remove-LabRules $group
@@ -165,9 +188,15 @@ switch ($Action) {
                                 rolledBack = $true }
                 exit 3
             }
+            $saved = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json
+            $saved | Add-Member -NotePropertyName watchdogPid -NotePropertyValue $watchdogPid -Force
+            $saved | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $receiptPath -Encoding utf8
             Write-Result @{ success = $true; group = $group; before = $before; after = $after
                             loopback = $loopAfter; externalBlocked = $externalBlocked
-                            loopbackSurvived = $loopbackSurvived }
+                            loopbackSurvived = $loopbackSurvived
+                            warning = 'ALL outbound Internet on this host is now blocked. Run Restore as soon as the experiment window ends.'
+                            restoreCommand = "pwsh -NoProfile -File tools\isolate_host.ps1 -Action Restore -EvidenceDir $evidence"
+                            autoRestoreSeconds = $AutoRestoreSeconds; watchdogPid = $watchdogPid }
         } catch {
             Remove-LabRules $group
             Write-Result @{ success = $false; error = $_.Exception.Message; rolledBack = $true }
@@ -181,7 +210,7 @@ switch ($Action) {
         $active = @(Get-NetFirewallRule -PolicyStore ActiveStore -Group $saved.group -ErrorAction Stop)
         $route = Test-ExternalRoute
         $loop = Test-LoopbackService
-        $ok = ($active.Count -eq 1) -and (-not $route.tcp_8_8_8_8_53) -and (-not $route.dns_public_name) -and (-not $route.https_via_local_proxy) -and $loop.connect_ok
+        $ok = ($active.Count -eq 1) -and (-not $route.tcp_8_8_8_8_53) -and (-not $route.https_direct) -and (-not $route.https_via_local_proxy) -and $loop.connect_ok
         Write-Result @{ success = $ok; group = $saved.group; activeRules = $active.Count
                         externalRoute = $route; loopback = $loop }
         if (-not $ok) { exit 3 }
@@ -191,6 +220,9 @@ switch ($Action) {
         Assert-Elevated
         if (-not (Test-Path -LiteralPath $receiptPath)) { throw 'RECEIPT_MISSING' }
         $saved = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json
+        if ($saved.PSObject.Properties.Name -contains 'watchdogPid' -and $saved.watchdogPid) {
+            Stop-Process -Id $saved.watchdogPid -Force -ErrorAction SilentlyContinue
+        }
         Remove-LabRules $saved.group
         $remaining = @(Get-NetFirewallRule -Group $saved.group -ErrorAction SilentlyContinue).Count
         $route = Test-ExternalRoute

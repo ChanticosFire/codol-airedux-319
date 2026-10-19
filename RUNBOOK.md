@@ -45,13 +45,15 @@ Medium 启动通道已建立，但独立 `curl.exe` 探针证明本机程序防�
 
 ### 下一次实验的前置与步骤
 
-1. **需要一次用户配合的管理员操作**（当前会话无管理员令牌，不能自行提权）：
+> **硬性规则（2026-10-19 事故后新增）**：`Apply` 会让整台机器断外网，**必须由用户本人执行或明确批准**。agent 不得自行调用 `sudo`（本机 UAC 为不提示，sudo 可静默提权）或任何提权通道修改系统网络/防火墙。`Apply` 必须带 `-ConfirmNetworkOutage`；建议同时带 `-AutoRestoreSeconds 300`，让一个同令牌看门狗在窗口结束后自动 Restore。
+
+1. **用户本人**以管理员 PowerShell（或已批准的 `sudo` 调用）执行；先 Snapshot 再 Apply：
    ```powershell
    pwsh -NoProfile -File tools\isolate_host.ps1 -Action Snapshot -EvidenceDir runs\<run-id>
-   pwsh -NoProfile -File tools\isolate_host.ps1 -Action Apply   -EvidenceDir runs\<run-id>
-   pwsh -NoProfile -File tools\isolate_host.ps1 -Action Verify  -EvidenceDir runs\<run-id>
+   pwsh -NoProfile -File tools\isolate_host.ps1 -Action Apply -ConfirmNetworkOutage -AutoRestoreSeconds 300 -EvidenceDir runs\<run-id>
+   pwsh -NoProfile -File tools\isolate_host.ps1 -Action Verify -EvidenceDir runs\<run-id>
    ```
-   期望 `Apply` 返回 `success=true`、`externalBlocked=true`、`loopbackSurvived=true`。若失败，工具已回滚，不要继续启动客户端。
+   期望 `Apply` 返回 `success=true`、`externalBlocked=true`、`loopbackSurvived=true`。若失败，工具已回滚，不要继续启动客户端。**注意：`externalBlocked` 期间整机外网已断（含 git/web），恢复前不要离开。**
 2. **三组对照，每组独立 run 目录**（Medium 会话即可，子进程继承 Medium）：
    ```powershell
    python tools\launch_synthetic_tcls.py --client-dir runtime\client-1649370 --evidence runs\<run-id>\direct.json --mode direct --seconds 30
@@ -59,7 +61,7 @@ Medium 启动通道已建立，但独立 `curl.exe` 探针证明本机程序防�
    python tools\launch_synthetic_tcls.py --client-dir runtime\client-1649370 --evidence runs\<run-id>\tgp-sign.json --mode tgp-sign --seconds 30
    ```
    判据只看：进程存活时长、窗口标题/句柄、自有 TCP 连接、退出码、以及 `WIN_NO_TCLS` 弹窗是否仍出现（需人工截图或窗口枚举）。**没有窗口消失不等于验收通过**，也不等于进入 Auth。
-3. **恢复**：
+3. **恢复**（可在看门狗之外提前手动执行）：
    ```powershell
    pwsh -NoProfile -File tools\isolate_host.ps1 -Action Restore -EvidenceDir runs\<run-id>
    ```
@@ -69,6 +71,9 @@ Medium 启动通道已建立，但独立 `curl.exe` 探针证明本机程序防�
 ### 注意
 
 - `Apply` 期间本机外网会整体被阻断（含 git/web），这是预期；GUI 与本地服务走回环，不受影响。
+- 若 `Apply` 之后发现需要中断实验，最稳妥的恢复是：管理员 PowerShell 执行
+  `Get-NetFirewallRule | Where-Object { $_.Group -like 'CODOL-319-LAB-*' } | Remove-NetFirewallRule`
+  （2026-10-19 用户即以此恢复）。
 - 三组实验都必须**在隔离 Verify 通过之后**开始；任何一组若观察到非回环出站，立即停止并记录，不把该组计入验收。
 - 不运行 `他人文件参考` 与 `codol-ember` 中的代码；只引用其已注明 Build 的结论。
 
