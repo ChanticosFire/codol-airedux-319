@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "date_local": "2026-10-19",
+  "purpose": "Read-only host network preflight after user disabled Clash system proxy",
+  "observed": {
+    "windows_user_proxy_enabled": false,
+    "winhttp_proxy": "direct",
+    "clash_related_process_count": 5,
+    "clash_core_running": true,
+    "tcp_7890_listening": true,
+    "terminal_https_proxy_points_to_7890": true,
+    "terminal_all_proxy_points_to_7890": true,
+    "physical_ethernet_up": true,
+    "vmware_vmnet1_host_only_adapter_present": true,
+    "vmware_vmnet8_nat_adapter_present": true,
+    "game_client_launched_in_this_check": false
+  },
+  "conclusion": "System proxy toggle is off, but the host does not meet a verified offline execution condition; no client rerun performed",
+  "next_boundary": "Verify an isolated guest or another independently measured network boundary before launching Build 1649370 again"
+}

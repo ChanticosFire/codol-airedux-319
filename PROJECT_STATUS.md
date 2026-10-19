@@ -1,7 +1,7 @@
 # 阶段状态与证据
 
-更新：2026-10-19（Asia/Shanghai）；用户补充跨版本迁移方向后修订。
-阶段：M0 完成；M1 进行中；M2 已获得首轮客户端运行证据但发现回环代理隔离缺口，须重测；M3 仅有无业务应答的服务骨架。
+更新：2026-10-19（Asia/Shanghai）；追加关闭系统代理后的主机核查。
+阶段：M0 完成；M1 进行中；M2 已获得首轮客户端运行证据但发现网络隔离缺口，须在可靠隔离环境重测；M3 仅有无业务应答的服务骨架。
 目标：针对用户保留的停服版本 3.19.26.22 建立可核验的离线复活路线。版本名称来自用户及归档文件名；本轮通过文件身份独立确认的是 Build 1649370。
 
 仓库：`E:\GAME\COD\codol-airedux\319` 已初始化为独立 `main` Git 仓库；GitHub 私有远端为 <https://github.com/ChanticosFire/codol-airedux-319>，API 回报 `PRIVATE`。本项目只提交自有源码、文档和文件身份清单；客户端副本、运行后像、第三方参考与协作仓库克隆由 [.gitignore](.gitignore) 排除。范围见 [REPOSITORY.md](REPOSITORY.md)。
@@ -81,3 +81,5 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - 同轮发现客户端与本机 Clash `127.0.0.1:7890` 建立连接；原规则放行 IPv4 回环，**不能将该轮记为完全离线**，也不能判断代理是否转发。游戏及子进程已退出或停止；规则组清理后 ActiveStore 剩余 0 条。副本 `tcj.dll.bh` 运行后变化，后像已保存在 run 目录，随即由已验 hash 的原件恢复并复核相符。`ACE-DRV32.dll` 写时戳变化但 SHA-256 未变。
 - 独立 `curl.exe` 探针证实：即使程序阻断规则在 ActiveStore 中生效，仍能连接 `127.0.0.1:7890`。探针规则已清理、残留 0；[隔离规则工具](tools/isolate_client.ps1) 已改为拒绝新安装，避免误称本机离线隔离。下一轮客户端启动须先找到并实测真正阻断回环代理的方案。社区 `launch319-reference` 的真实大厅成果仅为 1604220：解密后 `nopath` 跳过相同 TCLS 提示，另用 Auth/LSG/前台诊断；可选合成 TCLS 映射未用于历史成功组合。同 Build 1649370 报告只确认部分共享映射布局，完整启动门槛仍未知。细节见 [证据图](EVIDENCE_MAP.md)。
 - 运行后副本按 [全量复核结果](runs/20261019-medium01/post-restore-compare.json) 再次与原清单比对：2,445/2,445、无新增/缺失/hash 差异。原生 TCLS `Client.exe` 位于已核验副本，尚未启动；没有以 1604220 的旧 RVA 对它作改动。
+- 用户关闭 Clash 系统代理后的只读核查见 [代理关闭后摘要](evidence/experiments/20261019-proxy-off-check.json)：`ProxyEnable=0`、WinHTTP 为 direct，但 Clash GUI 与 `clash-win64.exe` 仍在运行，`7890` 仍监听；当前终端的 `HTTPS_PROXY`、`ALL_PROXY` 也仍指向该端口。物理以太网仍为 Up。**未再次运行客户端**；关闭系统代理不足以证明离线，且即使完全退出 Clash，物理网卡仍可能直连外网。
+- 对已锁定 SHA-256 `4C19A7DB7C217AF342963B343487FE5679538AB99F76766F7376D2BBAFB48DCE` 的 `TCLS/Client.exe` 做只读字节扫描：UTF-16 字符串 `..//WeGameLauncher//launcher.exe`（偏移 `0x1E350`、`0x1E428`）及 `\\WeGameLauncher\\launcher.exe`（`0x1E3EC`），附近有 `[Client] run exe` 状态串；隔离副本中该 `launcher.exe` 确实存在。由此可把 TCLS `Client.exe` → WeGameLauncher 作为**静态候选启动链**，尚未确认运行时分支、参数或完整游戏交接。REA 深度分析提供者在当前主机不可用（未配置 Ghidra/IDA）；没有把字符串观察写成反编译结论。

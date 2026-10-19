@@ -21,7 +21,11 @@
 
 在本机已锁定 hash 的 1649370 文件中，EXE 的 ASCII `-src=tgp` 位于文件偏移 `0x6C7F68`，`WIN_NO_TCLS` 位于 `0x6C7F80`；Base DLL 含 `TCLS_SHAREDMEMEMORY` 两处，TCLS `ClientBase.dll` 也含两处。它们提供跨模块语义锚点，但目前只有字符串位置，没有调用关系或运行时检查分支的本 Build 原字节。因此不得将 1604220 的 `nopath` 两处跳转 RVA `0x37F60F/0x37F616` 当作 1649370 补丁表。
 
+另对本机 `TCLS/Client.exe`（SHA-256 `4C19A7DB7C217AF342963B343487FE5679538AB99F76766F7376D2BBAFB48DCE`）只读扫描，在 `0x1E350`、`0x1E428` 见 `..//WeGameLauncher//launcher.exe`，在 `0x1E3EC` 见 `\\WeGameLauncher\\launcher.exe`；前方有 `[Client] exe not exist`、`run exe`、`run exe success` 的 UTF-16 串。本机归档确含 `WeGameLauncher/launcher.exe`。这是 TCLS shim 转交 WeGameLauncher 的**静态线索**，还没有执行路径、参数或完整交接的证据；下一次隔离实验应分别记录 TCLS 与 WeGameLauncher 进程归属，避免将直接运行游戏 EXE 的弹窗当作原生启动器结果。
+
 隔离方面，本轮早期规则允许 IPv4 回环，观察到主进程与本机 Clash 代理 `127.0.0.1:7890` 建立连接。不能证明该会话完全离线，也没有证据证明代理转发了什么。原规则已清理且 ActiveStore 同组为 0。随后以系统 `curl.exe` 做独立 TCP 探针：阻止其访问 `127.0.0.0-127.255.255.255` 的程序规则在 ActiveStore 中显示启用且为 Block，探针仍建立到 `127.0.0.1:7890` 的连接；探针规则已移除且残留 0。这证明在本机该类 Windows 防火墙规则不能充当回环代理隔离。`isolate_client.ps1` 的新安装入口已拒绝执行；需另有经过实测的网络隔离条件才可再运行客户端。
+
+关闭系统代理后的 2026-10-19 主机复查：`ProxyEnable=0`、WinHTTP direct，但五个 Clash 相关进程（含 `clash-win64.exe`）仍存在，`[::]:7890` 仍由 Clash 监听，终端的 `HTTPS_PROXY` 与 `ALL_PROXY` 仍指向回环代理，物理以太网 Up。见 [脱敏核查结果](evidence/experiments/20261019-proxy-off-check.json)。这一状态不能认定离线；即使代理彻底退出，物理网络直连通道仍在。本轮未再次启动游戏。
 
 ## 社区反馈与迁移门槛
 
