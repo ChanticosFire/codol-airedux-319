@@ -291,3 +291,11 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 
 - **补充（10.7）**：`iips.dll` 的字符串表含 `SeCreateGlobalPrivilege` 与一组 `Global\` 对象名：`Global\IIPSShareState_MMF_`、`Global\IIPSShareState_Mutex_`、`Global\SharedSpaceName_`、`Global\FDTFileMutxtName_`、`Global\ReadBitMapInfos_`、`Global\DownloadingFileInfos_`。Host 的 `IIPS_SHARE_STATE_ERROR(4)` 即创建/打开这些全局共享状态失败；`SeCreateGlobalPrivilege` 只有管理员/服务令牌才具备，**Medium 下无法预先创建同名对象绕过**（对象在 `Global\` 命名空间）。
 - 至此结论完整：IIPS 需要 **`SeDebugPrivilege` 一类调试特权 + `SeCreateGlobalPrivilege` 全局对象特权**，两者都只能由提权令牌获得；夜间所有 Medium 路径（配置、补丁、文件、权限、兼容层、单点特权补丁）均已穷尽并记录阴性。
+
+### 10.8 尝试 `Global\`→`Local\X` 命名空间替换（被锚点守卫拦截，未测）
+
+- 思路：`SeCreateGlobalPrivilege` 只用于创建 `Global\` 对象；若把 `iips.dll` 里 6 处对象名改成等长的 `Local\X…`，Host 与游戏在同一会话内仍可共享，且 `Local\` 不需要特权。
+- 实施：对副本 `iips.dll` 做 6 处 `Global\`→`Local\X` 替换（备份后），同时补 Host `SetPrivilege` 判定、加 `RunAsInvoker` 注册表层。
+- **结果：实验从未执行**——`patch_runtime.py` 的四锚点校验发现 `iips.dll` 哈希不符（`72ddb9d1…` 期望值），直接 `refusing: anchor mismatch` 退出（exit 2，无 patch.json、无 Host、无 Auth）。这是**预期的安全行为**，副本未被破坏。
+- 已恢复：`iips.dll` 与 `IIPSHostApp.exe` 均为原件哈希，`Layers` 注册表项删除，无残留进程。
+- **结论**：该假设仍属“未测”，但即使改命名空间，Host 的 `SeDebugPrivilege` 一类需求仍在（`SetPrivilege` 补丁只是掩盖检查），因此它不是可靠的 Medium 绕过路径；维持“IIPS 需提权”的结论。

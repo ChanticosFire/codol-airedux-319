@@ -92,3 +92,4 @@
 | 2026-10-20 11:40–12:05 | AppCompat `RunAsInvoker` 注册表层 + Host `SetPrivilege` 补丁 | **半阳性**：注册表层让 Host 无 UAC 启动（比环境变量强），补丁越过 `SetPrivilege()失败。`，但卡在下一个错误 `IIPS_SHARE_STATE_ERROR(4)`（共享状态/全局命名对象特权）。Host 已还原，注册表项已删除 | `runs/20261020-night05-IIPSHostApp.bak` | 待提交 |
 | 2026-10-20 12:10–12:25 | `IIPS_SHARE_STATE_ERROR(4)` 的对象与特权 | **确认**：`iips.dll` 引用 `SeCreateGlobalPrivilege`，需创建 `Global\IIPSShareState_MMF_` / `Global\IIPSShareState_Mutex_` 等全局对象；Medium 令牌无该特权，无法绕过 | `iips.dll` 字符串 | 待提交 |
 | 2026-10-20 12:25–12:40 | 里程碑补双重特权结论 | **完成**：MILESTONES M2 写入 `SeDebugPrivilege` + `SeCreateGlobalPrivilege` 的已证实根因；环境复查干净 | `MILESTONES.md` | 待提交 |
+| 2026-10-20 12:45–13:20 | `Global\`→`Local\X` 命名空间替换 + Host 补丁 | **未测（安全拦截）**：修改 `iips.dll` 6 处对象名后，`patch_runtime.py` 的四锚点校验发现 `iips.dll` 哈希不符，拒绝启动（exit 2，无 JSON），实验从未执行。已全部恢复原件 | `runs/20261020-night05-*` | 待提交 |
