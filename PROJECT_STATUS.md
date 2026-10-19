@@ -302,3 +302,8 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 
 - **补充（10.8）**：给 `patch_runtime.py` 增加显式 `--allow-anchor-mismatch` 后重跑该实验（iips.dll 6 处 `Global\`→`Local\X` + Host `SetPrivilege` 补丁 + `RunAsInvoker` 注册表层）。结果：游戏仍弹 `8189fec`，**14 秒内 `IIPSHostApp` 进程始终未出现**——即使有 AppCompat 层，游戏内部启动 Host 仍被 UAC 拒绝；共享状态/命名空间假设因此**无法验证**，且不是主因（主因仍是 Host 启动被拒）。
 - 恢复：`iips.dll` `72ddb9d1…`、`IIPSHostApp.exe` `b507b47a…` 均为原件；`Layers` 项删除。`patch_runtime.py` 的 `--allow-anchor-mismatch` 保留为显式实验开关（默认仍拒绝）。
+
+### 10.9 其他阴性：Host 无命令行特权开关
+
+- `IIPSHostApp.exe` 的 `.rdata` 中只有 boost 通用参数帮助字符串（`Arguments:`、` error: Too few arguments...`），没有 `priv`/`admin`/`elevat`/`skip`/`nopriv` 一类选项名，也没有 `-`/`--` 开头的自定义开关。
+- 因此不存在“用参数让 Host 跳过特权检查”的路径；Host 的特权需求只能通过提权令牌满足。
