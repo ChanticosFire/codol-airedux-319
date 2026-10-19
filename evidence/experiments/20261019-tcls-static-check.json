@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date_local": "2026-10-19",
+  "method": "Read-only PE mapping and x86 disassembly using pefile and Capstone; no client execution",
+  "tcls_client": {
+    "relative_path": "TCLS/Client.exe",
+    "sha256": "4C19A7DB7C217AF342963B343487FE5679538AB99F76766F7376D2BBAFB48DCE",
+    "architecture": "x86",
+    "path_string_file_offsets": ["0x1E350", "0x1E3EC", "0x1E428"],
+    "path_reference_virtual_addresses": ["0x40133A", "0x401459", "0x4013DD"],
+    "process_creation_call_virtual_address": "0x4011B2",
+    "process_creation_import": "CreateProcessW"
+  },
+  "game_exe": {
+    "sha256": "36997674B18F2896DE5E9D755686F6922AF10708F355175714058D0A0172B537",
+    "win_no_tcls_string_file_offset": "0x6C7F80",
+    "ordinary_absolute_pointer_matches_in_file": 0,
+    "protected_sections_observed": [".tp3", ".tvm0"]
+  },
+  "limitations": [
+    "No TCLS or game client runtime path was executed in this check",
+    "The full protected startup condition is not located",
+    "No Build 1604220 code address or patch bytes have been applied to Build 1649370"
+  ]
+}
