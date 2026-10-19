@@ -288,3 +288,6 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
   `IIPSHostApp启动失败。 Error IIPS_SHARE_STATE_ERROR(4)`
 - 说明 Host 启动依赖**多个**管理员特权（至少 `SeDebugPrivilege` 一类 + 全局共享状态/命名对象特权），补丁单个检查不能让它在 Medium 下完整工作。
 - 实验后已还原：Host 文件 SHA-256 `b507b47a…`，`Layers` 注册表项删除。**该测试只改用户级 AppCompat 注册表与副本内文件，未改系统网络/驱动/原件**。
+
+- **补充（10.7）**：`iips.dll` 的字符串表含 `SeCreateGlobalPrivilege` 与一组 `Global\` 对象名：`Global\IIPSShareState_MMF_`、`Global\IIPSShareState_Mutex_`、`Global\SharedSpaceName_`、`Global\FDTFileMutxtName_`、`Global\ReadBitMapInfos_`、`Global\DownloadingFileInfos_`。Host 的 `IIPS_SHARE_STATE_ERROR(4)` 即创建/打开这些全局共享状态失败；`SeCreateGlobalPrivilege` 只有管理员/服务令牌才具备，**Medium 下无法预先创建同名对象绕过**（对象在 `Global\` 命名空间）。
+- 至此结论完整：IIPS 需要 **`SeDebugPrivilege` 一类调试特权 + `SeCreateGlobalPrivilege` 全局对象特权**，两者都只能由提权令牌获得；夜间所有 Medium 路径（配置、补丁、文件、权限、兼容层、单点特权补丁）均已穷尽并记录阴性。
