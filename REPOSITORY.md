@@ -7,3 +7,5 @@ GitHub：<https://github.com/ChanticosFire/codol-airedux-319>；所有者 `Chant
 不提交游戏二进制、归档、密钥、凭据或第三方资料。`evidence/client-inventory.json` 只保存原始客户端的文件名、大小与摘要及本机输入路径，用于本项目私有复核。未来如需公开成果，应重新审阅文件、去除本机路径和运行数据，并按适用 Build、方法、结果及限制整理。
 
 每个可复用增量先更新 `PROJECT_STATUS.md`、`MILESTONES.md` 和必要的证据，再提交。运行后像保留在本机 `runs/`，在提交说明中引用相对路径和哈希即可。
+
+阶段提交、标签与恢复步骤见 [CHECKPOINTS.md](CHECKPOINTS.md)。`evidence/experiments/` 保存审阅后的机器摘要；原始运行证据继续只放本机 `runs/`。

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "run_id": "20261019-medium01",
+  "build": 1649370,
+  "client_exe_sha256": "36997674B18F2896DE5E9D755686F6922AF10708F355175714058D0A0172B537",
+  "archive_sha256": "68364EE932D6DEF01A4DA46107AEC3ADBE5CDD12392C3B12AE8067BDE81EF020",
+  "method": "Direct EXE launch from verified isolated copy under non-elevated Medium token",
+  "observed": {
+    "main_process_lifetime_seconds_approx": 18,
+    "user_window_text": "请使用腾讯游戏登录器(TCLS文件夹内的Client.exe)启动游戏。",
+    "user_screenshot_sha256": "A065DF866840336A363C1E8E17A36C6BE45E1706FC52FC6C0BD06EA119A5F314",
+    "tcp_connection_to_local_proxy": "127.0.0.1:7890",
+    "window_pid_attribution_verified": false,
+    "game_auth_observed": false,
+    "lobby_observed": false,
+    "offline_isolation_qualified": false
+  },
+  "follow_up_probe": {
+    "program_rule_action": "Block",
+    "remote_address": "127.0.0.0-127.255.255.255",
+    "tcp_connection_still_established": true,
+    "conclusion": "This host's program firewall rule does not establish loopback isolation"
+  },
+  "cleanup": {
+    "game_processes_remaining": 0,
+    "experiment_firewall_rules_remaining": 0,
+    "probe_firewall_rules_remaining": 0,
+    "stage_files_expected": 2445,
+    "stage_files_after_restore": 2445,
+    "stage_hash_differences_after_restore": 0
+  },
+  "raw_evidence_location": "local runs/20261019-medium01 (excluded from Git)"
+}

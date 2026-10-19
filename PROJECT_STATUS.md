@@ -6,6 +6,7 @@
 
 仓库：`E:\GAME\COD\codol-airedux\319` 已初始化为独立 `main` Git 仓库；GitHub 私有远端为 <https://github.com/ChanticosFire/codol-airedux-319>，API 回报 `PRIVATE`。本项目只提交自有源码、文档和文件身份清单；客户端副本、运行后像、第三方参考与协作仓库克隆由 [.gitignore](.gitignore) 排除。范围见 [REPOSITORY.md](REPOSITORY.md)。
 初始基线提交 `14027bd` 已推送至 `origin/main`；该次提交跟踪 24 个文件，不含客户端可执行文件和商业资源。
+Git 回档范围与操作见 [CHECKPOINTS.md](CHECKPOINTS.md)；一次 Medium 运行的脱敏机器摘要见 [20261019-medium01-summary.json](evidence/experiments/20261019-medium01-summary.json)，原始运行后像仍只在本机 `runs/`。
 
 ## 1. 本地对象
 

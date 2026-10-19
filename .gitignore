@@ -30,5 +30,13 @@ venv/
 *.crt
 *.pfx
 *.p12
+*.log
+*.jsonl
+*.tmp
+*.bak
+*.orig
+*.sqlite
+*.db
+*.png
 .env
 .env.*
