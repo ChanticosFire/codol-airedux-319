@@ -224,6 +224,7 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - `0xB98B70` 逻辑：从配置对象 `[esi+0x2c]`/`[esi+0x28]` 取参数写入 `[esi+0x2008/0x230/0x238/0x23C]` → `call 0xB986C0` 构建 `https://host:port/v1.0/title/1002/queue/.../member/...` → `[esi+0x398]` 虚表 `+4` 发起连接 → `+0xC` 发送请求。任一步失败即 `bl=0` 返回。
 - `0xB98AD0` 是状态机：读取 `[edi+0x390]` 状态，对连接结果 1/3/5 分支；状态 5 时调用 `0xB983F0` 并把结果写回。
 - **结论**：LSG 连接不是启动后自动发生，而是由 LSG 状态机在合适的游戏状态（很可能需要 UI/登录流程推进）下驱动。补丁后停在 `CODO` 主窗口但没有输入，状态机未进入连接阶段。**下一判别实验必须包含输入/UI 推进**（回车、点击或调用游戏原生菜单函数），在管理员会话下观察 `127.0.0.1:4174` 与 `/v1.0/...` 请求。
+- 输入工具：[send_input.ps1](tools/send_input.ps1)（`-Action ENTER|SPACE|ESC|CLICK|ALT_ENTER`，AttachThreadInput 强制前置后注入；需管理员会话）。建议顺序：补丁+Auth 起后，等待主窗口出现，再 `-Action ENTER -Count 3`，最后检查 4174/`/v1.0/` 请求。
 
 ### 9.7 server319 增加 Auth 端点（离线可验证）
 - 新增 [server319/auth.py](server319/auth.py)：实现捕获到的 `POST /auth/` 协议（TLS≤1.2 + `SECLEVEL=0`、`100-continue`、20 字段响应、`DW-*` 头、脱敏 JSONL 证据）。ticket 为 128 字节项目合成零值；真实 BD 密钥/magic 仍未知，客户端需补丁才能过校验。
