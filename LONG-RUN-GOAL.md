@@ -84,3 +84,4 @@
 | 2026-10-20 08:30–08:45 | IIPS 文件校验：磁盘 975 vs 列表 974 的 `readme.txt` | **阴性**：移出 `IIPSDownload\readme.txt` 后仍弹 `8189fec`；已放回。IIPS 失败与额外文件无关 | `runs/20261020-night04-patch.json` | 待提交 |
 | 2026-10-20 08:55–09:05 | IIPS 失败的目录权限/UAC 虚拟化假设 | **阴性**：`IIPSDownload` 可写、可删单文件（Deny 仅限删除子目录）；`VirtualStore` 无 IIPS 重定向。排除文件系统权限 | 本机 ACL 查询 | 待提交 |
 | 2026-10-20 09:10–09:25 | 夜间总结文档 | **完成**：`NIGHT-REPORT.md`（一句话结论、成果表、阴性清单、醒来三步、提交索引、环境状态）；README 顶部加链接 | `NIGHT-REPORT.md` | 待提交 |
+| 2026-10-20 09:30–09:55 | IIPS 根因：Host 的权限要求 | **确认**：`IIPSHostApp.exe` manifest 为 `requireAdministrator`；`__COMPAT_LAYER=RunAsInvoker` 能让它以 Medium 启动，但 Host 自身弹 "Error" 后退出。IIPS 必须管理员是设计使然，不是配置/文件问题 | `NIGHT-REPORT.md` 待更新 | 待提交 |

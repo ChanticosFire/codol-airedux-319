@@ -269,3 +269,10 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - `IIPSDownload` 目录可写、可删除单个文件（`Everyone` 的 Deny 仅覆盖 `DeleteSubdirectoriesAndFiles`，不阻止文件删除）；`%LOCALAPPDATA%\VirtualStore` 下没有 IIPS 重定向。
 - 因此 IIPS 失败与文件系统权限/虚拟化无关；结合管理员成功、Medium 失败，唯一剩余解释是该进程在 Medium 令牌下缺少某个运行环境条件（保护组件/服务/全局对象），而非文件或配置。
 - 夜间所有 Medium 侧 IIPS 假设（禁用、跳过、组合补丁、文件列表、权限）均已否定；该步维持“受阻（需提权）”。
+
+### 10.6 IIPS 根因确认：`IIPSHostApp.exe` 要求管理员
+
+- `IIPS\IIPSHostApp.exe` 的嵌入式 manifest（RT_MANIFEST，536 字节）含 `<requestedExecutionLevel level="requireAdministrator">`。
+- 用 `__COMPAT_LAYER=RunAsInvoker` 启动该 Host：进程能以 Medium 成功创建（说明兼容层生效），但 **Host 自身弹出标题为 "Error" 的窗口并退出**——运行时权限检查失败，不只是 manifest 标记。
+- 因此游戏在 Medium 下启动 Host 失败 → IIPS 初始化失败 → `8189fec`；管理员令牌下 Host 正常启动 → IIPS 通过。**这是设计上的管理员依赖，不是文件/配置/目录问题**，也解释了为何夜间所有 Medium 侧绕过都失败。
+- 该结论把 IIPS 步的“受阻（需提权）”从推断变成已证实的根因；用户醒后用管理员会话即可越过。
