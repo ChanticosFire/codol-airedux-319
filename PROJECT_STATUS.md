@@ -216,3 +216,10 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 1. 用 9.3 的命令跑一次补丁+Auth；同时在 `runs/<id>` 下用 `probe_anchor` 扫描 `0x81A9780`（port1）确认未被覆盖。
 2. 若 LSG 仍不连，对 RVA `0x79A6C0` 下断点/或用 `patch_runtime` 在其入口写 `int3` 观察是否执行；不执行则说明 LSG 初始化未走到该函数，需回看 `0xB98620` 状态 2 后的调用者。
 3. 若执行但连接失败，起 4174 TLS 监听（`lab_auth_server --port 4174`）并用 `lab_tcp_capture` 对照，记录首帧。
+
+### 9.7 server319 增加 Auth 端点（离线可验证）
+
+- 新增 [server319/auth.py](server319/auth.py)：实现捕获到的 `POST /auth/` 协议（TLS≤1.2 + `SECLEVEL=0`、`100-continue`、20 字段响应、`DW-*` 头、脱敏 JSONL 证据）。ticket 为 128 字节项目合成零值；真实 BD 密钥/magic 仍未知，客户端需补丁才能过校验。
+- [server319/__main__.py](server319/__main__.py) 增加 `--auth --cert --key --seconds`；[server319/test_auth.py](server319/test_auth.py) 9 项合成测试通过。
+- 端到端自测（不启动客户端）：老 TLS 客户端 → `100 Continue` → `200 OK` → 20 字段响应、`lsg_server_ticket` 128B、证据日志含请求行/头/长度/SHA-256。证据 `runs/20261020-night01/auth-e2e.jsonl`。
+- 全套测试：`python -m unittest server319.test_server319 server319.test_auth tools.test_launch_synthetic_tcls` 共 21 项通过。
