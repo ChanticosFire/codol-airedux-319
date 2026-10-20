@@ -17,6 +17,7 @@ import time
 from .auth import AuthServer
 from .lsg_crypto import (LsgProtocolError, build_server_frame85, derive_keys,
                          parse_client_frame85)
+from .profile import default_store
 from .ticket import SESSION_KEY
 
 GATE_MARK = 0x1122334455667788
@@ -114,12 +115,15 @@ def terminal_unavailable_reply(transaction_id: int) -> bytes:
 
 class DerivedLsgServer(AuthServer):
     def __init__(self, *args, token_marker: int = 0x00,
-                 observed71_empty: bool = False, **kwargs):
+                 observed71_empty: bool = False, profile_store=None, **kwargs):
         super().__init__(*args, **kwargs)
         if token_marker not in (0x00, 0xAB):
             raise ValueError("token_marker")
         self.token_marker = token_marker
         self.observed71_empty = observed71_empty
+        self.profile_store = profile_store or default_store()
+        self.user_id = os.environ.get("LSG_USER_ID", "1")
+        self.profile_store.get_or_create(self.user_id)
 
     def _handle(self, conn: socket.socket) -> None:
         session = self._new_session()
@@ -231,6 +235,42 @@ class DerivedLsgServer(AuthServer):
                     self.evidence.write("candidate_task_reply", session,
                                         reply_hex=reply.hex(),
                                         reason="svc71/task4 reference candidate; client consumption unverified")
+                    counter += 1
+                elif service == 80 and task in (130, 131, 132, 133):
+                    # Marketplace getBalance: u8 currency + u32 balance, from the
+                    # persisted profile rather than a hardcoded number.
+                    profile = self.profile_store.get_or_create(self.user_id)
+                    currency = 2
+                    if payload[3:]:
+                        currency = payload[3] if payload[3] in (1, 2) else 2
+                    body = self.profile_store.balance_bytes(profile, currency)
+                    reply_payload = (_typed_u64(counter) + _typed_u32(0)
+                                     + b"\x03" + bytes([task & 0xFF])
+                                     + _typed_u32(1) + _typed_u32(1) + body)
+                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                                                 iv=os.urandom(16))
+                    conn.sendall(reply)
+                    self.evidence.write("candidate_task_reply", session,
+                                        reply_hex=reply.hex(),
+                                        reason=f"svc80/task{task} balance currency={currency} "
+                                               f"from profile {profile.get('name')}")
+                    counter += 1
+                elif service == 255 and task in (60049 & 0xFF, 73):
+                    # playerData. The 2-byte task id 60049 arrives truncated to
+                    # one byte on this wire format, so 0x91 (60049 & 0xFF) and
+                    # 73 are both treated as playerData requests.
+                    profile = self.profile_store.get_or_create(self.user_id)
+                    body = self.profile_store.playerdata_bytes(profile)
+                    reply_payload = (_typed_u64(counter) + _typed_u32(0) + b"\x03"
+                                     + bytes([task & 0xFF])
+                                     + _typed_u32(1) + _typed_u32(1) + body)
+                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                                                 iv=os.urandom(16))
+                    conn.sendall(reply)
+                    self.evidence.write("candidate_task_reply", session,
+                                        reply_hex=reply.hex(),
+                                        reason=f"svc255/task{task} playerData level="
+                                               f"{profile.get('level')} name={profile.get('name')}")
                     counter += 1
                 elif (service, task) == (71, 9):
                     reply_payload = candidate_svc71_task9_reply(
