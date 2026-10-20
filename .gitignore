@@ -40,3 +40,6 @@ venv/
 *.png
 .env
 .env.*
+
+# M3 evidence screenshots must be versioned
+!evidence/**/*.png
