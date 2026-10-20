@@ -184,7 +184,9 @@ class LsgServer(AuthServer):
                                 # offset (5), so it must count only the payload bytes.
                                 # 0xBA308E reads tag 1 with a 136-byte payload via 0xB75DE0,
                                 # so the 0x87 body must actually carry that much data.
-                                f87_body = b"\x01" + b"\x00" * 136
+                                # 0xBA3590 checks byte0==1, then 0xBA3010 reads tag 1 with a
+                                # 0x88-byte payload via 0xB75DE0, so encode tag+len+data.
+                                f87_body = b"\x01" + b"\x88" + b"\x00" * 136
                                 f87 = (struct.pack("<I", len(f87_body))
                                        + b"\x87" + f87_body)
                                 # 0xBA2B5D: while crypt==0 the receiver requires
@@ -192,8 +194,7 @@ class LsgServer(AuthServer):
                                 # seconds after 0x83, so delay the 0x87 frame.
                                 # PROGRESS.md: svc28 must stay silent; pushing unsolicited
                                 # frames (0x87) only accelerates the disconnect.
-                                time.sleep(float(os.environ.get("LSG_F87_DELAY", "2")))
-                                conn.sendall(f87)
+
                                 self.evidence.write("frame87", session, reply_hex=f87.hex())
                                 # Keep reading: the client may answer with the
                                 # 0x85 encrypted channel frame right after.
@@ -262,6 +263,19 @@ class LsgServer(AuthServer):
                                                 seq = after[6:10]
                                                 iv = after[10:26]
                                                 cipher = after[26:-8]
+                                                # stage only reaches 3 after the client has sent
+                                                # its 0x85, so the 0x87 push must happen here.
+                                                _deadline = time.time() + float(
+                                                    os.environ.get("LSG_F87_WAIT", "25"))
+                                                while time.time() < _deadline:
+                                                    if _lc.read_u32(_pid, caddr + 0x5E8) == 3:
+                                                        break
+                                                    time.sleep(0.4)
+                                                self.evidence.write(
+                                                    "f87_ready", session,
+                                                    reason="stage=" + str(
+                                                        _lc.read_u32(_pid, caddr + 0x5E8)))
+                                                conn.sendall(f87)
                                                 pt = AES.new(key_send, AES.MODE_CBC, iv=iv).decrypt(cipher)
                                                 self.evidence.write("frame85_plain", session,
                                                                     body_hex=pt.hex())
