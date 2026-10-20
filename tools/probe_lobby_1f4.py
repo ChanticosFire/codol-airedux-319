@@ -100,6 +100,16 @@ def main() -> int:
                     row[f"{static:#x}->{obj:#x}"] = val
                     row["+0x1F0 (obj)"] = u32(h, obj + 0x1F0)
                     row["+0x1F0->vtbl"] = u32(h, u32(h, obj + 0x1F0) or 0)
+                    # 0xBAF040 is called with ecx = lobby+0x208 and does add ecx,0x4C8,
+                    # so lobby+0x6D0 is the object it inspects (the cipher channel).
+                    row["+0x6D0 (cipher?)"] = u32(h, obj + 0x6D0)
+                    row["+0x6D4"] = u32(h, obj + 0x6D4)
+                    # 0xBAFDA0 copies a blob from [ecx+0x1D8] with length
+                    # [ecx+0x1D4], where ecx = lobby+0x6D0.
+                    ch_len = read(h, obj + 0x8A4, 2)
+                    row["chan_len @+0x8A4"] = struct.unpack("<H", ch_len)[0] if len(ch_len) == 2 else None
+                    head = read(h, obj + 0x8A8, 16)
+                    row["chan_head"] = head.hex() if head else None
                     if args.set is not None and val is not None and val != args.set:
                         if write(h, obj + OFF, struct.pack("<I", args.set)):
                             print(f"  wrote {args.set} at {obj + OFF:#x} (was {val})")
