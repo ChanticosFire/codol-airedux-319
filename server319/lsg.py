@@ -112,7 +112,7 @@ class LsgServer(AuthServer):
                             self.evidence.write("challenge_choice", session,
                                                 reason=f"token={challenge.hex() if challenge else None}")
                             if challenge:
-                                reply83 = b"\xab\x83" + challenge + b"\x00" * 6
+                                reply83 = b"\x00\x83" + challenge
                                 frame83 = struct.pack("<I", len(reply83)) + reply83
                                 conn.sendall(frame83)
                                 self.evidence.write("token_reply", session,
@@ -156,59 +156,59 @@ class LsgServer(AuthServer):
                                                 # the heartbeat payload (lsg_echo319 uses an
                                                 # externally supplied pt; echo is the safest probe).
                                                 echo_pt = pt + b"\x00" * ((-len(pt)) % 16)
-                                                # Reply with a business frame carrying the
-                                                # tag 0x0A lobby address (IP 4B + PORT 4B),
-                                                # which the client's 0xB83A52 path turns into
-                                                # netobj+0x4F8 = 1 (lobby ready).
+                                                # Reference evt4 (1604220 lobby.py):
+                                                #   emit_inner(4, BB_UINT64_TYPE + u64(1))
+                                                #   IV is the fixed bytes(range(16,32)), not random.
+                                                # Keepalive is NOT an encrypted frame: pump() sends a
+                                                # bare 4-byte zero every 20s and skips received zeros.
+                                                # 1649370 accepts inner 0x88 with a business type
+                                                # 4 payload carrying tag 0x0A; the reference's
+                                                # inner 4 + connId variant makes 1649370 close the
+                                                # socket immediately.
                                                 ip = bytes([127, 0, 0, 1])
                                                 port = struct.pack("<I", 4174)
                                                 tlv = b"\x0a\x08" + ip + port
-                                                # Business frame type 4 is the tag 0x0A
-                                                # lobby-address branch (0xB83A4B); 0x86 is the
-                                                # client->server hardware-fingerprint type and
-                                                # lands in the dispatcher default error path.
-                                                # Per the reference frame layout: plaintext =
-                                                # [u32 payload_len][inner_type][payload], and the
-                                                # business payload starts with the business type.
-                                                payload = bytes([int(os.environ.get("LSG_BIZ", "0x04"), 0)]) + tlv
-                                                inner = bytes([int(os.environ.get("LSG_INNER", "0x86"), 0)]) + payload
-                                                pt = struct.pack("<I", len(inner)) + inner
-                                                pt += b"\x00" * ((-len(pt)) % 16)
-                                                # The client expects our frame counter to equal
-                                                # its conn+0x5EC (rxseq), not an echo of its own seq.
+                                                inner = b"\x04" + tlv
+                                                evt4_pt = struct.pack("<I", len(inner)) + inner
+                                                evt4_pt += b"\x00" * ((-len(evt4_pt)) % 16)
                                                 _rxseq = _lc.read_u32(_pid, caddr + 0x5EC) or 1
-                                                # Reference (lsg_echo319 heartbeat) keeps sending
-                                                # 0x85 every ~2s; a single reply times out.
-                                                for _beat in range(8):
-                                                    riv = os.urandom(16)
-                                                    # First beat carries the type-4 lobby
-                                                    # address; later beats are empty so the
-                                                    # client does not reprocess the same TLV.
-                                                    payload = pt
-                                                    rct = AES.new(key_recv, AES.MODE_CBC,
-                                                                  iv=riv).encrypt(payload)
-                                                    # Reference heartbeat reuses the SAME counter
-                                                    # (exp) every 2s; do not increment.
-                                                    seq_out = struct.pack("<I", _rxseq)
-                                                    reply = (b"\xab\x85" + seq_out + riv + rct
-                                                             + b"\x00" * 8)
-                                                    conn.sendall(struct.pack("<I", len(reply)) + reply)
-                                                    self.evidence.write(
-                                                        "frame85_reply", session,
-                                                        body_hex=pt.hex(),
-                                                        reply_hex=reply.hex(),
-                                                        reason=f"beat={_beat} seq={_rxseq + _beat}")
-                                                    time.sleep(5.0)
-                                                # Request/response keepalive: the client sends
-                                                # its own 0x85 frames (0x1c heartbeat etc.);
-                                                # answer each one instead of pushing unsolicited
-                                                # heartbeats (which abort the connection).
+                                                fixed_iv = os.urandom(16)  # 1649370 takes the IV from the frame
+                                                _rct = AES.new(key_send, AES.MODE_CBC,
+                                                               iv=fixed_iv).encrypt(evt4_pt)
+                                                _evt4 = (b"\xab\x85" + struct.pack("<I", _rxseq)
+                                                         + fixed_iv + _rct + b"\x00" * 8)
+                                                conn.sendall(struct.pack("<I", len(_evt4)) + _evt4)
+                                                self.evidence.write("frame85_reply", session,
+                                                                    body_hex=evt4_pt.hex(),
+                                                                    reply_hex=_evt4.hex(),
+                                                                    reason="evt4-inner04-tag0a")
+                                                # Silent keepalive window: 4-byte zero frames every 20s,
+                                                # answering any client 0x85 along the way.
                                                 try:
-                                                    conn.settimeout(15)
-                                                    for _n in range(10):
-                                                        _more = conn.recv(8192)
-                                                        if not _more:
+                                                    conn.settimeout(0.5)
+                                                    _end = time.time() + 90.0
+                                                    _next_ka = time.time() + 5.0
+                                                    while time.time() < _end:
+                                                        try:
+                                                            _more = conn.recv(8192)
+                                                        except socket.timeout:
+                                                            _more = None
+                                                        except OSError:
                                                             break
+                                                        if _more is None:
+                                                            if time.time() >= _next_ka:
+                                                                conn.sendall(b"\x00\x00\x00\x00")
+                                                                self.evidence.write(
+                                                                    "keepalive", session,
+                                                                    reason="4-zero")
+                                                                _next_ka = time.time() + 5.0
+                                                            continue
+                                                        if not _more:
+                                                            self.evidence.write("peer_closed", session)
+                                                            break
+                                                        if _more == b"\x00\x00\x00\x00":
+                                                            self.evidence.write("idle_control", session)
+                                                            continue
                                                         self.evidence.write(
                                                             "plaintext_frame4", session,
                                                             body_len=len(_more),
@@ -221,17 +221,17 @@ class LsgServer(AuthServer):
                                                                           iv=_iv).decrypt(_ct)
                                                             self.evidence.write("frame85_in", session,
                                                                                 body_hex=_pt.hex())
-                                                            _riv = os.urandom(16)
-                                                            _rct = AES.new(key_recv, AES.MODE_CBC,
-                                                                           iv=_riv).encrypt(
-                                                                               b"\x00" * 16)
-                                                            _seq = struct.pack("<I", _rxseq)
-                                                            _reply = (b"\x01\x85" + _seq + _riv + _rct
-                                                                      + b"\x00" * 8)
+                                                            _ria = os.urandom(16)
+                                                            _rcb = AES.new(key_send, AES.MODE_CBC,
+                                                                           iv=_ria).encrypt(
+                                                                               struct.pack("<I", 1)
+                                                                               + b"\x01")
+                                                            _ans = (b"\xab\x85" + struct.pack("<I", _rxseq)
+                                                                    + _ria + _rcb + b"\x00" * 8)
                                                             conn.sendall(
-                                                                struct.pack("<I", len(_reply)) + _reply)
+                                                                struct.pack("<I", len(_ans)) + _ans)
                                                             self.evidence.write("frame85_answer", session,
-                                                                                reply_hex=_reply.hex())
+                                                                                reply_hex=_ans.hex())
                                                 except OSError:
                                                     pass
                                         except Exception as _exc:

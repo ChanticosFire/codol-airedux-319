@@ -200,3 +200,36 @@
 | `0x88`+业务类型 0x47 | `lstate` 2→4 报废 |
 
 **结论**：`0x88` 是唯一能让连接状态保持的内层类型（ack 容器）；业务内容（`0x47` 应答）仍未知，缺它客户端会在 ~16 秒后自废 conn。下一步必须拿到 **1649370 的 0x47 应答字节**（真实抓包或参考实现的对应逻辑），否则只能继续盲试。
+
+## 0.11 社区仓库最新与 1604220 服务端参考（2026-10-20 17:2x）
+
+已 `git pull` 社区仓库到 `28368dd`（含 `d7ccb55` 的「Build 1604220 lobby reproduction kit」），解压 `releases/CODOL-1604220-server-repro-20261019.zip`（5.4MB）得到 `lib/codol_server/lobby.py`（29KB 大厅状态机）。
+
+**参考给出的协议事实**（`lobby.py` docstring + 源码）：
+
+```
+step1       [u32 22][0x00][0x81][u32 220][u64 connId][8 zero]
+step2       [u32 10][0x00][0x83][CHAL[8:16]]
+A20   = SHA1(transcript)
+K     = HMAC-SHA1(A20, session_key24)
+keys  = HKDF(K,'BDDATA',72) -> T1 | T2 | aes_send | aes_recv
+CHAL  = HKDF(K,'CLIENTCHAL',16)
+evt4        inner 4, body = BB_UINT64_TYPE + u64(connId)
+task_reply  inner 1, body = u64(txn) + u32(err) + u8(task) + u32(nres) + results
+keepalive   发送裸 4 字节零 (b'\x00\x00\x00\x00')，每 20s；收到 4 零也跳过
+```
+
+注意：包内 **`wire.py`/`iips.py` 被刻意省略**（README 说「三个外部兼容模块自备」），所以 `a85_build` 的字节级实现拿不到。
+
+**本轮实验（全部 `runs/20261020-*`）**：
+
+| 内层/格式 | 结果 |
+|---|---|
+| `[len][04][0A 08 IP PORT]`（session48 形） | `lstate=2` 保持约 16s，无 peer_closed |
+| `[len][88][04][0A 08 IP PORT]` | `lstate=2` 约 16s（inner-88 单发） |
+| `[len][88][04]` + 零帧保活 | 1s 内 2→4 |
+| `[len][04][0A+u64(1)]`（参考 evt4 body） | 客户端立即 `peer_closed` |
+| `[len][04][0A 08 IP PORT]` + 零帧保活 | `peer_closed`，1s 内 2→4 |
+| 收发同密钥（0x604） | 仍 `peer_closed` |
+
+**关键推断（下一步核心）**：参考的会话密钥来自**握手 transcript 派生**（`A20/K/HKDF`），而我们从 `conn+0x604/0x608` 内存读取。用内存 key 能解开客户端→服务器方向，但服务器→客户端的 key 很可能与之不同，客户端解不开我们的帧就 `peer_closed`。**下一步应实现 SHA1+HMAC-SHA1+HKDF 派生，与 conn 内存值比对，确认 transcript 组成（28B hello + 26B gate + 153B 0x82）。**
