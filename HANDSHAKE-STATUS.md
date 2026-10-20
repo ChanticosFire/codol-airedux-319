@@ -602,3 +602,15 @@ response  += HMAC-SHA1(resp_hmac_key, response)[:8]   # ★ 真 HMAC，不是 8 
 **最可能**：`packet_buffer` 含 **Auth 阶段的产物**（`server_ticket` / `iv_seed` / `ciphertext`），或 `client_auth` 指的不是 LSG 的 153B 0x82 而是 Auth 响应中的某段。`bdproto319` 是 `lsg.js` 移植，原 `lsg.js` 里应有 `packetBuffer` 的精确构造代码。
 
 **下一步**：拿到 `nodelsg`/`lsg.js`（或 `bdsvc319` 的调用方），确认 `packetBuffer` 与 `SESSION_KEY` 的真实来源；两者一旦确定，`enc_key`/`resp_hmac_key` 立即可用。
+
+## 0.28 票据纳入候选后仍无命中（2026-10-21 07:x）
+
+在 0.27 的 5860 组合之外，又把 `ticket.py` 重建的 128B 票据（及其 `[97:121]` 的 24B 密钥段）加入 `packet_buffer` 候选，并对三种 `SESSION_KEY`（票据/`range(24)`/codol-node 硬编码）做 3 段以内全排列——**仍无一命中**目标 `dec_key`（`8e6b3363…`）。
+
+**已彻底排除的假设**：
+- `packet_buffer` 由 `hello` / `gate` / `frame2` / `ticket` 的整段或去 4B 头形式拼接；
+- `SESSION_KEY` 为票据 24B、`range(24)`、或 `8ecd5642…`。
+
+**剩下的唯一解释**：`packet_buffer` 里含**非 LSG 帧**的数据（极可能是 Auth 响应中的 `server_ticket`/`client_ticket`/`iv_seed`/`ciphertext` 的组合，且可能带长度前缀或编码转换），这必须看原 `lsg.js` 的 `packetBuffer` 构造代码才能确定。
+
+**当前证据链已足够让 Codex 直接接手**：算法（`bdproto319.py`）、帧格式（`make_encrypted_reply`）、自检目标（`dec_key` = `8e6b3363…`）、以及全部已排除项。
