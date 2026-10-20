@@ -59,19 +59,32 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--secs", type=float, default=60.0)
     ap.add_argument("--interval", type=float, default=2.0)
+    ap.add_argument("--wait", type=float, default=0.0,
+                    help="seconds to wait for the client to appear before sampling")
+    ap.add_argument("--with-state", action="store_true",
+                    help="also read lobby/obj1 status+index through [0xE85C68]")
     args = ap.parse_args()
 
-    pid = find_pid()
-    if not pid:
-        print("client not running")
-        return 2
+    pid = 0
+    deadline = time.time() + args.wait
+    while True:
+        pid = find_pid()
+        if pid:
+            break
+        if time.time() >= deadline:
+            print("client did not appear")
+            return 2
+        time.sleep(0.02)
     h = k32.OpenProcess(0x1F0FFF, False, pid)
     if not h:
         print("OpenProcess failed")
         return 2
     try:
         print(f"pid={pid}  polling every {args.interval:g}s for {args.secs:g}s")
-        print(f"{'t':>6}  {'success':>10}  {'delta':>8}  {'bytes':>12}")
+        hdr = f"{'t':>6}  {'success':>10}  {'delta':>8}  {'bytes':>12}"
+        if args.with_state:
+            hdr += f"  {'status':>6}  {'idx':>4}  {'1F4':>4}"
+        print(hdr)
         prev = None
         t0 = time.time()
         while time.time() - t0 < args.secs:
@@ -85,7 +98,18 @@ def main() -> int:
             success = (hi << 32) | lo if hi is not None else lo
             nbytes = ((bhi or 0) << 32) | (blo or 0)
             delta = "" if prev is None else f"{success - prev:+d}"
-            print(f"{time.time() - t0:6.1f}  {success:>10}  {delta:>8}  {nbytes:>12}")
+            line = f"{time.time() - t0:6.2f}  {success:>10}  {delta:>8}  {nbytes:>12}"
+            if args.with_state:
+                lobby = read_u32(h, 0xE85C68)
+                status = idx = f14 = None
+                if lobby:
+                    o1 = read_u32(h, lobby + 0x1F8)
+                    if o1:
+                        status = read_u32(h, o1 + 0x120)
+                        idx = read_u32(h, o1 + 0x130)
+                    f14 = read_u32(h, lobby + 0x1F4)
+                line += f"  {status!s:>6}  {idx!s:>4}  {f14!s:>4}"
+            print(line)
             prev = success
             time.sleep(args.interval)
         return 0
