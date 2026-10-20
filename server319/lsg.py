@@ -163,6 +163,37 @@ class LsgServer(AuthServer):
                                                 raise RuntimeError("no-key-ptr")
                                             key_send = bytes.fromhex(_lc.read_region(_pid, _ks + 0x9C, 16))
                                             key_recv = bytes.fromhex(_lc.read_region(_pid, _kr + 0x9C, 16))
+                                            # Each key object also carries a second 16-byte block
+                                            # at +0xAC; try it as the send-direction key.
+                                            # 0x608 is a certificate buffer, so the only real AES
+                                            # object is 0x604. Use its active block for both
+                                            # directions (now that the frame counter is correct).
+                                            key_recv = key_send
+                                            # Hunt for every AES object reachable from the conn:
+                                            # the C2S object is at conn+0x604 (vtable 0x2055D900);
+                                            # a sibling field should hold the S2C object.
+                                            _found = []
+                                            for _off in range(0x5F0, 0x660, 4):
+                                                _p = _lc.read_u32(_pid, caddr + _off)
+                                                if not _p or _p < 0x10000:
+                                                    continue
+                                                _vt = _lc.read_u32(_pid, _p)
+                                                if _vt == 0x2055D900:
+                                                    _blk = _lc.read_region(_pid, _p, 0x40)
+                                                    _tail2 = _lc.read_region(_pid, _p + 0x80, 0x40)
+                                                    _found.append({"off": hex(_off), "ptr": hex(_p),
+                                                                   "head": _blk, "tail": _tail2})
+                                            self.evidence.write("aes_objects", session,
+                                                                reason=json.dumps(_found)[:1500])
+                                            # Identify what these two objects actually are.
+                                            for _lbl, _ptr, _key in (("604", _ks, key_send),
+                                                                     ("608", _kr, key_recv)):
+                                                _head = _lc.read_region(_pid, _ptr, 0x40)
+                                                _tail = _lc.read_region(_pid, _ptr + 0x80, 0x40)
+                                                self.evidence.write(
+                                                    "key_object", session,
+                                                    reason=f"{_lbl} ptr={_ptr:#x} key={_key.hex()} "
+                                                           f"head={_head} tail={_tail}")
                                             if after[:6][4:6] == b"\xab\x85":
                                                 seq = after[6:10]
                                                 iv = after[10:26]
@@ -183,10 +214,9 @@ class LsgServer(AuthServer):
                                                 # 4 payload carrying tag 0x0A; the reference's
                                                 # inner 4 + connId variant makes 1649370 close the
                                                 # socket immediately.
-                                                ip = bytes([127, 0, 0, 1])
-                                                port = struct.pack("<I", 4174)
-                                                tlv = b"\x0a\x08" + ip + port
-                                                inner = b"\x86" + b"\x04" + tlv
+                                                # Echo the client's own plaintext (lsg_echo319
+                                                # behaviour) with the corrected frame counter.
+                                                inner = pt
                                                 evt4_pt = struct.pack("<I", len(inner)) + inner
                                                 evt4_pt += b"\x00" * ((-len(evt4_pt)) % 16)
                                                 # 1649370 does NOT keep the rx counter at conn+0x5EC
@@ -199,6 +229,21 @@ class LsgServer(AuthServer):
                                                 _evt4 = (b"\x01\x85" + struct.pack("<I", _rxseq)
                                                          + fixed_iv + _rct + b"\x00" * 8)
                                                 conn.sendall(struct.pack("<I", len(_evt4)) + _evt4)
+                                                # Did the client actually decrypt our frame? Search for
+                                                # our plaintext head and our ciphertext head.
+                                                try:
+                                                    for _label, _needle in (("pt", evt4_pt[:12]),
+                                                                            ("ct", _rct[:12])):
+                                                        _hits = _lc.search_bytes(_pid, _needle, limit=2,
+                                                                                 context=16)
+                                                        self.evidence.write(
+                                                            "frame85_seen", session,
+                                                            body_hex=_needle.hex(),
+                                                            reason=_label + " " + json.dumps(
+                                                                [hex(h["hit"]) for h in _hits]))
+                                                except Exception as _exc:
+                                                    self.evidence.write("frame85_seen_error", session,
+                                                                        reason=type(_exc).__name__)
                                                 self.evidence.write("frame85_reply", session,
                                                                     body_hex=evt4_pt.hex(),
                                                                     reply_hex=_evt4.hex(),
