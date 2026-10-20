@@ -1,27 +1,28 @@
-# 交接文档：CODOL 3.19.26.22 (Build 1649370) 离线复活 — 2026-10-21
+# 交接文档：CODOL 3.19.26.17 / Build 1604220 离线复活 — 2026-10-22
 
-> **新候选开关（2026-10-20）：**从原始 `live-derived03` 可见 task4 之后客户端确实发 `svc71/task3,7,9`；三项全回 error 14 未消除断线。社区 1604220 `lobby.py` 对它们落入空成功兜底，另一份 319 参考却给 task9 服务器条目。两者都未获本 Build 消费证据，因此服务端新增**显式** `--observed71-empty` 试验开关，默认仍为 error 14；三项连续应答的计数/MAC/AES/21B 明文通过合成会话测试。来源与局限见 `evidence/experiments/20261020-svc71-reply-candidate.json`。下一实机实验需先核验目标进程出站边界，避免把非回环连接误称离线。
+> **★ 最新状态（2026-10-22 21:30，以本节为准）**
+>
+> 工作目标已切到 **Build 1604220**（社区称 3.19.26.13），见 [VERSION-SWITCH.md](VERSION-SWITCH.md)。
+> **`[100]无法连接大厅服务` 已消除**，客户端现在报 `[111]与大厅服务失去连接`；采样首次出现
+> **`dw=5, ui=9, ready=1, lstate=2, state=DWLOGON_REGISTERCODOID_COMPLETE`**。
+>
+> 三个决定性修复：
+> 1. **TLS 证书必须自签（叶子=CA）**，不能用 CA 签发叶子；
+> 2. **Auth 响应只回 7 个字段**（`auth_task=请求+1`、`code="700"` 字符串、真实 Tiger 票据…）；
+> 3. **LSG 密钥由 `server319/lsg_derived.py` 从握手 transcript 派生**，不再读客户端内存。
+>
+> 剩余缺口：`svc71/task9`（社区给 82B bdMatchMaking 条目）与 `task3`，以及后续任务链。
+> 详见本文件 §14 与 [PROJECT_STATUS.md](PROJECT_STATUS.md) §12.10。
 
-> **最新离线纠错（2026-10-20）：**复验五轮已保留的 Build 1649370 握手与客户端内存样本：派生的 C→S AES 密钥逐轮等于 `[conn+0x604]+0x9C`，派生的 S→C AES 密钥逐轮等于 `[conn+0x608]+0x9C`，交叉方向均不匹配。旧 `key_object` 日志的 `key=` 曾被 0x604 偏移探针覆盖，不能用于断言 0x608 是证书。只使用未被覆盖的 `tail=` 64B 样本核对；布尔结果、输入 SHA-256 和重跑命令见 `evidence/experiments/20261020-lsg-memory-key-audit.json`。`server319/lsg.py` 旧探针已修正：默认保留真实 0x608 密钥，只有显式 `LSG_KEYOFF` 才做候选覆盖。**S2C MAC 检查、解密返回和业务任务消费仍未实测成功。**下文早期“0x608 不是密钥”“缺派生材料”均为已被反证的历史判断。
-
-> **最新实机断点（2026-10-20，本节以下历史说法需以此为准）：**用户现已允许启动游戏、截图和必要提权，仍禁止主机网络/防火墙/驱动等可能切断 Codex 的更改。High 令牌下在隔离副本跑了 `runs/20261020-live-derived01..03/`：本机 Auth 200、LSG 28/26/153 握手和客户端首个 `svc71/task4` 的 `AB85` MAC/解密均实测成立；服务端发出派生 S2C 候选后，客户端又发 `svc71/task3,7,9`。把服务端 12 秒读取超时延到 75 秒能排除本地主动关线，但原生“与大厅服务失去连接”致命窗仍出现。对后续任务按社区候选合同回 error 14 也未消除该窗口。`ui=5` 在启动背景和致命窗期间仍可出现，不能称为大厅成功。**当前最小问题是证明 1649370 的 S2C `AB85` 是否经接收/解密/任务 FIFO 实际消费；客户端画面尚未可交互。**摘要见 `evidence/experiments/20261020-live-derived-lsg.json` 与 `PROJECT_STATUS.md` §13。三轮进程、端口已清理；配置按 pre-image 恢复，四锚点通过。
-
-> **网络更正：**前三轮游戏 PID 还出现 5 个非回环连接，虽然本机 Auth/LSG/配置均指向回环，故不能把这些 run 标为完全离线。`runs/20261020-live-isolated04/` 的客户端目录专属出站规则已安装并核验，但游戏在 Auth 前退出；全部 77 条规则随后按组删除并核对剩余 0，配置恢复。系统代理 `127.0.0.1:7890` 仍启用，程序规则不拦回环代理。先分析已有捕获或建立可核验的进程边界，再做下一次实机启动。
-
-> **补充对照：**`tools/isolate_client_program.ps1 -OnlyMainExe` 只限制隔离副本的游戏主 EXE；`runs/20261020-live-mainblock06/` 的单规则验证通过，但游戏仍在 Auth 前退出。规则与配置已自动恢复，剩余规则 0。`runs/20261020-live-mainblock05/` 的包装脚本误用 stale `$LASTEXITCODE`，只安装了规则而没有启动游戏，已手动清理。不能把两轮都算作实机失败。S2C 同 Build 静态接收路径见 `evidence/experiments/20261020-s2c-parser-static.json`：`+0x5EC` 计数、帧尾 8B 校验、`+0x608` 解密对象均尚需运行时核对。
-
-> **S2C 计数收敛：**同一解包代码的 `0xBA3C1E–0xBA3C47` 在成功 0x83 后将 `+0x5EC/+0x5F0` 初始化为 1，故当前服务首个 S2C 计数 1 与同 Build 静态路径吻合。接下来重点核对帧尾 MAC、`+0x608` 解密密钥与 `0xBA3710` 是否返回成功。
-
-> **后续审计纠正（以现有原始捕获复验）：**下文“唯一缺口是 `packet_buffer` 与固定 `SESSION_KEY`”已被反证。使用 `runs/20261020-base`、`runs/20261020-gate220`、`runs/20261020-session33` 的 hello/gate/0x82 帧，按 `hello[8:] + gate[0:4] + AB81 + gate[6:] + client_auth[:-8]` 构造 transcript，并用**本项目 Auth 票据中实际写入的 24B 合成会话密钥**，三个 run 的客户端 challenge、已发送 0x83 token、0x85 帧尾 HMAC 及 AES 明文形状均吻合；前两轮派生的 AES key 还与客户端内存采样一致。第三方 `bdproto319.py` 的固定 `8ecd…` 密钥及“参数反序”在这些 run 上均不吻合。可重跑 `python tools/verify_lsg_capture.py runs/20261020-base` 等；脱敏结论见 `evidence/experiments/20261020-lsg-transcript-audit.json`。这证明 C→S 的本地合成会话派生，**不证明**新 S→C 应答已被客户端消费，也不等于 M3 完成。下文历史内容保留以解释实验路径，现时结论以此纠正与 `PROJECT_STATUS.md` 最新节为准。
-
-> 给 Codex 的完整交接。所有地址均为**运行时实测**（反汇编 + ReadProcessMemory 采样），所有结论都有 `runs/` 证据。
+> **给 Codex 的完整交接。** 下列 §0–§13 是 Build 1649370 时期的历史记录（方法论、地址表、阴性结果仍然有效），
+> **§14 是 1604220 的最新进展与下一步**。所有地址均为运行时实测，所有结论都有 `runs/` 证据。
 > 工作目录：`E:\GAME\COD\codol-airedux\319`
 
 ---
 
-## 0. 一句话现状
+## 0. 一句话现状（1649370 时期，已过时，见上方最新状态）
 
-**Auth / IIPS / TCLS / LSG 握手 / 0x85 解密（C2S）全部打通；服务端已拿到正确的协议算法与帧格式（`bdproto319.py`）。唯一缺口是 `packet_buffer` 的精确拼法与 `SESSION_KEY`——没有它就算不出 `enc_key`/`resp_hmac_key`，因此发不出客户端能接受的加密回复，UI 卡在 `ui_state=4`（失败分支）并弹 `[100]`。**
+**Auth / IIPS / TCLS / LSG 握手 / 0x85 解密（C2S）全部打通；服务端已拿到正确的协议算法与帧格式。当时认为缺口是 `packet_buffer` 与 `SESSION_KEY`；该判断后来被 §15 行（transcript 审计）反证，并在 1604220 上以 `lsg_derived.py` 的派生实现彻底解决。**
 
 ---
 
@@ -384,7 +385,217 @@ python runs\find_packet_buffer.py runs\20261020-base
 | `20261021-f87e/f87g/f87h` | 0x87 各时序（含「先收 0x85 再等 stage 3」） |
 | `20261021-p1/p2` | 大厅泵补丁 → `[100]`/退出；且 `patches319.py` 地址在本 build 不匹配 |
 
+## 13.5 历史更正（1649370 时期的关键反证，保留备查）
+
+> **transcript 审计纠正（2026-10-20）**：早期「唯一缺口是 `packet_buffer` 与固定 `SESSION_KEY`」的判断**已被反证**。
+> 用 `runs/20261020-base`、`gate220`、`session33` 的 hello/gate/0x82 帧，按
+> `hello[8:] + gate[0:4] + b"\xAB\x81" + gate[6:] + client_auth[:-8]` 构造 transcript，并用本项目 Auth 票据里
+> 实际写入的 24B 合成会话密钥，三个 run 的客户端 challenge、0x83 token、0x85 帧尾 HMAC 与 AES 明文形状全部吻合；
+> 第三方 `bdproto319.py` 的固定 `8ecd…` 密钥与「参数反序」在这些 run 上均不吻合。
+> 重跑：`python tools/verify_lsg_capture.py runs/20261020-base`；
+> 结论见 `evidence/experiments/20261020-lsg-transcript-audit.json`。
+> 该审计只证明 C→S 的本地合成会话派生，不证明 S→C 应答被客户端消费——后者已在 1604220 上由 `lsg_derived.py` 推进到 `[111]` 阶段。
+
+> **其它纠错**：派生的 C→S AES 密钥等于 `[conn+0x604]+0x9C`，S→C 等于 `[conn+0x608]+0x9C`（早期「0x608 是证书」已被反证）；
+> `ui=4` 是失败分支，只有 `ui=5` 才是成功；`DW_LOBBY_CONNECTED` 只是状态名。
+
 ---
 
-**最后更新**：2026-10-21，DeepSeek → Codex。
-**目标状态**：已暂停（`update_goal` paused），等待 Codex 接续。
+**最后更新**：2026-10-22，DeepSeek → Codex。
+**目标状态**：已暂停（`update_goal` paused）。
+
+---
+
+## 14. Build 1604220 实况（2026-10-22，最新）
+
+### 14.1 身份与副本
+
+| 项 | 值 |
+|---|---|
+| 原始包 | `E:\GAME\COD\3.19.26.13`（只读） |
+| 工作副本 | `runtime\client-1604220`（2173 文件 / 25.86 GB） |
+| EXE | `3da9ef965a65a41bd27d60da1b65fa14ee77ec278eb61624111142c8b1b2e85f`（7,842,456 B） |
+| Base DLL | `7bbc5fb07ebca9b4671ec0e9a953bbd4e1baaca6a9ca29888531c3213e400f64`（61,137,048 B） |
+| IIPS | 与 1649370 **字节相同**（`72ddb9d1…` / `b507b47a…`） |
+
+EXE/Base 哈希与 `codol-ember/工具-tools/lobby-reproduction1604220/docs/SUCCESS-SUMMARY.md` 记录完全一致。
+
+### 14.2 客户端配置（社区 `workflow.prepare` 的格式，**三行纯文本**）
+
+```
+runtime\client-1604220\dwauth.ini     127.0.0.1 4174 / 127.0.0.1 4175 / 03EA
+runtime\client-1604220\stun.ini       127.0.0.1 ×3
+runtime\client-1604220\iips.ini       enable_iips=1 + iips_url="http://127.0.0.1/"
+runtime\client-1604220\cacert.pem     原库 + 我们的自签证书
+```
+
+写错格式（用 ini 节 `[Auth] host1=…`）客户端**完全不读**，会继续连腾讯（`223.111.197.45:443`）然后报 `DW_DNS_ERROR`。改成上面三行后，观测到 `127.0.0.1:4175 SynSent` → `DW_DNS_COMPLETE`。
+
+### 14.3 TLS：必须自签（叶子 = CA）—— **本次最关键的发现**
+
+1604220 的 `codoMP_client_shipRetailBase.dll` 内含 OpenSSL，**强制校验证书**（1649370 不校验，所以旧版不做任何事也能过 Auth）。用「CA 签发叶子」的链式证书会得到：
+
+```
+tls_handshake_failed  SSLError: [SSL: TLSV1_ALERT_UNKNOWN_CA]
+```
+
+**正确做法**（社区 `workflow.tls_pair()` 生成的就是这种）：
+
+```powershell
+openssl req -x509 -newkey rsa:2048 \
+  -keyout runs\20261022-tls-selfsigned\auth.key \
+  -out    runs\20261022-tls-selfsigned\auth.crt \
+  -days 3650 -nodes -subj "/CN=127.0.0.1/O=offline-research" \
+  -addext "subjectAltName=IP:127.0.0.1,DNS:localhost"
+```
+
+并把这份证书写入：
+
+- `runtime\client-1604220\cacert.pem`（追加）
+- `C:\Program Files (x86)\Common Files\SSL\cert.pem`（OpenSSL 默认信任库，Base DLL 里的路径字符串）
+
+结果：`auth_request len=188` → `auth_response 200`。
+
+> 已安装但**单独不够**的尝试（都失败）：`certutil -addstore -user Root ca.crt`、`certutil -addstore Root ca.crt`、`SSL_CERT_FILE` 环境变量、`CURL_CA_BUNDLE` 环境变量。
+
+### 14.4 Auth 响应：只回 7 个字段
+
+`codol-ember/.../authchan.py::auth_answer` 的形状：
+
+```python
+{
+  "auth_task": str(int(request["auth_task"]) + 1),   # 字符串，+1
+  "code": "700",                                     # 字符串！
+  "iv_seed": str(request.get("iv_seed", "0")),
+  "client_ticket": base64(build_ticket(uid)),
+  "server_ticket": base64(build_ticket(uid)),
+  "identity": request.get("identity", "local"),
+  "lsg_server_ticket": base64(build_ticket(uid)),
+  "lsg_server_ticket_size": str(128),
+}
+```
+
+`auth_task == 32` 时额外回 `extra_data`（codoid 握手）。
+
+**必须删掉**的字段（客户端严格解析，多了就 `DW_ACCOUNT_ERROR`）：
+`result`、`success`、`member_position`、`estimated_wait_time`、`next_poll_after`、`time_to_live`、`licenses`、`license_id`、`cd_key`、`ciphertext`、`extra_data`(非 32)、`user_id`、`title_id`。
+
+`server_ticket` 必须是**真实 Tiger 票据**，全零票据同样导致 `DW_ACCOUNT_ERROR`。
+
+### 14.5 LSG：密钥从 transcript 派生（不读客户端内存）
+
+`server319/lsg_derived.py` 已实现：
+
+```
+session_derived   challenge_verified; client-memory-read=false
+token_reply       0x83
+client_frame_verified  counter=1 inner=0x86 payload_len=83
+task_request      service=71 task=4
+```
+
+transcript 构造（经 `tools/verify_lsg_capture.py` 在多个 1649370 run 上验证）：
+
+```
+hello[8:] + gate[0:4] + b"\xAB\x81" + gate[6:] + client_auth[:-8]
+```
+
+密钥来源：本项目 Auth 票据里实际写入的 24B 合成会话密钥（`server319/ticket.py::SESSION_KEY` = `bytes(range(24))`）。
+第三方 `bdproto319.py` 的固定 `8ecd…` 与「参数反序」在这些 run 上**不成立**。
+
+### 14.6 当前状态（2026-10-22 21:28，`runs/20261022-1604220-71empty/`）
+
+采样（90 次，进程存活）：
+
+```
+dw=0, ui=0
+dw=2, ui=6           DW_DNS_COMPLETE
+dw=5, ui=9, ready=1, lstate=2   DWLOGON_REGISTERCODOID_COMPLETE   ← dw=5 达成
+```
+
+UI 报错从 `[100]无法连接大厅服务` 变为 `[111]与大厅服务失去连接`。
+
+`lsg.jsonl`（该轮带 `--observed71-empty`）：
+
+```
+plaintext_frame(28) → gate_reply → plaintext_frame2(153)
+session_derived → token_reply
+client_frame_verified counter=1 inner=0x86 payload_len=83
+task_request service=71 task=4
+candidate_task_reply svc71/task4
+idle_control ×2
+```
+
+对比**不带**该开关的 `runs/20261022-1604220-min/`：
+
+```
+task_request svc71/task9 → unhandled_task → terminal_task_reply error=14
+task_request svc71/task3 → unhandled_task → terminal_task_reply error=14
+```
+
+即：`--observed71-empty` 让 3/7/9 走空成功，客户端不再收到 `error=14`，但 `[111]` 仍在。
+
+### 14.7 下一步（按优先级）
+
+1. **`svc71/task9` 回 82B bdMatchMaking server entry**（不要空成功）。参考 `他人文件参考/bdsvc319.py::make_server_entry`：
+
+   ```python
+   u32 ip_le("127.0.0.1") + u16 port + u16 0
+   + 5 × u32 0 + u32 0x9D + 5 × u32 0
+   + u32 1 + u32 1 + string("TestServer") + u32 0
+   + u32 ip + u16 port + u16 0 + u32 0
+   ```
+
+   端口用 `8466`（`FINDSESS_PORT`）。
+
+2. **`svc71/task3`**：`bdsvc319` 未单列，先按空成功。
+
+3. **观察 `[111]` 是否消失**；若消失，检查 `dw` 是否停在 5、UI 是否可交互。
+
+4. **后续任务链**：按 `bdsvc319.py` 的 service 表补 `svc10`（文件）、`svc80`（playerdata）、`svc11`（清单）、`svc21`（lobby 列表，含 tag `0x0A`）、`svc28`（**必须保持静默**）。
+
+5. **保活**：`ZEROFRAME`（裸 4 字节 0）每 30 秒；`idle_control` 已在处理。
+
+### 14.8 复验命令
+
+```powershell
+cd E:\GAME\COD\codol-airedux\319
+$py = "python"
+$a = Start-Process $py -ArgumentList "-m","server319","--client-dir","runtime\client-1604220","--auth",
+  "--cert","runs\20261022-tls-selfsigned\auth.crt","--key","runs\20261022-tls-selfsigned\auth.key",
+  "--port","4175","--seconds","110","--evidence","runs\REPLACE\auth.jsonl" -PassThru -WindowStyle Hidden
+$l = Start-Process $py -ArgumentList "-m","server319.lsg",
+  "--cert","runs\20261022-tls-selfsigned\auth.crt","--key","runs\20261022-tls-selfsigned\auth.key",
+  "--port","4174","--log","runs\REPLACE\lsg.jsonl","--seconds","110" -PassThru -WindowStyle Hidden
+Start-Sleep 4
+python tools\patch_runtime.py --client-dir runtime\client-1604220 --evidence runs\REPLACE\patch.json `
+  --patch 0x403699:EB1F:741F --patch 0x403659:909090909090:893540BA4A08 `
+  --patch 0x3F2A0A:B8BC0200009090:3DBC0200007407 --patch 0x3EE9DC:9090909090:E82F2F0100 `
+  --patch 0x37C860:C39090909090:558BEC83E4F8 --patch 0x20C649:B000:B001 `
+  --wait 12 --observe 90
+```
+
+> `runs/run_1604220.ps1` 存在但 **`Start-Job` 参数传递有 bug**（Auth 起不来），现阶段请用上面的内联命令。
+
+### 14.9 本轮代码改动清单
+
+| 文件 | 改动 |
+|---|---|
+| `server319/manifest.py` | 新增 `BUILDS`（1649370 / 1604220）+ `detect_build()`，`verify_client` 按 EXE hash 自动识别 |
+| `server319/__main__.py` | staged 路径由 `detect_build` 推导；`stage-receipt.json` 改为可选 |
+| `server319/auth.py` | 改为 7 字段最小响应；`code` 为字符串；`auth_task` = 请求+1；真实 Tiger 票据；TLS 错误记录完整原因 |
+| `tools/patch_runtime.py` | 接受任一已记录 build；sample 里接入 `lobby` 采样 |
+| `tools/patch_auth_bypass.py` | `sample_lobby` 新增 `dw`（`0x84ABA40`） |
+| `runs/run_1604220.ps1` | 1604220 专用会话脚本（**有 job 传参 bug，暂用内联命令**） |
+| `runs/probe_patch_sites.py` | 核对 `patches319.py` 六个锚点字节（1604220 上**全部 MATCH**） |
+| `runs/find_a20.py` | `a20_of` 候选穷举（未命中，已被 §15 行的 transcript 审计取代） |
+
+### 14.10 已知坑（不要再踩）
+
+1. `dwauth.ini` 用 ini 节格式 → 客户端不读，连腾讯。
+2. 用 CA 签发叶子的证书 → `UNKNOWN_CA`；**必须自签**。
+3. Auth 响应多字段 → `DW_ACCOUNT_ERROR`；**只回 7 个**。
+4. `server_ticket` 全零 → `DW_ACCOUNT_ERROR`。
+5. `patches319.py` 的地址是 **1604220** 的，在 1649370 上会 `DIFF`（当年失败的原因）。
+6. `patch_runtime.py` 原本硬编码 `runtime/client-1649370`，现已按 build 识别。
+7. `run_1604220.ps1` 的 `Start-Job` 传参有 bug，Auth 不会监听；用内联 `Start-Process`。
+8. 客户端截图需**强制置前**才有意义（`runs/run_lobby_capture.ps1` 有现成逻辑）。
