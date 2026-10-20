@@ -79,14 +79,24 @@ class DerivedServerTests(unittest.TestCase):
                 self.assertEqual(struct.unpack_from("<I", reply, 6)[0], counter)
                 self.assertEqual(reply[-8:], hmac.digest(keys.server_mac, reply[:-8], "sha1")[:8])
                 result = AES.new(keys.server_aes, AES.MODE_CBC, reply[10:26]).decrypt(reply[26:-8])
-                self.assertEqual(result[:4], struct.pack("<I", 21))
+                # Default reply for unimplemented tasks is now the 14-byte
+                # terminal error (LSG_UNIMPL_MODE / LSG_T9_MODE default to
+                # "error14" because that is what the M3 run sent and the client
+                # accepted). 21 bytes is the older empty-success shape, still
+                # reachable with LSG_UNIMPL_MODE=empty.
+                self.assertEqual(result[:4], struct.pack("<I", 14))
                 self.assertEqual(result[4], 1)
-                self.assertEqual(result[5:26],
-                                 b"\x0a" + struct.pack("<Q", counter)
-                                 + b"\x08" + bytes(4) + b"\x03" + bytes([task])
-                                 + b"\x08" + bytes(4))
-            self.assertEqual(sum(name == "candidate_empty_task_reply"
-                                 for name, _ in server.evidence.events), 3)
+                self.assertEqual(result[5:14],
+                                 b"\x0a" + struct.pack("<Q", counter))
+                self.assertEqual(result[14:19], b"\x08" + struct.pack("<I", 14))
+            # Four requests are answered in this test: task4 (candidate_task_reply)
+            # plus task3, task7 and task9. task3/task7 go through LSG_UNIMPL_MODE
+            # (terminal_task_reply by default) and task9 has its own LSG_T9_MODE
+            # branch that records candidate_task_reply.
+            answered = sum(name in ("candidate_empty_task_reply", "terminal_task_reply",
+                                    "candidate_task_reply")
+                           for name, _ in server.evidence.events)
+            self.assertEqual(answered, 4)
         finally:
             peer.close()
             thread.join(timeout=3)

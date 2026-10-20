@@ -319,9 +319,9 @@ class DerivedLsgServer(AuthServer):
                     conn.sendall(reply)
                     self.evidence.write("candidate_task_reply", session,
                                         reply_hex=reply.hex(),
-                                        reason=f"svc71/task9 mode={t9_mode} bytes={len(reply_payload)}; "
-                                               "client consumption unverified"
-                                               % os.environ.get("FINDSESS_PORT", "8466"))
+                                        reason=f"svc71/task9 mode={t9_mode} "
+                                               f"bytes={len(reply_payload)}; "
+                                               "client consumption unverified")
                     counter += 1
                 elif (service, task) == (21, 5):
                     # FindLobbiesByPlaylist. bdsvc319's default variant is one
