@@ -11,6 +11,7 @@ import hashlib
 import os
 import socket
 import struct
+import threading
 import time
 
 from .auth import AuthServer
@@ -61,6 +62,51 @@ def candidate_empty_success_reply(transaction_id: int, task_id: int) -> bytes:
     return _typed_u64(transaction_id) + _typed_u32(0) + b"\x03" + bytes([task_id]) + _typed_u32(0)
 
 
+def _typed_u16(value: int) -> bytes:
+    return b"\x06" + struct.pack("<H", value)
+
+
+def _typed_string(text: bytes) -> bytes:
+    """0x10 tag + NUL-terminated bytes (bdsvc319's string encoding)."""
+    return b"\x10" + text + b"\x00"
+
+
+def make_server_entry(ip: bytes = b"\x7f\x00\x00\x01", port: int = 8466,
+                      name: bytes = b"TestServer") -> bytes:
+    """bdMatchMaking server entry, byte-for-byte as bdsvc319.make_server_entry.
+
+    114 bytes when the name is TestServer. bdsvc319 builds it with the same
+    typed-value codec this module already uses (0x08 u32, 0x06 u16, 0x10 str).
+    """
+    out = bytearray()
+    out += _typed_u32(struct.unpack("<I", ip)[0])
+    out += _typed_u16(port)
+    out += _typed_u16(0)
+    for _ in range(5):
+        out += _typed_u32(0)
+    out += _typed_u32(0x9D)
+    for _ in range(5):
+        out += _typed_u32(0)
+    out += _typed_u32(1)
+    out += _typed_u32(1)
+    out += _typed_string(name)
+    out += _typed_u32(0)
+    out += _typed_u32(struct.unpack("<I", ip)[0])
+    out += _typed_u16(port)
+    out += _typed_u16(0)
+    out += _typed_u32(0)
+    out += _typed_u32(0)
+    return bytes(out)
+
+
+def candidate_svc71_task9_reply(transaction_id: int = 1,
+                                port: int = 8466) -> bytes:
+    """svc71/task9 FindSessions: one bdMatchMaking entry for 127.0.0.1:port."""
+    entry = make_server_entry(port=port)
+    return (_typed_u64(transaction_id) + _typed_u32(0) + b"\x03\x09"
+            + _typed_u32(1) + _typed_u32(1) + entry)
+
+
 def terminal_unavailable_reply(transaction_id: int) -> bytes:
     """14-byte bdService error candidate; no fabricated result object."""
     return _typed_u64(transaction_id) + _typed_u32(14)
@@ -105,6 +151,22 @@ class DerivedLsgServer(AuthServer):
             conn.sendall(token)
             self.evidence.write("token_reply", session, reply_hex=token.hex())
             counter = 1
+            # PROGRESS.md: the reference server pushes a ZEROFRAME (bare u32 0)
+            # every 30 s to keep the lobby alive. Send it from a helper thread so
+            # the recv loop stays blocking.
+            idle_interval = float(os.environ.get("LSG_ZEROFRAME", "30"))
+            stop_zero = threading.Event()
+
+            def _zero_loop() -> None:
+                while not stop_zero.wait(idle_interval):
+                    try:
+                        conn.sendall(bytes(4))
+                        self.evidence.write("zero_frame", session)
+                    except OSError:
+                        return
+
+            if idle_interval > 0:
+                threading.Thread(target=_zero_loop, daemon=True).start()
             # The target remains silent after its first task while it waits for
             # further lobby state. A short recv timeout is a server-side close,
             # which the client surfaces as [100] after exactly that interval.
@@ -112,7 +174,13 @@ class DerivedLsgServer(AuthServer):
             while True:
                 frame = _read_frame(conn)
                 if frame == bytes(4):
+                    # Zero-length control frame: the client's keepalive. Answer
+                    # with the same bare u32 0 (lobby.py keeps the channel alive
+                    # this way); staying silent makes it stall after task4.
                     self.evidence.write("idle_control", session)
+                    if os.environ.get("LSG_IDLE_REPLY", "0") != "0":
+                        conn.sendall(bytes(4))
+                        self.evidence.write("idle_reply", session)
                     continue
                 self.evidence.write("client_frame", session, body_len=len(frame),
                                     body_sha256=hashlib.sha256(frame).hexdigest(),
@@ -140,6 +208,18 @@ class DerivedLsgServer(AuthServer):
                     self.evidence.write("candidate_task_reply", session,
                                         reply_hex=reply.hex(),
                                         reason="svc71/task4 reference candidate; client consumption unverified")
+                    counter += 1
+                elif (service, task) == (71, 9):
+                    reply_payload = candidate_svc71_task9_reply(
+                        counter, int(os.environ.get("FINDSESS_PORT", "8466")))
+                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                                                 iv=os.urandom(16))
+                    conn.sendall(reply)
+                    self.evidence.write("candidate_task_reply", session,
+                                        reply_hex=reply.hex(),
+                                        reason="svc71/task9 bdMatchMaking entry 127.0.0.1:%s; "
+                                               "client consumption unverified"
+                                               % os.environ.get("FINDSESS_PORT", "8466"))
                     counter += 1
                 elif self.observed71_empty and service == 71 and task in (3, 7, 9):
                     reply = build_server_frame85(
