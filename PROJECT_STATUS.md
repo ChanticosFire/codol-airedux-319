@@ -395,3 +395,9 @@ MAC 方向也做了同 Build 静态核对：握手初始化的 `0xBA1F86–0xBA1
 **仍未解决**：客户端是否通过 S2C 帧尾 HMAC 比较、`0xBA3710` 解密及返回、普通任务 FIFO 与业务状态检查。M3 原生可交互大厅和 M4 对局均未验收。下一步在可核验的目标进程出站边界下做只读运行时观察。旧三轮出现非回环 socket，仍不能称完全离线。
 
 验证：五轮原始捕获的离线比较全部通过；`python -m unittest discover -s server319 -t . -p 'test_*.py' -q` 共 27 项通过；新证据 JSON 解析及修改过的 Python 文件编译通过。没有本轮新增的实机启动或画面证据。
+
+## 15. 2026-10-20 实见 svc71 后续任务的可切换候选应答
+
+复核 `runs/20261020-live-derived03/lsg.jsonl`：首个 task4 候选应答之后，客户端发送经过本地 MAC/解密验证的 `svc71/task3`、`task7`、`task9`。这只证明后续请求发送，不能反推首条 S2C 应答已经进入业务 FIFO。该轮对三项统一回 error 14 后仍出现大厅断线致命窗口。社区 1604220 `lobby.py` 的普通任务兜底是空成功，第三方 `bdsvc319.py` 则给 task9 返回本机服务器条目；二者不是同一合约，均不能直接当作 1649370 事实。
+
+因此 [lsg_derived.py](server319/lsg_derived.py) 增加显式 `--observed71-empty` 试验策略，只对这三项实见任务发送 1604220 形状的空成功：typed u64 transaction、typed u32 error=0、typed u8 task、typed u32 result_count=0。默认仍对它们回 error 14，避免把候选自动升级为成功；其余未知任务保持原始请求记录与显式错误。[run_session.ps1](tools/run_session.ps1) 提供 `-Observed71Empty` 将该策略传给服务端，默认关闭。连续四条合成任务（4、3、7、9）检查了 1..4 计数、S2C MAC、AES 解密和后三项 21B 业务体；27 项单元测试及运行脚本语法检查通过。机器可读的来源和未证实项见 [候选实验](evidence/experiments/20261020-svc71-reply-candidate.json)。本轮未启动客户端、未变更主机网络；M3 仍未验收。

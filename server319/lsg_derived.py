@@ -54,17 +54,26 @@ def candidate_svc71_task4_reply(transaction_id: int = 1) -> bytes:
             + _typed_u32(1) + _typed_u32(1) + _typed_u32(0))
 
 
+def candidate_empty_success_reply(transaction_id: int, task_id: int) -> bytes:
+    """1604220 lobby fallback shape, provisional for observed 1649370 tasks."""
+    if not 0 <= task_id <= 255:
+        raise LsgProtocolError("candidate_task_id")
+    return _typed_u64(transaction_id) + _typed_u32(0) + b"\x03" + bytes([task_id]) + _typed_u32(0)
+
+
 def terminal_unavailable_reply(transaction_id: int) -> bytes:
     """14-byte bdService error candidate; no fabricated result object."""
     return _typed_u64(transaction_id) + _typed_u32(14)
 
 
 class DerivedLsgServer(AuthServer):
-    def __init__(self, *args, token_marker: int = 0x00, **kwargs):
+    def __init__(self, *args, token_marker: int = 0x00,
+                 observed71_empty: bool = False, **kwargs):
         super().__init__(*args, **kwargs)
         if token_marker not in (0x00, 0xAB):
             raise ValueError("token_marker")
         self.token_marker = token_marker
+        self.observed71_empty = observed71_empty
 
     def _handle(self, conn: socket.socket) -> None:
         session = self._new_session()
@@ -131,6 +140,15 @@ class DerivedLsgServer(AuthServer):
                     self.evidence.write("candidate_task_reply", session,
                                         reply_hex=reply.hex(),
                                         reason="svc71/task4 reference candidate; client consumption unverified")
+                    counter += 1
+                elif self.observed71_empty and service == 71 and task in (3, 7, 9):
+                    reply = build_server_frame85(
+                        keys, candidate_empty_success_reply(counter, task),
+                        counter=counter, iv=os.urandom(16))
+                    conn.sendall(reply)
+                    self.evidence.write("candidate_empty_task_reply", session,
+                                        reason=f"service=71 task={task}; 1604220 fallback "
+                                               "shape; 1649370 consumption unverified")
                     counter += 1
                 else:
                     self.evidence.write("unhandled_task", session,

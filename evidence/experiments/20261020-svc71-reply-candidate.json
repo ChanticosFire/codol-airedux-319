@@ -1,0 +1,20 @@
+{
+  "build": 1649370,
+  "source_capture": "runs/20261020-live-derived03/lsg.jsonl",
+  "observation": "After the first svc71/task4 candidate reply, the client sent validated svc71/task3, task7 and task9 requests. Sending error 14 for all three did not remove the native lobby-disconnected dialog.",
+  "cross_build_candidates": [
+    {
+      "source": "codol-ember/工具-tools/lobby-reproduction1604220/src/server/lib/codol_server/lobby.py service_reply fallback and task_reply",
+      "build": 1604220,
+      "shape": "Successful response with typed transaction u64, typed zero error u32, typed task u8 and typed zero result count u32"
+    },
+    {
+      "source": "他人文件参考/bdsvc319.py handle_service svc71 task9",
+      "build": "unverified local reference",
+      "shape": "task9 returns a localhost server-entry result instead of an empty result"
+    }
+  ],
+  "implementation": "server319.lsg --observed71-empty enables the 1604220 fallback shape only for the three observed tasks. The default remains error 14 for them and preserves explicit failure for unknown tasks. No client acceptance is claimed.",
+  "verification": "python -m unittest discover -s server319 -t . -p test_*.py -q: 27 passed; a synthetic authenticated LSG session checked sequential 1..4 counters, S2C MAC, AES decoding and the three 21-byte empty-success payloads.",
+  "remaining": "Run only with a verified process egress boundary; observe client S2C parser and FIFO completion before choosing a production reply policy."
+}

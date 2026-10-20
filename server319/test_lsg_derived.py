@@ -30,6 +30,7 @@ class DerivedServerTests(unittest.TestCase):
         server = DerivedLsgServer.__new__(DerivedLsgServer)
         server.evidence = RecordingEvidence()
         server.token_marker = 0
+        server.observed71_empty = True
         server._new_session = lambda: SimpleNamespace(connection_id=1, requests=0)
         peer, accepted = socket.socketpair()
         thread = threading.Thread(target=server._handle, args=(accepted,), daemon=True)
@@ -65,6 +66,27 @@ class DerivedServerTests(unittest.TestCase):
             self.assertEqual(out[4], 1)
             self.assertEqual(out[5:14], b"\x0a" + struct.pack("<Q", 1))
             self.assertIn("candidate_task_reply", [name for name, _ in server.evidence.events])
+            for counter, task in ((2, 3), (3, 7), (4, 9)):
+                payload = bytes((71, 3, task))
+                plain = struct.pack("<I", len(payload) + 1) + b"\x86" + payload + bytes(8)
+                iv = bytes([counter]) * 16
+                body = b"\xab\x85" + struct.pack("<I", counter) + iv
+                body += AES.new(keys.client_aes, AES.MODE_CBC, iv).encrypt(plain)
+                request = struct.pack("<I", len(body) + 8) + body
+                request += hmac.digest(keys.client_mac, request, "sha1")[:8]
+                peer.sendall(request)
+                reply = _read_frame(peer)
+                self.assertEqual(struct.unpack_from("<I", reply, 6)[0], counter)
+                self.assertEqual(reply[-8:], hmac.digest(keys.server_mac, reply[:-8], "sha1")[:8])
+                result = AES.new(keys.server_aes, AES.MODE_CBC, reply[10:26]).decrypt(reply[26:-8])
+                self.assertEqual(result[:4], struct.pack("<I", 21))
+                self.assertEqual(result[4], 1)
+                self.assertEqual(result[5:26],
+                                 b"\x0a" + struct.pack("<Q", counter)
+                                 + b"\x08" + bytes(4) + b"\x03" + bytes([task])
+                                 + b"\x08" + bytes(4))
+            self.assertEqual(sum(name == "candidate_empty_task_reply"
+                                 for name, _ in server.evidence.events), 3)
         finally:
             peer.close()
             thread.join(timeout=3)

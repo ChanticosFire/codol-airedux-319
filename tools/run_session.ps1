@@ -5,6 +5,7 @@ param(
     [int]$LsgPort = 4174,
     [string]$Cert = '',
     [string]$Key = '',
+    [switch]$Observed71Empty,
     [ValidateSet('', 'ENTER', 'CLICK', 'SPACE', 'ESC')][string]$AutoInput = '',
     [int]$InputInterval = 8,
     [int]$InputCount = 6
@@ -76,9 +77,12 @@ Write-Host "auth listening on 127.0.0.1:$AuthPort (pid $($authProcess.Id))"
 # channel right after Auth; without it the game shows the in-client
 # "[100]无法连接大厅服务！" dialog and quits.
 $lsgLog = Join-Path $runDir 'lsg.jsonl'
+$lsgArgs = @('-m', 'server319.lsg', '--cert', $Cert, '--key', $Key,
+             '--port', $LsgPort, '--log', $lsgLog, '--seconds', ($Seconds + 40))
+if ($Observed71Empty) { $lsgArgs += '--observed71-empty' }
+Write-Host "lsg observed71-empty candidate: $([bool]$Observed71Empty)"
 $lsgProcess = Start-Process -FilePath 'python' `
-    -ArgumentList @('-m', 'server319.lsg', '--cert', $Cert, '--key', $Key,
-                    '--port', $LsgPort, '--log', $lsgLog, '--seconds', ($Seconds + 40)) `
+    -ArgumentList $lsgArgs `
     -WorkingDirectory $workspace -PassThru -WindowStyle Hidden
 Start-Sleep -Seconds 2
 if ($lsgProcess.HasExited) { throw 'LSG_SERVER_EXITED: check python/server319.lsg output' }

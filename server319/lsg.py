@@ -471,6 +471,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="use the prior memory-reading diagnostic handler")
     parser.add_argument("--token-marker", choices=("00", "ab"), default="00",
                         help="0x83 wire marker; 00 preserves the observed local baseline")
+    parser.add_argument("--observed71-empty", action="store_true",
+                        help="diagnostic candidate: empty success for observed svc71 tasks 3/7/9")
     args = parser.parse_args(argv)
     from .manifest import verify_client
     checks = verify_client(args.client_dir)
@@ -483,7 +485,8 @@ def main(argv: list[str] | None = None) -> int:
         from .lsg_derived import DerivedLsgServer
         server = DerivedLsgServer(args.port, args.cert, args.key,
                                   AuthEvidence(args.log),
-                                  token_marker=int(args.token_marker, 16))
+                                  token_marker=int(args.token_marker, 16),
+                                  observed71_empty=args.observed71_empty)
     server.start()
     print(f"LSG {'legacy probe' if args.legacy_probe else 'derived'} listening "
           f"127.0.0.1:{args.port} for {args.seconds:g}s", flush=True)
