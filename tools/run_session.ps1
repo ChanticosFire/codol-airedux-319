@@ -2,6 +2,7 @@ param(
     [Parameter(Mandatory)][string]$RunId,
     [int]$Seconds = 90,
     [int]$AuthPort = 4175,
+    [int]$LsgPort = 4174,
     [string]$Cert = '',
     [string]$Key = '',
     [ValidateSet('', 'ENTER', 'CLICK', 'SPACE', 'ESC')][string]$AutoInput = '',
@@ -71,6 +72,18 @@ Start-Sleep -Seconds 3
 if ($authProcess.HasExited) { throw 'AUTH_SERVER_EXITED: check python/server319 output' }
 Write-Host "auth listening on 127.0.0.1:$AuthPort (pid $($authProcess.Id))"
 
+# LSG (lobby) listener on the dwauth.ini line-1 port. The client opens this
+# channel right after Auth; without it the game shows the in-client
+# "[100]无法连接大厅服务！" dialog and quits.
+$lsgLog = Join-Path $runDir 'lsg.jsonl'
+$lsgProcess = Start-Process -FilePath 'python' `
+    -ArgumentList @('-m', 'server319.lsg', '--cert', $Cert, '--key', $Key,
+                    '--port', $LsgPort, '--log', $lsgLog, '--seconds', ($Seconds + 40)) `
+    -WorkingDirectory $workspace -PassThru -WindowStyle Hidden
+Start-Sleep -Seconds 2
+if ($lsgProcess.HasExited) { throw 'LSG_SERVER_EXITED: check python/server319.lsg output' }
+Write-Host "lsg listening on 127.0.0.1:$LsgPort (pid $($lsgProcess.Id))"
+
 $inputJob = $null
 
 try {
@@ -98,6 +111,9 @@ try {
     }
     if (-not $authProcess.HasExited) {
         Stop-Process -Id $authProcess.Id -Force -ErrorAction SilentlyContinue
+    }
+    if ($lsgProcess -and -not $lsgProcess.HasExited) {
+        Stop-Process -Id $lsgProcess.Id -Force -ErrorAction SilentlyContinue
     }
 }
 
