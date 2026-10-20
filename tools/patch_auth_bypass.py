@@ -59,6 +59,7 @@ def sample_lobby(process, base):
     auth_obj = global_value(0x84ABB14) or global_value(0x84ABB08)
     return {
         "netobj": net,
+        "dw": global_value(0x84ABA40),
         "ui_state": global_value(0x84ABA50),
         "previous_ui_state": global_value(0x84ABA54),
         "account_error": global_value(0x84ABA5C),

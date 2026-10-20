@@ -219,7 +219,7 @@ class AuthServer:
         try:
             tls = self.context.wrap_socket(conn, server_side=True)
         except Exception as exc:
-            self.evidence.write("tls_handshake_failed", session, reason=type(exc).__name__)
+            self.evidence.write("tls_handshake_failed", session, reason=(type(exc).__name__ + ": " + str(exc))[:300])
             conn.close()
             return
         try:

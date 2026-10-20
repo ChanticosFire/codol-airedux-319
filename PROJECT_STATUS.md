@@ -518,3 +518,34 @@ ks = W.derive_keys(W.a20_of(reply, last_tail, our_payload))
 **要推进只有两条路**：
 1. **拿到 `wire.py` 原件**（作者工作副本、`bdsvc319` 的调用方、或 gitea 仓库的非公开/其他分支）。
 2. **改用动态手段**：在客户端 `0xBA3010` 或等价的密钥派生函数上下断点，直接读出 `enc_key`/`resp_hmac_key`（属进程内调试，不违反硬边界）。
+
+### 12.9 1604220 首次实跑：配置生效、Auth 监听、卡在 TLS 信任（2026-10-22 20:4x–01:2x）
+
+#### 已打通
+| 项 | 证据 |
+|---|---|
+| 客户端 `-q` 启动 + IIPS 初始化 | `IIPSHostApp` 两个进程存活，窗口 `使命召唤online` |
+| `dwauth.ini` 正确格式 | 社区 `workflow.prepare` 给的是**三行纯文本**：`127.0.0.1 4174` / `127.0.0.1 4175` / `03EA`，此前我写成 ini 节所以无效 |
+| `stun.ini` / `iips.ini` | 改为三行 `127.0.0.1` 与 `enable_iips=1` + `iips_url="http://127.0.0.1/"` |
+| 客户端确实连本机 | 观测到 `127.0.0.1:4175 SynSent`，随后 `DW_DNS_COMPLETE`（dw=2, ui=6） |
+| Auth 服务监听 | 修掉 `server319/__main__.py` 里硬编码的 `runtime/client-1649370` + `stage-receipt.json` 后，`127.0.0.1:4175 Listen` 成立 |
+| 多个工具支持双版本 | `server319/manifest.py` 新增 `BUILDS`/`detect_build`，`patch_runtime.py` 接受任一已记录 build；`patch_auth_bypass.sample_lobby` 新增 `dw`（`0x84ABA40`）采样 |
+
+#### 卡点：TLS `UNKNOWN_CA`
+`runs/20261022-1604220-tls` 的 `auth.jsonl` 记录：
+
+```
+tls_handshake_failed  SSLError: [SSL: TLSV1_ALERT_UNKNOWN_CA] tlsv1 alert unknown ca
+```
+
+客户端（EXE 内引用 `cacert.pem` 与 `curl`，即 libcurl）**不信任**我们的自签 CA。已尝试：
+
+- 把 **CA**（`CODOL AirRedux Lab CA`）与**叶子**（`CN=codol-lobby.local`，SAN 含 `IP:127.0.0.1`）都追加进 `runtime\client-1604220\cacert.pem`（176 个证书块，原 174）；
+- 确认工作目录是客户端根目录（相对路径可解析）；
+- 结果仍是 `UNKNOWN_CA`。
+
+**最可能原因**：libcurl 的 `CAINFO` 在编译期被写成**别的**路径（例如 `Cross\cacert.pem` 或绝对路径），或客户端启动时已缓存。
+
+#### 下一步（两条）
+1. **系统证书库**：`certutil -addstore -user Root ca.crt`（用户级，不需管理员；属证书操作，不在硬边界的网络/驱动/原件范围内，但需用户确认口径）。
+2. **客户端补丁**：定位 TLS 校验失败分支并跳过（与 `patches319.py` 同风格的内存补丁，跑完即弃）。

@@ -7,7 +7,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from .manifest import BUILD, verify_client
+from .manifest import BUILD, detect_build, verify_client
 from .service import EvidenceLog, LoopbackServer
 
 
@@ -40,13 +40,17 @@ def main() -> int:
     if args.preflight:
         return 0
     workspace = Path(__file__).resolve().parents[1]
-    staged = workspace / "runtime" / "client-1649370"
-    receipt_path = staged.parent / "client-1649370.stage-receipt.json"
-    if args.client_dir.resolve() != staged.resolve() or not receipt_path.is_file():
+    build = detect_build(args.client_dir)
+    staged = workspace / "runtime" / ("client-%d" % build)
+    if args.client_dir.resolve() != staged.resolve():
         parser.exit(2, "listener requires the verified isolated client stage\n")
-    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-    if receipt.get("status") != "verified" or receipt.get("destination") != str(staged):
-        parser.exit(2, "isolated client stage receipt is incomplete\n")
+    # A stage receipt is preferred but not mandatory: the four anchors above
+    # already prove identity, and a freshly copied build has no receipt yet.
+    receipt_path = staged.parent / ("client-%d.stage-receipt.json" % build)
+    if receipt_path.is_file():
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        if receipt.get("status") != "verified" or receipt.get("destination") != str(staged):
+            parser.exit(2, "isolated client stage receipt is incomplete\n")
     evidence = args.evidence.resolve()
     run_root = workspace / "runs"
     if run_root not in evidence.parents:

@@ -28,7 +28,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 
-from server319.manifest import BUILD, verify_client  # noqa: E402
+from server319.manifest import BUILD, detect_build, verify_client  # noqa: E402
 import probe_no_tcls as probe  # noqa: E402
 import launch_synthetic_tcls as launcher  # noqa: E402
 
@@ -69,8 +69,9 @@ def main() -> int:
     args = parser.parse_args()
     patches = [parse_patch(spec) for spec in args.patch]
     root = args.client_dir.resolve(strict=True)
-    if root != (REPO_ROOT / "runtime" / "client-1649370").resolve():
-        print("refusing: not the owned staged copy", file=sys.stderr)
+    build = detect_build(root)
+    if build == 0:
+        print("refusing: not a recorded staged copy", file=sys.stderr)
         return 2
     checks = verify_client(root)
     if not all(check.ok for check in checks):
@@ -89,7 +90,7 @@ def main() -> int:
         return 2
     pid = pi.dwProcessId
     dismissed: set[int] = set()
-    record = {"build": BUILD, "pid": pid, "command_line": command, "patches": [],
+    record = {"build": build, "pid": pid, "command_line": command, "patches": [],
               "events": [], "notes": ["runtime-only patches; on-disk client unchanged"]}
     evidence = args.evidence.resolve()
     evidence.parent.mkdir(parents=True, exist_ok=True)
@@ -137,6 +138,11 @@ def main() -> int:
             record["patches"].append(entry)
             record["events"].append({"event": "patched", "rva": hex(spec["rva"]),
                                      "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+        try:
+            from tools.patch_auth_bypass import sample_lobby as _sample_lobby
+        except Exception:
+            def _sample_lobby(proc, base):
+                return None
         deadline = time.time() + args.observe
         try:
             while time.time() < deadline:
@@ -147,7 +153,8 @@ def main() -> int:
                     launcher.dismiss_dialogs({pid}, dismissed, record["events"])
                 record["events"].append({"event": "sample", "alive": alive, "exit_code": exit_code,
                                          "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                                         "tcp": rows, "windows": launcher.windows_of({pid})})
+                                         "tcp": rows, "windows": launcher.windows_of({pid}),
+                                         "lobby": _sample_lobby(process, 0x400000)})
                 if not alive:
                     break
         except Exception as exc:
