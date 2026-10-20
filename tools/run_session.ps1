@@ -3,7 +3,10 @@ param(
     [int]$Seconds = 90,
     [int]$AuthPort = 4175,
     [string]$Cert = '',
-    [string]$Key = ''
+    [string]$Key = '',
+    [ValidateSet('', 'ENTER', 'CLICK', 'SPACE', 'ESC')][string]$AutoInput = '',
+    [int]$InputInterval = 8,
+    [int]$InputCount = 6
 )
 # One-shot session runner for Build 1649370.
 #
@@ -68,13 +71,31 @@ Start-Sleep -Seconds 3
 if ($authProcess.HasExited) { throw 'AUTH_SERVER_EXITED: check python/server319 output' }
 Write-Host "auth listening on 127.0.0.1:$AuthPort (pid $($authProcess.Id))"
 
+$inputJob = $null
+
 try {
+    if ($AutoInput) {
+        $inputJob = Start-Job -ScriptBlock {
+            param($cwd, $action, $interval, $count)
+            Set-Location $cwd
+            Start-Sleep -Seconds 20
+            for ($i = 0; $i -lt $count; $i++) {
+                & pwsh -NoProfile -File 'tools\send_input.ps1' -Action $action -Count 1 2>&1 | Out-Null
+                Start-Sleep -Seconds $interval
+            }
+        } -ArgumentList $workspace, $AutoInput, $InputInterval, $InputCount
+        Write-Host "auto-input: $AutoInput every ${InputInterval}s x $InputCount (starting after 20s)"
+    }
     $patchLog = Join-Path $runDir 'patch.json'
     & python (Join-Path $workspace 'tools\patch_auth_bypass.py') `
         --client-dir $staged --evidence $patchLog `
         --wait 13 --observe $Seconds --game-args=-q
     Write-Host "patch/json: $patchLog"
 } finally {
+    if ($inputJob) {
+        Stop-Job $inputJob -ErrorAction SilentlyContinue
+        Remove-Job $inputJob -Force -ErrorAction SilentlyContinue
+    }
     if (-not $authProcess.HasExited) {
         Stop-Process -Id $authProcess.Id -Force -ErrorAction SilentlyContinue
     }
