@@ -109,13 +109,10 @@ class LsgServer(AuthServer):
                                 pid, caddr, challenge = 0, 0, None
                                 self.evidence.write("challenge_error", session,
                                                     reason=type(exc).__name__)
-                            # Experiment: reverse conn+0x5FC bytes as the token.
-                            if challenge:
-                                challenge = challenge[::-1]
                             self.evidence.write("challenge_choice", session,
-                                                reason=f"reversed={challenge.hex() if challenge else None}")
+                                                reason=f"token={challenge.hex() if challenge else None}")
                             if challenge:
-                                reply83 = b"\xab\x83" + challenge
+                                reply83 = b"\xab\x83" + challenge + b"\x00\x00"
                                 frame83 = struct.pack("<I", len(reply83)) + reply83
                                 conn.sendall(frame83)
                                 self.evidence.write("token_reply", session,
