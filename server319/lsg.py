@@ -166,9 +166,12 @@ class LsgServer(AuthServer):
                                             # Each key object also carries a second 16-byte block
                                             # at +0xAC; try it as the send-direction key.
                                             # 0x608 is a certificate buffer, so the only real AES
-                                            # object is 0x604. Use its active block for both
-                                            # directions (now that the frame counter is correct).
-                                            key_recv = key_send
+                                            # object is 0x604. Its S2C block offset is unknown, so
+                                            # allow probing each candidate via LSG_KEYOFF.
+                                            _koff = int(os.environ.get("LSG_KEYOFF", "0x9C"), 0)
+                                            _cand = _lc.read_region(_pid, _ks + _koff, 16)
+                                            if len(_cand) == 32:
+                                                key_recv = bytes.fromhex(_cand)
                                             # Hunt for every AES object reachable from the conn:
                                             # the C2S object is at conn+0x604 (vtable 0x2055D900);
                                             # a sibling field should hold the S2C object.
@@ -214,9 +217,23 @@ class LsgServer(AuthServer):
                                                 # 4 payload carrying tag 0x0A; the reference's
                                                 # inner 4 + connId variant makes 1649370 close the
                                                 # socket immediately.
-                                                # Echo the client's own plaintext (lsg_echo319
-                                                # behaviour) with the corrected frame counter.
-                                                inner = pt
+                                                # P3 gate (zero-patch analysis): the lobby needs the
+                                                # svc80/task230 playerdata answer, shaped like the
+                                                # reference task_reply with inner type 1:
+                                                #   u64 txn | u32 err | u8 task | u32 nres | u32 nres
+                                                #   | level | prestige | gp | cp | n_ent | n_flags
+                                                bd = ((1).to_bytes(8, "little")
+                                                      + (0).to_bytes(4, "little")
+                                                      + bytes([230])
+                                                      + (1).to_bytes(4, "little")
+                                                      + (1).to_bytes(4, "little"))
+                                                bd += (70).to_bytes(4, "little")
+                                                bd += (0).to_bytes(4, "little")
+                                                bd += (999999999).to_bytes(4, "little")
+                                                bd += (999999999).to_bytes(4, "little")
+                                                bd += (0).to_bytes(2, "little")
+                                                bd += (0).to_bytes(2, "little")
+                                                inner = b"\x01" + bd
                                                 evt4_pt = struct.pack("<I", len(inner)) + inner
                                                 evt4_pt += b"\x00" * ((-len(evt4_pt)) % 16)
                                                 # 1649370 does NOT keep the rx counter at conn+0x5EC

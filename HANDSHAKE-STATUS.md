@@ -314,3 +314,25 @@ frame85_seen ct ["0x38b7a1ab"]        ← 密文在客户端内存里
 - 仍未定位客户端对 S2C 0x85 的 AES 解密调用点；`0x604` 对象的 `+0x9C`（C2S 可用）与 `+0x14`（试作 S2C，失败）都不是 S2C 密钥。
 
 **方法论调整**：继续在 `0xB7xxxx`/`0xBAxxxx` 大范围盲扫代价过高。下一步改为**从数据反推**：在客户端进程里对 `0x604` 对象做**全字段 16 字节窗口**枚举（每个偏移取 16B），逐一用于加密同一明文，然后**发一次**看客户端是否不再 `peer_closed`；只要能解开一次，就能定位 S2C 密钥偏移。
+
+## 0.17 零补丁分析（1604220 P2/P3）与 80/230 应答（2026-10-20 22:5x–23:5x）
+
+解压 `他人文件参考/零补丁分析-20261019.7z` 到 `runs/20261020-zeropatch/`，其 README 给出 1604220 的零补丁判定链：
+
+```
+P2  = 0x6BBF30: ([0x331C5C0]==1 && CS==4) || D   (D = *[0x3306D60]+0xC 非零)
+      CS=4 时若 D=false，强行让 P2 通过会进 G=1 分支阻止跳到 G=2
+P3  = publisher 的 80/230 ready 字节；缺它后续阶段必失败
+CS  = 连接状态：7F2CE0 在 Auth code700 成功后写 CS=9，只有 CS=9 才发 DW_ACCOUNT_LOGIN_COMPLETE
+task_reply = inner 1, body = u64 txn | u32 err | u8 task | u32 nres | u32 nres | results
+```
+
+对照 1649370 实测：
+
+- `DW_ACCOUNT_LOGIN_COMPLETE` 已出现 → **CS=9、P2 已过**。
+- `[conn+0xC8]=4` 就是文档里的 **CS=4**，是「已连接」而非「报废」——之前对 lstate 的解读需要修正。
+- `ui_state=4`（`DW_LOBBY_CONNECTED`）后卡在 4 而非 5，对应 **P3 未 ready**。
+
+本轮已按 `task_reply` 构造 **inner 1 + 80/230 playerdata**（`u64 txn=1 | u32 err=0 | u8 230 | u32 nres=1 | u32 nres=1 | level=70 | prestige=0 | gp/cp=999999999 | n_ent=0 | n_flags=0`）发出（`runs/20261020-p3b` 的 `frame85_reply`）。
+
+**但** `frame85_seen pt []` 仍是空：**客户端依旧解不开我们的密文**。也就是说 P3 应答的内容已经对了，卡点回到「S2C 加密密钥」——`0x604+0x9C` 只能解 C2S 方向，客户端解密所用的 `aes_recv` 仍未找到（`+0x14/+0xAC/+0xBC/+0xCC` 以及对称复用都已排除）。
