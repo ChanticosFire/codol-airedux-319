@@ -41,6 +41,9 @@ BRANCH_ORIG = bytes.fromhex("0F8E7B010000")
 SUCCESS = 0xBBA448
 STORE = 0xBBA569
 STORE_ORIG = bytes.fromhex("C7832001000002000000")
+REP = 0xBBA4F2
+REP_ORIG = bytes.fromhex("F3A5")
+REP_PATCH = bytes.fromhex("9090")
 SENTINEL = 0xABCD1234
 
 
@@ -117,6 +120,12 @@ def main() -> int:
         if not write(h, STORE, store_patch):
             print("store patch failed")
             return 4
+        rep_live = read(h, REP, len(REP_ORIG))
+        if rep_live == REP_ORIG:
+            write(h, REP, REP_PATCH)
+            print(f"patched rep    {REP:#x}: F3A5 -> 9090 (rep movsd skipped)")
+        else:
+            print(f"rep site not as expected: {rep_live.hex()}")
         print(f"patched branch {BRANCH:#x}: jle -> jmp {SUCCESS:#x} ({branch_patch.hex()})")
         print(f"patched store  {STORE:#x}: 2 -> {SENTINEL:#010x}")
 
