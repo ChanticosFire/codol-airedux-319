@@ -31,6 +31,8 @@ class LobbyEndpoint:
         self.port = port
         self.echo = echo
         self.reply = reply
+        self.reply_budget: int | None = None   # None = unlimited
+        self.reply_sent = 0
         self.log_path = log_path
         self._stop = threading.Event()
         self._udp: socket.socket | None = None
@@ -83,12 +85,16 @@ class LobbyEndpoint:
                 return
             self.note("udp_in", src=f"{addr[0]}:{addr[1]}", length=len(data),
                       hex=data.hex())
-            if self.reply is not None:
+            if (self.reply is not None
+                    and (self.reply_budget is None
+                         or self.reply_sent < self.reply_budget)):
                 # A fixed byte sequence, chosen by LOBBY_UDP_REPLY, so candidate response
                 # shapes can be searched without knowing the protocol up front.
                 try:
                     self._udp.sendto(self.reply, addr)
-                    self.note("udp_reply", length=len(self.reply), hex=self.reply.hex())
+                    self.reply_sent += 1
+                    self.note("udp_reply", length=len(self.reply), hex=self.reply.hex(),
+                              sent=self.reply_sent)
                 except OSError as exc:
                     self.note("udp_reply_failed", error=type(exc).__name__)
             elif self.echo:
@@ -157,7 +163,10 @@ def main() -> int:
     echo = os.environ.get("LOBBY_UDP_ECHO", "1").strip().lower() not in ("0", "false", "no")
     raw_reply = os.environ.get("LOBBY_UDP_REPLY", "").strip()
     reply = bytes.fromhex(raw_reply) if raw_reply else None
+    budget_raw = os.environ.get("LOBBY_UDP_REPLY_MAX", "").strip()
     server = LobbyEndpoint(port, log, echo=echo, reply=reply)
+    if budget_raw:
+        server.reply_budget = int(budget_raw)
     server.start()
     try:
         time.sleep(seconds)
