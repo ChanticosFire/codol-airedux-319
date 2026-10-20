@@ -112,7 +112,7 @@ class LsgServer(AuthServer):
                             self.evidence.write("challenge_choice", session,
                                                 reason=f"token={challenge.hex() if challenge else None}")
                             if challenge:
-                                reply83 = b"\xab\x83" + challenge + b"\x00\x00"
+                                reply83 = b"\xab\x83" + challenge + b"\x00" * 6
                                 frame83 = struct.pack("<I", len(reply83)) + reply83
                                 conn.sendall(frame83)
                                 self.evidence.write("token_reply", session,
@@ -152,16 +152,41 @@ class LsgServer(AuthServer):
                                                 pt = AES.new(key_send, AES.MODE_CBC, iv=iv).decrypt(cipher)
                                                 self.evidence.write("frame85_plain", session,
                                                                     body_hex=pt.hex())
-                                                # Reply with an encrypted empty frame so the
-                                                # client sees the channel as live.
-                                                riv = os.urandom(16)
-                                                rpt = b"\x00" * 16
-                                                rct = AES.new(key_recv, AES.MODE_CBC, iv=riv).encrypt(rpt)
-                                                reply = (b"\x01\x85" + seq + riv + rct
-                                                         + b"\x00" * 8)
-                                                conn.sendall(struct.pack("<I", len(reply)) + reply)
-                                                self.evidence.write("frame85_reply", session,
-                                                                    reply_hex=reply.hex())
+                                                # Experiment: echo the client's own request as
+                                                # the heartbeat payload (lsg_echo319 uses an
+                                                # externally supplied pt; echo is the safest probe).
+                                                echo_pt = pt + b"\x00" * ((-len(pt)) % 16)
+                                                # Reply with a business frame carrying the
+                                                # tag 0x0A lobby address (IP 4B + PORT 4B),
+                                                # which the client's 0xB83A52 path turns into
+                                                # netobj+0x4F8 = 1 (lobby ready).
+                                                ip = bytes([127, 0, 0, 1])
+                                                port = struct.pack("<I", 4174)
+                                                tlv = b"\x0a\x08" + ip + port
+                                                inner = b"\x86" + tlv
+                                                pt = struct.pack("<I", len(inner)) + inner
+                                                pt += b"\x00" * ((-len(pt)) % 16)
+                                                # The client expects our frame counter to equal
+                                                # its conn+0x5EC (rxseq), not an echo of its own seq.
+                                                _rxseq = _lc.read_u32(_pid, caddr + 0x5EC) or 1
+                                                # Reference (lsg_echo319 heartbeat) keeps sending
+                                                # 0x85 every ~2s; a single reply times out.
+                                                for _beat in range(8):
+                                                    riv = os.urandom(16)
+                                                    rct = AES.new(key_recv, AES.MODE_CBC,
+                                                                  iv=riv).encrypt(echo_pt)
+                                                    # Reference heartbeat reuses the SAME counter
+                                                    # (exp) every 2s; do not increment.
+                                                    seq_out = struct.pack("<I", _rxseq)
+                                                    reply = (b"\x01\x85" + seq_out + riv + rct
+                                                             + b"\x00" * 8)
+                                                    conn.sendall(struct.pack("<I", len(reply)) + reply)
+                                                    self.evidence.write(
+                                                        "frame85_reply", session,
+                                                        body_hex=echo_pt.hex(),
+                                                        reply_hex=reply.hex(),
+                                                        reason=f"beat={_beat} seq={_rxseq + _beat}")
+                                                    time.sleep(2.0)
                                                 # Keep the channel open and log whatever
                                                 # the client sends next (heartbeats/business).
                                                 try:
