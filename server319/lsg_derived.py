@@ -228,7 +228,16 @@ class DerivedLsgServer(AuthServer):
                 self.evidence.write("task_request", session,
                                     reason=f"service={service} task={task} bytes={len(payload)}")
                 if (service, task) == (71, 4):
-                    reply_payload = candidate_svc71_task4_reply(counter)
+                    # LSG_T4_MODE selects the task4 reply shape. "entry" sends a
+                    # full 114-byte bdMatchMaking record (same as task9), which
+                    # may be what prompts the client to continue with task9;
+                    # "zero" is the historical 4-byte empty answer.
+                    t4_mode = os.environ.get("LSG_T4_MODE", "zero")
+                    if t4_mode == "entry":
+                        reply_payload = candidate_svc71_task9_reply(
+                            counter, int(os.environ.get("FINDSESS_PORT", "8466")))
+                    else:
+                        reply_payload = candidate_svc71_task4_reply(counter)
                     reply = build_server_frame85(keys, reply_payload, counter=counter,
                                                  iv=os.urandom(16))
                     conn.sendall(reply)
