@@ -28,8 +28,16 @@ k32.ReadProcessMemory.argtypes = [wt.HANDLE, ctypes.c_void_p, ctypes.c_void_p,
 k32.WriteProcessMemory.argtypes = [wt.HANDLE, ctypes.c_void_p, ctypes.c_void_p,
                                    ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)]
 k32.CloseHandle.argtypes = [wt.HANDLE]
+k32.VirtualAllocEx.restype = ctypes.c_void_p
+k32.VirtualAllocEx.argtypes = [wt.HANDLE, ctypes.c_void_p, ctypes.c_size_t, wt.DWORD, wt.DWORD]
+k32.CreateRemoteThread.restype = ctypes.c_void_p
+k32.CreateRemoteThread.argtypes = [wt.HANDLE, ctypes.c_void_p, ctypes.c_size_t,
+                                   ctypes.c_void_p, ctypes.c_void_p, wt.DWORD, ctypes.c_void_p]
+k32.WaitForSingleObject.argtypes = [wt.HANDLE, wt.DWORD]
 
 EXE = "codomp_client_shipretail.exe"
+STAT_SETTER = 0x6B03D0
+ONBOARDED = 0xDC3EA0
 DW = 0x84ABA40
 CS = 0x84ABA50
 G1 = 0x82E1340
@@ -80,6 +88,29 @@ def write_u32(h, va: int, value: int) -> bool:
     return bool(ok) and wrote.value == 4
 
 
+def call_stat(h, name_va: int) -> bool:
+    """Run "mov eax, name_va ; call 0x6B03D0 ; xor eax,eax ; ret" in a cave."""
+    MEM = 0x3000
+    RX = 0x40
+    cave = k32.VirtualAllocEx(h, None, 0x1000, MEM, RX)
+    if not cave:
+        return False
+    cave = int(cave)
+    rel = STAT_SETTER - (cave + 10)
+    code = (b"\xb8" + struct.pack("<I", name_va)
+            + b"\xe8" + struct.pack("<i", rel) + b"\x33\xc0\xc3")
+    buf = ctypes.create_string_buffer(code, len(code))
+    wrote = ctypes.c_size_t()
+    if not k32.WriteProcessMemory(h, ctypes.c_void_p(cave), buf, len(code), ctypes.byref(wrote)):
+        return False
+    thread = k32.CreateRemoteThread(h, None, 0, ctypes.c_void_p(cave), None, 0, None)
+    if not thread:
+        return False
+    k32.WaitForSingleObject(ctypes.c_void_p(thread), 3000)
+    k32.CloseHandle(ctypes.c_void_p(thread))
+    return True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--timeout", type=int, default=90,
@@ -106,11 +137,22 @@ def main() -> int:
         return 3
     print(f"pid={pid}")
     try:
+        onboarded_done = False
         while time.time() < deadline:
             dw = read_u32(h, DW)
             cs = read_u32(h, CS)
+            # Mark onboarding as early as the code is usable (dw>=2 means the
+            # module decrypted and DNS finished) so the character screen never
+            # appears; at dw=5 it is already too late, and at process start the
+            # stat setter is not ready yet (writing that early crashed it).
+            if dw is not None and dw >= 2 and not onboarded_done:
+                if call_stat(h, ONBOARDED):
+                    onboarded_done = True
+                    print(f"dw={dw} -> onboard_character_selected set (early)")
             if dw == 5 and cs == 9:
                 print(f"dw={dw} cs={cs} -> forcing G1=2")
+                if not onboarded_done and call_stat(h, ONBOARDED):
+                    print("onboard_character_selected set (late fallback)")
                 break
             time.sleep(0.5)
         else:

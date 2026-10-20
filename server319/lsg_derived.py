@@ -221,6 +221,38 @@ class DerivedLsgServer(AuthServer):
                                                "client consumption unverified"
                                                % os.environ.get("FINDSESS_PORT", "8466"))
                     counter += 1
+                elif (service, task) == (21, 5):
+                    # FindLobbiesByPlaylist. bdsvc319's default variant is one
+                    # make_server_entry, the same 114-byte bdMatchMaking record
+                    # used for svc71/task9.
+                    reply_payload = (candidate_svc71_task9_reply(
+                        counter, int(os.environ.get("FINDSESS_PORT", "8466")))
+                        .replace(b"\x03\x09", b"\x03\x05", 1))
+                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                                                 iv=os.urandom(16))
+                    conn.sendall(reply)
+                    self.evidence.write("candidate_task_reply", session,
+                                        reply_hex=reply.hex(),
+                                        reason="svc21/task5 one bdMatchMaking entry "
+                                               "127.0.0.1:%s; client consumption unverified"
+                                               % os.environ.get("FINDSESS_PORT", "8466"))
+                    counter += 1
+                elif (service, task) == (28, 4):
+                    # Presence service: PROGRESS.md is explicit that svc28 must
+                    # stay silent - answering it disrupts the session.
+                    self.evidence.write("svc28_silent", session,
+                                        reason="svc28/task4 observed and deliberately unanswered")
+                elif (service, task) in ((11, 13), (71, 3), (71, 7), (102, 5)):
+                    # Content/lobby/misc services: empty success so the
+                    # client stops retrying instead of receiving error=14.
+                    reply_payload = candidate_empty_success_reply(counter, task)
+                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                                                 iv=os.urandom(16))
+                    conn.sendall(reply)
+                    self.evidence.write("candidate_empty_task_reply", session,
+                                        reason=f"service={service} task={task} empty success; "
+                                               "shape unverified")
+                    counter += 1
                 elif self.observed71_empty and service == 71 and task in (3, 7, 9):
                     reply = build_server_frame85(
                         keys, candidate_empty_success_reply(counter, task),
