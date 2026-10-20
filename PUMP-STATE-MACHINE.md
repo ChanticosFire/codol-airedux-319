@@ -6,208 +6,305 @@
 适用 Build：**1604220**（产品标签 3.19.26.17，社区称 3.19.26.13）
 EXE SHA-256：`3da9ef965a65a41bd27d60da1b65fa14ee77ec278eb61624111142c8b1b2e85f`
 EXE 大小：7,842,456 字节
+image_base：`0x400000`
+
+最后更新：第 188 轮（2026-10-26）。**本文已按最新发现重写，取代旧版。**
 
 ---
 
-## 1. 结论摘要
+## 1. 一句话结论
 
-客户端登录完成（`dw=5`）后，大厅前端能否显示取决于一条链：
+**pump 每帧做一次"收包 → 组装 136 字节记录 → 交给 `Add` → 读状态 → 检查三道守卫 →
+必要时推进前端"的循环。当前断点是收包只拿到 3–4 字节（两个探测包），
+远不足以构成一条 136 字节记录，因此 `Add` 永远走"未就绪"分支，
+状态码停在 1，`[lobby+0x1F4]` 永远是 1，前端梯永不推进。**
 
-```
-FE 主循环 0x621750
-  → 读 [lobby+0x1F4]，若 == 1 则调 pump 0xBAD800
-  → pump 走"登记服务器条目"分支 0xBBAD40
-       成功 → [容器+0x1A0] = 1，之后到 4
-       失败 → [容器+0x1A0] = 5
-  → pump 检查 [容器+0x1A0] == 4
-       不等于 4 → 遍历数组 → 0xBAE781 → 写 [lobby+0x1F4] = 1
-       等于 4   → 0xBAE182 → 0xBAE1AC → 写 [lobby+0x1F4] = 2
-  → [lobby+0x1F4] == 2 才让 FE_state 5 → 6（0x6217BF）
-  → FE_state ∈ {4,6} 才让 0x730C50 报告 FE 已加载
-  → 0x730C50 为真才让 0x6BBF60 设置 onboard_character_selected 并推动 FE 梯
-```
-
-**离线环境下这条链断在第一步**：`0xBBAD40` 的登记永远失败，
-`[容器+0x1A0]` 恒为 5，`[lobby+0x1F4]` 恒为 1。
+**服务端必须返回至少 136 字节的记录，这条链才可能往下走。**
 
 ---
 
-## 2. 关键地址表
+## 2. 完整每帧循环（实证）
 
-| 地址 | 作用 | 证据 |
+地址来自 `0xBAD800` 起的主函数反汇编 + 运行时轮询。
+
+```
+pump (0xBAD800)
+│
+├─ 0xBAD83D  cmp byte [lobby+8], 0       入口门 1
+│             je 0xBAE7C6                实测 [lobby+8] = 1，门开着
+│
+├─ 0xBAD846  cmp dword [lobby+0x1F4], 1  入口门 2
+│             jne 0xBAE7C6               要求 1F4 恰为 1
+│
+├─ 0xBAD862  三个守卫标志清零
+│   0xBAD862  mov byte [ebp-0x989], 0
+│   0xBAD869  mov byte [ebp-0x986], 0
+│   0xBAD876  sete byte [ebp-0x988]      ← 来自 [ebx+0x4D70] == [ebx+0x18]
+│
+├─ 0xBAE215  lea ecx, [ebp-0x768]        收包目标缓冲
+│   0xBAE21B  call 0xB753A0              初始化
+│   0xBAE220  mov ecx, [lobby+0xC]       网络端点对象
+│   0xBAE225  mov eax, [eax+0x1C]        ★ vt+0x1C = 收包（0xC73FB0）
+│   0xBAE228  push 0x508                 1288 字节缓冲
+│   0xBAE242  call eax                   ★ 收包
+│   0xBAE244  mov esi, eax               ★ esi = 收到的字节数
+│
+├─ 0xBAE24E  push esi / push [ebp-0x548] 字节数 + 数据
+│   0xBAE256  sub esp, 0x88              136 字节
+│   0xBAE26B  call 0xB753C0              复制成一条记录
+│
+├─ 0xBAE276  call 0xBBA3F0               ★ Add(obj1)
+│   （Add 内部见 §4）
+│
+├─ 0xBAE281  call 0xBBA1E0               读 obj1 状态
+│   0xBAE286  cmp eax, 1
+│   0xBAE289  je 0xBAE292                 状态 == 1 则跳过
+│   0xBAE28B  mov byte [ebp-0x989], 1     ★ 状态 != 1 时置第二道守卫
+│
+├─ 0xBAE292  cmp [lobby+0x1FC], edi      服务器列表对象 vs ebx+8
+│   0xBAE298  je 0xBAE2DD                 相等则直接去守卫
+│   0xBAE2CD  call 0xBBA710              调用后
+│   0xBAE2D2  test al, al
+│   0xBAE2D4  jne 0xBAE2DD               返回值 != 0 则不去置位
+│   0xBAE2D6  mov byte [ebp-0x986], 1    ★ 返回 0 时置第三道守卫
+│
+├─ 0xBAE2DD  三道守卫检查
+│   0xBAE2E4  je 0xBAE7B4                [ebp-0x988] == 0 -> 复位
+│   0xBAE2EA  je 0xBAE7B4                [ebp-0x989] == 0 -> 复位
+│   0xBAE2F7  je 0xBAE7B4                [ebp-0x986] == 0 -> 复位
+│
+├─ 0xBAE304  mov ecx, [lobby+0x1F8]      obj1
+│   0xBAE30A  call 0xBBA1E0              读状态
+│   0xBAE30F  cmp eax, 2                 ★ 要求状态 == 2
+│   0xBAE312  jne 0xBAE5DB               否则跳过 1F4 推进
+│
+├─ 0xBAE31E … 0xBAE5C3                   一系列检查
+│   0xBAE5E6  mov eax, [ebx+0x130]       索引
+│   0xBAE5F3  lea edx, [eax+1]
+│   0xBAE5F6  mov [ebx+0x130], edx       索引 + 1
+│   0xBAE5FC  cmp eax, ecx               旧索引 vs 容量
+│   0xBAE5FE  jae 0xBAE613
+│   0xBAE60C  call 0xBBA1F0              未满 -> 发包
+│
+├─ 0xBAE587  mov dword [lobby+0x1F4], 2  ★ 推进前端（实测从未执行）
+│
+└─ 0xBAE7AC  mov dword [lobby+0x1F4], 1  复位
+```
+
+---
+
+## 3. 状态码 `[serverlist+0x1A0]` 的语义
+
+**实测位置：`serverlist = [lobby+0x1FC]`，状态码在其 `+0x1A0`。**
+
+| 码 | 含义 | 证据 |
 |---|---|---|
-| `0xBAD800` | lobby pump 主函数（约 4 KB） | 反汇编 |
-| `0xBAD83D` / `0xBAD846` | pump 入口两道门：`byte[lobby+8]!=0` 且 `[lobby+0x1F4]==1` | 反汇编 + 实测两者均满足 |
-| `0xBAE1AC` | 写 `[lobby+0x1F4] = 2`（成功） | 反汇编；**无任何跳转指向它**，只能顺序落到 |
-| `0xBAE781` / `0xBAE7AA` | 失败尾部，写 `[lobby+0x1F4] = 1` | 反汇编；`0xBAE7AA` 仅由 `0xBAE786 jbe` 进入 |
-| `0xBAE5DB` | 遍历服务器数组的循环头 | 反汇编；入口为 `0xBAE312`/`0xBAE326` 两个 `jne` |
-| `0xBBAD40` | 服务器条目"登记"例程 | 反汇编 |
-| `0xBBADCD` | `0xBBAD40` 的失败分支，写 `[容器+0x1A0] = 5` | 反汇编 + 模式扫描命中 |
-| `0xBBA8A0` | 登记结果的验证包装 | 反汇编 |
-| `0xBBA760` | 按 key 读取定长记录的实现 | 反汇编 |
-| `0xBC1C00` | 构造查询对象 {类型 0x14, 子类型 2, key} | 反汇编 |
-| `0xBC1C20` | 执行查找（转 `0xB783E0`） | 反汇编 |
-| `0xBBA810` | 440 字节容器构造，四个子容器全空 | 反汇编 + 实测 |
-| `0x730C50` | FE-loaded 判定 | 反汇编 |
-| `0x6BBF30` | firstlogin 判定 | 反汇编 |
-| `0x6BBF60` | 设置 onboard_character_selected | 反汇编 |
-| `0x621750` | FE 主循环 | 反汇编 |
-| `0x6217BF` / `0x6217D0` | `FE_state: 5→6` / `3→4` | 反汇编 |
+| 0 | 未初始化 | 反汇编 |
+| **1** | **等待（pending）** | `0xBBA710` 对 1/2/3 返回 1 |
+| **2** | **`Add` 成功写入 2 后的状态** | §12.164 实测可达 |
+| 3 | 另一中间态 | `0xBBA62B` 写 3 |
+| **4** | **就绪（有数据）** | `0xBBA730` 只对 4 返回 `[0x19C]` |
+| **5** | **发送失败** | `0xBBAAAC` 写 5（`0xBBA8C0` 返回 0） |
 
-### 2.1 关键数据地址
+**写入点（全部 7 处，另有 1 处死代码）：**
 
-| 地址 | 含义 | 实测值 |
+| 地址 | 值 | 条件 |
 |---|---|---|
-| `0x84ABA40` | `dw`（登录进度） | 5 = 登录完成 |
-| `0x84ABA50` | `ui_state` | 9 = 训练官/取代号页面 |
-| `0xE59D20` | `FE_state` | 5（见 §4） |
-| `0xE85C68` | lobby 单例指针（`0x643280` 懒创建） | 运行时非零 |
-| `0x3306D60` | 指向 `0x80FA044`，后者是**全局字符串表**，不是账号对象 | `[D+0x00]` → `cod4master.activision.com` 等 |
-| `[lobby+0x1F0]` | 大厅连接对象 | 非空，有 vtable |
-| `[lobby+0x1F4]` | pump 状态：1=失败/未完成，2=成功 | 恒为 1 |
-| `[lobby+0x1F8]` | 对象 1（`+0x120` 是它的状态） | `+0x120` = 3（目标 2） |
-| `[lobby+0x1FC]` | 对象 2：440 字节容器（`+0x1A0` 是状态） | `+0x1A0` = 5（目标 4） |
-| `[lobby+0x4D60]` | 服务器数组基址 | 非空 |
-| `[lobby+0x4D68]` | 数组容量 | 1 |
-| `[lobby+0x4D6C]` | 数组当前索引 | 0 |
-| `[lobby+0x8A8]` | 22011 字节缓冲，开头是 `192.168.1.3` | 内容为历史残留 |
+| `0xBB76BB` | 0 | 构造/清理 |
+| `0xBBA0A4` | `esi` | 未详 |
+| `0xBBA1C7` | 0 | 清理 |
+| `0xBBA33E` | 0 | 未详 |
+| `0xBBA3D2` | **1** | `Init`，`dw=2` 时运行一次 |
+| `0xBBA569` | **2** | `Add` 成功分支 |
+| `0xBBA62B` | **3** | `Add` 容量满 |
+| `0xBBA900` | **4** | 类型 `0x15` 消息路径 |
+| `0xBBAAAC` | **5** | 发送失败 |
+| ~~`0xBBA2B6`~~ | ~~4~~ | **死代码，无跳转可达** |
 
 ---
 
-## 3. 容器的状态机（`[lobby+0x1FC] + 0x1A0`）
+## 4. `Add`（`0xBBA3F0`）的完整逻辑
 
-全部写入点已定位：
+`ret 0x90`——144 字节参数。
 
-| 值 | 地址 | 语义 |
+```
+0xBBA426  cmp dword [ebx+0x120], 1     要求状态 == 1
+0xBBA42A  jne 0xBBA635                  否则返回
+0xBBA43A  mov edi, [ebp+0x94]           ★ count
+0xBBA442  jle 0xBBA5C3                  count <= 0 -> 走推进分支
+
+成功分支（count > 0）：
+0xBBA448  … 构造容器、比较、追加 …
+0xBBA465  je 0xBBA5A5                   ★ 过滤 A（比较结果 == 0 则跳过）
+0xBBA483  je 0xBBA5A5                   ★ 过滤 B（追加失败则跳过）
+0xBBA55E  push 0x63
+0xBBA569  mov dword [ebx+0x120], 2      ★ 写 2
+0xBBA5CA  jne 0xBBA635                  返回
+
+推进分支（count <= 0）：
+0xBBA5C3  cmp dword [ebx+0x120], 1
+0xBBA5CA  jne 0xBBA635
+0xBBA5E6  mov eax, [ebx+0x130]          索引
+0xBBA5F6  mov [ebx+0x130], edx          索引 + 1
+0xBBA5FC  cmp eax, ecx                  旧索引 vs 容量
+0xBBA5FE  jae 0xBBA613                  已满
+0xBBA60C  call 0xBBA1F0                 未满 -> 发包
+0xBBA611  jmp 0xBBA635                  返回
+0xBBA613  … 0xBBA620  jb 0xBBA635
+0xBBA62B  mov dword [ebx+0x120], 3      写 3
+```
+
+**两个过滤分支的编码：**
+
+```
+0xBBA465  0F 84 3A 01 00 00   je 0xBBA5A5
+0xBBA483  0F 84 1C 01 00 00   je 0xBBA5A5
+```
+
+**§12.163 已用哨兵法证明：把这两条各改成 6 个 `nop`（`90 90 90 90 90 90`）后，
+`0xBBA569` 的哨兵立刻出现且稳定——它们就是唯一的过滤。**
+
+**§12.164 证明：只打这两个补丁，状态会从 1 变成 2 并稳定保持（1883 次采样）。**
+
+---
+
+## 5. 类型 `0x15` 消息路径
+
+**这是把状态推进到 4 的唯一路径，且完全在 pump 内部（§12.202/§12.203）。**
+
+```
+pump 0xBAE2C2  call 0xBBADE0(serverlist, &136字节)
+  └─ 0xBBAE3A  call 0xBBAAF0           （全镜像唯一调用者）
+       ├─ 0xBBAB33  test edi, edi       ① 长度 > 0
+       ├─ 0xBBAB57  call 0xBC1D20       ② 解析，须返回 1
+       ├─ 0xBBAB66  call 0xBC1CB0       ③ 取类型
+       ├─ 0xBBAB6B  cmp al, 0x15        ④ 类型须 == 0x15
+       └─ 0xBBAB7C  call 0xBBA900       ⑤ 状态 = 4
+```
+
+**消息格式（由 `0xBC1D20` 反汇编得出）：**
+
+```
+[1 字节类型 0x14..0x1D] [2 字节 word（须为 1 或 2）] [4 字节] [2 字节]
+                                                        ↑ 共 9 字节最小
+```
+
+**`0xBBAB4C push esi` / `0xBBAB4B push edi`——`esi` 是数据指针，`edi` 是长度。**
+
+---
+
+## 6. 发送链（`0xBBA760` → `0xC73F30` → `0xBB1420`）
+
+```
+0xBBA760(this, ptr, buf, len)
+  ├─ 0xBC1C20  序列化到 1288 字节缓冲，长度写入 [ebp-0x510]
+  └─ 0xBBA7C0  ecx = [this] -> vtable
+     0xBBA7C4  eax = [vt+0x18] = 0xC73F30（发送）
+     0xBBA7CF  push edi（= this+4，指针，不是类型值）
+     0xBBA7D0  call eax
+
+0xC73F30(this, ptr, buf, len)
+  ├─ 0xC73F57  call 0x853A10        恒等函数（mov eax,ecx; ret）
+  ├─ 0xC73F6C  call 0xB754C0        返回 [ptr+0x84] 的 word
+  └─ 0xC73F88  call 0xBB1420        ★ 真正的发送
+
+0xBB1420
+  ├─ 0xBB143B  cmp [ebp+8], -1      检查 INVALID_SOCKET，等于则返回 -10
+  ├─ 0xBB146A  sockaddr.sin_family = AF_INET
+  ├─ 0xBB1477  call [0xCA8550]      端口字节序转换
+  ├─ 0xBB1485  sockaddr.sin_port = ax
+  ├─ 0xBB1492  call [0xCA8518]      ★ sendto
+  └─ 0xBB149C  jns 成功 / 否则查错误跳表 0xBB157C
+```
+
+**成功条件（`0xBBA7D6`）：`sendto` 返回值必须 `> 0` 且 `== 序列化长度`。**
+
+**调用点的栈平衡（§12.200 已核准）：**
+
+```
+push ecx (0xC73F66)  4      ← 这两个 push 是给 0xB754C0 的，
+push esi (0xC73F67)  4        但它是裸 ret，不清理，留在栈上
+push edx (0xC73F77)  4
+sub esp,0x84 (0xC73F78) 132
+push eax (0xC73F85)  4
+                     ---
+合计                148 = 0x94   ← 与 add esp,0x94 完全吻合
+```
+
+---
+
+## 7. 关键对象与字段（全部实测）
+
+```
+lobby = [0xE85C68]
+  +0x00  vtable = 0x00D5A9D0
+  +0x04  0（§12.177 曾误读为 socket，实为无关字段）
+  +0x08  1（pump 入口门 1）
+  +0x0C  网络端点对象（vt+0x18=发送 0xC73F30，vt+0x1C=收包 0xC73FB0）
+  +0x14  4
+  +0x18  3
+  +0x1C  0x0C02（3074）
+  +0x1F4 前端梯标志（1 = 等待，2 = 推进；实测恒为 1）
+  +0x1F8 obj1（列表容器，`[obj1+0x120]` = 状态码）
+  +0x1FC serverlist
+
+serverlist = [lobby+0x1FC]
+  +0x84  2              （类型/标识，不是端口）
+  +0x88  0x0C02 = 3074  （端口）
+  +0x8C  0xFF00FF00     （地址字段）
+  +0x19C 结果码（状态 == 4 时有效）
+  +0x1A0 状态码
+  +0x1A4 byte 标志
+
+p = [serverlist] = 0x37xxxxxx
+  +0x00  vtable = 0x00D95558
+  +0x04  socket 句柄（实测 11624，有效）
+```
+
+**注意**：`[serverlist]` 指向的对象带 `0x00D95558` vtable，其 `+4` 是 socket。
+**`0xC73F74 mov eax,[ebx+4]` 里的 `ebx` 就是这个对象，不是 lobby。**
+
+---
+
+## 8. 工具与已知陷阱
+
+| 工具 | 用途 | 陷阱 |
 |---|---|---|
-| 0 | `0xBBA871` | 构造时初始 |
-| 1 | `0xBBAD95` | `0xBBAD40` 登记成功 |
-| 4 | `0xBBAD10`、`0xBBA951`、`0xBBA97D`、`0xBBA9F5` | **完成**（pump 要求的终态） |
-| **5** | `0xBBAAAC`、`0xBBADB0`、**`0xBBADCD`**、`0xBBAC3E`、`0xBBACF4` | **失败** |
+| `tools/branch_map.py` | 列出区间内所有跳转及目标 | **必须**用全镜像范围 `--lo 0x400000 --hi 0xDD0000`，默认范围会假阴性（§12.202） |
+| `tools/branches_to.py` | 查某地址的调用者 | 同上 |
+| `tools/find_offset.py` | 搜结构偏移的 disp32 | 偏移需按 `0xFFFFFxxx` 形式传（如 `[ebp-0x768]` → `0xFFFFF898`） |
+| `tools/dump_code.py` | 反汇编 | **起点必须是已知指令边界**，否则整段错位（§12.182 因此误判过） |
+| `tools/probe_reg.py` | hook + 寄存器采样 | 条件分支类挂点会崩 |
+| `tools/sentinel_*.py` | 只改立即数 + 轮询 | **最可靠**的观测手段 |
+| `tools/watch_statecode.py` | 等客户端可读后轮询状态码 | 必须用，不能 `-SkipWait` 后立刻轮询 |
 
-`0xBBADCD` 是 `0xBBAD40` 自己的失败分支：
+**方法论教训（都踩过）：**
 
-```asm
-0xBBAD86  call 0xBBA8A0
-0xBBAD8B  cmp al, 1
-0xBBAD8D  jne 0xBBADCD          ; 失败
-0xBBAD95  mov [ebx+0x1a0], 1    ; 成功
-0xBBADCD  mov [ebx+0x1a0], 5    ; 失败
-```
-
-**实测 `+0x1A0` = 5，所以登记是失败的，不是"进行中"。**
-
----
-
-## 4. FE_state 与 FE 梯
-
-`[0xE59D20]` 是一台状态机，写入点共 6 处：
-
-| 地址 | 写入 | 条件 |
-|---|---|---|
-| `0x6216B9` | **3 或 5** | `lea edx,[edx+edx+3]`，由某布尔参数决定 |
-| `0x6216E9` | 0 | 重置 |
-| `0x62171C` | 1 | 启动 |
-| `0x6217BF` | 6 | 原值 5 且 `[lobby+0x1F4]==2` |
-| `0x6217D0` | 4 | 原值 3 且 `[lobby+0x1F4]==2` |
-| `0x621A00` | 视 `edi` | — |
-
-`0x730C50`（FE-loaded）的完整条件：
-
-```asm
-0x730C57  cmp [0xE59D20], 4      ; 必须 4 或 6
-0x730C67  call 0x803700          ; 对象非空
-0x730C79  cmp eax, 2             ; 0xB7A680 返回 2
-0x730C90  cmp [0x84ABABC], 1     ; script_state
-0x730CBE  cmp byte [0x82C4A86], 0; fe_final
-```
-
-**第一个条件不满足时，后两个写不写都无所谓**——这解释了为什么
-`fix_fe_loaded`（改 `script_state`/`fe_final`）完全无效。
+1. **读结构字段前必须核对完整寻址链**——§12.196 因漏了 `[serverlist]` 一级，
+   得出"socket 从未创建"的错误结论。
+2. **反汇编起点错了整段都错**——先找 `push ebp / mov ebp,esp` 或已知指令边界。
+3. **任何"命中次数 < 预期"的观测，先排除客户端已崩溃。**
+4. **栈平衡算术是验证理解的好手段**——§12.200 用它发现了两个未清理的 push。
 
 ---
 
-## 5. 容器查找的精确契约
+## 9. 当前阻塞点与下一步
 
-`0xBBA760(this, key, out)` 期望的是一条定长记录：
+**阻塞点**：`0xBAE242` 的收包只返回 3–4 字节（探测包），
+不足以构成 136 字节记录，`Add` 永远走 `count <= 0` 分支。
 
-```asm
-0xBBA773  mov eax, [ebp + 8]        ; key
-0xBBA787  call 0xBC1C00             ; 构造查询对象
-0xBBA795  push 0x508                ; 期望长度 1288
-0xBBA7A1  call 0xBC1C20             ; 查找
-0xBBA7B8  jne fail                  ; 未命中
-0xBBA7D6  cmp eax, [ebp - 0x510]
-0xBBA7DC  jne fail                  ; ★ 长度严格相等，不是 <=
-```
+**要打开这条链，服务端需要：**
 
-查询对象由 `0xBC1C00` 构造：
+1. 在 UDP 3074 上返回**至少 136 字节**的记录，使 `Add` 的 `count > 0`；
+2. 并让记录通过 `0xBBA465`/`0xBBA483` 两个过滤（条目不重复 + 追加成功）；
+3. 之后 `Add` 会写状态 2，`0xBAE30F` 的门槛满足；
+4. 再提供一条**类型 `0x15`** 的消息（格式见 §5）把状态推到 4。
 
-```asm
-0xBC1C0D  mov byte ptr [eax], 0x14    ; 类型 0x14
-0xBC1C10  mov word ptr [eax + 2], 2   ; 子类型 2
-0xBC1C14  mov dword ptr [eax + 4], edx; key
-```
+**已验证的辅助手段**：若要单独验证后续环节，可对
+`0xBBA465` 与 `0xBBA483` 各打 6 字节 `nop`，此时状态会稳定变成 2
+（§12.163/§12.164），但 `1F4` 仍不变，因为状态 2 只满足
+`0xBAE30F` 的第一道要求，后面还有索引/容量与三道守卫。
 
-**即需要 {类型 0x14, 子类型 2, key 0, 长度 1288} 的记录。**
-
-而 `0xBBAD40` 只做：
-
-```asm
-0xBBAD58  mov [ebx], eax              ; 存 arg1
-0xBBAD6B  mov ecx, 0x22               ; 34 dwords
-0xBBAD70  rep movsd                   ; ★ 只复制 136 字节到 [ebx+4]
-0xBBAD7D  call 0xBBAF00               ; 只做范围检查与浮点比较，不写容器
-0xBBAD86  call 0xBBA8A0               ; 查 key=0 的 1288 字节 -> 必然失败
-```
-
-**复制 136 字节、却要求 1288 字节** —— 这是整条链的矛盾点，也是当前调查的
-终止位置。（136 = 数组条目大小 `0x88`，1288 = 容器记录大小 `0x508`，两者
-不是整数倍关系。）
-
----
-
-## 6. 已排除的假设（含证据）
-
-| 假设 | 结论 | 证据 |
-|---|---|---|
-| 136 字节是加密密钥 | 否 | 它是数组记录，`0xBAE5FF imul eax,eax,0x88` |
-| 136 字节是服务器地址块 | 否 | 同上 |
-| `svc71/task4` 应答形状不对 | 否 | 数组已存入 `127.0.0.1` 条目，容量 1 |
-| `0xBAF040` 失败导致写 1 | **否** | 成败两条路都到 `0xBAE182`（§3.2） |
-| 强写 `[lobby+0x1F4]=2` 能推进 | **否** | 它是崩溃源，10 秒内进程退出 |
-| firstlogin 修复有害 | **否** | 写 `[D+0xC]=1` 让 FE 梯 `G1: 0→1`，是有效的 |
-| 打桩 `0x6BBF30` 等价于写字段 | **否** | 打桩会跳过 `0x6BBF60` 等副作用，24 秒崩溃 |
-| 9 处 pump 补丁可能有害 | **否** | 只用 M3 的 6 个补丁会崩溃 |
-| `task3`/`task7` 是房间协议 | **否** | 解密后是 `ClientOffline`/`ClientException` 日志上报 |
-| `rankIconTable.csv` 可从 `.ifs` 提取 | **否** | 987 个包深度扫描 0 命中，在加密 fastfile 内 |
-| `[lobby+0x1F4]` 每帧被写 | **未证实** | 采样工具两次出错，结论作废 |
-
----
-
-## 7. 可复用的工具
-
-| 工具 | 用途 |
-|---|---|
-| `tools/patch_runtime.py` | 15 处运行期补丁，参数格式 `RVA:NEW:EXPECTED` |
-| `tools/auto_lobby.py` | 等待 `dw=5` 并写状态位 |
-| `tools/peek.py` | 任意地址读内存，支持指针跟随 |
-| `tools/jump_map.py` | 在 `0xBAD800` 内枚举跳转来源 |
-| `tools/find_stores.py` | 16 种编码的写入点扫描 |
-| `tools/decrypt_frames.py` | 用 sidecar 密钥解密 `client_frame.body_hex` |
-| `tools/parse_task_tlv.py` | 解析 `47 03 <task>` 的 TLV 字段 |
-| `tools/show_lsg.py` / `show_patches.py` | 精简日志视图 |
-| `tools/test_frames.py` / `test_contracts.py` | 40 项离线契约测试 |
-
----
-
-## 8. 给后续研究者的建议
-
-1. **先人工完成一次代号流程**。本文所有分析都停在"客户端无法离开代号页"这一步；
-   一旦进过大厅，`config_mp.cfg` 就有了有效存档，后续可复用。
-2. **不要强写内存状态**。`[lobby+0x1F4]`、`FE_state`、打桩 `0x6BBF30` 都会崩，
-   各有记录。
-3. **136 vs 1288 是唯一未解的矛盾**。若有人能读到一个**成功登记后**的容器内容，
-   就能知道那 1288 字节该是什么。
-4. **采样工具先自检**。两次"0 命中"都是工具 bug（204 字节 CONTEXT、
-   64 位读 32 位），不是行为观测。
+**下一轮该做什么**：先弄清 `0xBC1D20` 期望的 136 字节记录**具体字段布局**
+（反汇编 `0xB770F0`、`0xB75720` 的组合），然后在 `lobby_udp.py` 里
+构造一条能通过 `Add` 两个过滤的记录，观察状态是否自然变成 2。
