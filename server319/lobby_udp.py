@@ -27,9 +27,10 @@ class LobbyEndpoint:
     """UDP echo plus a quiet TCP listener on the same loopback port."""
 
     def __init__(self, port: int = 3074, log_path: Path | None = None,
-                 echo: bool = True) -> None:
+                 echo: bool = True, reply: bytes | None = None) -> None:
         self.port = port
         self.echo = echo
+        self.reply = reply
         self.log_path = log_path
         self._stop = threading.Event()
         self._udp: socket.socket | None = None
@@ -82,7 +83,15 @@ class LobbyEndpoint:
                 return
             self.note("udp_in", src=f"{addr[0]}:{addr[1]}", length=len(data),
                       hex=data.hex())
-            if self.echo:
+            if self.reply is not None:
+                # A fixed byte sequence, chosen by LOBBY_UDP_REPLY, so candidate response
+                # shapes can be searched without knowing the protocol up front.
+                try:
+                    self._udp.sendto(self.reply, addr)
+                    self.note("udp_reply", length=len(self.reply), hex=self.reply.hex())
+                except OSError as exc:
+                    self.note("udp_reply_failed", error=type(exc).__name__)
+            elif self.echo:
                 try:
                     self._udp.sendto(data, addr)
                     self.note("udp_echo", length=len(data))
@@ -146,7 +155,9 @@ def main() -> int:
     # parse into zero entries. LOBBY_UDP_ECHO=0 keeps the socket silent so a genuinely starved
     # recv can be told apart from a junk reply.
     echo = os.environ.get("LOBBY_UDP_ECHO", "1").strip().lower() not in ("0", "false", "no")
-    server = LobbyEndpoint(port, log, echo=echo)
+    raw_reply = os.environ.get("LOBBY_UDP_REPLY", "").strip()
+    reply = bytes.fromhex(raw_reply) if raw_reply else None
+    server = LobbyEndpoint(port, log, echo=echo, reply=reply)
     server.start()
     try:
         time.sleep(seconds)
