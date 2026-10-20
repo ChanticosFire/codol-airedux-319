@@ -549,3 +549,70 @@ tls_handshake_failed  SSLError: [SSL: TLSV1_ALERT_UNKNOWN_CA] tlsv1 alert unknow
 #### 下一步（两条）
 1. **系统证书库**：`certutil -addstore -user Root ca.crt`（用户级，不需管理员；属证书操作，不在硬边界的网络/驱动/原件范围内，但需用户确认口径）。
 2. **客户端补丁**：定位 TLS 校验失败分支并跳过（与 `patches319.py` 同风格的内存补丁，跑完即弃）。
+
+### 12.10 ★ 突破：`[100]` 已过，`dw=5` 达成，`DWLOGON_REGISTERCODOID_COMPLETE`（2026-10-22 21:2x）
+
+`runs/20261022-1604220-min/` 的采样（首次出现 `dw=5`）：
+
+```
+dw=2, ui=6, DW_DNS_COMPLETE
+dw=5, ui=9, ready=1, lstate=2, state=DWLOGON_REGISTERCODOID_COMPLETE
+```
+
+截图确认 UI 从 `[100]无法连接大厅服务` 变为 `[111]与大厅服务失去连接` —— **100 报错已消失**。
+
+### 三个决定性修复
+
+1. **TLS 证书必须是自签（叶子 = CA）**
+   社区 `workflow.tls_pair()` 生成的就是自签证书；我们一直用「CA 签发叶子」的链式证书，1604220 的 Base DLL（OpenSSL）不认。
+   换成 `openssl req -x509 ... -addext "subjectAltName=IP:127.0.0.1,DNS:localhost"` 生成的单证书后，`auth.jsonl` 立刻出现
+   `auth_request len=188` → `auth_response 200`。
+   同时把该证书写入 `runtime\client-1604220\cacert.pem` 与 `C:\Program Files (x86)\Common Files\SSL\cert.pem`。
+
+2. **Auth 响应必须是最小字段集**
+   对照 `codol-ember/.../authchan.py::auth_answer`，1604220 只接受 7 个字段：
+
+   ```python
+   auth_task      = 请求值 + 1      （字符串）
+   code           = "700"           （字符串！）
+   iv_seed        = 请求原值
+   client_ticket  = build_ticket() 的 base64
+   server_ticket  = build_ticket() 的 base64
+   identity       = 请求原值
+   lsg_server_ticket / lsg_server_ticket_size
+   ```
+
+   我们原来的 `result`/`success`/`member_position`/`estimated_wait_time`/`next_poll_after`/`time_to_live`/`licenses`/`license_id`/`cd_key`/`ciphertext`/`extra_data`/`user_id`/`title_id` **全部移除**，`server_ticket` 从全零改为真实票据。字段一收敛，`DW_ACCOUNT_ERROR` 消失。
+
+3. **LSG 侧已能完成完整握手**
+   `lsg.jsonl` 首次出现：
+
+   ```
+   session_derived          challenge_verified; client-memory-read=false
+   client_frame_verified    counter=1 inner=0x86 payload_len=83
+   task_request             service=71 task=4 bytes=83
+   candidate_task_reply     svc71/task4 reference candidate
+   client_frame_verified    counter=2 inner=0x86 payload_len=8
+   task_request             service=71 task=9 bytes=8
+   unhandled_task           service=71 task=9
+   terminal_task_reply      svc71/task9 error=14
+   client_frame_verified    counter=3 inner=0x86 payload_len=142
+   task_request             service=71 task=3 bytes=142
+   unhandled_task           service=71 task=3
+   terminal_task_reply      svc71/task3 error=14
+   ```
+
+   说明 `session_derived`（密钥派生）已不再依赖读客户端内存，客户端帧校验也通过。
+
+### 当前唯一缺口：`[111]`
+
+`[111]` = `SF_UI_DW_LIVE_DISCONNECTED`，发生在 `svc71/task9` 与 `svc71/task3` 被 `unhandled_task` → `error=14` 之后。
+
+按 `bdsvc319.py`：
+- `svc71/task4` → `u32 0`（已有）
+- `svc71/task9` → `make_server_entry(host, port)`（82 字节 bdMatchMaking 条目，**未实现**）
+- `svc71/task3` → `bdsvc319` 未单列，应走默认空成功
+
+### 下一步
+
+在 `server319/lsg.py` 补 `svc71/task9`（82B server entry，指向 `127.0.0.1:8466`）与 `svc71/task3`（空成功），把 `error=14` 换掉，再观察 `dw` 是否稳定在 5 且 `[111]` 消失。

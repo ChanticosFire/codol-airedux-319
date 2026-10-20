@@ -59,35 +59,37 @@ def build_response(request: dict) -> dict:
         except (ValueError, AttributeError):
             user_id = "0"
     client_ticket = base64.b64encode(build_ticket(user_id)).decode()
+    # 1604220 expects a real (Tiger-checked) server ticket in both slots; an
+    # all-zero ticket made the client stop with DW_ACCOUNT_ERROR.
+    server_ticket = base64.b64encode(build_ticket(user_id, b"server")).decode()
+    # Match codol-ember's 1604220 auth_answer exactly: seven fields, auth_task
+    # answered as request+1, code as the string "700", sizes as strings. Extra
+    # fields (result/success/member_position/...) make the strict parser stop
+    # with DW_ACCOUNT_ERROR.
     response = {
-        "result": AUTH_RESULT_SUCCESS,
-        "code": AUTH_RESULT_SUCCESS,
-        "success": True,
-        # 1604220 queue-response parser requires all three numeric fields
-        # before processing the LSG ticket. Candidate fix for 1649370;
-        # zero means immediate admission. Validate with same-process traces.
-        "member_position": 0,
-        "estimated_wait_time": 0,
-        "next_poll_after": 0,
+        "auth_task": str(int(request.get("auth_task", 10)) + 1),
+        "code": str(AUTH_RESULT_SUCCESS),
         "iv_seed": str(request.get("iv_seed", "0")),
-        "server_ticket": ZERO_TICKET,
-        "server_ticket_size": TICKET_BYTES,
-        "lsg_server_ticket": ZERO_TICKET,
-        "lsg_server_ticket_size": TICKET_BYTES,
         "client_ticket": client_ticket,
-        "client_ticket_size": TICKET_BYTES,
-        "time_to_live": 3600,
-        "licenses": [],
-        "license_id": license_id,
-        "cd_key": "",
-        "ciphertext": "",
-        "extra_data": "{}",
-        "user_id": user_id,
-        "identity": request.get("identity", "356c4bc3"),
-        "title_id": title_id,
+        "server_ticket": server_ticket,
+        "identity": request.get("identity", "local"),
+        "lsg_server_ticket": server_ticket,
+        "lsg_server_ticket_size": str(TICKET_BYTES),
     }
-    if request.get("auth_task") is not None:
-        response["auth_task"] = str(int(request["auth_task"]) + 1)
+    if int(request.get("auth_task", 10) or 10) == 32:
+        # the auth_task-33 reply needs extra_data (codoid handshake)
+        inner = request.get("extra_data")
+        codo_request = ""
+        if isinstance(inner, str):
+            try:
+                codo_request = (json.loads(inner) or {}).get("codo_request") or ""
+            except (ValueError, AttributeError):
+                codo_request = ""
+        response["extra_data"] = json.dumps({
+            "username": "1270000000000000000",
+            "encrypted_codoid": "A" * 25,
+            "encrypted_register_codoid_data": codo_request,
+        }, ensure_ascii=False)
     return response
 
 
