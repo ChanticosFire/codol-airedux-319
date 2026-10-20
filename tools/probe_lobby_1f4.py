@@ -108,8 +108,18 @@ def main() -> int:
                     # [ecx+0x1D4], where ecx = lobby+0x6D0.
                     ch_len = read(h, obj + 0x8A4, 2)
                     row["chan_len @+0x8A4"] = struct.unpack("<H", ch_len)[0] if len(ch_len) == 2 else None
-                    head = read(h, obj + 0x8A8, 16)
-                    row["chan_head"] = head.hex() if head else None
+                    blob = read(h, obj + 0x8A8, 0x90)
+                    if blob:
+                        row["chan_head"] = blob[:16].hex()
+                        # dump the full block once, in 16-byte rows
+                        if not getattr(main, "dumped", False):
+                            main.dumped = True
+                            print("--- [lobby+0x8A8] 144 bytes ---")
+                            for off in range(0, len(blob), 16):
+                                chunk = blob[off:off + 16]
+                                hx = " ".join(f"{b:02x}" for b in chunk)
+                                tx = "".join(chr(b) if 32 <= b < 127 else "." for b in chunk)
+                                print(f"  {obj + 0x8A8 + off:#010x}  {hx:<48} {tx}")
                     if args.set is not None and val is not None and val != args.set:
                         if write(h, obj + OFF, struct.pack("<I", args.set)):
                             print(f"  wrote {args.set} at {obj + OFF:#x} (was {val})")
