@@ -614,3 +614,31 @@ response  += HMAC-SHA1(resp_hmac_key, response)[:8]   # ★ 真 HMAC，不是 8 
 **剩下的唯一解释**：`packet_buffer` 里含**非 LSG 帧**的数据（极可能是 Auth 响应中的 `server_ticket`/`client_ticket`/`iv_seed`/`ciphertext` 的组合，且可能带长度前缀或编码转换），这必须看原 `lsg.js` 的 `packetBuffer` 构造代码才能确定。
 
 **当前证据链已足够让 Codex 直接接手**：算法（`bdproto319.py`）、帧格式（`make_encrypted_reply`）、自检目标（`dec_key` = `8e6b3363…`）、以及全部已排除项。
+
+## 0.29 转向：319 参考的编排技术（2026-10-21 08:x）
+
+同一卡点已连续 3 轮无进展，按目标要求换方向，审阅 `codol-ember/工具-tools/launch319-reference/reference/launch/orch319.py`（36KB）：
+
+- **`--mark-onboarded`**：在 UI 激活前把 `onboard_character_selected`（统计名 `0xDC3EA0`）置位，跳过选人/键盘步骤。
+- **`--set-rank`**：`RH.install_stat_getter(h, rank)` 劫持统计读取，让生涯等级显示为指定值。
+- **`--unlock-all`**：`apply_unlock_all(h, fh)` 直接改内存补丁值。
+- **`--fatal-at-dw5`**：在 dw 首次到 5 的瞬间才补 `Com_Error`（既保留 dw=5 又保住窗口）。
+- **`set_stat_int(h, fh, name_va, value)`**：核心手法——`VirtualAllocEx` 分配 code cave，写入一段调用游戏自身函数的桩：
+
+```asm
+push name_va
+call 0x6B4070      ; 按名查统计句柄
+add esp,4
+push value
+push eax
+call 0x511850      ; 写统计值
+add esp,8
+xor eax,eax
+ret
+```
+
+然后 `CreateRemoteThread` 执行。**这是进程内执行，不落盘、不改原件**，属于我们硬边界允许的范围内。
+
+- `orch319.py` 里**没有** `0x84ABA*` 的引用，说明它判定 `dw=5` 靠的是别的信号（日志/字符串/`Com_Error` 时机），不是直接读 `[0x84ABA50]`。
+
+**本轮结论**：参考实现的 `dw=5` 依赖 **Auth/LSG 协议**正常，编排器只负责「到 5 之后」的前端激活与数据修补（onboarding、rank、unlock）。它**不能**替我们跨过协议缺口，但 `set_stat_int` 这套 code-cave 技术可用于后续让 UI 少弹窗（如跳过 onboarding、隐藏连接提示），值得在协议打通后复用。
