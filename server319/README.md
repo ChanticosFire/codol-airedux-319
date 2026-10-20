@@ -2,7 +2,8 @@
 
 This is an independent, local service for Build 1649370. The top-level
 capture/Auth CLI verifies four known client files before opening a listener.
-The LSG CLI is a separate local listener and does not itself launch a client.
+The LSG CLI is a separate local listener, checks the same four anchors before
+listening, and does not itself launch a client.
 
 - **capture** (default): a provisional little-endian 32-bit length envelope;
   records metadata for unknown frames and never fabricates a reply.

@@ -356,4 +356,6 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 
 已新增 [lsg_crypto.py](server319/lsg_crypto.py)：拒绝式校验握手与 0x85 长度/MAC/零填充，派生四把方向密钥并构造带真 HMAC 的 S2C `AB85` 帧。[lsg_derived.py](server319/lsg_derived.py) 将其接入本机 4174 原始 LSG 通道，默认 CLI 已切到该实现；旧进程读内存的探针仍可显式 `--legacy-probe` 对照。它只对捕获中出现的 `svc71/task4` 发**候选**应答，其他请求记录后不伪造成功。26 项合成单元测试及三轮原始帧离线验证通过；**没有目标客户端消费新 S2C 帧的运行证据**。现阶段不把任何 `ui=4` 判为大厅成功，`ui=5` 也仍需画面与交互佐证。
 
+追加独立对照：本项目 `svc71/task4` 候选应答与第三方 `bdsvc319.handle_service` 对同一合成输入均为 31B 且逐字节相等；这只确认来源移植无误，不是客户端接受。LSG CLI 启动前现在也直接校验隔离副本四项锚点，拒绝 Build/文件身份不符；原工作副本本轮 `server319 --preflight` 四项通过。
+
 下一实验应在符合 [LONG-RUN-GOAL.md](LONG-RUN-GOAL.md) 边界的现有隔离副本上，以独立 run 目录验证新 4174 的 token、客户端第一条 0x85、服务端 `candidate_task_reply` 与客户端下一状态；逐项核输入哈希、PID/端口、截图、补丁 pre-image/恢复和退出。当前 Medium 令牌下 IIPS Host 不会自然启动，故本轮仅完成离线证据与服务实现，不从合成 socket 测试推断游戏大厅已进入。

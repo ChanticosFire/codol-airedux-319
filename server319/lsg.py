@@ -463,11 +463,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=4174)
     parser.add_argument("--log", required=True, type=Path)
     parser.add_argument("--seconds", type=float, default=180.0)
+    parser.add_argument("--client-dir", type=Path,
+                        default=Path("runtime/client-1649370"),
+                        help="isolated Build 1649370 copy for four-anchor preflight")
     parser.add_argument("--legacy-probe", action="store_true",
                         help="use the prior memory-reading diagnostic handler")
     parser.add_argument("--token-marker", choices=("00", "ab"), default="00",
                         help="0x83 wire marker; 00 preserves the observed local baseline")
     args = parser.parse_args(argv)
+    from .manifest import verify_client
+    checks = verify_client(args.client_dir)
+    if not all(check.ok for check in checks):
+        parser.error("client identity mismatch: " + ", ".join(
+            check.path for check in checks if not check.ok))
     if args.legacy_probe:
         server = LsgServer(args.port, args.cert, args.key, AuthEvidence(args.log))
     else:
