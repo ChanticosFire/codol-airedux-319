@@ -450,3 +450,22 @@ ui=0: lstate=4, crypt=0, stage=0, ver=220   ← DWLOBBY_PUMP_DISCONNECTED
 `0xBA3010` 内部顺序：`0xB74220` 分配 44B → `0xB9BEB0` 构造 → `0xB76620`（返回 false 即失败）→ `0xB75DE0`（读 0x88=136）→ `0xBA2A60`（其 `crypt==0` 分支要求 `lstate==2 && stage==3`，随后构造并发出客户端自己的 0x85）。
 
 **未完成验证**：`runs/set_crypt.py`（直接写 `[conn+0x644]=1` 以证明它是唯一门槛）在 16 秒时 netobj 仍为 0，需要更晚的时机或先等 `lstate==2`。
+
+## 0.22 新参考：`他人文件参考/PROGRESS.md`（另一套 1649370 服务端实测记录）（2026-10-21 01:3x）
+
+该文档记录的是 **另一个已经跑通的 1649370 服务端**（`bdsvc319.py`，端口 4174），可直接对照：
+
+| 事实 | 原文要点 | 对我们的意义 |
+|---|---|---|
+| `DW=4 → DW=5` | 06:52:00 完成 | **证明 ui_state=5 可达**，我们的目标状态确实存在 |
+| `svc28` 必须**静默** | 回 hshake 帧会**当秒 CLOSED**；silent 后心跳 162+、CLOSED=0 | 我们主动回 task_reply/type-4 正是「不该回」的帧 |
+| `ZEROFRAME` 每 **30s** 一个 | 已忽略 | 我此前用 5s/20s，频率过高 |
+| `svc71 task4 ListDedicatedServer` | 连上后发 82B 应答 | 是 DW=5 之后的服务，不是前置 |
+| 业务帧是**明文** `PLAIN svc=139` | `03 04` + `10` + JSON | 握手后才走明文业务，0x85 加密帧只用于登录 |
+| `svc139` = JSON-RPC | ConsumeSupplyDrop / GetChallenges / RerollChallenge | 后续玩法通道 |
+
+**按此调整后的实验**（`runs/20261020-ka30`）：零帧间隔改 30s、0x87 抑制、仍只发一次 0x85 应答。结果 `lstate` 仍在 1 秒内从 2 变 4（`DWLOBBY_PUMP_DISCONNECTED`），说明**触发报废的是我们那条 0x85 应答本身**，而不是心跳频率。
+
+**结论**：下一步应按 PROGRESS 的「svc28 静默」原则，**0x83 之后完全不再主动发任何帧**，只等客户端先发业务请求；同时确认客户端是否会在 `crypt==0 && stage==3` 时自行发出 svc71/svc28 明文请求（那才是 DW=5 的前置）。
+
+**缺口**：`bdsvc319.py` 本体不在本仓库（PROGRESS 引用的是游戏根 `launch/` 目录）。若能拿到该文件，可直接比对它 0x83 之后的确切行为。

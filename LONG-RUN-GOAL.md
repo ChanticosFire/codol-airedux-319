@@ -133,3 +133,4 @@
 | 2026-10-20 23:40–00:10 | 0x85 解不开的根因层级 | **突破性结论**：`0xBA4430` 在 `[conn+0xC8]==4` 时直接 `ret`，CS=4 下客户端**根本不解析到达帧**；`frame85_seen pt []` 因此成立。后续应查 CS=4 的业务消费路径与 D=`*[0x3306D60]+0xC` | `HANDSHAKE-STATUS.md` 0.18 | 待提交 |
 | 2026-10-21 00:10–00:55 | gate 版本 220 与 0x87 加密通道 | **突破**：gate 改 `0xDC` 后 `stage=3` 首次出现（`0xBA0780` 条件 B 短暂成立）；0x87 帧格式仍错（`DW_LOBBY_ERROR`） | `runs/20261020-gate220/f87/silent3`、`HANDSHAKE-STATUS.md` 0.20 | 待提交 |
 | 2026-10-21 01:00–01:30 | crypt 初始化失败定位 | **确认**：gate 220 生效（`conn_ver=220`）、`lstate=2/stage=3` 稳定 5 秒，但 `crypt` 恒 0（`0xBA3010` 失败），客户端转 `DWLOBBY_PUMP_DISCONNECTED` | `runs/20261020-ver/forcecrypt` | 待提交 |
+| 2026-10-21 01:30–02:00 | PROGRESS.md 参考（bdsvc319 实测） | **重要**：另一套 1649370 服务端已实现 `DW=4→5`；关键规则为 svc28 静默、ZEROFRAME 30s、业务帧明文；按此调整后仍 1 秒内报废，定位到触发源是我们自己的 0x85 应答 | `HANDSHAKE-STATUS.md` 0.22、`runs/20261020-ka30` | 待提交 |

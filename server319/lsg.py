@@ -169,9 +169,9 @@ class LsgServer(AuthServer):
                                 # 0xBA2B5D: while crypt==0 the receiver requires
                                 # lstate==2 && stage==3, and stage only reaches 3 a few
                                 # seconds after 0x83, so delay the 0x87 frame.
-                                time.sleep(float(os.environ.get("LSG_F87_DELAY", "4")))
-                                conn.sendall(f87)
-                                self.evidence.write("frame87", session, reply_hex=f87.hex())
+                                # PROGRESS.md: svc28 must stay silent; pushing unsolicited
+                                # frames (0x87) only accelerates the disconnect.
+                                self.evidence.write("frame87", session, reason="suppressed")
                                 # Keep reading: the client may answer with the
                                 # 0x85 encrypted channel frame right after.
                                 try:
@@ -307,7 +307,7 @@ class LsgServer(AuthServer):
                                                 try:
                                                     conn.settimeout(0.5)
                                                     _end = time.time() + 90.0
-                                                    _next_ka = time.time() + 5.0
+                                                    _next_ka = time.time() + 30.0
                                                     while time.time() < _end:
                                                         try:
                                                             _more = conn.recv(8192)
@@ -321,7 +321,7 @@ class LsgServer(AuthServer):
                                                                 self.evidence.write(
                                                                     "keepalive", session,
                                                                     reason="4-zero")
-                                                                _next_ka = time.time() + 5.0
+                                                                _next_ka = time.time() + 30.0
                                                             continue
                                                         if not _more:
                                                             self.evidence.write("peer_closed", session)
