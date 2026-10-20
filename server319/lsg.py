@@ -167,7 +167,11 @@ class LsgServer(AuthServer):
                                                 # lobby-address branch (0xB83A4B); 0x86 is the
                                                 # client->server hardware-fingerprint type and
                                                 # lands in the dispatcher default error path.
-                                                inner = b"\x04" + tlv
+                                                # Per the reference frame layout: plaintext =
+                                                # [u32 payload_len][inner_type][payload], and the
+                                                # business payload starts with the business type.
+                                                payload = b"\x04" + tlv
+                                                inner = b"\x86" + payload
                                                 pt = struct.pack("<I", len(inner)) + inner
                                                 pt += b"\x00" * ((-len(pt)) % 16)
                                                 # The client expects our frame counter to equal

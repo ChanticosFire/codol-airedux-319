@@ -89,7 +89,10 @@ def main() -> int:
             modules = probe.modules_of(pid)
             record["modules"] = [{"name": m["name"], "base": hex(m["base"]), "size": m["size"]} for m in modules if m["base"]]
             regions = probe.regions_of(process)
-            executable = [r for r in regions if r["protect"] & 0x10 or r["protect"] & 0x20 or r["protect"] & 0x40]
+            # Decrypted .tp3 pages can be PAGE_READWRITE (0x04), not only RX.
+            executable = [r for r in regions
+                          if r["protect"] & 0x10 or r["protect"] & 0x20
+                          or r["protect"] & 0x40 or r["protect"] & 0x04]
             md = Cs(CS_ARCH_X86, CS_MODE_32) if Cs else None
             for anchor in anchors:
                 hits = []
