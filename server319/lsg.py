@@ -132,6 +132,16 @@ class LsgServer(AuthServer):
                                         except Exception as _exc:
                                             self.evidence.write("ticket_search_error", session,
                                                                 reason=type(_exc).__name__)
+                                    if pid:
+                                        # codol-node reads the fixed session key at 0x111F440;
+                                        # confirm the same address on 1649370.
+                                        try:
+                                            _sk = lsg_client.read_region(pid, 0x111F440, 24)
+                                            self.evidence.write("session_key_probe", session,
+                                                                reason=f"0x111F440={_sk}")
+                                        except Exception as _exc:
+                                            self.evidence.write("session_key_probe", session,
+                                                                reason=type(_exc).__name__)
                                     if pid and len(more) >= 8:
                                         tail8 = more[-8:]
                                         found = lsg_client.search_bytes(pid, tail8, limit=4,

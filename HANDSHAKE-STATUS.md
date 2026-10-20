@@ -536,3 +536,53 @@ w.raw(bytes([0x03, 0x00]))
 **强制写入验证**（`runs/20261020-uiforce`）：在 `ui==4` 时写 `crypt=1`、`ready=1` 成功，但下一瞬间客户端把 `crypt` 改回 0、`lstate` 置 4（`0xBA3420` 内同时写 `crypt=0`/`lstate=4`），说明**客户端有一致性检测并回滚**，单点写内存无法伪造成功。
 
 **因此真正的路径只有一条**：让客户端自己把 crypt 建起来（0x87 → `0xBA3590` → `0xBA3010` 成功），或让 0x85 回帧被客户端正确解密。这两者都需要 `bdproto319`（0x85 帧的封装/加密实现），该文件尚未获得。
+
+## 0.26 `bdproto319.py`：正确的协议算法（用户提供，2026-10-21 06:4x）
+
+这是**真正的协议实现**，推翻了我们之前几处根本假设：
+
+### 密钥派生（服务端自己算，不读内存）
+
+```python
+SESSION_KEY = bytes.fromhex('8ecd56428021ead23643c94801f4095daafe3875f087b13f')  # codol-node 从 0x111f440 抓取
+
+out1  = SHA1(packet_buffer)                         # packet_buffer = hello尾 + 我们的ack + client_auth
+data3 = HMAC-SHA1(key=out1, data=SESSION_KEY)       # ★ 参数顺序与常规相反
+out2  = calc_hmacs(data3, "CLIENTCHAL", 16)  -> response_id = out2[8:16]
+out3  = calc_hmacs(data3, "BDDATA", 72)
+hmac_key      = out3[0:20]    # 校验客户端帧
+resp_hmac_key = out3[20:40]   # 签我们的响应
+dec_key       = out3[40:56]   # 解客户端帧
+enc_key       = out3[56:72]   # 加我们的帧
+```
+
+`calc_hmacs(data, key, size)`：`result = HMAC(key=data, data=key+count)`，迭代拼接（不是标准 HKDF）。
+
+### 响应帧（`make_encrypted_reply`）
+
+```python
+len_buf    = u32(len(service_payload))
+inner      = 0x01
+enc_buffer = align16(len_buf + bytes([inner]) + service_payload)
+enc_data   = AES-128-CBC(enc_buffer, enc_key, seed)
+body       = b"\xAB\x85" + u32(msg_count) + seed(16B) + enc_data
+total_len  = u32(len(body) + 8)          # ★ 长度含尾部 8B
+response   = total_len + body
+response  += HMAC-SHA1(resp_hmac_key, response)[:8]   # ★ 真 HMAC，不是 8 个零
+```
+
+默认 `seed = 5eed5eed5eed5eed5eed5eed5eed5eed`（**固定**，不是随机 IV）。
+
+### 与我们旧实现的差异（三处根本性）
+
+1. **密钥来源**：不是从 `conn+0x604` 读，而是从 `packet_buffer` 派生。我们读到的 `[conn+0x604]+0x9C` 能解 C2S，说明它**等于** `dec_key`——可作派生自检的**目标值**。
+2. **帧头**：`[AB 85]`，不是 `[01 85]`。
+3. **尾部**：8 字节**真 HMAC**（`HMAC-SHA1(resp_hmac_key, response)[:8]`），不是 8 个零。这解释了为什么我们所有回帧都被客户端丢弃。
+
+### 当前阻塞
+
+- `packet_buffer` 的**精确组成**未知（注释只说「hello尾 + 我们的 ack + client_auth」）。
+- `SESSION_KEY` 的地址 `0x111F440` 在 1649370 上**读出全零**（`runs/20261021-sk` 的 `session_key_probe`），说明该 build 的固定密钥位置或内容不同。
+- 用内存密钥（`8e6b3363…`）作目标，穷举 5860 种 `packet_buffer` 组合（hello/gate/frame2 的含头/去头/尾部/切片）**均未命中** `dec_key`（`runs/find_packet_buffer.py`）。
+
+**下一步**：确定 `SESSION_KEY`（可能在 exe 的其他地址，或与票据相关）与 `packet_buffer` 精确拼接。一旦 `derive_keys` 能复现 `dec_key`，`enc_key`/`resp_hmac_key` 即可直接用于发帧。
