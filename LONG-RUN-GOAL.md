@@ -126,3 +126,4 @@
 - 参考：`他人文件参考/_CURRENT_STATE(1).md` 的 §43（N97）、`## 3. LSG 线上帧格式`、`§5` 的 Auth/握手记录。
 | 2026-10-20 15:00–16:10 | LSG 握手加密打通与业务帧定位 | **重大进展**：0x85 解密成功（key=conn+0x604、IV offset 10、AES-128-CBC），明文为 84B 登录请求；业务 type 4 = tag 0x0A 大厅地址分支（`0xB83A4B`/`0xB83A52`），已发出 type 4 帧但客户端仍“失去连接”；下一步查业务队列 `[0x84ABA7C]` | `HANDSHAKE-STATUS.md`、`runs/20261020-session33..43` | 待提交 |
 | 2026-10-20 16:20–17:00 | LSG 业务帧 type 4 与大厅连接 | **里程碑**：type 4 + tag 0x0A 使客户端到达 `DW_LOBBY_CONNECTED`（ui=4、ready=1、queue=2）；**只发一次**才保持，循环心跳会触发 `ConnectionAbortedError` | `runs/20261020-session46/47` | 待提交 |
+| 2026-10-20 16:50–17:15 | LSG 内层类型扫描与 0x47 应答 | **部分成功**：`0x88` 内层使 `DW_LOBBY_CONNECTED` 保持约 16 秒（最佳），`0x84/0x86/0x87` 立即 lstate=4；`0x47` 业务类型与周期心跳仍报废。**缺 0x47 应答字节** | `runs/20261020-inner-84/87/88`、`biz-47` | 待提交 |

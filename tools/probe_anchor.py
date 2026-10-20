@@ -93,11 +93,23 @@ def main() -> int:
             executable = [r for r in regions
                           if r["protect"] & 0x10 or r["protect"] & 0x20
                           or r["protect"] & 0x40 or r["protect"] & 0x04]
+            def read_chunked(base_addr, total, chunk=4 * 1024 * 1024):
+                # A single ReadProcessMemory on a 200+ MB region fails and the
+                # old code then skipped the whole region (missing every hit).
+                out = b""
+                while len(out) < total:
+                    part = probe.read_memory(process, base_addr + len(out),
+                                             min(chunk, total - len(out)))
+                    if not part:
+                        break
+                    out += part
+                return out
+
             md = Cs(CS_ARCH_X86, CS_MODE_32) if Cs else None
             for anchor in anchors:
                 hits = []
                 for region in regions:
-                    data = probe.read_memory(process, region["base"], min(region["size"], 64 * 1024 * 1024))
+                    data = read_chunked(region["base"], min(region["size"], 256 * 1024 * 1024))
                     if not data:
                         continue
                     start = 0

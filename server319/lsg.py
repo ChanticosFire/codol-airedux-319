@@ -170,8 +170,8 @@ class LsgServer(AuthServer):
                                                 # Per the reference frame layout: plaintext =
                                                 # [u32 payload_len][inner_type][payload], and the
                                                 # business payload starts with the business type.
-                                                payload = b"\x04" + tlv
-                                                inner = b"\x86" + payload
+                                                payload = bytes([int(os.environ.get("LSG_BIZ", "0x04"), 0)]) + tlv
+                                                inner = bytes([int(os.environ.get("LSG_INNER", "0x86"), 0)]) + payload
                                                 pt = struct.pack("<I", len(inner)) + inner
                                                 pt += b"\x00" * ((-len(pt)) % 16)
                                                 # The client expects our frame counter to equal
@@ -179,7 +179,7 @@ class LsgServer(AuthServer):
                                                 _rxseq = _lc.read_u32(_pid, caddr + 0x5EC) or 1
                                                 # Reference (lsg_echo319 heartbeat) keeps sending
                                                 # 0x85 every ~2s; a single reply times out.
-                                                for _beat in range(1):
+                                                for _beat in range(8):
                                                     riv = os.urandom(16)
                                                     # First beat carries the type-4 lobby
                                                     # address; later beats are empty so the
