@@ -117,6 +117,35 @@ class LsgServer(AuthServer):
                                 conn.sendall(frame83)
                                 self.evidence.write("token_reply", session,
                                                     reply_hex=frame83.hex())
+                                # Keep reading: the client may answer with the
+                                # 0x85 encrypted channel frame right after.
+                                try:
+                                    conn.settimeout(10)
+                                    after = conn.recv(8192)
+                                    if after:
+                                        self.evidence.write("plaintext_frame3", session,
+                                                            body_len=len(after),
+                                                            body_sha256=hashlib.sha256(after).hexdigest(),
+                                                            body_hex=after[:512].hex())
+                                        # 0x85 carries the AES channel: conn+0x604/0x608
+                                        # hold POINTERS; the 16-byte key lives at [ptr+0x9C].
+                                        try:
+                                            from . import lsg_client as _lc
+                                            for _pid in _lc.find_client_pids():
+                                                for _off in (0x604, 0x608):
+                                                    _ptr = _lc.read_u32(_pid, caddr + _off)
+                                                    if not _ptr:
+                                                        continue
+                                                    _key = _lc.read_region(_pid, _ptr + 0x9C, 16)
+                                                    self.evidence.write(
+                                                        "key_candidate", session,
+                                                        reason=f"pid={_pid} off={_off:#x} "
+                                                               f"ptr={_ptr:#x} key={_key}")
+                                        except Exception as _exc:
+                                            self.evidence.write("key_error", session,
+                                                                reason=type(_exc).__name__)
+                                except OSError:
+                                    pass
                     except OSError:
                         pass
             except OSError:

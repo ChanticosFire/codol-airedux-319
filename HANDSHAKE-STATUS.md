@@ -1,6 +1,17 @@
 # LSG 握手现状（2026-10-20 下午，给 Codex / 用户）
 
-> 承接 [HANDOFF-TO-CODEX.md](HANDOFF-TO-CODEX.md)。Codex 修好了 Auth schema 与票据，客户端已经**真正连上 4174 并走完门控**；现在卡在 **0x83 token 应答**。本文只写实测与反汇编能钉死的部分。
+> 承接 [HANDOFF-TO-CODEX.md](HANDOFF-TO-CODEX.md)。Codex 修好了 Auth schema 与票据，客户端已经**真正连上 4174 并走完门控**；0x83 补丁后客户端**已发 0x85 加密通道帧**，现在卡在 **0x85 的会话密钥/解密**。本文只写实测与反汇编能钉死的部分。
+
+## 0. 最新突破（2026-10-20 13:4x）
+
+- 0x83 的边界检查分支（`0xBA456E: 0F 84 ...`，失败跳转）**补丁成 NOP** 后，客户端**不再报 `DW_LOBBY_ERROR`**，主窗口稳定 70 秒以上，并**主动发出 130 字节的 0x85 加密帧**：
+  ```
+  7e000000 ab 85 01000000 <16B IV> <96B AES 密文> <8B tail>
+  ```
+  证据：`runs/20261020-session30/lsg.jsonl`（`plaintext_frame3`）。
+- 会话密钥位置：`conn+0x604` / `conn+0x608` 是**指针**，16 字节密钥在 `[ptr+0x9C]`（参考 `lsg_echo319.py::read_key`）。
+  实测本轮：`0x604 → 0x35d8c2a0 + 0x9C = 18a723e471f56ac097f524a66998eaea`、`0x608 → 0x389baab8 + 0x9C = 6aeb41f0a02bc8a5d68cde467c6b8141`。
+- **未解**：用这两个 16B 密钥 + 帧内 IV 做 AES-128-CBC 解密，OpenSSL 报 `bad decrypt`（padding 错）。参考文档说 C2S 用 `km_send`+`aes_send`、S2C 用 `km_recv`+`aes_recv`，**方向不同**；也可能 16B 是 KM 需二次派生，或 IV 不在我们取的位置。
 
 ## 1. 已打通（按时间顺序）
 
