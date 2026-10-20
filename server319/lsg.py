@@ -234,7 +234,8 @@ class LsgServer(AuthServer):
                                                     "key_object", session,
                                                     reason=f"{_lbl} ptr={_ptr:#x} key={_key.hex()} "
                                                            f"head={_head} tail={_tail}")
-                                            if after[:6][4:6] == b"\xab\x85":
+                                            _silent = os.environ.get("LSG_SILENT_AFTER83") == "1"
+                                            if after[:6][4:6] == b"\xab\x85" and not _silent:
                                                 seq = after[6:10]
                                                 iv = after[10:26]
                                                 cipher = after[26:-8]
@@ -278,10 +279,19 @@ class LsgServer(AuthServer):
                                                 # sequence the client itself used in its 0x85.
                                                 _rxseq = int.from_bytes(seq, "little")
                                                 fixed_iv = os.urandom(16)  # 1649370 takes the IV from the frame
-                                                _rct = AES.new(key_send, AES.MODE_CBC,
-                                                               iv=fixed_iv).encrypt(evt4_pt)
-                                                _evt4 = (b"\x01\x85" + struct.pack("<I", _rxseq)
-                                                         + fixed_iv + _rct + b"\x00" * 8)
+                                                if os.environ.get("LSG_PLAIN85") == "1":
+                                                    # PROGRESS.md shows plaintext business frames on
+                                                    # this build; try an unencrypted 0x85 reply.
+                                                    _rct = evt4_pt
+                                                else:
+                                                    _rct = AES.new(key_recv, AES.MODE_CBC,
+                                                                   iv=fixed_iv).encrypt(evt4_pt)
+                                                if os.environ.get("LSG_PLAIN85") == "1":
+                                                    _evt4 = (b"\x01\x85" + struct.pack("<I", _rxseq)
+                                                             + _rct)
+                                                else:
+                                                    _evt4 = (b"\x01\x85" + struct.pack("<I", _rxseq)
+                                                             + fixed_iv + _rct + b"\x00" * 8)
                                                 conn.sendall(struct.pack("<I", len(_evt4)) + _evt4)
                                                 # Did the client actually decrypt our frame? Search for
                                                 # our plaintext head and our ciphertext head.

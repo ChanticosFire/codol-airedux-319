@@ -469,3 +469,17 @@ ui=0: lstate=4, crypt=0, stage=0, ver=220   ← DWLOBBY_PUMP_DISCONNECTED
 **结论**：下一步应按 PROGRESS 的「svc28 静默」原则，**0x83 之后完全不再主动发任何帧**，只等客户端先发业务请求；同时确认客户端是否会在 `crypt==0 && stage==3` 时自行发出 svc71/svc28 明文请求（那才是 DW=5 的前置）。
 
 **缺口**：`bdsvc319.py` 本体不在本仓库（PROGRESS 引用的是游戏根 `launch/` 目录）。若能拿到该文件，可直接比对它 0x83 之后的确切行为。
+
+## 0.23 静默/明文 0x85 回帧均失败（2026-10-21 02:x）
+
+| 方案 | 结果 |
+|---|---|
+| 0x83 后**完全静默**（`LSG_SILENT_AFTER83=1`） | 客户端在 ~6s 自行断开（`DWLOBBY_PUMP_DISCONNECTED`），期间**未发**任何业务请求（无 `plaintext_frame4`） |
+| **明文** 0x85 回帧（`LSG_PLAIN85=1`：`[u32 len][0x01][0x85][seq][payload]`，不加密） | 仍 `peer_closed` |
+| **加密** 0x85 回帧（`[u32 len][0x01][0x85][seq][16B IV][cipher][8B]`） | `frame85_seen pt []`，密文到达但从不被解密 |
+
+**三条路都断**，说明问题不在「回不回」或「加不加密」，而在**回帧的内容/结构**本身让客户端判定通道不可用。
+
+**当前最需要的外部输入**：`bdsvc319.py`（PROGRESS.md 引用的、已实现 `DW=4→5` 的 1649370 服务端，位于游戏根 `launch/` 目录）。它的握手应答与 0x83 之后的字节序列可以直接对齐，避免继续盲试。
+
+**已就绪的基础设施**（可直接复用）：`server319.lsg` 的 28B→26B 门控（含 220 版本）、0x82/0x83、0x85 AES 解密（`conn+0x604`+0x9C）、type/密钥/IV/明密文全组合开关（`LSG_INNER`/`LSG_BIZ`/`LSG_KEYOFF`/`LSG_PLAIN85`/`LSG_SILENT_AFTER83`/`LSG_F87_DELAY`）。

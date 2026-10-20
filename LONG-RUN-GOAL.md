@@ -134,3 +134,4 @@
 | 2026-10-21 00:10–00:55 | gate 版本 220 与 0x87 加密通道 | **突破**：gate 改 `0xDC` 后 `stage=3` 首次出现（`0xBA0780` 条件 B 短暂成立）；0x87 帧格式仍错（`DW_LOBBY_ERROR`） | `runs/20261020-gate220/f87/silent3`、`HANDSHAKE-STATUS.md` 0.20 | 待提交 |
 | 2026-10-21 01:00–01:30 | crypt 初始化失败定位 | **确认**：gate 220 生效（`conn_ver=220`）、`lstate=2/stage=3` 稳定 5 秒，但 `crypt` 恒 0（`0xBA3010` 失败），客户端转 `DWLOBBY_PUMP_DISCONNECTED` | `runs/20261020-ver/forcecrypt` | 待提交 |
 | 2026-10-21 01:30–02:00 | PROGRESS.md 参考（bdsvc319 实测） | **重要**：另一套 1649370 服务端已实现 `DW=4→5`；关键规则为 svc28 静默、ZEROFRAME 30s、业务帧明文；按此调整后仍 1 秒内报废，定位到触发源是我们自己的 0x85 应答 | `HANDSHAKE-STATUS.md` 0.22、`runs/20261020-ka30` | 待提交 |
+| 2026-10-21 02:00–02:30 | 静默与明文 0x85 回帧 | **阴性**：静默 6s 断开且客户端不发业务请求；明文 0x85 也 `peer_closed`。三条路都断，问题在回帧内容本身 | `runs/20261020-silent4/plain85`、`HANDSHAKE-STATUS.md` 0.23 | 待提交 |
