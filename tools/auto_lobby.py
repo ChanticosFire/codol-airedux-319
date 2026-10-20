@@ -40,6 +40,9 @@ STAT_SETTER = 0x6B03D0
 ONBOARDED = 0xDC3EA0
 FIRSTLOGIN_FLAG = 0x331C5C0
 D_COND_PTR = 0x3306D60
+FE_STATE = 0xE59D20
+SCRIPT_STATE = 0x84ABABC
+FE_FINAL = 0x82C4A86
 DW = 0x84ABA40
 CS = 0x84ABA50
 G1 = 0x82E1340
@@ -132,6 +135,25 @@ def fix_firstlogin(h) -> bool:
     return ok
 
 
+def fix_fe_loaded(h) -> None:
+    """
+    0x730C50 (FE-loaded) requires [0xE59D20] in {4,6}, [0x84ABABC]==1 and
+    [0x82C4A86]!=0. Offline they read 5 / 0 / 0, so the frontend never reports
+    loaded - which blocks onboarded and stalls the FE ladder. Nudge them.
+    """
+    # NOTE: do NOT touch [0xE59D20]. Forcing it to 4 stalls dw at 2 and the
+    # client never reaches the lobby; 5 is the value its own state machine wants
+    # during login. Only the two flags below are safe to nudge.
+    script = read_u32(h, SCRIPT_STATE)
+    if script == 0:
+        write_u32(h, SCRIPT_STATE, 1)
+        print("script_state 0 -> 1")
+    final = read_u8(h, FE_FINAL)
+    if final == 0:
+        write_u8(h, FE_FINAL, 1)
+        print("fe_final 0 -> 1")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--timeout", type=int, default=90,
@@ -171,6 +193,7 @@ def main() -> int:
                     onboarded_done = True
                     print(f"dw={dw} -> onboard_character_selected set (early)")
                 fix_firstlogin(h)
+                fix_fe_loaded(h)
             if dw == 5 and cs == 9:
                 print(f"dw={dw} cs={cs} -> forcing G1=2")
                 if not onboarded_done and call_stat(h, ONBOARDED):
