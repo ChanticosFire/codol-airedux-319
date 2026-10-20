@@ -8,9 +8,14 @@
       "observation": "when connection stage is 3 and incoming inner opcode is 0x85, dispatcher calls 0xBA3710"
     },
     {
+      "va": "0xBA3C1E-0xBA3C47",
+      "observation": "on successful 0x83 token handling, EAX is zero, EBX becomes one, and connection+0x5EC/+0x5F0 are both set to one before stage becomes 3",
+      "implication": "the first ordinary S2C 0x85 frame is expected to carry counter 1; current server counter start matches this static path"
+    },
+    {
       "va": "0xBA3844-0xBA3859",
       "observation": "0xBA3710 reads connection+0x5EC, increments it, and compares its prior value with the parsed incoming message counter; mismatch follows an error path",
-      "unknown": "initial value of +0x5EC in the live derived runs, so current server counter=1 is only a candidate"
+      "unknown": "whether the current reply reached this comparison in the live derived runs"
     },
     {
       "va": "0xBA398D-0xBA39E2",
@@ -23,5 +28,5 @@
       "unknown": "whether the current derived S2C AES key matches this object"
     }
   ],
-  "next_check": "For an isolated and egress-controlled client run, record +0x5EC and compare the +0x608 AES object key digest with the derived server key; hook or sample the 0xBA3710 result before asserting reply consumption."
+  "next_check": "For an isolated and egress-controlled client run, compare the +0x608 AES object key digest with the derived server key and hook or sample the 0xBA3710 result before asserting reply consumption."
 }

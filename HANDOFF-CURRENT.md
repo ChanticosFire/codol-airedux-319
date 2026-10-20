@@ -4,6 +4,10 @@
 
 > **网络更正：**前三轮游戏 PID 还出现 5 个非回环连接，虽然本机 Auth/LSG/配置均指向回环，故不能把这些 run 标为完全离线。`runs/20261020-live-isolated04/` 的客户端目录专属出站规则已安装并核验，但游戏在 Auth 前退出；全部 77 条规则随后按组删除并核对剩余 0，配置恢复。系统代理 `127.0.0.1:7890` 仍启用，程序规则不拦回环代理。先分析已有捕获或建立可核验的进程边界，再做下一次实机启动。
 
+> **补充对照：**`tools/isolate_client_program.ps1 -OnlyMainExe` 只限制隔离副本的游戏主 EXE；`runs/20261020-live-mainblock06/` 的单规则验证通过，但游戏仍在 Auth 前退出。规则与配置已自动恢复，剩余规则 0。`runs/20261020-live-mainblock05/` 的包装脚本误用 stale `$LASTEXITCODE`，只安装了规则而没有启动游戏，已手动清理。不能把两轮都算作实机失败。S2C 同 Build 静态接收路径见 `evidence/experiments/20261020-s2c-parser-static.json`：`+0x5EC` 计数、帧尾 8B 校验、`+0x608` 解密对象均尚需运行时核对。
+
+> **S2C 计数收敛：**同一解包代码的 `0xBA3C1E–0xBA3C47` 在成功 0x83 后将 `+0x5EC/+0x5F0` 初始化为 1，故当前服务首个 S2C 计数 1 与同 Build 静态路径吻合。接下来重点核对帧尾 MAC、`+0x608` 解密密钥与 `0xBA3710` 是否返回成功。
+
 > **后续审计纠正（以现有原始捕获复验）：**下文“唯一缺口是 `packet_buffer` 与固定 `SESSION_KEY`”已被反证。使用 `runs/20261020-base`、`runs/20261020-gate220`、`runs/20261020-session33` 的 hello/gate/0x82 帧，按 `hello[8:] + gate[0:4] + AB81 + gate[6:] + client_auth[:-8]` 构造 transcript，并用**本项目 Auth 票据中实际写入的 24B 合成会话密钥**，三个 run 的客户端 challenge、已发送 0x83 token、0x85 帧尾 HMAC 及 AES 明文形状均吻合；前两轮派生的 AES key 还与客户端内存采样一致。第三方 `bdproto319.py` 的固定 `8ecd…` 密钥及“参数反序”在这些 run 上均不吻合。可重跑 `python tools/verify_lsg_capture.py runs/20261020-base` 等；脱敏结论见 `evidence/experiments/20261020-lsg-transcript-audit.json`。这证明 C→S 的本地合成会话派生，**不证明**新 S→C 应答已被客户端消费，也不等于 M3 完成。下文历史内容保留以解释实验路径，现时结论以此纠正与 `PROJECT_STATUS.md` 最新节为准。
 
 > 给 Codex 的完整交接。所有地址均为**运行时实测**（反汇编 + ReadProcessMemory 采样），所有结论都有 `runs/` 证据。

@@ -41,5 +41,16 @@
     "remove_verified": true,
     "remaining_rules": 0,
     "config_preimage_restored": true
+  },
+  "main_executable_only_control": {
+    "id": "20261020-live-mainblock06",
+    "scope": "one outbound block rule for staged codoMP_client_shipRetail.exe only; helper EXEs unaffected",
+    "install_verified": true,
+    "client_result": "main module not found after 13-second wait; no Auth/LSG requests and no runtime patch",
+    "inference_limit": "does not distinguish a needed outbound dependency from local-loopback blocking or a startup integrity check",
+    "remove_verified": true,
+    "remaining_rules": 0,
+    "config_preimage_restored": true,
+    "discarded_attempt": "run 05 installed one scoped rule but the wrapper used stale LASTEXITCODE and stopped before client launch; rule and configuration were manually restored"
   }
 }

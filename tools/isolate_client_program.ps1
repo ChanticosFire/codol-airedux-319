@@ -1,13 +1,16 @@
 param(
     [Parameter(Mandatory)][ValidateSet('Install','Verify','Remove')][string]$Action,
     [Parameter(Mandatory)][string]$ClientRoot,
-    [Parameter(Mandatory)][string]$EvidenceDir
+    [Parameter(Mandatory)][string]$EvidenceDir,
+    [switch]$OnlyMainExe
 )
 # Program-scoped outbound block for the owned 1649370 copy.
 #
 # This replaces the host-wide "block all outbound" rule. It creates one
 # Outbound/Block rule per executable under the staged client root, so DSH, the
 # editor, browsers and every other program keep their normal network access.
+# -OnlyMainExe narrows the experiment to the game EXE after the all-EXE rule
+# set was observed to stop startup before Auth. It does not cover child EXEs.
 #
 # Known limitation, already measured on this host: Windows Firewall does not
 # evaluate loopback traffic, so a program rule cannot stop the client from
@@ -44,6 +47,11 @@ function Write-Result([hashtable]$payload) {
 }
 
 function Get-ClientExecutables {
+    if ($OnlyMainExe) {
+        $main = Join-Path $root 'codoMP_client_shipRetail.exe'
+        if (-not (Test-Path -LiteralPath $main -PathType Leaf)) { throw 'MAIN_EXECUTABLE_MISSING' }
+        return @($main)
+    }
     @(Get-ChildItem -LiteralPath $root -Recurse -File -Filter '*.exe' -ErrorAction Stop |
         Sort-Object FullName | ForEach-Object { $_.FullName })
 }
@@ -62,7 +70,7 @@ switch ($Action) {
             $rules += @{ name = "$group-$index"; program = $exe }
         }
         @{ group = $group; root = $root; rules = $rules; created_utc = [DateTime]::UtcNow.ToString('o')
-           identity = $identity.Name; executables = $exes.Count } |
+           identity = $identity.Name; executables = $exes.Count; only_main_exe = [bool]$OnlyMainExe } |
             ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $receiptPath -Encoding utf8
         try {
             foreach ($rule in $rules) {
@@ -88,6 +96,7 @@ switch ($Action) {
         if (-not (Test-Path -LiteralPath $receiptPath)) { throw 'RECEIPT_MISSING' }
         $saved = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json
         if ($saved.root -ne $root) { throw 'ROOT_OWNERSHIP_MISMATCH' }
+        if ([bool]$saved.only_main_exe -ne [bool]$OnlyMainExe) { throw 'SELECTION_MODE_MISMATCH' }
         $exes = Get-ClientExecutables
         $active = @(Get-NetFirewallRule -PolicyStore ActiveStore -Group $saved.group -ErrorAction SilentlyContinue)
         $problems = @()
