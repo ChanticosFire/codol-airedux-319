@@ -128,6 +128,8 @@ def main() -> int:
     ap.add_argument("--secs", type=float, default=10.0)
     ap.add_argument("--interval", type=float, default=1.0)
     ap.add_argument("--label", default="")
+    ap.add_argument("--histogram", action="store_true",
+                    help="tally every sampled value of the first mem-ebp slot")
     ap.add_argument("--ready-timeout", type=float, default=90.0,
                     help="seconds to wait for the expected bytes to appear before giving up")
     ap.add_argument("--wait", type=float, default=0.0,
@@ -203,6 +205,7 @@ def main() -> int:
         deadline = time.time() + args.secs
         last_n = 0
         last_v = None
+        hist: dict[int, int] = {}
         while time.time() < deadline:
             raw_n = read(h, count, 4)
             raw_v = read(h, slot, 32)
@@ -211,6 +214,9 @@ def main() -> int:
                 return 7
             n = struct.unpack("<I", raw_n)[0]
             v = struct.unpack_from("<I", raw_v, 0)[0]
+            if args.histogram and ebp_offs:
+                h0 = struct.unpack_from("<I", raw_v, 4)[0]
+                hist[h0] = hist.get(h0, 0) + 1
             extras = [struct.unpack_from("<I", raw_v, 4 + k * 4)[0]
                       for k in range(len(ebp_offs) + len(chains))]
             key = (n, v, tuple(extras))
@@ -223,6 +229,14 @@ def main() -> int:
                 print(msg)
                 last_n, last_v = n, key
             time.sleep(args.interval)
+        if args.histogram and hist:
+            total = sum(hist.values())
+            pos = sum(c for val, c in hist.items() if 0 < val < 0x80000000)
+            neg = sum(c for val, c in hist.items() if val >= 0x80000000)
+            zero = hist.get(0, 0)
+            print(f"[{label}] HISTOGRAM over {total} samples: "f"positive={pos} ({100*pos/total:.1f}%) zero={zero} "f"negative={neg} ({100*neg/total:.1f}%)")
+            for val, c in sorted(hist.items(), key=lambda kv: -kv[1])[:8]:
+                print(f"    {val:#010x}  x{c}")
         if last_v is None:
             print(f"[{label}] no hits")
         else:
