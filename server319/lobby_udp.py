@@ -27,10 +27,16 @@ class LobbyEndpoint:
     """UDP echo plus a quiet TCP listener on the same loopback port."""
 
     def __init__(self, port: int = 3074, log_path: Path | None = None,
-                 echo: bool = True, reply: bytes | None = None) -> None:
+                 echo: bool = True, reply: bytes | None = None,
+                 reply_match: bytes | None = None) -> None:
         self.port = port
         self.echo = echo
         self.reply = reply
+        # When set, the fixed reply above is only sent for packets starting with these
+        # bytes. Without it every inbound packet gets the same answer, which is wrong now
+        # that we know the client sends two different probes and only one of them expects
+        # a type 0x15 server-list message.
+        self.reply_match = reply_match
         self.reply_budget: int | None = None   # None = unlimited
         self.reply_sent = 0
         self.log_path = log_path
@@ -86,6 +92,8 @@ class LobbyEndpoint:
             self.note("udp_in", src=f"{addr[0]}:{addr[1]}", length=len(data),
                       hex=data.hex())
             if (self.reply is not None
+                    and (self.reply_match is None
+                         or data.startswith(self.reply_match))
                     and (self.reply_budget is None
                          or self.reply_sent < self.reply_budget)):
                 # A fixed byte sequence, chosen by LOBBY_UDP_REPLY, so candidate response
@@ -164,7 +172,10 @@ def main() -> int:
     raw_reply = os.environ.get("LOBBY_UDP_REPLY", "").strip()
     reply = bytes.fromhex(raw_reply) if raw_reply else None
     budget_raw = os.environ.get("LOBBY_UDP_REPLY_MAX", "").strip()
-    server = LobbyEndpoint(port, log, echo=echo, reply=reply)
+    match_raw = os.environ.get("LOBBY_UDP_REPLY_MATCH", "").strip()
+    reply_match = bytes.fromhex(match_raw) if match_raw else None
+    server = LobbyEndpoint(port, log, echo=echo, reply=reply,
+                           reply_match=reply_match)
     if budget_raw:
         server.reply_budget = int(budget_raw)
     server.start()
