@@ -137,7 +137,7 @@ class AuthEvidence:
 
     def write(self, event: str, session: Session, **fields) -> None:
         allowed = {"request_line", "headers", "body_len", "body_sha256", "status",
-                   "response_len", "reason", "client"}
+                   "response_len", "reason", "client", "body_hex", "reply_hex"}
         extra = set(fields) - allowed
         if extra:
             raise ValueError(f"evidence field not allowlisted: {sorted(extra)}")

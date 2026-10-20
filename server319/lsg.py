@@ -19,7 +19,10 @@ contract here with tests.
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 import socket
+import struct
 import threading
 import time
 from pathlib import Path
@@ -27,6 +30,11 @@ from pathlib import Path
 from .auth import AuthEvidence, AuthServer, parse_request
 
 LSG_NOT_IMPLEMENTED = b'{"error":"lsg-not-implemented"}'
+LSG_MARK = 0x1122334455667788  # reference handshake mark (lsg_echo319)
+
+# 26-byte gate reply observed in the reference: [u32 22][01][81][u32 0xD2][8B mark][8B nonce]
+LSG_GATE_OP = 0x81
+LSG_GATE_VALUE = 0xD2
 
 
 class LsgServer(AuthServer):
@@ -46,7 +54,74 @@ class LsgServer(AuthServer):
                 data = conn.recv(4096)
                 if data:
                     self.evidence.write("plaintext_frame", session, body_len=len(data),
-                                        body_sha256=hashlib.sha256(data).hexdigest())
+                                        body_sha256=hashlib.sha256(data).hexdigest(),
+                                        body_hex=data[:256].hex())
+                    # Answer the 28-byte hello with the 26-byte gate frame so the
+                    # client advances to its 0x82 challenge instead of timing out.
+                    nonce = os.urandom(8)
+                    reply = (bytes([0x01, LSG_GATE_OP])
+                             + struct.pack("<I", LSG_GATE_VALUE)
+                             + struct.pack("<Q", LSG_MARK) + nonce)
+                    frame = struct.pack("<I", len(reply)) + reply
+                    conn.sendall(frame)
+                    self.evidence.write("gate_reply", session, reply_hex=frame.hex())
+                    try:
+                        conn.settimeout(8)
+                        more = conn.recv(4096)
+                        if more:
+                            self.evidence.write("plaintext_frame2", session, body_len=len(more),
+                                                body_sha256=hashlib.sha256(more).hexdigest(),
+                                                body_hex=more[:256].hex())
+                            # The client compares our 0x83 token against its own
+                            # conn+0x5FC, so read that field out of the game.
+                            try:
+                                from . import lsg_client
+                                pid, caddr, challenge = 0, 0, None
+                                candidates = []
+                                for candidate_pid in lsg_client.find_client_pids():
+                                    candidates = lsg_client.find_service_conns(candidate_pid)
+                                    if not candidates:
+                                        candidates = lsg_client.find_conn_by_vtable(candidate_pid)
+                                    if not candidates:
+                                        candidates = lsg_client.find_conn_candidates(
+                                            candidate_pid, LSG_MARK)
+                                    if candidates:
+                                        pid = candidate_pid
+                                        break
+                                if candidates:
+                                    good = [c for c in candidates if c.get("stage") in (1, 2, 3)]
+                                    pick = good[0] if good else candidates[0]
+                                    caddr = pick["conn"]
+                                    raw = bytes.fromhex(pick["challenge"])
+                                    challenge = raw if len(raw) == 8 else None
+                                    detail = [{"conn": hex(c["conn"]), "stage": c.get("stage"),
+                                               "challenge": c.get("challenge")} for c in candidates[:4]]
+                                    self.evidence.write("challenge_detail", session,
+                                                        reason=json.dumps(detail)[:600])
+                                    if caddr:
+                                        around = lsg_client.read_region(pid, caddr + 0x5F0, 0x20)
+                                        self.evidence.write("conn_mem", session,
+                                                            reason=f"{caddr:#x}+0x5F0 {around}")
+                                self.evidence.write(
+                                    "challenge_lookup", session,
+                                    reason=f"pid={pid} candidates={len(candidates)} conn={caddr:#x}")
+                            except Exception as exc:  # keep the listener alive
+                                pid, caddr, challenge = 0, 0, None
+                                self.evidence.write("challenge_error", session,
+                                                    reason=type(exc).__name__)
+                            # Experiment: reverse conn+0x5FC bytes as the token.
+                            if challenge:
+                                challenge = challenge[::-1]
+                            self.evidence.write("challenge_choice", session,
+                                                reason=f"reversed={challenge.hex() if challenge else None}")
+                            if challenge:
+                                reply83 = b"\xab\x83" + challenge
+                                frame83 = struct.pack("<I", len(reply83)) + reply83
+                                conn.sendall(frame83)
+                                self.evidence.write("token_reply", session,
+                                                    reply_hex=frame83.hex())
+                    except OSError:
+                        pass
             except OSError:
                 pass
             finally:
