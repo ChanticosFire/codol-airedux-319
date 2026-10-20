@@ -66,6 +66,8 @@ def main() -> int:
     ap.add_argument("--anchor-dw", action="store_true",
                     help="wait until dw at 0x84ABA40 equals 5 before sampling starts")
     ap.add_argument("--anchor-timeout", type=float, default=90.0)
+    ap.add_argument("--only-changes", action="store_true",
+                    help="print a line only when one of the sampled values changes")
     args = ap.parse_args()
 
     pid = 0
@@ -125,7 +127,13 @@ def main() -> int:
                         idx = read_u32(h, o1 + 0x130)
                     f14 = read_u32(h, lobby + 0x1F4)
                 line += f"  {status!s:>6}  {idx!s:>4}  {f14!s:>4}"
-            print(line)
+            if args.only_changes:
+                key = (success, nbytes, status, idx, f14)
+                if key != getattr(main, "_last_key", None):
+                    main._last_key = key
+                    print(line)
+            else:
+                print(line)
             prev = success
             time.sleep(args.interval)
         return 0
