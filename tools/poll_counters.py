@@ -63,6 +63,9 @@ def main() -> int:
                     help="seconds to wait for the client to appear before sampling")
     ap.add_argument("--with-state", action="store_true",
                     help="also read lobby/obj1 status+index through [0xE85C68]")
+    ap.add_argument("--anchor-dw", action="store_true",
+                    help="wait until dw at 0x84ABA40 equals 5 before sampling starts")
+    ap.add_argument("--anchor-timeout", type=float, default=90.0)
     args = ap.parse_args()
 
     pid = 0
@@ -80,6 +83,19 @@ def main() -> int:
         print("OpenProcess failed")
         return 2
     try:
+        if args.anchor_dw:
+            # the window being studied begins when the front end reaches dw==5, not when the
+            # process appears: a dozen seconds of loading sit between the two.
+            t_wait = time.time()
+            while time.time() - t_wait < args.anchor_timeout:
+                dw = read_u32(h, 0x84ABA40)
+                if dw == 5:
+                    print(f"  anchor reached: dw=5 after {time.time() - t_wait:.2f}s")
+                    break
+                time.sleep(0.02)
+            else:
+                print(f"  anchor timeout, dw={read_u32(h, 0x84ABA40)}")
+                return 3
         print(f"pid={pid}  polling every {args.interval:g}s for {args.secs:g}s")
         hdr = f"{'t':>6}  {'success':>10}  {'delta':>8}  {'bytes':>12}"
         if args.with_state:
