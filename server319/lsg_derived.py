@@ -167,6 +167,29 @@ class DerivedLsgServer(AuthServer):
 
             if idle_interval > 0:
                 threading.Thread(target=_zero_loop, daemon=True).start()
+            # Optional: push a room-list frame without being asked. Observed
+            # sessions stop after svc71/task4 and only send keepalives, so the
+            # list is pushed for the client to render. Opt-in via
+            # LSG_PUSH_21_5=<seconds> because an unsolicited frame can also
+            # confuse the session.
+            push_delay = float(os.environ.get("LSG_PUSH_21_5", "0"))
+            if push_delay > 0:
+                def _push_room_list() -> None:
+                    time.sleep(push_delay)
+                    try:
+                        payload = (candidate_svc71_task9_reply(
+                            1, int(os.environ.get("FINDSESS_PORT", "8466")))
+                            .replace(b"\x03\x09", b"\x03\x05", 1))
+                        frame = build_server_frame85(keys, payload, counter=1,
+                                                     iv=os.urandom(16))
+                        conn.sendall(frame)
+                        self.evidence.write("pushed_room_list", session,
+                                            reply_hex=frame.hex(),
+                                            reason=f"unsolicited svc21/task5 after {push_delay:g}s")
+                    except OSError:
+                        pass
+
+                threading.Thread(target=_push_room_list, daemon=True).start()
             # The target remains silent after its first task while it waits for
             # further lobby state. A short recv timeout is a server-side close,
             # which the client surfaces as [100] after exactly that interval.
