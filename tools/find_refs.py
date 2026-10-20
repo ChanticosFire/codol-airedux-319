@@ -48,9 +48,18 @@ def read(h, va: int, n: int) -> bytes:
 
 
 def main() -> int:
-    target = int(sys.argv[1], 16) if len(sys.argv) > 1 else 0xDC3EA0
-    wait = int(sys.argv[2]) if len(sys.argv) > 2 else 30
-    needle = struct.pack("<I", target)
+    import argparse
+    ap = argparse.ArgumentParser(description="find imm32 references in the live client")
+    ap.add_argument("target", nargs="?", default="0xDC3EA0")
+    ap.add_argument("wait", nargs="?", type=int, default=30)
+    ap.add_argument("--writes", action="store_true")
+    ap.add_argument("--pattern", default=None)
+    ns = ap.parse_args()
+    target = int(ns.target, 16)
+    wait = ns.wait
+    raw = bytes.fromhex(ns.pattern) if ns.pattern else None
+    write_only = ns.writes
+    needle = raw if raw is not None else struct.pack("<I", target)
     write_needles = [b"\xc7\x05" + needle,          # mov dword [addr], imm32
                      b"\xc6\x05" + needle,          # mov byte [addr], imm8
                      b"\xff\x05" + needle,          # inc dword [addr]
