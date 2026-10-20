@@ -51,6 +51,11 @@ def main() -> int:
     target = int(sys.argv[1], 16) if len(sys.argv) > 1 else 0xDC3EA0
     wait = int(sys.argv[2]) if len(sys.argv) > 2 else 30
     needle = struct.pack("<I", target)
+    write_needles = [b"\xc7\x05" + needle,          # mov dword [addr], imm32
+                     b"\xc6\x05" + needle,          # mov byte [addr], imm8
+                     b"\xff\x05" + needle,          # inc dword [addr]
+                     b"\xff\x0d" + needle]          # dec dword [addr]
+    write_only = "--writes" in sys.argv
     pid = find_pid()
     deadline = time.time() + wait
     while not pid and time.time() < deadline:
@@ -65,6 +70,7 @@ def main() -> int:
         return 3
     print(f"pid={pid} looking for {target:#x} as imm32")
     hits = []
+    writes = []
     try:
         base = START
         while base < END:
@@ -74,13 +80,22 @@ def main() -> int:
                 while i >= 0:
                     hits.append(base + i)
                     i = data.find(needle, i + 1)
+                for wn in write_needles:
+                    j = data.find(wn)
+                    while j >= 0:
+                        writes.append((base + j, wn[:2].hex()))
+                        j = data.find(wn, j + 1)
             base += CHUNK
     finally:
         k32.CloseHandle(h)
-    if hits:
+    if writes:
+        print("write sites:")
+        for va, op in writes:
+            print(f"  {va:#010x}  opcode {op}")
+    if not write_only and hits:
         for va in hits[:40]:
             print(f"ref at {va:#010x}")
-        print(f"total {len(hits)}")
+        print(f"total {len(hits)} refs, {len(writes)} writes")
     else:
         print("no immediate references found")
     return 0
