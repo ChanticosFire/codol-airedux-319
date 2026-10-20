@@ -138,3 +138,4 @@
 | 2026-10-21 06:00–06:30 | bdsvc319.py 情报 | **关键**：tag 0x0A 应在 `svc21 task5` 应答中（非 0x85 明文）；服务表与应答统一形状已提取；仍缺 `bdproto319`（0x85 封装） | `HANDSHAKE-STATUS.md` 0.24 | 待提交 |
 | 2026-10-21 02:30–03:00 | ui=4 语义修正 | **关键认知**：`ui=4` 是 fail 分支（UI 报 `[100]`），只有 `ui=5` 才是 success；强制写 crypt 会被客户端一致性检测回滚 | `runs/20261020-base/uiforce`、`HANDSHAKE-STATUS.md` 0.25 | 待提交 |
 | 2026-10-21 06:40–07:00 | bdproto319 协议算法 | **重大**：正确算法（HMAC 反序、calc_hmacs、AB85 帧、真 HMAC 尾）已获得；`packet_buffer`/`SESSION_KEY` 仍待确定（0x111F440 在 1649370 读出全零） | `HANDSHAKE-STATUS.md` 0.26、`runs/verify_keys.py`、`find_packet_buffer.py` | 待提交 |
+| 2026-10-21 20:40–23:50 | 切换到 3.19.26.13 / Build 1604220 | **身份确认**：EXE/Base 哈希与社区已验证的 1604220 完全一致；已复制隔离副本 `runtime\client-1604220`（25.86GB）；社区服务端仅缺 `wire.py`/`iips.py`；`runs/find_a20.py` 用 chal16 自检试 288 组未命中 | `PROJECT_STATUS.md` §12 | 待提交 |

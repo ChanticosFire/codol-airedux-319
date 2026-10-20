@@ -401,3 +401,57 @@ MAC 方向也做了同 Build 静态核对：握手初始化的 `0xBA1F86–0xBA1
 复核 `runs/20261020-live-derived03/lsg.jsonl`：首个 task4 候选应答之后，客户端发送经过本地 MAC/解密验证的 `svc71/task3`、`task7`、`task9`。这只证明后续请求发送，不能反推首条 S2C 应答已经进入业务 FIFO。该轮对三项统一回 error 14 后仍出现大厅断线致命窗口。社区 1604220 `lobby.py` 的普通任务兜底是空成功，第三方 `bdsvc319.py` 则给 task9 返回本机服务器条目；二者不是同一合约，均不能直接当作 1649370 事实。
 
 因此 [lsg_derived.py](server319/lsg_derived.py) 增加显式 `--observed71-empty` 试验策略，只对这三项实见任务发送 1604220 形状的空成功：typed u64 transaction、typed u32 error=0、typed u8 task、typed u32 result_count=0。默认仍对它们回 error 14，避免把候选自动升级为成功；其余未知任务保持原始请求记录与显式错误。[run_session.ps1](tools/run_session.ps1) 提供 `-Observed71Empty` 将该策略传给服务端，默认关闭。连续四条合成任务（4、3、7、9）检查了 1..4 计数、S2C MAC、AES 解密和后三项 21B 业务体；27 项单元测试及运行脚本语法检查通过。机器可读的来源和未证实项见 [候选实验](evidence/experiments/20261020-svc71-reply-candidate.json)。本轮未启动客户端、未变更主机网络；M3 仍未验收。
+
+## 12. 版本切换：工作目标改为 3.19.26.13 / Build 1604220（2026-10-21 20:4x）
+
+用户下载了 3.19.26.13 完整包（`E:\GAME\COD\3.19.26.13`），要求把工作重心切过去，319 目录也随之切换；1649370 的研究转为参考源。
+
+### 12.1 身份确认（哈希完全匹配社区已验证版本）
+
+| 文件 | SHA-256 | 大小 |
+|---|---|---|
+| `codoMP_client_shipRetail.exe` | `3da9ef965a65a41bd27d60da1b65fa14ee77ec278eb61624111142c8b1b2e85f` | 7,842,456 |
+| `codoMP_client_shipRetailBase.dll` | `7bbc5fb07ebca9b4671ec0e9a953bbd4e1baaca6a9ca29888531c3213e400f64` | 61,137,048 |
+| `IIPS/iips.dll` | `72ddb9d15626b5a0a001347da141fb944a9f862db713e01c06a964ec8dc35348` | 347,704（**与 1649370 相同**） |
+| `IIPS/IIPSHostApp.exe` | `b507b47a80caf135ee95006ae1a3ad62777cb3df8aa339ea835117a1b508f0c8` | 290,360（**与 1649370 相同**） |
+
+**EXE/Base 哈希与 `codol-ember/工具-tools/lobby-reproduction1604220/docs/SUCCESS-SUMMARY.md` 记录的 Build 1604220 完全一致**——即社区那句「3.19.26.13 / Build 1604220」指的就是这份包（其 `version.xml` 标签是 3.19.26.17，3.19.26.13 是历史称呼）。
+
+**已复制隔离副本**：`runtime\client-1604220\`（2173 文件 / 25.86 GB，已排除 DirectX 安装包）。
+
+### 12.2 社区已有成果（可直接复用）
+
+`codol-ember/工具-tools/lobby-reproduction1604220/extracted/server/`：
+
+- `codol_server.py`（主程序）：监听 3074（HTTPS `/auth/` + 私有 lobby 通道）、3075（重定向 lobby）、UDP 3074/3076（STUN）、8000/8080（IIPS）、17500（账号 API）。
+- `lib/codol_server/`：`lobby.py`（29KB 完整大厅状态机）、`authchan.py`、`store.py`（svc10/svc80）、`accounts.py`、`dw_stun.py`、`silence.py`、`tlsx.py`、`transport.py`。
+- **缺两个模块**：`wire.py`、`iips.py`（README 明说「三个外部兼容模块自备」）。
+
+### 12.3 `wire.py` 需要实现的 API（从 `lobby.py` 反推）
+
+```
+a20_of(reply, last_tail, our_payload)      # transcript -> SHA1
+derive_keys(a20) -> {chal16, hmac_key, resp_hmac_key, aes_send, aes_recv}
+a85_build(body, ks, counter, iv, inner_type)
+a85_decrypt(frame, aes_key) -> (plain, ?)
+build_step2(chal8)
+frame_plain(...)
+parse_task_request(pt) -> (svc, task, argb)
+parse_values(argb, off)
+step1_payload(ver, connid, tail)
+w_u8 / w_u32 / w_u64
+```
+
+`lobby.py` 自带**自检**：`ks['chal16'][:8] == reply[-8:]`——比用内存密钥更直接的验证口径。
+
+### 12.4 本轮试算（未命中）
+
+`runs/find_a20.py`：用 `bdproto319` 的 `calc_hmacs`/`hmac_sha1` 实现「a20 → keys」，对 288 种 transcript 组合（`step1_22`/`step1_21`/`gate` × `reply`/`reply4` × `tail8` 的六种顺序 × 三种 `SESSION_KEY`）验证 `chal16[:8] == reply[-8:]`（目标 `4292b14c694cda86`）——**均未命中**。
+
+说明 `lobby.py` 依赖的 `wire.py` 与 `bdproto319.py` 的派生细节**不完全相同**（至少 `calc_hmacs` 的迭代方式或 `SESSION_KEY` 来源不同），不能直接互相替代。
+
+### 12.5 下一步
+
+1. **优先**：从 `lobby-reproduction1604220` 的 `releases/` 或作者渠道拿到真正的 `wire.py`/`iips.py`（README 说「自备」）。
+2. 若拿不到：以 `lobby.py` 的 `a20_of`/`derive_keys` 调用签名为准，用 `chal16[:8] == reply[-8:]` 作为 oracle，继续缩小 transcript 组成（注意 `a20_of` 可能对 `our_payload` 做了长度前缀或截断）。
+3. 拿到 `wire.py` 后，直接跑 `codol_server.py`（它会同时提供 Auth + lobby + STUN + IIPS），再用社区客户端工具复现「大厅渲染 + 关闭 TextField」。
