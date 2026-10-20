@@ -108,6 +108,19 @@ def main() -> int:
                     # [ecx+0x1D4], where ecx = lobby+0x6D0.
                     ch_len = read(h, obj + 0x8A4, 2)
                     row["chan_len @+0x8A4"] = struct.unpack("<H", ch_len)[0] if len(ch_len) == 2 else None
+                    # 0xC699B0 copies [lobby+0x184] into the chan object at +0x3C.
+                    # That struct is where the target address/port for the HTTP
+                    # request should live, so dump it too.
+                    if not getattr(main, "dumped184", False):
+                        main.dumped184 = True
+                        s184 = read(h, obj + 0x184, 0x40)
+                        if s184:
+                            print("--- [lobby+0x184] 64 bytes ---")
+                            for off in range(0, len(s184), 16):
+                                chunk = s184[off:off + 16]
+                                hx = " ".join(f"{b:02x}" for b in chunk)
+                                tx = "".join(chr(b) if 32 <= b < 127 else "." for b in chunk)
+                                print(f"  {obj + 0x184 + off:#010x}  {hx:<48} {tx}")
                     blob = read(h, obj + 0x8A8, 0x90)
                     if blob:
                         row["chan_head"] = blob[:16].hex()
