@@ -455,3 +455,18 @@ w_u8 / w_u32 / w_u64
 1. **优先**：从 `lobby-reproduction1604220` 的 `releases/` 或作者渠道拿到真正的 `wire.py`/`iips.py`（README 说「自备」）。
 2. 若拿不到：以 `lobby.py` 的 `a20_of`/`derive_keys` 调用签名为准，用 `chal16[:8] == reply[-8:]` 作为 oracle，继续缩小 transcript 组成（注意 `a20_of` 可能对 `our_payload` 做了长度前缀或截断）。
 3. 拿到 `wire.py` 后，直接跑 `codol_server.py`（它会同时提供 Auth + lobby + STUN + IIPS），再用社区客户端工具复现「大厅渲染 + 关闭 TextField」。
+
+### 12.6 `a20_of` 试算扩展（2026-10-21 23:5x–00:2x）
+
+在 §12.4 的 288 组之外，又按 `lobby.py` 的实际调用形态扩充：
+
+```python
+fr = W.frame_plain(bytes([0x81]) + W.step1_payload(VER, 1, tail))
+ks = W.derive_keys(W.a20_of(reply, last_tail, our_payload))
+```
+
+新增候选包括 `step1_payload` 的多种字节形态（`u32 220 + u64 1 + 8B tail`、`0x81` 前缀、`0x01 0x81` 前缀、`step1` 整帧）、帧级整体（`frame2`、`gate`）、`reply[-8:]` 等，共 **2430** 组排列 × 3 种 `SESSION_KEY`，用 `chal16[:8] == reply[-8:]`（目标 `4292b14c694cda86`）验证——**仍全部未命中**。
+
+**判断**：`wire.py` 的派生与 `bdproto319.py` 的 `calc_hmacs` **实现不同**（或 `SESSION_KEY` 来源不同，例如取自 Auth 票据而不是硬编码）。继续盲猜边际收益很低。
+
+**下一步锁定**：拿到 `lobby-reproduction1604220` 包里被 README 称为「外部兼容模块」的 `wire.py`（与 `iips.py`）。拿到后即可直接运行 `codol_server.py` 起全套服务。
