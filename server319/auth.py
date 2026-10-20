@@ -36,6 +36,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .ticket import build_ticket
+
 TITLE_ID_DEFAULT = 1002
 AUTH_RESULT_SUCCESS = 700
 TICKET_BYTES = 128
@@ -56,16 +58,23 @@ def build_response(request: dict) -> dict:
             user_id = str(json.loads(extra_data).get("user_id", "0"))
         except (ValueError, AttributeError):
             user_id = "0"
+    client_ticket = base64.b64encode(build_ticket(user_id)).decode()
     response = {
         "result": AUTH_RESULT_SUCCESS,
-        "code": 0,
+        "code": AUTH_RESULT_SUCCESS,
         "success": True,
+        # 1604220 queue-response parser requires all three numeric fields
+        # before processing the LSG ticket. Candidate fix for 1649370;
+        # zero means immediate admission. Validate with same-process traces.
+        "member_position": 0,
+        "estimated_wait_time": 0,
+        "next_poll_after": 0,
         "iv_seed": str(request.get("iv_seed", "0")),
         "server_ticket": ZERO_TICKET,
         "server_ticket_size": TICKET_BYTES,
         "lsg_server_ticket": ZERO_TICKET,
         "lsg_server_ticket_size": TICKET_BYTES,
-        "client_ticket": ZERO_TICKET,
+        "client_ticket": client_ticket,
         "client_ticket_size": TICKET_BYTES,
         "time_to_live": 3600,
         "licenses": [],
@@ -78,7 +87,7 @@ def build_response(request: dict) -> dict:
         "title_id": title_id,
     }
     if request.get("auth_task") is not None:
-        response["auth_task"] = request["auth_task"]
+        response["auth_task"] = str(int(request["auth_task"]) + 1)
     return response
 
 

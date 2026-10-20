@@ -39,6 +39,42 @@ PATCH_ORIGINAL = b"\x74\xB2"   # je 0xB9A742
 PATCH_REPLACEMENT = b"\x90\x90"  # nop nop
 PAGE_EXECUTE_READWRITE = 0x40
 
+
+def sample_lobby(process, base):
+    """Read candidates from the patched process; failed reads stay null.
+
+    Global addresses come from the prior 1649370 probes/1604220 reference.
+    Their semantic interpretation remains provisional until traced here.
+    """
+    def read(address, size=4):
+        raw = probe.read_memory(process, address, size)
+        return int.from_bytes(raw, "little") if raw and len(raw) == size else None
+
+    def global_value(va, size=4):
+        return read(base + va - 0x400000, size)
+
+    net = global_value(0x8269774)
+    state_ptr = global_value(0xE4EA3C)
+    state_raw = probe.read_memory(process, state_ptr, 80) if state_ptr else None
+    auth_obj = global_value(0x84ABB14) or global_value(0x84ABB08)
+    return {
+        "netobj": net,
+        "ui_state": global_value(0x84ABA50),
+        "previous_ui_state": global_value(0x84ABA54),
+        "account_error": global_value(0x84ABA5C),
+        "account_state": global_value(0x84ABA60),
+        "state_name": state_raw.split(b"\0", 1)[0].decode("ascii", "replace") if state_raw else None,
+        "error_flag": global_value(0x849BA3D, 1),
+        "lsg_obj_a": global_value(0x84ABA70),
+        "lsg_obj_b": global_value(0x84ABA74),
+        "conn_4f4": read(net + 0x4F4) if net else None,
+        "ready_4f8": read(net + 0x4F8) if net else None,
+        "auth_candidate": auth_obj,
+        "ticket_magic_global": global_value(0xD59F08),
+        "auth_fields": {hex(off): read(auth_obj + off) for off in
+                        (0, 0x14, 0x18, 0x20, 0xD8, 0x156C)} if auth_obj else None,
+    }
+
 k32 = probe.k32
 k32.VirtualProtectEx.argtypes = [wt.HANDLE, ctypes.c_void_p, ctypes.c_size_t,
                                  wt.DWORD, ctypes.POINTER(wt.DWORD)]
@@ -114,6 +150,13 @@ def main() -> int:
         k32.VirtualProtectEx(process, ctypes.c_void_p(va), 2, old_protect.value, ctypes.byref(old_protect))
         record["patch"]["written"] = bool(ok) and written.value == 2
         record["patch"]["verified_after"] = (probe.read_memory(process, va, 2) == PATCH_REPLACEMENT)
+        # Retain the exact unpacked code used by this run for offline disassembly.
+        for code_va, code_size in ((0x7F2000, 0x2000), (0x803000, 0x1000),
+                                   (0xB98000, 0x3000), (0xBA9000, 0x2000),
+                                   (0xB76000, 0x5000)):
+            code = probe.read_memory(process, base + code_va - 0x400000, code_size)
+            if code:
+                evidence.with_name(f"code-{code_va:x}.bin").write_bytes(code)
         record["events"].append({"event": "patched", "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
         deadline = time.time() + args.observe
         try:
@@ -122,9 +165,17 @@ def main() -> int:
                 alive, exit_code = launcher.process_alive(pid)
                 rows = [row for row in launcher.tcp_rows() if row["pid"] == pid]
                 windows = launcher.windows_of({pid})
+                if alive:
+                    net_raw = probe.read_memory(process, base + 0x8269774 - 0x400000, 4)
+                    if net_raw and int.from_bytes(net_raw, "little"):
+                        net_dump = probe.read_memory(process, int.from_bytes(net_raw, "little"), 0x600)
+                        if net_dump:
+                            evidence.with_name("netobj-latest.bin").write_bytes(net_dump)
                 record["events"].append({"event": "sample", "alive": alive, "exit_code": exit_code,
                                          "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                         "lobby": sample_lobby(process, base) if alive else None,
                                          "tcp": rows, "windows": windows})
+                evidence.write_text(json.dumps(record, indent=2, ensure_ascii=False), encoding="utf-8")
                 if not alive:
                     break
         except Exception as exc:

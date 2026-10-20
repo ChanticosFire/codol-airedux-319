@@ -24,9 +24,9 @@ class BuildResponseTests(unittest.TestCase):
     def test_observed_fields(self):
         response = auth.build_response(CAPTURED_REQUEST)
         self.assertEqual(response["result"], 700)
-        self.assertEqual(response["code"], 0)
+        self.assertEqual(response["code"], 700)
         self.assertTrue(response["success"])
-        self.assertEqual(response["auth_task"], "10")
+        self.assertEqual(response["auth_task"], "11")
         self.assertEqual(response["iv_seed"], "2696046749")
         self.assertEqual(response["title_id"], "1002")
         self.assertEqual(response["license_id"], 1002)
@@ -41,6 +41,12 @@ class BuildResponseTests(unittest.TestCase):
         self.assertEqual(response["user_id"], "0")
         self.assertEqual(response["license_id"], 1002)
         self.assertEqual(response["iv_seed"], "0")
+
+    def test_queue_admission_fields_survive_wire_encoding(self):
+        response = json.loads(json.dumps(auth.build_response(CAPTURED_REQUEST)))
+        for key in ("member_position", "estimated_wait_time", "next_poll_after"):
+            self.assertIs(type(response[key]), int)
+            self.assertEqual(response[key], 0)
 
     def test_bad_extra_data_is_tolerated(self):
         response = auth.build_response({"extra_data": "not json", "title_id": "1002"})

@@ -36,7 +36,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $staged 'codoMP_client_shipRetail.ex
 
 $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host 'WARNING: not elevated. IIPS will fail with 8189fec before Auth. Re-run from an elevated PowerShell.' -ForegroundColor Yellow
+    throw 'ADMIN_REQUIRED: IIPS fails before Auth without elevation. Run from an elevated PowerShell.'
 }
 if (-not $Cert) { $Cert = Join-Path $runDir 'tls\auth.crt' }
 if (-not $Key) { $Key = Join-Path $runDir 'tls\auth.key' }
