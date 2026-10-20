@@ -46,6 +46,10 @@ class INPUT(ctypes.Structure):
 
 
 user32.SendInput.argtypes = [wt.UINT, ctypes.POINTER(INPUT), ctypes.c_int]
+user32.PostMessageW.argtypes = [wt.HWND, wt.UINT, wt.WPARAM, wt.LPARAM]
+user32.GetFocus.restype = wt.HWND
+user32.GetForegroundWindow.restype = wt.HWND
+WM_CHAR = 0x0102
 
 
 def click_screen(x: int, y: int) -> None:
@@ -66,6 +70,11 @@ def send_unicode_char(ch: str) -> None:
     time.sleep(0.02)
 
 
+def post_char(hwnd: int, ch: str) -> None:
+    """Send WM_CHAR to the window; Scaleform listens for this, not SendInput."""
+    user32.PostMessageW(hwnd, WM_CHAR, ord(ch), 1)
+
+
 def send_vk(vk: int) -> None:
     down = INPUT(type=1, u=_INPUTunion(ki=KEYBDINPUT(vk, 0, 0, 0, None)))
     up = INPUT(type=1, u=_INPUTunion(ki=KEYBDINPUT(vk, 0, KEYEVENTF_KEYUP, 0, None)))
@@ -81,7 +90,14 @@ def main() -> int:
     parser.add_argument("--click", nargs=2, type=int, metavar=("X", "Y"),
                         help="client-area coordinates to click before typing")
     parser.add_argument("--enter", action="store_true", help="press Enter afterwards")
+    parser.add_argument("--activate-at", nargs=2, type=int, metavar=("X", "Y"),
+                        default=[860, 300],
+                        help="neutral client-area point clicked first to give the window focus")
+    parser.add_argument("--no-activate", dest="activate", action="store_false", default=True,
+                        help="skip the activation click")
     parser.add_argument("--delay", type=float, default=1.5)
+    parser.add_argument("--method", choices=["sendinput", "wmchar"], default="wmchar",
+                        help="wmchar posts WM_CHAR (works for Scaleform); sendinput is best-effort")
     args = parser.parse_args()
 
     hwnd = user32.FindWindowW(args.window, None)
@@ -91,6 +107,20 @@ def main() -> int:
     user32.ShowWindow(hwnd, SW_RESTORE)
     user32.SetForegroundWindow(hwnd)
     time.sleep(args.delay)
+
+    def click_client(cx: int, cy: int, label: str) -> None:
+        point = wt.POINT(cx, cy)
+        if not user32.ClientToScreen(hwnd, ctypes.byref(point)):
+            print("ClientToScreen failed", file=sys.stderr)
+            return
+        print(f"{label}: clicking screen ({point.x}, {point.y})")
+        click_screen(point.x, point.y)
+
+    if args.activate:
+        # Scaleform only accepts text once the window has real focus; clicking a
+        # neutral spot first is what a human does before clicking the field.
+        click_client(args.activate_at[0], args.activate_at[1], "activate")
+        time.sleep(0.8)
 
     if args.click:
         point = wt.POINT(args.click[0], args.click[1])
@@ -102,9 +132,14 @@ def main() -> int:
         time.sleep(0.6)
 
     if args.text:
-        print(f"typing {args.text!r}")
+        method = args.method
+        print(f"typing {args.text!r} via {method}")
         for ch in args.text:
-            send_unicode_char(ch)
+            if method == "wmchar":
+                post_char(hwnd, ch)
+            else:
+                send_unicode_char(ch)
+            time.sleep(0.05)
     if args.enter:
         time.sleep(0.3)
         send_vk(0x0D)  # VK_RETURN
