@@ -586,3 +586,19 @@ response  += HMAC-SHA1(resp_hmac_key, response)[:8]   # ★ 真 HMAC，不是 8 
 - 用内存密钥（`8e6b3363…`）作目标，穷举 5860 种 `packet_buffer` 组合（hello/gate/frame2 的含头/去头/尾部/切片）**均未命中** `dec_key`（`runs/find_packet_buffer.py`）。
 
 **下一步**：确定 `SESSION_KEY`（可能在 exe 的其他地址，或与票据相关）与 `packet_buffer` 精确拼接。一旦 `derive_keys` 能复现 `dec_key`，`enc_key`/`resp_hmac_key` 即可直接用于发帧。
+
+## 0.27 `packet_buffer`/`SESSION_KEY` 进一步排除（2026-10-21 07:x）
+
+验证目标：让 `bdproto319.derive_keys(packet_buffer)` 复现出客户端内存里的 `dec_key`（`8e6b3363…`，实测能解客户端 0x85）。
+
+| 尝试 | 结果 |
+|---|---|
+| `SESSION_KEY = 8ecd5642…`（bdproto319 硬编码，codol-node 的 `0x111f440`） | 内存中**完全不存在**这 24 字节（`session_key_search` 空），`0x111F440` 读出全零 |
+| 穷举 5860 种 `hello/gate/frame2` 切片拼接（1–4 段） | `dec_key` 均不匹配 |
+| 再叠加三种 `SESSION_KEY`（`bytes(range(24))` 票据值、`8ecd…`、全零）× 同样的 5860 组合 | 仍无一命中 |
+
+**结论**：`packet_buffer` 不是「28B hello / 26B gate / 153B 0x82」这三者简单切片拼接；`SESSION_KEY` 也不是票据里那 24 字节，且不是 codol-node 硬编码值。
+
+**最可能**：`packet_buffer` 含 **Auth 阶段的产物**（`server_ticket` / `iv_seed` / `ciphertext`），或 `client_auth` 指的不是 LSG 的 153B 0x82 而是 Auth 响应中的某段。`bdproto319` 是 `lsg.js` 移植，原 `lsg.js` 里应有 `packetBuffer` 的精确构造代码。
+
+**下一步**：拿到 `nodelsg`/`lsg.js`（或 `bdsvc319` 的调用方），确认 `packetBuffer` 与 `SESSION_KEY` 的真实来源；两者一旦确定，`enc_key`/`resp_hmac_key` 立即可用。

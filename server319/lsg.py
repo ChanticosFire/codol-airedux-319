@@ -139,6 +139,15 @@ class LsgServer(AuthServer):
                                             _sk = lsg_client.read_region(pid, 0x111F440, 24)
                                             self.evidence.write("session_key_probe", session,
                                                                 reason=f"0x111F440={_sk}")
+                                            # Is the codol-node SESSION_KEY actually present in
+                                            # this build's memory somewhere else?
+                                            _needle = bytes.fromhex(
+                                                "8ecd56428021ead23643c94801f4095daafe3875f087b13f")
+                                            _skhits = lsg_client.search_bytes(pid, _needle,
+                                                                              limit=3, context=4)
+                                            self.evidence.write(
+                                                "session_key_search", session,
+                                                reason=json.dumps([hex(h["hit"]) for h in _skhits]))
                                         except Exception as _exc:
                                             self.evidence.write("session_key_probe", session,
                                                                 reason=type(_exc).__name__)
