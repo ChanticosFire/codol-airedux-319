@@ -599,3 +599,84 @@ python tools\patch_runtime.py --client-dir runtime\client-1604220 --evidence run
 6. `patch_runtime.py` 原本硬编码 `runtime/client-1649370`，现已按 build 识别。
 7. `run_1604220.ps1` 的 `Start-Job` 传参有 bug，Auth 不会监听；用内联 `Start-Process`。
 8. 客户端截图需**强制置前**才有意义（`runs/run_lobby_capture.ps1` 有现成逻辑）。
+
+---
+
+## 15. Build 1604220：111 已消除，大厅背景已出（2026-10-22 23:5x）
+
+### 15.1 这一步做了什么
+
+`[100]` 与 `[111]` 均已消除，客户端渲染出大厅背景。三层修复缺一不可：
+
+1. **UDP 3074 回显**（`server319/lobby_udp.py`）——握手走 UDP，此前无人应答。
+2. **lobby pump 9 处补丁**——绕握手失败跳转 + 把「写 -2」改成写 1，
+   注意 `0xBADC27` 而非 `0xBADC26`（`mov esi,-2` 的立即数偏移）。
+3. **强推补丁**（`tools/ui_activate.py`）——`0x7F25F0` 跳板调用 `0x5EBE10`（cppActivate），
+   dw=5 调一次、45 秒后 `--reset` 重触发。
+
+完整 15 处补丁列表见 `PROJECT_STATUS.md` §12.11。
+
+### 15.2 当前状态
+
+```
+dw=5, ui=9, lstate=2, DWLOGON_REGISTERCODOID_COMPLETE
+```
+
+截图：大厅背景（蓝雾 + 半透明几何层 + HUD 边框），**无 111 弹窗**。
+但**UI 层（按钮/文字）为空**。
+
+### 15.3 缺什么
+
+`lsg.jsonl` 显示：`svc71/task4` → 应答 → 客户端不再请求，只有保活帧。
+即前端框架已激活，但没有数据可渲染。
+
+下一步：主动推送 player/lobby 数据（参考 `bdsvc319.py` 的 `svc80` 形状），
+必要时补 `svc10` 文件清单。
+
+### 15.4 复验命令
+
+```powershell
+cd E:\GAME\COD\codol-airedux\319
+
+# 1) 起三个本机服务
+python -m server319.lobby_udp 3074 200 runs\X\lobby_udp.jsonl
+python -m server319 --client-dir runtime\client-1604220 --auth \
+  --cert runs\20261022-tls-selfsigned\auth.crt \
+  --key  runs\20261022-tls-selfsigned\auth.key \
+  --port 4175 --seconds 195 --evidence runs\X\auth.jsonl
+python -m server319.lsg --cert runs\20261022-tls-selfsigned\auth.crt \
+  --key runs\20261022-tls-selfsigned\auth.key \
+  --port 4174 --log runs\X\lsg.jsonl --seconds 195
+
+# 2) 打 15 处补丁并启动客户端
+python tools\patch_runtime.py --client-dir runtime\client-1604220 \
+  --evidence runs\X\patch.json --wait 12 --observe 175 \
+  --patch 0x403699:EB1F:741F --patch 0x403659:909090909090:893540BA4A08 \
+  --patch 0x3F2A0A:B8BC0200009090:3DBC0200007407 \
+  --patch 0x3EE9DC:9090909090:E82F2F0100 \
+  --patch 0x37C860:C39090909090:558BEC83E4F8 --patch 0x20C649:B000:B001 \
+  --patch 0x7BA295:9090:7E1A --patch 0x7BA29D:9090:7512 \
+  --patch 0x7BA276:9090:7439 --patch 0x7BAD4D:9090:7572 \
+  --patch 0x7ADC27:01000000:FEFFFFFF --patch 0x7ADDE0:01000000:FEFFFFFF \
+  --patch 0x7AE754:01000000:FEFFFFFF --patch 0x7AE76C:01000000:FEFFFFFF \
+  --patch 0x7AE7B0:01000000:FEFFFFFF
+
+# 3) dw=5 后装强推跳板（另开窗口）
+python tools\ui_activate.py --wait-dw5 60
+# 45 秒后重触发
+python tools\ui_activate.py --reset
+
+# 4) 置前截图
+pwsh -NoProfile -File tools\capture_screen.ps1 -OutFile runs\X\shot.png -DelayMs 3000
+```
+
+### 15.5 新增文件
+
+| 文件 | 作用 |
+|---|---|
+| `server319/lobby_udp.py` | UDP+TCP 3074 回显端点 |
+| `tools/ui_activate.py` | cppActivate 强推跳板 |
+| `tools/find_calls.py` | 扫描指定 VA 的全部 call 调用点 |
+| `tools/watch_patch_sites.py` | 监视补丁点是否被还原 |
+| `tools/probe_pump_sites.py` | 读取 pump 补丁九处字节 |
+| `tools/dump_state_mapper.py` | 转储 ui_state 映射与全局量 |

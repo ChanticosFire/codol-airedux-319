@@ -616,3 +616,90 @@ dw=5, ui=9, ready=1, lstate=2, state=DWLOGON_REGISTERCODOID_COMPLETE
 ### 下一步
 
 在 `server319/lsg.py` 补 `svc71/task9`（82B server entry，指向 `127.0.0.1:8466`）与 `svc71/task3`（空成功），把 `error=14` 换掉，再观察 `dw` 是否稳定在 5 且 `[111]` 消失。
+
+### 12.11 ★★ 111 消除 + 大厅背景渲染（2026-10-22 22:5x–23:5x）
+
+社区开发者提供的信息是决定性的，分三层，全部验证成立。
+
+#### 第一层：UDP 3074 必须有人应答
+
+握手走 **UDP，不走 TCP**。`0xbb1420` 是 sendto 封装，构造 `"1E" + u16([session+0x12C])`
+发到 `127.0.0.1:3074`。我们此前只监听 4174/4175，UDP 3074 上没人应答——这被认为是
+`[111]` 反复出现的直接原因之一。
+
+新增 `server319/lobby_udp.py`（TCP+UDP 3074，回环，原样回显）。实测日志：
+
+```
+endpoint_up
+udp_in 127.0.0.1:22011 len=3  1e0300
+udp_echo len=3
+udp_in 127.0.0.1:22011 len=4  14020000
+udp_echo len=4
+```
+
+一轮会话 25 次往返，格式与社区描述完全一致。
+
+#### 第二层：lobby pump 的 9 处补丁
+
+`[lobby+0x1F4]` 这个状态量以前撑不过 47 秒就翻成 -2；根因是 pump 匹配失败后走清理路径
+把 1F4 写成 -2，客户端读到 -2 就认定连接已失去。
+
+四类跳转改为 `9090`，五处硬编码「写 -2」的立即数改为 1：
+
+| 地址 (VA) | 原始 | 补丁 | 说明 |
+|---|---|---|---|
+| `0xBBA295` | `7e1a` | `9090` | 握手失败跳转 |
+| `0xBBA29D` | `7512` | `9090` | 同上 |
+| `0xBBA276` | `7439` | `9090` | 同上 |
+| `0xBBAD4D` | `7572` | `9090` | 同上 |
+| `0xBADC27` | `feffffff` | `01000000` | **注意是 +1**：指令为 `be fe ff ff ff`（mov esi,-2），立即数从下一字节开始 |
+| `0xBADDDE0` | `feffffff` | `01000000` | 写 1 |
+| `0xBAE754` | `feffffff` | `01000000` | 写 1 |
+| `0xBAE76C` | `feffffff` | `01000000` | 写 1 |
+| `0xBAE7B0` | `feffffff` | `01000000` | 写 1 |
+
+> `0xBADC26` 首次尝试报 `applied=false`，正是因为立即数在 `0xBADC27`，差一个字节。
+
+加上原有 6 处（`0x803699`、`0x803659`、`0x7F2A0A`、`0x7EE9DC`、`0x77C860`、`0x60C649`），
+共 **15 处**运行期补丁，全部 `applied=true` / `verified=true`。
+
+状态机随之推进：
+
+```
+dw=2 ui=6  DW_DNS_COMPLETE
+dw=3 ui=9  lstate=1  DW_ACCOUNT_LOGIN_COMPLETE   ← lstate=1 首次出现
+dw=5 ui=9  lstate=2  DWLOGON_REGISTERCODOID_COMPLETE
+```
+
+**`[111]` 消失，截图显示大厅背景。**
+
+#### 第三层：强推补丁（cppActivate）
+
+`codol-ember/.../launch319-reference/reference/launch/orch319.py::install_ui_activate`
+即社区所说的「强推补丁」：在每帧泵 `0x7F25F0` 入口装一次性跳板，调用 `0x5EBE10`
+（cppActivate）激活前端；**dw=5 先调一次，45 秒后再重触发一次**。
+
+已移植为 `tools/ui_activate.py`（`--wait-dw5` / `--reset`）。cave 布局：
+
+```asm
+pushf; pushad
+cmp  byte [cave+0x800], 0
+jne  skip
+mov  byte [cave+0x800], 1
+call 0x5EBE10
+skip:
+popad; popf
+<原 6 字节>
+jmp  0x7F25F6
+```
+
+实测 `trampoline installed at 0x59bf0000`，之后截图（`runs/20261022-1604220-activate`、
+`runs/20261022-1604220-retrig`）均为大厅背景。
+
+#### 当前唯一缺口：大厅 UI 层
+
+背景与 HUD 几何层渲染正常，但**没有按钮和文字**。`lsg.jsonl` 显示客户端拿到
+`svc71/task4` 应答后不再请求任何数据，只有 `idle_control` / `zero_frame` 保活。
+
+下一步需要主动给它 player/lobby 数据（`svc80` playerdata 或未请求的事件帧），
+以及 `svc10` 文件清单（若 UI 需要资源）。
