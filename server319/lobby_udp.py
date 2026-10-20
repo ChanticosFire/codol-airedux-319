@@ -15,6 +15,7 @@ does not change any host networking configuration.
 from __future__ import annotations
 
 import json
+import os
 import socket
 import sys
 import threading
@@ -141,7 +142,11 @@ def main() -> int:
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 3074
     seconds = float(sys.argv[2]) if len(sys.argv) > 2 else 120.0
     log = Path(sys.argv[3]) if len(sys.argv) > 3 else None
-    server = LobbyEndpoint(port, log)
+    # Echoing blindly hands the client a packet it may treat as one server-list message and
+    # parse into zero entries. LOBBY_UDP_ECHO=0 keeps the socket silent so a genuinely starved
+    # recv can be told apart from a junk reply.
+    echo = os.environ.get("LOBBY_UDP_ECHO", "1").strip().lower() not in ("0", "false", "no")
+    server = LobbyEndpoint(port, log, echo=echo)
     server.start()
     try:
         time.sleep(seconds)
