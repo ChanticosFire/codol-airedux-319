@@ -470,3 +470,19 @@ ks = W.derive_keys(W.a20_of(reply, last_tail, our_payload))
 **判断**：`wire.py` 的派生与 `bdproto319.py` 的 `calc_hmacs` **实现不同**（或 `SESSION_KEY` 来源不同，例如取自 Auth 票据而不是硬编码）。继续盲猜边际收益很低。
 
 **下一步锁定**：拿到 `lobby-reproduction1604220` 包里被 README 称为「外部兼容模块」的 `wire.py`（与 `iips.py`）。拿到后即可直接运行 `codol_server.py` 起全套服务。
+
+### 12.7 社区参考包 `launch319-reference` 的实际可用性（2026-10-22 05:x–07:x）
+
+按 `Run-Reproduction.ps1` 的 `Doctor` 逐项核对（`-Python C:\Python313\python.exe -ClientRoot runtime\client-1604220 -AuthorLaunch ...\reference\launch`）：
+
+| 检查项 | 结果 |
+|---|---|
+| 依赖 `psutil==7.1.0`、`Pillow==11.3.0`、`cryptography==50.0.1` | ✅ 已安装到指定版本并通过 |
+| 依赖 `pycryptodome==3.23.0` | ❌ 本机是 4.1.0 |
+| `lobby_service.py` / `dw_auth.py` / `dw_wire.py` 的**作者原件** | ❌ **hash 不匹配**（`dw_wire.py` 期望 `12a403e9…`，仓库里的是脱敏版） |
+| `windows_python311_x64` | ❌ 本机是 CPython **3.13**（参考锁定 3.11 x64） |
+| `preparation_ready` | **false** |
+
+**结论**：`launch319-reference` 是**脱敏的参考源码**，不是可直接复现的作者原件包；它自带的 `dw_wire.py`/`dw_auth.py` **哈希与作者原件不符**，所以 `local_checks` 判定 `hash_mismatch`。这与 `lobby-reproduction1604220` 缺 `wire.py`/`iips.py` 是同一个缺口的两面：**社区公开物里没有可直接运行的作者版 wire 实现**。
+
+**可继续的方向**：`reference/launch/demonware/dw_wire.py` 虽然哈希不符，但**接口完整**（`encrypt_frame`/`decrypt_client_frame`/`parse_tagged`/`parse_values`/`w_u32` 等），可作为**重写 `lobby.py` 所需 `wire.py` 的蓝本**——按 `lobby.py` 的调用签名（`a20_of`/`derive_keys`/`a85_build`/`a85_decrypt`/`build_step2`/`step1_payload`/`parse_task_request`）适配一层即可，而不是继续猜 `packet_buffer`。
