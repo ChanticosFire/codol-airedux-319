@@ -3321,3 +3321,9 @@ OK
 （一个崩溃、一个契约漂移）。
 
 M4 主体仍阻塞于 §9.0 的人工前置，但服务端侧的可靠性因此实质提升。
+
+## 参考
+
+- [PUMP-STATE-MACHINE.md](PUMP-STATE-MACHINE.md) — 大厅 pump 状态机的完整技术说明（213 行，含地址表、状态机全图、已排除假设）
+- [SOLUTION-100-111.md](SOLUTION-100-111.md) — 100/111 阻塞的完整解法
+- [LONG-RUN-GOAL.md](LONG-RUN-GOAL.md) §9.0 — M4 的人工前置条件
