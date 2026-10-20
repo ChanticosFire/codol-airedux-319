@@ -83,6 +83,8 @@ def main() -> int:
     parser.add_argument("--seconds", type=int, default=60,
                         help="keep nudging for this long")
     parser.add_argument("--interval", type=float, default=2.0)
+    parser.add_argument("--to", type=int, default=1,
+                        help="value to write into G1 (1 lets the ladder run its G1==1 checks, 2 jumps to cppActivate)")
     parser.add_argument("--set-ready", action="store_true",
                         help="also write 1 into [0x84ABAFC] (session ready)")
     args = parser.parse_args()
@@ -103,7 +105,7 @@ def main() -> int:
         while time.time() < deadline:
             g1 = read(h, G1, 1)
             if g1 and g1[0] == 0:
-                write(h, G1, b"\x01")
+                write(h, G1, bytes([args.to & 0xFF]))
             if args.set_ready:
                 ready = read(h, SESSION_READY, 4)
                 if len(ready) == 4 and struct.unpack("<I", ready)[0] == 0:
