@@ -486,3 +486,35 @@ ks = W.derive_keys(W.a20_of(reply, last_tail, our_payload))
 **结论**：`launch319-reference` 是**脱敏的参考源码**，不是可直接复现的作者原件包；它自带的 `dw_wire.py`/`dw_auth.py` **哈希与作者原件不符**，所以 `local_checks` 判定 `hash_mismatch`。这与 `lobby-reproduction1604220` 缺 `wire.py`/`iips.py` 是同一个缺口的两面：**社区公开物里没有可直接运行的作者版 wire 实现**。
 
 **可继续的方向**：`reference/launch/demonware/dw_wire.py` 虽然哈希不符，但**接口完整**（`encrypt_frame`/`decrypt_client_frame`/`parse_tagged`/`parse_values`/`w_u32` 等），可作为**重写 `lobby.py` 所需 `wire.py` 的蓝本**——按 `lobby.py` 的调用签名（`a20_of`/`derive_keys`/`a85_build`/`a85_decrypt`/`build_step2`/`step1_payload`/`parse_task_request`）适配一层即可，而不是继续猜 `packet_buffer`。
+
+### 12.8 `wire.py` 原件的全盘搜索与派生穷举（2026-10-22 07:x–09:x）
+
+**全盘搜索**（`E:\` 递归，含隐藏文件）：
+
+| 文件名 | 找到的位置 |
+|---|---|
+| `wire.py` | **无** |
+| `iips.py` | **无** |
+| `lobby_service.py` | `codol-ember/.../launch319-reference/reference/launch/`（脱敏版，哈希不符） |
+| `bdproto319.py` / `bdsvc319.py` | `他人文件参考/`（用户提供） |
+| `launch/` 目录 | 只有 `launch319-reference/reference/launch`（参考副本） |
+
+**结论：社区公开物与用户提供的资料中都没有可直接运行的 `wire.py` 原件。**
+
+**派生实现穷举**（目标 oracle：`chal16[:8] == reply[-8:]`，本次目标值 `4292b14c694cda86`）：
+
+| 变体 | 结果 |
+|---|---|
+| `bdproto319.calc_hmacs`（`HMAC(key=data, data=key+count)` 迭代） | ❌ |
+| 标准 HKDF（`HMAC(salt, ikm)` + `HMAC(prk, prev+info+counter)`） | ❌ |
+| `data3 = HMAC(key=session_key, data=a20)`（反序） | ❌ |
+| `data3 = HMAC(key=a20, data=session_key)`（标准） | ❌ |
+| `SESSION_KEY`：`range(24)` / `range(16)` / `8ecd…`(24B) / 全零(24B) / 全零(16B) | ❌ |
+| transcript：`step1_payload` 20/21/22 字节 × `reply`/`gate` × 六种顺序 | ❌ |
+| 累计组合数 | **> 150,000** |
+
+**判断**：`lobby.py` 依赖的 `wire.py` 其 `a20_of` 拼接或 `derive_keys` 的 KDF 与 `bdproto319` **明确不同**，且 `session_key` 来源未知（既非票据 24B，也非 `8ecd…`）。继续穷举的边际收益已接近零。
+
+**要推进只有两条路**：
+1. **拿到 `wire.py` 原件**（作者工作副本、`bdsvc319` 的调用方、或 gitea 仓库的非公开/其他分支）。
+2. **改用动态手段**：在客户端 `0xBA3010` 或等价的密钥派生函数上下断点，直接读出 `enc_key`/`resp_hmac_key`（属进程内调试，不违反硬边界）。
