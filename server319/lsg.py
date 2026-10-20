@@ -186,7 +186,7 @@ class LsgServer(AuthServer):
                                                 ip = bytes([127, 0, 0, 1])
                                                 port = struct.pack("<I", 4174)
                                                 tlv = b"\x0a\x08" + ip + port
-                                                inner = b"\x04" + tlv
+                                                inner = b"\x86" + b"\x04" + tlv
                                                 evt4_pt = struct.pack("<I", len(inner)) + inner
                                                 evt4_pt += b"\x00" * ((-len(evt4_pt)) % 16)
                                                 # 1649370 does NOT keep the rx counter at conn+0x5EC

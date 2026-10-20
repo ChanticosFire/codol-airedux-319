@@ -254,3 +254,9 @@ keepalive   发送裸 4 字节零 (b'\x00\x00\x00\x00')，每 20s；收到 4 零
 - 用 `A20=SHA1(transcript)`/`K=HMAC-SHA1(A20, bytes(range(24)))`/`HKDF(CLIENTCHAL)` 对 14400 种 transcript 组合穷举，**没有**命中帧尾（`runs/derive_chal.py`），说明 1649370 的 transcript 组成或票据字段与 1604220 不同。
 - `0xBA4430`（控制帧处理）的 `type` 取自明文 `payload[0]`：只认 `0x81` 和 `4`，且 **`4` 走 `0xBA4510` → `call 0xBA3420` → `[conn+0xC8]=4`（报废）**。因此 **S2C 业务帧不能直接用 type 4**，否则客户端主动废弃连接——这正是 `peer_closed` 的直接来源。
 - 业务分派 `0xB838A0`（type 4 → tag 0x0A）是**另一条路径**（由 `0x8037B8` 调用、消费 `[0x84ABA7C]`），与 `0xBA4430` 无关。
+
+## 0.13 seq 修正后的复测（2026-10-20 18:0x–18:3x）
+
+- 用**客户端 0x85 帧里的 seq**（不再用 `conn+0x5EC`）重试了 `inner 0x04`、`inner 0x86 + 业务 4 + tag0x0A TLV`，结果仍是 `DW_LOBBY_CONNECTED`（ui=4、ready=1）后 **~8 秒弹「与大厅服务器失去连接」**，且 `lsg.jsonl` 记录 `peer_closed`。
+- `chal_search` 的堆命中（如 `0x375ee7a9`）周围是「8 字节 tail + 一串对象字段」，**不是 16 字节 CHAL**，进一步确认客户端只保存 `CHAL[:8]`（即 0x82 帧尾），不保存 `CHAL[8:16]`；因此 0x83 用 `conn+0x5FC` 回显是可行做法，问题不在 0x83。
+- 结合 `0xBA4430` 的分支语义（`payload[0]==4` → 报废），**S2C 加密帧的明文首字节不能是 0x04**；正确值只可能在 `0x81/0x84/0x86/0x87/0x88/0x89/0x90` 中，且必须让业务帧进入 `[0x84ABA7C]` 而不是走控制帧默认错误。
