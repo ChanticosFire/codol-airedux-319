@@ -1,0 +1,27 @@
+{
+  "build": 1649370,
+  "source": "unpacked runtime code dump runs/20261020-dump-ba3000/code-ba3000.bin; disassembly in same ignored run",
+  "scope": "static control flow only; no live S2C consumer hook",
+  "findings": [
+    {
+      "va": "0xBA46A2-0xBA46C2",
+      "observation": "when connection stage is 3 and incoming inner opcode is 0x85, dispatcher calls 0xBA3710"
+    },
+    {
+      "va": "0xBA3844-0xBA3859",
+      "observation": "0xBA3710 reads connection+0x5EC, increments it, and compares its prior value with the parsed incoming message counter; mismatch follows an error path",
+      "unknown": "initial value of +0x5EC in the live derived runs, so current server counter=1 is only a candidate"
+    },
+    {
+      "va": "0xBA398D-0xBA39E2",
+      "observation": "the handler compares eight received trailing bytes against eight computed bytes and follows an error path on mismatch",
+      "unknown": "whether the current derived S2C HMAC key matches this client"
+    },
+    {
+      "va": "0xBA39F3-0xBA3A05",
+      "observation": "the handler calls a decrypt virtual method on the object at connection+0x608",
+      "unknown": "whether the current derived S2C AES key matches this object"
+    }
+  ],
+  "next_check": "For an isolated and egress-controlled client run, record +0x5EC and compare the +0x608 AES object key digest with the derived server key; hook or sample the 0xBA3710 result before asserting reply consumption."
+}
