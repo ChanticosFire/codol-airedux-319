@@ -98,6 +98,8 @@ def main() -> int:
                 if obj:
                     val = u32(h, obj + OFF)
                     row[f"{static:#x}->{obj:#x}"] = val
+                    row["+0x1F0 (obj)"] = u32(h, obj + 0x1F0)
+                    row["+0x1F0->vtbl"] = u32(h, u32(h, obj + 0x1F0) or 0)
                     if args.set is not None and val is not None and val != args.set:
                         if write(h, obj + OFF, struct.pack("<I", args.set)):
                             print(f"  wrote {args.set} at {obj + OFF:#x} (was {val})")
