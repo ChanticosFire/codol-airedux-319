@@ -99,12 +99,30 @@ class LsgServer(AuthServer):
                                     self.evidence.write("challenge_detail", session,
                                                         reason=json.dumps(detail)[:600])
                                     if caddr:
-                                        around = lsg_client.read_region(pid, caddr + 0x5F0, 0x20)
+                                        around = lsg_client.read_region(pid, caddr + 0x5E0, 0x30)
                                         self.evidence.write("conn_mem", session,
-                                                            reason=f"{caddr:#x}+0x5F0 {around}")
+                                                            reason=f"{caddr:#x}+0x5E0 {around}")
                                 self.evidence.write(
                                     "challenge_lookup", session,
                                     reason=f"pid={pid} candidates={len(candidates)} conn={caddr:#x}")
+                                # Reference self-check: CHAL[:8] == reply[-8:].
+                                # Searching the client for that tail reveals the
+                                # surrounding 16 bytes, i.e. the real CHAL and the
+                                # CHAL[8:16] half our 0x83 must carry.
+                                try:
+                                    if pid and len(more) >= 8:
+                                        tail8 = more[-8:]
+                                        found = lsg_client.search_bytes(pid, tail8, limit=4,
+                                                                        context=32)
+                                        self.evidence.write(
+                                            "chal_search", session,
+                                            body_hex=tail8.hex(),
+                                            reason=json.dumps([
+                                                {"hit": hex(h["hit"]), "around": h["around"]}
+                                                for h in found])[:900])
+                                except Exception as _exc:
+                                    self.evidence.write("chal_search_error", session,
+                                                        reason=type(_exc).__name__)
                             except Exception as exc:  # keep the listener alive
                                 pid, caddr, challenge = 0, 0, None
                                 self.evidence.write("challenge_error", session,
@@ -171,11 +189,14 @@ class LsgServer(AuthServer):
                                                 inner = b"\x04" + tlv
                                                 evt4_pt = struct.pack("<I", len(inner)) + inner
                                                 evt4_pt += b"\x00" * ((-len(evt4_pt)) % 16)
-                                                _rxseq = _lc.read_u32(_pid, caddr + 0x5EC) or 1
+                                                # 1649370 does NOT keep the rx counter at conn+0x5EC
+                                                # (that offset holds lobby-name text); echo the
+                                                # sequence the client itself used in its 0x85.
+                                                _rxseq = int.from_bytes(seq, "little")
                                                 fixed_iv = os.urandom(16)  # 1649370 takes the IV from the frame
                                                 _rct = AES.new(key_send, AES.MODE_CBC,
                                                                iv=fixed_iv).encrypt(evt4_pt)
-                                                _evt4 = (b"\xab\x85" + struct.pack("<I", _rxseq)
+                                                _evt4 = (b"\x01\x85" + struct.pack("<I", _rxseq)
                                                          + fixed_iv + _rct + b"\x00" * 8)
                                                 conn.sendall(struct.pack("<I", len(_evt4)) + _evt4)
                                                 self.evidence.write("frame85_reply", session,
@@ -226,7 +247,7 @@ class LsgServer(AuthServer):
                                                                            iv=_ria).encrypt(
                                                                                struct.pack("<I", 1)
                                                                                + b"\x01")
-                                                            _ans = (b"\xab\x85" + struct.pack("<I", _rxseq)
+                                                            _ans = (b"\x01\x85" + struct.pack("<I", _rxseq)
                                                                     + _ria + _rcb + b"\x00" * 8)
                                                             conn.sendall(
                                                                 struct.pack("<I", len(_ans)) + _ans)

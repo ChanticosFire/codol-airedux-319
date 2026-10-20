@@ -233,3 +233,24 @@ keepalive   发送裸 4 字节零 (b'\x00\x00\x00\x00')，每 20s；收到 4 零
 | 收发同密钥（0x604） | 仍 `peer_closed` |
 
 **关键推断（下一步核心）**：参考的会话密钥来自**握手 transcript 派生**（`A20/K/HKDF`），而我们从 `conn+0x604/0x608` 内存读取。用内存 key 能解开客户端→服务器方向，但服务器→客户端的 key 很可能与之不同，客户端解不开我们的帧就 `peer_closed`。**下一步应实现 SHA1+HMAC-SHA1+HKDF 派生，与 conn 内存值比对，确认 transcript 组成（28B hello + 26B gate + 153B 0x82）。**
+
+## 0.12 conn 结构与 seq 的实测校正（2026-10-20 17:3x–17:5x）
+
+`conn` 对象 `+0x5E0` 起的实测布局（两次运行）：
+
+```
++0x5E0  01000000      = 1
++0x5E4  00000000      = 0
++0x5E8  02000000      = 2   (stage)
++0x5EC  0a131047 / 00000000  ← 不是 rxseq！含 "loba" 文本时说明这里是缓冲区
++0x5F0  6c6f6261 "loba" / 00000000
++0x5F4  ...            ← challenge 前的字段
++0x5FC  8B challenge
++0x604  指针 → [ptr+0x9C] 为 16B 密钥
+```
+
+- **`conn+0x5EC` 在 1649370 上不是接收序号**（1604220 的 `lsg_echo319.py` 用它当 `exp`，在 1649370 上会读出 `0x4710130a` 这类巨大值）。`server319.lsg` 已改为**回显客户端 0x85 帧里的 seq**。
+- `0x82` 帧尾 8B 与 `conn+0x5FC` 的 challenge **不同**；`chal_search` 在客户端内存搜索帧尾只命中 EXE 常量和堆字符串（"certificate revocation list"），**说明客户端不缓存 `chal16[:8]`**，参考的 `CHAL[:8]==reply[-8:]` 自检在 1649370 上无法用内存比对验证。
+- 用 `A20=SHA1(transcript)`/`K=HMAC-SHA1(A20, bytes(range(24)))`/`HKDF(CLIENTCHAL)` 对 14400 种 transcript 组合穷举，**没有**命中帧尾（`runs/derive_chal.py`），说明 1649370 的 transcript 组成或票据字段与 1604220 不同。
+- `0xBA4430`（控制帧处理）的 `type` 取自明文 `payload[0]`：只认 `0x81` 和 `4`，且 **`4` 走 `0xBA4510` → `call 0xBA3420` → `[conn+0xC8]=4`（报废）**。因此 **S2C 业务帧不能直接用 type 4**，否则客户端主动废弃连接——这正是 `peer_closed` 的直接来源。
+- 业务分派 `0xB838A0`（type 4 → tag 0x0A）是**另一条路径**（由 `0x8037B8` 调用、消费 `[0x84ABA7C]`），与 `0xBA4430` 无关。

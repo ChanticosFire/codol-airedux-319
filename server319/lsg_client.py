@@ -283,6 +283,51 @@ def read_u32(pid: int, address: int) -> int | None:
         k32.CloseHandle(handle)
 
 
+def search_bytes(pid: int, needle: bytes, limit: int = 8,
+                 context: int = 32) -> list[dict]:
+    """Locate a byte pattern in the client's committed readable memory.
+
+    Used to find the 16-byte CHAL: the reference asserts CHAL[:8] equals the
+    last 8 bytes of the client's 153-byte handshake reply, so a hit gives us
+    the surrounding 16 bytes (and therefore CHAL[8:16], the 0x83 token).
+    """
+    if not needle:
+        return []
+    handle = _open(pid)
+    if not handle:
+        return []
+    hits: list[dict] = []
+    try:
+        address = 0
+        mbi = MBI()
+        while len(hits) < limit and k32.VirtualQueryEx(
+                handle, ctypes.c_void_p(address), ctypes.byref(mbi), ctypes.sizeof(mbi)):
+            size = mbi.RegionSize or 0
+            if size == 0:
+                break
+            readable = (mbi.State == MEM_COMMIT
+                        and not (mbi.Protect & PAGE_GUARD)
+                        and not (mbi.Protect & PAGE_NOACCESS))
+            if readable and size <= 64 * 1024 * 1024:
+                blob = _read(handle, address, size)
+                if blob:
+                    start = 0
+                    while len(hits) < limit:
+                        index = blob.find(needle, start)
+                        if index < 0:
+                            break
+                        hit = address + index
+                        around = _read(handle, max(0, hit - context), context * 2)
+                        hits.append({"hit": hit, "around": around.hex() if around else ""})
+                        start = index + 1
+            address += size
+            if address > 0x7FFFFFFF:
+                break
+    finally:
+        k32.CloseHandle(handle)
+    return hits
+
+
 def find_challenge(pid_hint: int | None, mark: int) -> tuple[int, int, bytes | None]:
     """Return (pid, conn, challenge) for the first client that has a conn."""
     pids = [pid_hint] if pid_hint else find_client_pids()

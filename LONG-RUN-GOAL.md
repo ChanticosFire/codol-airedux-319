@@ -128,3 +128,4 @@
 | 2026-10-20 16:20–17:00 | LSG 业务帧 type 4 与大厅连接 | **里程碑**：type 4 + tag 0x0A 使客户端到达 `DW_LOBBY_CONNECTED`（ui=4、ready=1、queue=2）；**只发一次**才保持，循环心跳会触发 `ConnectionAbortedError` | `runs/20261020-session46/47` | 待提交 |
 | 2026-10-20 16:50–17:15 | LSG 内层类型扫描与 0x47 应答 | **部分成功**：`0x88` 内层使 `DW_LOBBY_CONNECTED` 保持约 16 秒（最佳），`0x84/0x86/0x87` 立即 lstate=4；`0x47` 业务类型与周期心跳仍报废。**缺 0x47 应答字节** | `runs/20261020-inner-84/87/88`、`biz-47` | 待提交 |
 | 2026-10-20 17:15–17:30 | 拉取社区仓库 + 1604220 服务端参考 | **重大线索**：`lobby.py` 给出 step1/step2 格式、密钥派生公式（SHA1/HMAC-SHA1/HKDF）、evt4 body、task_reply 格式、keepalive 为裸 4 零字节；包内 `wire.py` 被省略。实验仍 lstate 2→4，推断服务器→客户端密钥方向不匹配 | `HANDSHAKE-STATUS.md` 0.11 | 待提交 |
+| 2026-10-20 17:30–18:00 | conn 结构/seq 实测 + CHAL 派生穷举 | **校正**：`conn+0x5EC` 不是序号（1649370 改动），改为回显客户端 0x85 的 seq；`CHAL` 派生 14400 组合未命中（transcript 与 1604220 不同）；`0xBA4430` 的 type 4 是报废分支，S2C 不能用 type 4 | `HANDSHAKE-STATUS.md` 0.12、`runs/derive_chal.py` | 待提交 |
