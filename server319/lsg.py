@@ -161,13 +161,17 @@ class LsgServer(AuthServer):
                                 # reaches 0xBA3590, which builds the crypt channel and sets
                                 # [conn+0x644]=1. Without it crypt stays 0 and 0xBA0780 can
                                 # never return 2, so ui_state never reaches 5.
+                                # 0xBA3ABB: the u32 length field is added to the post-type
+                                # offset (5), so it must count only the payload bytes.
                                 f87_body = b"\x01" + b"\x00" * 15
-                                f87 = (struct.pack("<I", 1 + len(f87_body))
+                                f87 = (struct.pack("<I", len(f87_body))
                                        + b"\x87" + f87_body)
-                                # 0x87 turned out to trigger DW_LOBBY_ERROR on 1649370;
-                                # stay silent so the lobby poller can observe
-                                # lstate==2 && stage==3 (the 0xBA0780 condition B).
-                                self.evidence.write("frame87", session, reason="disabled")
+                                # 0xBA2B5D: while crypt==0 the receiver requires
+                                # lstate==2 && stage==3, and stage only reaches 3 a few
+                                # seconds after 0x83, so delay the 0x87 frame.
+                                time.sleep(float(os.environ.get("LSG_F87_DELAY", "4")))
+                                conn.sendall(f87)
+                                self.evidence.write("frame87", session, reply_hex=f87.hex())
                                 # Keep reading: the client may answer with the
                                 # 0x85 encrypted channel frame right after.
                                 try:

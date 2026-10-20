@@ -132,3 +132,4 @@
 | 2026-10-20 18:40–20:20 | 0x85 明文/密文探针与密钥对象识别 | **决定性**：`frame85_seen` 证明客户端收帧但解不开（明文从未出现）；`0x608` 是证书缓冲不是密钥；`0x604` 是唯一 AES 对象；已穷举 6 类候选密钥/格式全部失败 | `runs/20261020-seen/sym2/key14/keyac/aeshunt` | 待提交 |
 | 2026-10-20 23:40–00:10 | 0x85 解不开的根因层级 | **突破性结论**：`0xBA4430` 在 `[conn+0xC8]==4` 时直接 `ret`，CS=4 下客户端**根本不解析到达帧**；`frame85_seen pt []` 因此成立。后续应查 CS=4 的业务消费路径与 D=`*[0x3306D60]+0xC` | `HANDSHAKE-STATUS.md` 0.18 | 待提交 |
 | 2026-10-21 00:10–00:55 | gate 版本 220 与 0x87 加密通道 | **突破**：gate 改 `0xDC` 后 `stage=3` 首次出现（`0xBA0780` 条件 B 短暂成立）；0x87 帧格式仍错（`DW_LOBBY_ERROR`） | `runs/20261020-gate220/f87/silent3`、`HANDSHAKE-STATUS.md` 0.20 | 待提交 |
+| 2026-10-21 01:00–01:30 | crypt 初始化失败定位 | **确认**：gate 220 生效（`conn_ver=220`）、`lstate=2/stage=3` 稳定 5 秒，但 `crypt` 恒 0（`0xBA3010` 失败），客户端转 `DWLOBBY_PUMP_DISCONNECTED` | `runs/20261020-ver/forcecrypt` | 待提交 |

@@ -431,3 +431,22 @@ sete al ; inc eax           ; crypt==0 且 lstate==2 且 stage==3 → 2，否则
 - **gate 必须发 220**（`0xDC`）——这是本轮确认的硬要求，之前的 210 让 `stage` 永远停在 2。
 - `0xBA0780` 的条件 B（`crypt==0 && lstate==2 && stage==3`）在 gate 220 后**短暂成立**，但 `ui` 轮询没赶上就被打成 4。
 - `crypt` 仍然恒为 0，说明 `0x87` 帧的**格式**还不对（`0xBA3590` 要求读到的那个字节 == 1，且不同偏移含义待定）。
+
+## 0.21 gate 220 生效确认与 crypt 初始化失败定位（2026-10-21 01:x）
+
+运行时采样（`runs/20261020-ver`、`20261020-forcecrypt`）：
+
+```
+ui=3: lstate=2, crypt=0, stage=2, ver=220
+ui=4: lstate=2, crypt=0, stage=3, ver=220   ← 条件 B 满足
+ui=0: lstate=4, crypt=0, stage=0, ver=220   ← DWLOBBY_PUMP_DISCONNECTED
+```
+
+- **`conn_ver=220`** 确认 gate 版本号已被客户端接受（之前 210 时 `stage` 永远到不了 3）。
+- `lstate==2 && stage==3` 稳定出现约 5 秒，说明 `0xBA0780` 的条件 B 真实可达。
+- **`crypt` 始终 0**：`0xBA3590` 里 `call 0xBA3010` 失败，因此 `[conn+0x644]` 从未被写成 1。
+- 失败后客户端给出 **`DWLOBBY_PUMP_DISCONNECTED`**（比 `DW_LOBBY_ERROR` 更具体，说明 pump 层已断开）。
+
+`0xBA3010` 内部顺序：`0xB74220` 分配 44B → `0xB9BEB0` 构造 → `0xB76620`（返回 false 即失败）→ `0xB75DE0`（读 0x88=136）→ `0xBA2A60`（其 `crypt==0` 分支要求 `lstate==2 && stage==3`，随后构造并发出客户端自己的 0x85）。
+
+**未完成验证**：`runs/set_crypt.py`（直接写 `[conn+0x644]=1` 以证明它是唯一门槛）在 16 秒时 netobj 仍为 0，需要更晚的时机或先等 `lstate==2`。
