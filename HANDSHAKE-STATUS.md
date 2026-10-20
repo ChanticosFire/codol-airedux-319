@@ -144,3 +144,17 @@
 - 调用链：`0x803780`（大厅轮询）→ `0x8037B8 call 0xB838A0` → type 4 → `0xB83A52 call 0xB769A0`（tag 0x0A）→ 写 `netobj+0x50/0x54` → `[+0x4F8]=1`。
 - 已把 0x85 明文改为 `[u32 11][0x04][0x0A 0x08][127.0.0.1][4174]` 发出（`runs/20261020-session43` 的 `frame85_reply`）。
 - **仍未成功**：客户端 23s 后 `与大厅服务器失去连接`。可能原因：帧没有被放入业务队列 `[0x84ABA7C]`（外层 0x85 布局/seq 问题），或 type 4 的 payload 需要更完整的 TLV。
+
+## 0.5 ★ 里程碑：`DW_LOBBY_CONNECTED` 达成（2026-10-20 16:4x）
+
+- LSG 服务端回 type 4 业务帧（`[u32 11][0x04][0x0A 0x08][127.0.0.1][4174]`）后，客户端状态机到达 **`DW_LOBBY_CONNECTED`**：
+  ```
+  ui_state([0x84ABA50]) = 4
+  ready_4f8([netobj+0x4F8]) = 1
+  business_queue([0x84ABA7C]) = 2
+  conn_4f4([netobj+0x4F4]) = 非零
+  ```
+  证据：`runs/20261020-session46/patch.json`、`session47/patch.json`（采样 100 次，状态保持）。
+- **关键修正**：**只发一次** type 4 帧（`frame85_reply beat=0`），**不要持续发心跳**——之前 `for _beat in range(8)` 会让客户端在第二次心跳后 `ConnectionAbortedError`（`与大厅服务器失去连接`）。
+- 会话 `session47`：`DW_LOBBY_CONNECTED` 保持到采样结束（100 个 sample），`lsg.jsonl` 无 `key_error`。
+- 截图：`runs/20261020-session47/screens/shot-*.png`（游戏窗口被前台文件管理器遮挡，需置前后重拍）。

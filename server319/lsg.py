@@ -175,10 +175,14 @@ class LsgServer(AuthServer):
                                                 _rxseq = _lc.read_u32(_pid, caddr + 0x5EC) or 1
                                                 # Reference (lsg_echo319 heartbeat) keeps sending
                                                 # 0x85 every ~2s; a single reply times out.
-                                                for _beat in range(8):
+                                                for _beat in range(1):
                                                     riv = os.urandom(16)
+                                                    # First beat carries the type-4 lobby
+                                                    # address; later beats are empty so the
+                                                    # client does not reprocess the same TLV.
+                                                    payload = pt if _beat == 0 else b"\x00" * 16
                                                     rct = AES.new(key_recv, AES.MODE_CBC,
-                                                                  iv=riv).encrypt(pt)
+                                                                  iv=riv).encrypt(payload)
                                                     # Reference heartbeat reuses the SAME counter
                                                     # (exp) every 2s; do not increment.
                                                     seq_out = struct.pack("<I", _rxseq)

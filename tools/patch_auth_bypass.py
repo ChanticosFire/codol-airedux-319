@@ -67,6 +67,8 @@ def sample_lobby(process, base):
         "error_flag": global_value(0x849BA3D, 1),
         "lsg_obj_a": global_value(0x84ABA70),
         "lsg_obj_b": global_value(0x84ABA74),
+        "business_queue": global_value(0x84ABA7C),
+        "business_flag": global_value(0x84ABA78),
         "conn_4f4": read(net + 0x4F4) if net else None,
         "ready_4f8": read(net + 0x4F8) if net else None,
         "auth_candidate": auth_obj,
