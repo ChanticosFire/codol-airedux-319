@@ -179,8 +179,16 @@ def main() -> int:
                 print(msg)
                 last_n, last_v = n, key
             time.sleep(args.interval)
-        print(f"[{label}] final n={last_n}  {args.reg}={last_v:#010x}"
-              if last_v is not None else f"[{label}] no hits")
+        if last_v is None:
+            print(f"[{label}] no hits")
+        else:
+            if isinstance(last_v, tuple):
+                n_, v_ = last_v[0], last_v[1]
+            else:
+                n_, v_ = last_n, last_v
+            extra_ = last_v[2] if isinstance(last_v, tuple) and len(last_v) > 2 else None
+            tail = f"  [ebp+{ebp_off:#x}]={extra_:#010x}" if extra_ is not None else ""
+            print(f"[{label}] final n={n_}  {args.reg}={v_:#010x}{tail}")
         return 0
     finally:
         k32.CloseHandle(h)
