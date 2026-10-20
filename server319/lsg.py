@@ -180,13 +180,13 @@ class LsgServer(AuthServer):
                                                     # First beat carries the type-4 lobby
                                                     # address; later beats are empty so the
                                                     # client does not reprocess the same TLV.
-                                                    payload = pt if _beat == 0 else b"\x00" * 16
+                                                    payload = pt
                                                     rct = AES.new(key_recv, AES.MODE_CBC,
                                                                   iv=riv).encrypt(payload)
                                                     # Reference heartbeat reuses the SAME counter
                                                     # (exp) every 2s; do not increment.
                                                     seq_out = struct.pack("<I", _rxseq)
-                                                    reply = (b"\x01\x85" + seq_out + riv + rct
+                                                    reply = (b"\xab\x85" + seq_out + riv + rct
                                                              + b"\x00" * 8)
                                                     conn.sendall(struct.pack("<I", len(reply)) + reply)
                                                     self.evidence.write(
@@ -194,12 +194,14 @@ class LsgServer(AuthServer):
                                                         body_hex=pt.hex(),
                                                         reply_hex=reply.hex(),
                                                         reason=f"beat={_beat} seq={_rxseq + _beat}")
-                                                    time.sleep(2.0)
-                                                # Keep the channel open and log whatever
-                                                # the client sends next (heartbeats/business).
+                                                    time.sleep(5.0)
+                                                # Request/response keepalive: the client sends
+                                                # its own 0x85 frames (0x1c heartbeat etc.);
+                                                # answer each one instead of pushing unsolicited
+                                                # heartbeats (which abort the connection).
                                                 try:
-                                                    conn.settimeout(12)
-                                                    for _n in range(4):
+                                                    conn.settimeout(15)
+                                                    for _n in range(10):
                                                         _more = conn.recv(8192)
                                                         if not _more:
                                                             break
@@ -208,6 +210,24 @@ class LsgServer(AuthServer):
                                                             body_len=len(_more),
                                                             body_sha256=hashlib.sha256(_more).hexdigest(),
                                                             body_hex=_more[:512].hex())
+                                                        if len(_more) > 26 and _more[4:6] == b"\xab\x85":
+                                                            _iv = _more[10:26]
+                                                            _ct = _more[26:-8]
+                                                            _pt = AES.new(key_send, AES.MODE_CBC,
+                                                                          iv=_iv).decrypt(_ct)
+                                                            self.evidence.write("frame85_in", session,
+                                                                                body_hex=_pt.hex())
+                                                            _riv = os.urandom(16)
+                                                            _rct = AES.new(key_recv, AES.MODE_CBC,
+                                                                           iv=_riv).encrypt(
+                                                                               b"\x00" * 16)
+                                                            _seq = struct.pack("<I", _rxseq)
+                                                            _reply = (b"\x01\x85" + _seq + _riv + _rct
+                                                                      + b"\x00" * 8)
+                                                            conn.sendall(
+                                                                struct.pack("<I", len(_reply)) + _reply)
+                                                            self.evidence.write("frame85_answer", session,
+                                                                                reply_hex=_reply.hex())
                                                 except OSError:
                                                     pass
                                         except Exception as _exc:
