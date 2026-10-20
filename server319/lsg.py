@@ -129,18 +129,54 @@ class LsgServer(AuthServer):
                                                             body_hex=after[:512].hex())
                                         # 0x85 carries the AES channel: conn+0x604/0x608
                                         # hold POINTERS; the 16-byte key lives at [ptr+0x9C].
+                                        # 0x604 decrypts the client's frames (verified:
+                                        # it yields the 84-byte 0x86 login request);
+                                        # 0x608 encrypts our replies.
                                         try:
+                                            from Crypto.Cipher import AES
                                             from . import lsg_client as _lc
-                                            for _pid in _lc.find_client_pids():
-                                                for _off in (0x604, 0x608):
-                                                    _ptr = _lc.read_u32(_pid, caddr + _off)
-                                                    if not _ptr:
-                                                        continue
-                                                    _key = _lc.read_region(_pid, _ptr + 0x9C, 16)
-                                                    self.evidence.write(
-                                                        "key_candidate", session,
-                                                        reason=f"pid={_pid} off={_off:#x} "
-                                                               f"ptr={_ptr:#x} key={_key}")
+                                            _pids = _lc.find_client_pids()
+                                            if not _pids:
+                                                raise RuntimeError("no-client")
+                                            _pid = _pids[0]
+                                            _ks = _lc.read_u32(_pid, caddr + 0x604)
+                                            _kr = _lc.read_u32(_pid, caddr + 0x608)
+                                            if not _ks or not _kr:
+                                                raise RuntimeError("no-key-ptr")
+                                            key_send = bytes.fromhex(_lc.read_region(_pid, _ks + 0x9C, 16))
+                                            key_recv = bytes.fromhex(_lc.read_region(_pid, _kr + 0x9C, 16))
+                                            if after[:6][4:6] == b"\xab\x85":
+                                                seq = after[6:10]
+                                                iv = after[10:26]
+                                                cipher = after[26:-8]
+                                                pt = AES.new(key_send, AES.MODE_CBC, iv=iv).decrypt(cipher)
+                                                self.evidence.write("frame85_plain", session,
+                                                                    body_hex=pt.hex())
+                                                # Reply with an encrypted empty frame so the
+                                                # client sees the channel as live.
+                                                riv = os.urandom(16)
+                                                rpt = b"\x00" * 16
+                                                rct = AES.new(key_recv, AES.MODE_CBC, iv=riv).encrypt(rpt)
+                                                reply = (b"\x01\x85" + seq + riv + rct
+                                                         + b"\x00" * 8)
+                                                conn.sendall(struct.pack("<I", len(reply)) + reply)
+                                                self.evidence.write("frame85_reply", session,
+                                                                    reply_hex=reply.hex())
+                                                # Keep the channel open and log whatever
+                                                # the client sends next (heartbeats/business).
+                                                try:
+                                                    conn.settimeout(12)
+                                                    for _n in range(4):
+                                                        _more = conn.recv(8192)
+                                                        if not _more:
+                                                            break
+                                                        self.evidence.write(
+                                                            "plaintext_frame4", session,
+                                                            body_len=len(_more),
+                                                            body_sha256=hashlib.sha256(_more).hexdigest(),
+                                                            body_hex=_more[:512].hex())
+                                                except OSError:
+                                                    pass
                                         except Exception as _exc:
                                             self.evidence.write("key_error", session,
                                                                 reason=type(_exc).__name__)
