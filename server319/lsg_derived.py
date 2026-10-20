@@ -54,6 +54,11 @@ def candidate_svc71_task4_reply(transaction_id: int = 1) -> bytes:
             + _typed_u32(1) + _typed_u32(1) + _typed_u32(0))
 
 
+def terminal_unavailable_reply(transaction_id: int) -> bytes:
+    """14-byte bdService error candidate; no fabricated result object."""
+    return _typed_u64(transaction_id) + _typed_u32(14)
+
+
 class DerivedLsgServer(AuthServer):
     def __init__(self, *args, token_marker: int = 0x00, **kwargs):
         super().__init__(*args, **kwargs)
@@ -91,7 +96,10 @@ class DerivedLsgServer(AuthServer):
             conn.sendall(token)
             self.evidence.write("token_reply", session, reply_hex=token.hex())
             counter = 1
-            conn.settimeout(12)
+            # The target remains silent after its first task while it waits for
+            # further lobby state. A short recv timeout is a server-side close,
+            # which the client surfaces as [100] after exactly that interval.
+            conn.settimeout(75)
             while True:
                 frame = _read_frame(conn)
                 if frame == bytes(4):
@@ -127,6 +135,14 @@ class DerivedLsgServer(AuthServer):
                 else:
                     self.evidence.write("unhandled_task", session,
                                         reason=f"service={service} task={task}")
+                    reply = build_server_frame85(
+                        keys, terminal_unavailable_reply(counter),
+                        counter=counter, iv=os.urandom(16))
+                    conn.sendall(reply)
+                    self.evidence.write("terminal_task_reply", session,
+                                        reason=f"service={service} task={task} error=14; "
+                                               "candidate contract, consumption unverified")
+                    counter += 1
         except (LsgProtocolError, EOFError, OSError, TimeoutError) as exc:
             self.evidence.write("raw_session_end", session,
                                 reason=f"{type(exc).__name__}:{exc}")

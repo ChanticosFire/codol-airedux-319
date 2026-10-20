@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from Crypto.Cipher import AES
 
 from .lsg_crypto import derive_keys
-from .lsg_derived import DerivedLsgServer, _read_frame, _read_exact
+from .lsg_derived import DerivedLsgServer, _read_frame, _read_exact, terminal_unavailable_reply
 from .ticket import SESSION_KEY
 
 
@@ -22,6 +22,10 @@ class RecordingEvidence:
 
 
 class DerivedServerTests(unittest.TestCase):
+    def test_terminal_unavailable_contract_has_no_success_body(self):
+        self.assertEqual(terminal_unavailable_reply(2),
+                         bytes.fromhex("0a0200000000000000080e000000"))
+
     def test_synthetic_raw_handshake_and_candidate_reply(self):
         server = DerivedLsgServer.__new__(DerivedLsgServer)
         server.evidence = RecordingEvidence()

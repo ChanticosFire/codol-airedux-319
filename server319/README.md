@@ -58,10 +58,13 @@ python tools\smoke_lsg_derived.py --run-dir runs\<new-run-id>
 
 The default LSG handler validates the entire 28/26/153-byte handshake,
 authenticates and decrypts incoming `AB85` frames, and produces `AB85` replies
-with a real 8-byte HMAC. Unknown tasks are logged but receive no success
-placeholder. Raw LSG frames and reply bytes are retained only in ignored local
-`runs/`; review before sharing. The candidate `svc71/task4` reply is based on
-a third-party service shape and has only synthetic socket-test coverage so far.
+with a real 8-byte HMAC. Unknown well-formed tasks are logged and receive a
+terminal error-14 candidate instead of fabricated success. Raw LSG frames and
+reply bytes are retained only in ignored local `runs/`; review before sharing.
+Three Build 1649370 game runs confirmed the first `svc71/task4` request and
+subsequent tasks 3, 7, and 9. The client still showed a lobby-disconnected
+fatal dialog, so S2C consumption and playable lobby remain unverified. See
+`evidence/experiments/20261020-live-derived-lsg.json`.
 
 ## Capture mode
 

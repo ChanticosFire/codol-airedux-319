@@ -1,0 +1,45 @@
+{
+  "build": 1649370,
+  "scope": "isolated client, localhost Auth/LSG, elevated game process, runtime Auth gate patch",
+  "runs": [
+    {
+      "id": "20261020-live-derived01",
+      "lsg": "svc71/task4 request verified and candidate reply sent; server recv timeout at 12 seconds closed socket",
+      "client": "ui=5 temporarily, then DWLOBBY_PUMP_DISCONNECTED and in-game [100] lobby connection error",
+      "screen_sha256": "0D39FE1CDEBF0A91E57031BEE82A8064F58B4BD22EE5111E0CF370901037A1BE"
+    },
+    {
+      "id": "20261020-live-derived02",
+      "change": "server receive timeout extended to 75 seconds",
+      "lsg": "svc71/task4 candidate reply sent; then client sent svc71 tasks 3, 7, 9; raw zero control frame observed at 30 seconds",
+      "client": "ui=5 remained sampled, but native fatal dialog said 与大厅服务失去连接; tasks 3, 7, 9 had no reply in this run",
+      "screen_sha256": "E128F1D722CE90EF541D20C4093AD7B6E300F632AB6F913F654A1211E6CE0389"
+    },
+    {
+      "id": "20261020-live-derived03",
+      "change": "unknown well-formed tasks receive a terminal error-14 candidate in FIFO order",
+      "lsg": "svc71 tasks 3, 7, 9 each received terminal error candidate; no client consumption observer",
+      "client": "native fatal lobby-disconnected dialog still appeared at the time of these later requests; ui=5 alone was not success",
+      "screen_sha256": "B2CFAA889520FEF8BACC79B68C31AC0DE6470372F9CC9CDC4CBF2A3B7C2CA7FE"
+    }
+  ],
+  "common": {
+    "auth": "loopback POST /auth/ returned 200",
+    "lsg_c2s": "28/26/153 handshake, derived challenge and verified first AB85 svc71/task4 request",
+    "s2c_accepted": "unverified",
+    "interactive_lobby": false,
+    "cleanup": "owned client/Auth/LSG processes exited; ports 4174/4175 free; stage_redirect.py restore matched all four pre-images; Build anchors passed after restore",
+    "host_network_changed": false,
+    "nonloopback_game_connections": "observed in game PID samples despite local dwauth/stun/iips configuration; five distinct remote sockets were present in run 03; raw addresses retained only in ignored patch.json"
+  },
+  "program_isolation_control": {
+    "id": "20261020-live-isolated04",
+    "scope": "77 executable-specific outbound block rules limited to the isolated client directory; no host-wide outbound rule",
+    "install_verified": true,
+    "client_result": "main module not found after 13-second wait; no Auth or LSG requests; no runtime patch applied",
+    "inference_limit": "early exit under scoped rule does not identify which outbound dependency or rule caused it",
+    "remove_verified": true,
+    "remaining_rules": 0,
+    "config_preimage_restored": true
+  }
+}
