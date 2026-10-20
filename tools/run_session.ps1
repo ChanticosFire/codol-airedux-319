@@ -37,7 +37,24 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 if (-not $Cert) { $Cert = Join-Path $runDir 'tls\auth.crt' }
 if (-not $Key) { $Key = Join-Path $runDir 'tls\auth.key' }
 if (-not (Test-Path -LiteralPath $Cert) -or -not (Test-Path -LiteralPath $Key)) {
-    throw "CERT_MISSING: expected $Cert and $Key (copy from a previous run's tls/ or regenerate with tools\stage_redirect.py)"
+    # Fall back to the newest certificate under runs\<id>\tls so a fresh RunId
+    # works without manual -Cert/-Key flags.
+    $found = Get-ChildItem (Join-Path $workspace 'runs') -Recurse -Filter 'auth.crt' -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($found) {
+        $srcDir = Split-Path -Parent $found.FullName
+        $srcKey = Join-Path $srcDir 'auth.key'
+        if (Test-Path -LiteralPath $srcKey) {
+            $targetDir = Split-Path -Parent $Cert
+            New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+            Copy-Item -LiteralPath $found.FullName -Destination $Cert -Force
+            Copy-Item -LiteralPath $srcKey -Destination $Key -Force
+            Write-Host "cert auto-copied from $srcDir"
+        }
+    }
+}
+if (-not (Test-Path -LiteralPath $Cert) -or -not (Test-Path -LiteralPath $Key)) {
+    throw "CERT_MISSING: no auth.crt/auth.key under runs\*\tls; pass -Cert/-Key or run tools\stage_redirect.py first"
 }
 
 Write-Host "run dir: $runDir"
