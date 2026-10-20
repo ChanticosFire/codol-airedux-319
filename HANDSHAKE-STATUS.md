@@ -483,3 +483,36 @@ ui=0: lstate=4, crypt=0, stage=0, ver=220   ← DWLOBBY_PUMP_DISCONNECTED
 **当前最需要的外部输入**：`bdsvc319.py`（PROGRESS.md 引用的、已实现 `DW=4→5` 的 1649370 服务端，位于游戏根 `launch/` 目录）。它的握手应答与 0x83 之后的字节序列可以直接对齐，避免继续盲试。
 
 **已就绪的基础设施**（可直接复用）：`server319.lsg` 的 28B→26B 门控（含 220 版本）、0x82/0x83、0x85 AES 解密（`conn+0x604`+0x9C）、type/密钥/IV/明密文全组合开关（`LSG_INNER`/`LSG_BIZ`/`LSG_KEYOFF`/`LSG_PLAIN85`/`LSG_SILENT_AFTER83`/`LSG_F87_DELAY`）。
+
+## 0.24 `bdsvc319.py` 关键情报（用户提供，2026-10-21 06:x）
+
+该文件是**业务应答构造器**（依赖未提供的 `bdproto319`），但分发与载荷形状足以纠正我们的方向：
+
+**应答统一形状**（`make_service_reply`）：
+
+```
+uint64(transactionId) | uint32(error) | byte(taskId)
+if error==0: uint32(count) | uint32(count) | object*count
+else:        uint64(transactionId)
+```
+
+**服务表**：`svc255`(通配) / `svc10`(20,21,12,10 文件) / `svc28`(groups，**默认 silent**) / `svc80`(70,93,market) / **`svc71`(4=ListDedicatedServer, 9=FindSessions)** / `svc11`(lobby) / **`svc21`(5=FindLobbiesByPlaylist)**。
+
+**★ tag 0x0A 的正确归属**：不在 0x85 帧里，而在 **`svc21 task5`** 的应答对象中：
+
+```python
+w.raw(bytes([0x0A]))
+w.raw(struct.pack("<IH", ipnum, port) + b"\x00\x00")   # IP+PORT，非 u64 connId
+w.raw(bytes([0x08])); w.uint32(0)                      # tag08 + 结果码 0
+w.raw(bytes([0x03, 0x00]))
+```
+
+这解释了为什么我们直接把 `0A 08 IP PORT` 塞进 0x85 明文没有效果——**位置错了**：它必须作为 `svc21/task5` 的业务应答发出去。
+
+**其它可用事实**：
+- `svc71 task4` 应答 = `u32 0`（4 字节零）→ `make_service_reply(session, 4, 0, [u32 0])`。
+- `svc11` 任意 task → 空对象。
+- `svc28` 默认 **silent**（与 PROGRESS 一致）；`svc93` 回空会断连。
+- 钱包默认 `{1: 99999 (CP), 2: 999999 (GP)}`。
+
+**仍缺**：`bdproto319`（0x85 帧的加密/封装与 0x83 之后的字节序列）。有了它即可把 `svc21/task5` 的 tag0x0A 应答按正确封装发出去。
