@@ -8,6 +8,7 @@ Unknown requests remain visible in the run log and receive no fake success.
 from __future__ import annotations
 
 import hashlib
+import dataclasses
 import os
 import socket
 import struct
@@ -209,6 +210,15 @@ class DerivedLsgServer(AuthServer):
                         conn.sendall(bytes(4))
                         self.evidence.write("idle_reply", session)
                     continue
+                if os.environ.get("LSG_DUMP_KEYS") == "1":
+                    # Dump the derived session keys so captured client frames can
+                    # be decrypted offline later. Keys are per-session and only
+                    # useful against this process memory, so this is opt-in.
+                    self.evidence.write("session_keys", session,
+                                        reason="LSG_DUMP_KEYS=1",
+                                        keys_hex={f.name: getattr(keys, f.name).hex()
+                                                  for f in dataclasses.fields(keys)
+                                                  if isinstance(getattr(keys, f.name), (bytes, bytearray))})
                 self.evidence.write("client_frame", session, body_len=len(frame),
                                     body_sha256=hashlib.sha256(frame).hexdigest(),
                                     body_hex=frame.hex())
