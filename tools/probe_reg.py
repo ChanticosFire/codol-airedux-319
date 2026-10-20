@@ -78,7 +78,7 @@ def write(h, va: int, data: bytes) -> bool:
 
 
 def build_cave(cave: int, slot: int, count: int, reg: str, original: bytes,
-               resume: int) -> bytes:
+               resume: int, ebp_off: int | None = None) -> bytes:
     code = bytearray()
     code += b"\x9c"                                     # pushfd
     code += b"\x60"                                     # pushad
@@ -86,6 +86,13 @@ def build_cave(cave: int, slot: int, count: int, reg: str, original: bytes,
     off = REG_OFFSET_IN_PUSHAD[reg]
     code += b"\x8b\x44\x24" + bytes([off])              # mov eax,[esp+off]
     code += b"\xa3" + struct.pack("<I", slot)           # mov [slot],eax
+    if ebp_off is not None:
+        # ebp sits at [esp+8] in the pushad block; load it, offset it, read through it
+        code += b"\x8b\x44\x24\x08"                  # mov eax,[esp+8]
+        if ebp_off:
+            code += b"\x05" + struct.pack("<I", ebp_off)  # add eax, offset
+        code += b"\x8b\x00"                            # mov eax,[eax]
+        code += b"\xa3" + struct.pack("<I", slot + 4)    # mov [slot+4],eax
     code += b"\xff\x05" + struct.pack("<I", count)      # inc dword [count]
     code += b"\x61"                                     # popad
     code += b"\x9d"                                     # popfd
@@ -100,6 +107,8 @@ def main() -> int:
     ap.add_argument("--at", required=True, help="hook address in hex")
     ap.add_argument("--orig", required=True, help="exact displaced bytes as hex")
     ap.add_argument("--reg", default="eax", choices=sorted(REG_OFFSET_IN_PUSHAD))
+    ap.add_argument("--mem-ebp", default="",
+                    help="also sample the dword at [ebp+this hex offset], e.g. 0x94")
     ap.add_argument("--pid", type=int, default=0)
     ap.add_argument("--secs", type=float, default=10.0)
     ap.add_argument("--interval", type=float, default=1.0)
@@ -135,11 +144,12 @@ def main() -> int:
         cave = int(cave_addr)
         slot = cave + 0x100
         count = cave + 0x200
-        code = build_cave(cave, slot, count, args.reg, original, resume)
+        ebp_off = int(args.mem_ebp, 16) if args.mem_ebp else None
+        code = build_cave(cave, slot, count, args.reg, original, resume, ebp_off)
         if not write(h, cave, code):
             print("cave write failed")
             return 6
-        if not write(h, slot, b"\x00\x00\x00\x00") or not write(h, count, b"\x00\x00\x00\x00"):
+        if not write(h, slot, b"\x00" * 8) or not write(h, count, b"\x00\x00\x00\x00"):
             print("slot init failed")
             return 6
         hook_code = b"\xe9" + struct.pack("<i", cave - (hook + 5))
@@ -154,15 +164,20 @@ def main() -> int:
         last_v = None
         while time.time() < deadline:
             raw_n = read(h, count, 4)
-            raw_v = read(h, slot, 4)
-            if len(raw_n) != 4 or len(raw_v) != 4:
+            raw_v = read(h, slot, 8)
+            if len(raw_n) != 4 or len(raw_v) != 8:
                 print(f"[{label}] unreadable - process gone?")
                 return 7
             n = struct.unpack("<I", raw_n)[0]
-            v = struct.unpack("<I", raw_v)[0]
-            if n != last_n or v != last_v:
-                print(f"[{label}] n={n}  {args.reg}={v:#010x} ({v})")
-                last_n, last_v = n, v
+            v = struct.unpack_from("<I", raw_v, 0)[0]
+            extra = struct.unpack_from("<I", raw_v, 4)[0] if ebp_off is not None else None
+            key = (n, v, extra)
+            if key != last_v:
+                msg = f"[{label}] n={n}  {args.reg}={v:#010x} ({v})"
+                if extra is not None:
+                    msg += f"  [ebp+{ebp_off:#x}]={extra:#010x} ({extra})"
+                print(msg)
+                last_n, last_v = n, key
             time.sleep(args.interval)
         print(f"[{label}] final n={last_n}  {args.reg}={last_v:#010x}"
               if last_v is not None else f"[{label}] no hits")
