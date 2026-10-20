@@ -158,3 +158,10 @@
 - **关键修正**：**只发一次** type 4 帧（`frame85_reply beat=0`），**不要持续发心跳**——之前 `for _beat in range(8)` 会让客户端在第二次心跳后 `ConnectionAbortedError`（`与大厅服务器失去连接`）。
 - 会话 `session47`：`DW_LOBBY_CONNECTED` 保持到采样结束（100 个 sample），`lsg.jsonl` 无 `key_error`。
 - 截图：`runs/20261020-session47/screens/shot-*.png`（游戏窗口被前台文件管理器遮挡，需置前后重拍）。
+
+## 0.6 通道保持问题（2026-10-20 16:4x 补充）
+
+- `DW_LOBBY_CONNECTED`（ui=4/ready=1）在只发一次 type 4 后能保持 90-110 个采样，但**游戏仍会弹「与大厅服务器失去连接」**——说明 0x85 通道没有被正确维持，UI 层判定断线。
+- 试过的心跳：空 16B、回显 84B、seq 固定、seq 递增，都会在 1-2 次心跳后 `ConnectionAbortedError`。
+- 参考 `lsg_echo319.py` 的心跳用 `pt`（客户端请求的明文）作为载荷、`exp=conn+0x5EC` 作为序号、`b"\0"*8` 作为 tail；与本实现一致但仍有断开，说明还有一处差异（可能是 0x85 帧头 marker `0x01` vs `0xAB`、或 tail 需要非零）。
+- **结论**：大厅状态机已跨过「连接大厅」，剩余问题降级为 **0x85 通道保活**；下一步聚焦 0x85 帧头与 tail 的精确字节。
