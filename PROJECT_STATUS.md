@@ -2684,3 +2684,134 @@ LSG 记录：
 | `[lobby+0x1F4]` | 2 | **触发客户端继续发请求**（本次突破） |
 
 三者缺一不可：只写前两个时 `G1=1` 且无 `71/9`；加上第三个才出现 `71/9`。
+
+### 12.43 实验 D：`svc71/task3`、`task7`、`task9` 全部触发（2026-10-23 05:3x）
+
+#### 客户端发出了完整的请求序列
+
+配置：15 补丁 + 三处写入（`[D+0xC]=1`、`FE_state=3`、`[lobby+0x1F4]=2`），
+`LSG_T9_MODE=error14`。
+
+```
+18:58  client_frame payload_len=8     task_request service=71 task=9
+19:01  client_frame payload_len=141   task_request service=71 task=3
+19:01  client_frame payload_len=389   task_request service=71 task=7
+19:01  client_frame payload_len=8     task_request service=71 task=9
+counts: client_frame=5, task_request=5
+```
+
+**这是 26 轮来第一次看到 `task3` 和 `task7`**——M3 那次的 `lsg.jsonl` 里
+也只有 `task4 / task9 / task3`，而本次多出了 `task7`。
+
+#### 但与 M3 有一处关键差异
+
+| 项目 | M3 那次 | 本次 |
+|---|---|---|
+| `task9` 应答 | `terminal_task_reply error=14`（14 字节） | 同（`LSG_T9_MODE=error14`） |
+| `task3` 应答 | `terminal_task_reply error=14` | `candidate_empty_task_reply`（空成功） |
+| `task7` 应答 | 未出现 | `candidate_empty_task_reply` |
+
+即：我们把 `task3`/`task7` 应答成了「空成功」，而 M3 应答的是「未实现错误」。
+客户端随后仍然崩溃（写入后约 10 秒）。
+
+#### 这提示下一步非常明确
+
+`lsg_derived.py` 里 `task3`/`task7` 走的是 `candidate_empty_success_reply`
+分支。**把这类"未实现"的应答统一改成 `terminal_unavailable_reply`（error=14）**，
+与 M3 完全一致，再复跑：
+
+- 若客户端不再崩溃 → 说明"空成功"帧的格式是崩溃原因，而"错误帧"是安全的；
+- 若仍在 `task9` 后崩溃 → 说明问题不在应答形状，而在别处（例如 `FE_state=3`
+  缺少配套字段）。
+
+无论如何，这次实验已经把"客户端能否主动发请求"这件事彻底解决：
+**三处写入是充分条件**。
+
+#### 三处写入的作用已完全确定
+
+| 变量 | 值 | 作用 | 单独验证 |
+|---|---|---|---|
+| `[D+0xC]` | 1 | FE 梯 `G1: 0 → 1` | 实验 A |
+| `[0xE59D20]` | 3 | 稳定中间态，不回滚 | 实验 B |
+| `[lobby+0x1F4]` | 2 | **释放客户端请求**（task3/7/9） | 实验 C/D |
+
+#### 待办
+
+1. 把 `task3`/`task7`/`task11`/`task13` 等未实现分支统一改为 `error=14`；
+2. 复跑实验 D，确认是否还崩溃；
+3. 若不崩，观察客户端是否最终渲染出房间列表（M4.2 的第一个判据）。
+
+### 12.44 请求序列已完整；剩余问题是应答内容而非触发条件（2026-10-23 06:0x）
+
+#### 实验 E 结果
+
+15 补丁 + 三处写入 + `LSG_T9_MODE=error14` + `LSG_UNIMPL_MODE=error14`：
+
+```
+19:04:59 client_frame payload_len=8    task_request service=71 task=9
+19:04:59 client_frame payload_len=275  task_request service=71 task=7
+19:04:59 client_frame payload_len=141  task_request service=71 task=3
+19:04:59 client_frame payload_len=389  task_request service=71 task=7    <- 重试
+19:04:59 client_frame payload_len=8    task_request service=71 task=9    <- 重试
+counts: client_frame=5, task_request=5
+```
+
+**客户端在 `task7` 上重试**（275 B 与 389 B 两次），说明它没有接受
+`error=14` 的应答，改换了请求内容再来一次。
+
+#### 与 M3 的差异对照
+
+| 项目 | M3 达成大厅那次 | 本次 |
+|---|---|---|
+| `task4` | 83 B，被应答 | 同 |
+| `task9` | 8 B，`error=14` | 8 B，`error=14` |
+| `task3` | **142 B**，`error=14` | **141 B**，`error=14` |
+| `task7` | **未出现** | 275 B / 389 B，重试两次 |
+| 崩溃时机 | 无（54 秒后正常结束） | 写入后约 10 秒崩溃 |
+
+**`task3` 的请求长度差 1 字节**（142 vs 141），且 `task7` 在 M3 里根本没出现。
+这两点说明客户端的**内部状态与我们不同**，因此发出的请求也不同——它并不是
+在"走同一条路"，而是在一个略有偏差的状态下探索。
+
+#### 已达成的确定性成果
+
+| 变量 | 值 | 作用 |
+|---|---|---|
+| `[D+0xC]` | 1 | FE 梯 `G1: 0 → 1`（实验 A 单独验证） |
+| `[0xE59D20]` | 3 | 稳定中间态，不回滚（实验 B） |
+| `[lobby+0x1F4]` | 2 | **释放客户端请求**（实验 C/D/E） |
+
+**这三处写入是"客户端愿意继续通信"的充分条件**，26 轮来第一次稳定复现
+`task3`/`task7`/`task9` 的请求链。
+
+#### 剩余问题
+
+客户端在收到"未实现"应答后仍会崩溃。可能原因：
+
+1. `task3`(141 B) 与 `task7`(389 B) 的**请求语义**需要真实应答，`error=14`
+   只能让它重试一次，之后仍失败；
+2. `FE_state=3` 缺少配套字段，客户端在处理应答时解引用到无效内容；
+3. `[lobby+0x1F4]=2` 让 pump 进入"已完成"分支，而我们没有提供它期望的后续数据。
+
+#### 新增环境开关
+
+`server319/lsg_derived.py` 现有三个应答形状开关，便于后续对照：
+
+| 环境变量 | 取值 | 作用 |
+|---|---|---|
+| `LSG_T4_MODE` | `zero` / `entry` | `svc71/task4` 的应答形状 |
+| `LSG_T9_MODE` | `error14` / `entry` | `svc71/task9` 的应答形状 |
+| `LSG_UNIMPL_MODE` | `error14` / `empty` | `svc71/task3`、`task7` 等未实现服务的应答 |
+
+三者默认均为 M3 基线（`error14`/`error14`），便于复现。
+
+#### 下一步
+
+1. 解码 `task3`（141 B）与 `task7`（389 B）的请求内容——它们都是**加密**的，
+   但长度与 M3 的 142 B 只差 1 字节，可用同一套 `parse_client_frame85` 解出
+   TLVs，从而知道客户端在要什么；
+2. 按解码结果构造真实应答，替换 `error=14`；
+3. 观察是否还会崩溃，以及 `ui_state` 能否从 9 变为大厅对应的值。
+
+第 1 条是关键：只要知道客户端在 `task7` 里问什么，就能给出它接受的数据，
+而不是继续用错误帧试探。

@@ -282,14 +282,23 @@ class DerivedLsgServer(AuthServer):
                                                f"{profile.get('level')} name={profile.get('name')}")
                     counter += 1
                 elif (service, task) == (71, 9):
-                    reply_payload = candidate_svc71_task9_reply(
-                        counter, int(os.environ.get("FINDSESS_PORT", "8466")))
+                    # LSG_T9_MODE selects the task9 reply shape. "error14" is
+                    # what the M3 run that reached the lobby actually sent (a
+                    # 14-byte unimplemented error), and the client continued to
+                    # task3 regardless. "entry" sends the 114-byte bdMatchMaking
+                    # record, which the client does not yet parse correctly.
+                    t9_mode = os.environ.get("LSG_T9_MODE", "error14")
+                    if t9_mode == "entry":
+                        reply_payload = candidate_svc71_task9_reply(
+                            counter, int(os.environ.get("FINDSESS_PORT", "8466")))
+                    else:
+                        reply_payload = terminal_unavailable_reply(counter)
                     reply = build_server_frame85(keys, reply_payload, counter=counter,
                                                  iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("candidate_task_reply", session,
                                         reply_hex=reply.hex(),
-                                        reason="svc71/task9 bdMatchMaking entry 127.0.0.1:%s; "
+                                        reason=f"svc71/task9 mode={t9_mode} bytes={len(reply_payload)}; "
                                                "client consumption unverified"
                                                % os.environ.get("FINDSESS_PORT", "8466"))
                     counter += 1
@@ -315,14 +324,20 @@ class DerivedLsgServer(AuthServer):
                     self.evidence.write("svc28_silent", session,
                                         reason="svc28/task4 observed and deliberately unanswered")
                 elif (service, task) in ((11, 13), (71, 3), (71, 7), (102, 5)):
-                    # Content/lobby/misc services: empty success so the
-                    # client stops retrying instead of receiving error=14.
-                    reply_payload = candidate_empty_success_reply(counter, task)
+                    # LSG_UNIMPL_MODE picks the reply for services we do not
+                    # implement. The M3 run that reached the lobby answered these
+                    # with terminal_task_reply error=14 and the client kept going,
+                    # so error14 is the default; empty is kept for comparison.
+                    unimpl = os.environ.get("LSG_UNIMPL_MODE", "error14")
+                    if unimpl == "empty":
+                        reply_payload = candidate_empty_success_reply(counter, task)
+                    else:
+                        reply_payload = terminal_unavailable_reply(counter)
                     reply = build_server_frame85(keys, reply_payload, counter=counter,
                                                  iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("candidate_empty_task_reply", session,
-                                        reason=f"service={service} task={task} empty success; "
+                                        reason=f"service={service} task={task} mode={unimpl}; "
                                                "shape unverified")
                     counter += 1
                 elif self.observed71_empty and service == 71 and task in (3, 7, 9):
