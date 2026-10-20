@@ -1,5 +1,7 @@
 # 交接文档：CODOL 3.19.26.22 (Build 1649370) 离线复活 — 2026-10-21
 
+> **后续审计纠正（以现有原始捕获复验）：**下文“唯一缺口是 `packet_buffer` 与固定 `SESSION_KEY`”已被反证。使用 `runs/20261020-base`、`runs/20261020-gate220`、`runs/20261020-session33` 的 hello/gate/0x82 帧，按 `hello[8:] + gate[0:4] + AB81 + gate[6:] + client_auth[:-8]` 构造 transcript，并用**本项目 Auth 票据中实际写入的 24B 合成会话密钥**，三个 run 的客户端 challenge、已发送 0x83 token、0x85 帧尾 HMAC 及 AES 明文形状均吻合；前两轮派生的 AES key 还与客户端内存采样一致。第三方 `bdproto319.py` 的固定 `8ecd…` 密钥及“参数反序”在这些 run 上均不吻合。可重跑 `python tools/verify_lsg_capture.py runs/20261020-base` 等；脱敏结论见 `evidence/experiments/20261020-lsg-transcript-audit.json`。这证明 C→S 的本地合成会话派生，**不证明**新 S→C 应答已被客户端消费，也不等于 M3 完成。下文历史内容保留以解释实验路径，现时结论以此纠正与 `PROJECT_STATUS.md` 最新节为准。
+
 > 给 Codex 的完整交接。所有地址均为**运行时实测**（反汇编 + ReadProcessMemory 采样），所有结论都有 `runs/` 证据。
 > 工作目录：`E:\GAME\COD\codol-airedux\319`
 

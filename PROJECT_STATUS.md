@@ -1,7 +1,7 @@
 # 阶段状态与证据
 
-更新：2026-10-19（Asia/Shanghai）23:35；追加关闭系统代理后的主机核查，以及 23:30 后的接手核查、静态侦察与隔离/交接工具增量。
-阶段：M0 完成；M1 进行中（新增同 Build 静态侦察与合成交接启动工具）；M2 受阻（主机级隔离工具已实现并自测，等待一次管理员 Apply/Verify/Restore）；M3 仅有无业务应答的服务骨架。
+更新：2026-10-20（Asia/Shanghai）；本轮复核 DeepSeek 交接并纠正 LSG 密钥派生结论。
+阶段：M0 完成；M1 进行中；M2 已有目标 Build 的 TCLS/IIPS/Auth/LSG 运行证据，但当前进程令牌为 Medium、没有新实机运行；M3 未验收，仍需客户端真实消费应答并进入可交互大厅。
 目标：针对用户保留的停服版本 3.19.26.22 建立可核验的离线复活路线。版本名称来自用户及归档文件名；本轮通过文件身份独立确认的是 Build 1649370。
 
 仓库：`E:\GAME\COD\codol-airedux\319` 已初始化为独立 `main` Git 仓库；GitHub 私有远端为 <https://github.com/ChanticosFire/codol-airedux-319>，API 回报 `PRIVATE`。本项目只提交自有源码、文档和文件身份清单；客户端副本、运行后像、第三方参考与协作仓库克隆由 [.gitignore](.gitignore) 排除。范围见 [REPOSITORY.md](REPOSITORY.md)。
@@ -347,3 +347,13 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 - `server319/lsg_client.py`：跨进程读 conn（vtable `0xD5A0C4` → `+0x398`，key 指针 `+0x604`/`+0x608` → `[+0x9C]`）。
 - `runs/20261020-dump-ba3000/`：0x83 handler 反汇编。
 - `HANDSHAKE-STATUS.md`：完整帧格式与解密参数。
+
+## 12. 本轮交接复核：LSG 会话派生已闭合，S2C 消费仍未知
+
+本轮没有启动客户端、提权、加载驱动或改变主机网络。当前令牌为 Medium；`4174/4175` 没有本项目监听和游戏进程。工作树开始时为干净的 `03c36c8`。DeepSeek 的 [交接](HANDOFF-CURRENT.md) 把固定 `SESSION_KEY` 和未知 `packet_buffer` 称为唯一缺口；它是研究假设，不是与当前帧相符的结论。
+
+对现有 `runs/20261020-base`、`20261020-gate220`、`20261020-session33` 的原始 hello、gate、0x82、0x83、0x85 帧进行离线重放，发现 transcript 必须把已发送 gate 的 `01 81` 在派生输入中规范为 `AB 81`，并排除 0x82 最后的 8B challenge。密钥使用我们自己的 [ticket.py](server319/ticket.py) 写入合成票据的 24B 会话字段，公式为 `HMAC-SHA1(key=SHA1(transcript), data=ticket_session_key)` 后按 `CLIENTCHAL`/`BDDATA` 展开。三轮的 challenge、0x83 token、0x85 MAC 及 AES 明文形状均吻合；其中两轮的派生解密密钥还与原运行客户端内存采样吻合。第三方 `bdproto319.py` 的固定 `8ecd…` 字节和反向 HMAC 对这两轮均失败。逐轮布尔结果见 [审计摘要](evidence/experiments/20261020-lsg-transcript-audit.json)，可用 [验证器](tools/verify_lsg_capture.py) 对原始 run 重跑；原始帧只保留在 `runs/`。
+
+已新增 [lsg_crypto.py](server319/lsg_crypto.py)：拒绝式校验握手与 0x85 长度/MAC/零填充，派生四把方向密钥并构造带真 HMAC 的 S2C `AB85` 帧。[lsg_derived.py](server319/lsg_derived.py) 将其接入本机 4174 原始 LSG 通道，默认 CLI 已切到该实现；旧进程读内存的探针仍可显式 `--legacy-probe` 对照。它只对捕获中出现的 `svc71/task4` 发**候选**应答，其他请求记录后不伪造成功。26 项合成单元测试及三轮原始帧离线验证通过；**没有目标客户端消费新 S2C 帧的运行证据**。现阶段不把任何 `ui=4` 判为大厅成功，`ui=5` 也仍需画面与交互佐证。
+
+下一实验应在符合 [LONG-RUN-GOAL.md](LONG-RUN-GOAL.md) 边界的现有隔离副本上，以独立 run 目录验证新 4174 的 token、客户端第一条 0x85、服务端 `candidate_task_reply` 与客户端下一状态；逐项核输入哈希、PID/端口、截图、补丁 pre-image/恢复和退出。当前 Medium 令牌下 IIPS Host 不会自然启动，故本轮仅完成离线证据与服务实现，不从合成 socket 测试推断游戏大厅已进入。

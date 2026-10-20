@@ -1,19 +1,9 @@
-"""HTTPS lobby (LSG) endpoint scaffold for Build 1649370.
+"""Build 1649370 LSG CLI and retained legacy memory-reading probe.
 
-The client's LSG URL template was recovered from the EXE data section:
-
-    %s://%s:%d/%s/title/%d/queue/%d/member/%llu
-
-with ``https`` and ``v1.0`` constants, so the lobby channel is HTTPS on the
-port from ``dwauth.ini`` line 1 (observed value 4174). No live LSG request has
-been captured yet: the client reaches it only after an elevated IIPS run, the
-ticket-gate patch and a UI/state-machine step.
-
-This server therefore does not pretend to implement the lobby. It accepts the
-TLS connection (legacy suites, same as Auth), records the request path, headers,
-body length and SHA-256, and answers 404 so the client's own behavior remains
-the oracle. When a real request is captured, its shape can be turned into a
-contract here with tests.
+The default CLI uses :mod:`server319.lsg_derived`, whose handshake derivation
+has been replayed against three target-Build raw captures. ``LsgServer`` below
+is retained only for explicit ``--legacy-probe`` comparison; its responses were
+diagnostic experiments and did not establish a usable lobby.
 """
 
 from __future__ import annotations
@@ -467,16 +457,27 @@ class LsgServer(AuthServer):
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Build 1649370 LSG capture scaffold")
+    parser = argparse.ArgumentParser(description="Build 1649370 LSG responder")
     parser.add_argument("--cert", required=True, type=Path)
     parser.add_argument("--key", required=True, type=Path)
     parser.add_argument("--port", type=int, default=4174)
     parser.add_argument("--log", required=True, type=Path)
     parser.add_argument("--seconds", type=float, default=180.0)
+    parser.add_argument("--legacy-probe", action="store_true",
+                        help="use the prior memory-reading diagnostic handler")
+    parser.add_argument("--token-marker", choices=("00", "ab"), default="00",
+                        help="0x83 wire marker; 00 preserves the observed local baseline")
     args = parser.parse_args(argv)
-    server = LsgServer(args.port, args.cert, args.key, AuthEvidence(args.log))
+    if args.legacy_probe:
+        server = LsgServer(args.port, args.cert, args.key, AuthEvidence(args.log))
+    else:
+        from .lsg_derived import DerivedLsgServer
+        server = DerivedLsgServer(args.port, args.cert, args.key,
+                                  AuthEvidence(args.log),
+                                  token_marker=int(args.token_marker, 16))
     server.start()
-    print(f"LSG scaffold listening 127.0.0.1:{args.port} for {args.seconds:g}s", flush=True)
+    print(f"LSG {'legacy probe' if args.legacy_probe else 'derived'} listening "
+          f"127.0.0.1:{args.port} for {args.seconds:g}s", flush=True)
     try:
         server.serve(args.seconds)
     except KeyboardInterrupt:

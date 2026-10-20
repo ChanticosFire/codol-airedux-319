@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "build": 1649370,
+  "method": "Offline replay of existing raw LSG captures using server319.lsg_crypto and the session key placed in our own synthetic Auth ticket; no client process was launched",
+  "transcript": "hello[8:] + gate[0:4] + AB81 + gate[6:] + client_auth[:-8]",
+  "derivation": "HMAC-SHA1(key=SHA1(transcript), data=ticket_session_key); iterative HMAC labels CLIENTCHAL and BDDATA",
+  "cases": [
+    {
+      "run": "runs/20261020-base",
+      "gate_version": 220,
+      "challenge": true,
+      "server_token": true,
+      "client_frame_mac": true,
+      "client_frame_aes_plaintext_shape": true,
+      "memory_dec_key_match": true
+    },
+    {
+      "run": "runs/20261020-gate220",
+      "gate_version": 220,
+      "challenge": true,
+      "server_token": true,
+      "client_frame_mac": true,
+      "client_frame_aes_plaintext_shape": true,
+      "memory_dec_key_match": true
+    },
+    {
+      "run": "runs/20261020-session33",
+      "gate_version": 210,
+      "challenge": true,
+      "server_token": true,
+      "client_frame_mac": true,
+      "client_frame_aes_plaintext_shape": true,
+      "memory_dec_key_match": null
+    }
+  ],
+  "contradicted_claim": "The fixed SESSION_KEY in third-party bdproto319.py and an unknown packet_buffer are the only remaining key-derivation path",
+  "limits": [
+    "This establishes client-to-server frame validation and derived server key material for these captured sessions",
+    "The new server-to-client encrypted frame and candidate svc71/task4 reply passed synthetic tests but have not been consumed by a real Build 1649370 client",
+    "M3 lobby acceptance remains unverified"
+  ]
+}
