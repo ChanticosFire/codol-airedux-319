@@ -359,3 +359,39 @@ task_reply = inner 1, body = u64 txn | u32 err | u8 task | u32 nres | u32 nres |
 **这解释了为什么所有密钥/格式尝试都无效**：不是解不开，是**根本没解**。
 
 **修正后的下一步**：不要再调帧格式，改为找 **CS=4 状态下真正消费业务数据的地方**，即 `0xB7A670`（大厅连接状态）与 `[0x84ABA7C]`（业务队列）的填充者；并验证 D 条件 `*[0x3306D60]+0xC`。
+
+## 0.19 完整因果链：type 4 帧把 lstate 推到 4，之后客户端拒绝一切帧（2026-10-21 00:1x）
+
+`0xBA0780`（连接状态查询）反汇编：
+
+```asm
+cmp dword [ecx+0x644], 0     ; crypt 建立了吗
+mov eax, [ecx+0xC8]          ; lstate
+je 0xBA079F                  ; crypt==0 分支
+cmp eax,2 ; je -> return 2
+cmp eax,1 ; jne -> return eax
+mov eax,2 ; ret              ; crypt!=0 且 lstate∈{1,2} → 2
+0xBA079F:
+cmp eax,2 ; jne -> return eax
+cmp dword [ecx+0x5E8],3
+sete al ; inc eax           ; crypt==0 且 lstate==2 且 stage==3 → 2，否则 1
+```
+
+`ui_state` 要到 5，`0xBA0780` 必须返回 2，条件只有两条：
+- **A**：`[conn+0x644]!=0`（crypt 建立）且 `lstate∈{1,2}`；
+- **B**：`[conn+0x644]==0` 且 `lstate==2` 且 `[conn+0x5E8]==3`（stage 3）。
+
+而实际发生的是：
+
+```
+客户端发 0x85（lstate=2）
+→ 我们回 payload[0]=4 的帧
+→ 0xBA4430 在 lstate==2 时进入，0xBA450C cmp al,4 命中
+→ 0xBA4510 → call 0xBA3420 → mov [conn+0xC8],4
+→ 此后 0xBA4430 一进门就 cmp 4 / ret，所有帧都不再解密
+→ 约 8 秒后 peer_closed +「与大厅服务器失去连接」
+```
+
+**结论**：`payload[0]=4` 恰好是「报废」分支；`0x86/0x88/0x01` 等也都会落到 `0xBA4530` 的默认报废路径。`0xBA4430` 只服务握手帧（`0x81`/`0x83`/`0x90`），**真正的 0x85 明文分派在另一个函数**（0x83 成功后的加密通道处理），必须在它那里把 `crypt`/`stage` 推进，而不是靠控制帧类型蒙。
+
+**下一步**：定位 0x83 成功后接收加密帧并解密的函数（`0xBA3A00`–`0xBA3D00` 区间之外的 `0xBA17D0` 一带），确认它写入 `[conn+0x644]`（crypt）与 `[conn+0x5E8]=3`（stage 3）的时机。
