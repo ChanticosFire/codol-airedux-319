@@ -78,7 +78,8 @@ def write(h, va: int, data: bytes) -> bool:
 
 
 def build_cave(cave: int, slot: int, count: int, reg: str, original: bytes,
-               resume: int, ebp_offs: list[int] | None = None) -> bytes:
+               resume: int, ebp_offs: list[int] | None = None,
+               chains: list[list[int]] | None = None) -> bytes:
     code = bytearray()
     code += b"\x9c"                                     # pushfd
     code += b"\x60"                                     # pushad
@@ -93,6 +94,17 @@ def build_cave(cave: int, slot: int, count: int, reg: str, original: bytes,
             code += b"\x05" + struct.pack("<I", ebp_off)  # add eax, offset
         code += b"\x8b\x00"                            # mov eax,[eax]
         code += b"\xa3" + struct.pack("<I", slot + 4 + k * 4)  # mov [slot+4+k*4],eax
+    base_slot = slot + 4 + 4 * len(ebp_offs or [])
+    for k, chain in enumerate(chains or []):
+        # first element is an absolute address of a pointer; remaining are offsets
+        code += b"\xa1" + struct.pack("<I", chain[0])   # mov eax,[abs]
+        for off in chain[1:]:
+            # mov eax,[eax+off]  (off may be 0)
+            if off:
+                code += b"\x8b\x80" + struct.pack("<I", off)
+            else:
+                code += b"\x8b\x00"
+        code += b"\xa3" + struct.pack("<I", base_slot + 4 * k)  # mov [slot],eax
     code += b"\xff\x05" + struct.pack("<I", count)      # inc dword [count]
     code += b"\x61"                                     # popad
     code += b"\x9d"                                     # popfd
@@ -108,7 +120,10 @@ def main() -> int:
     ap.add_argument("--orig", required=True, help="exact displaced bytes as hex")
     ap.add_argument("--reg", default="eax", choices=sorted(REG_OFFSET_IN_PUSHAD))
     ap.add_argument("--mem-ebp", action="append", default=[],
-                    help="also sample [ebp+offset]; repeatable, e.g. --mem-ebp 0x88 --mem-ebp 0x90")
+                    help="also sample [ebp+offset]; repeatable")
+    ap.add_argument("--mem-chain", action="append", default=[],
+                    help="sample through a pointer chain, absolute base first then offsets, "
+                         "comma separated; repeatable. e.g. 0xE85C68,0x1F8,0x120")
     ap.add_argument("--pid", type=int, default=0)
     ap.add_argument("--secs", type=float, default=10.0)
     ap.add_argument("--interval", type=float, default=1.0)
@@ -145,7 +160,8 @@ def main() -> int:
         slot = cave + 0x100
         count = cave + 0x200
         ebp_offs = [int(x, 16) for x in args.mem_ebp]
-        code = build_cave(cave, slot, count, args.reg, original, resume, ebp_offs)
+        chains = [[int(t, 16) for t in c.split(",") if t.strip()] for c in args.mem_chain]
+        code = build_cave(cave, slot, count, args.reg, original, resume, ebp_offs, chains)
         if not write(h, cave, code):
             print("cave write failed")
             return 6
@@ -171,12 +187,14 @@ def main() -> int:
             n = struct.unpack("<I", raw_n)[0]
             v = struct.unpack_from("<I", raw_v, 0)[0]
             extras = [struct.unpack_from("<I", raw_v, 4 + k * 4)[0]
-                      for k in range(len(ebp_offs))]
+                      for k in range(len(ebp_offs) + len(chains))]
             key = (n, v, tuple(extras))
             if key != last_v:
                 msg = f"[{label}] n={n}  {args.reg}={v:#010x}"
-                for off, val in zip(ebp_offs, extras):
+                for off, val in zip(ebp_offs, extras[:len(ebp_offs)]):
                     msg += f"  [{off:#x}]={val:#010x}"
+                for ch, val in zip(chains, extras[len(ebp_offs):]):
+                    msg += f"  chain{ch}={val:#010x}"
                 print(msg)
                 last_n, last_v = n, key
             time.sleep(args.interval)
