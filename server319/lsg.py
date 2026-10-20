@@ -213,16 +213,17 @@ class LsgServer(AuthServer):
                                             if not _ks or not _kr:
                                                 raise RuntimeError("no-key-ptr")
                                             key_send = bytes.fromhex(_lc.read_region(_pid, _ks + 0x9C, 16))
-                                            key_recv = bytes.fromhex(_lc.read_region(_pid, _kr + 0x9C, 16))
-                                            # Each key object also carries a second 16-byte block
-                                            # at +0xAC; try it as the send-direction key.
-                                            # 0x608 is a certificate buffer, so the only real AES
-                                            # object is 0x604. Its S2C block offset is unknown, so
-                                            # allow probing each candidate via LSG_KEYOFF.
-                                            _koff = int(os.environ.get("LSG_KEYOFF", "0x9C"), 0)
-                                            _cand = _lc.read_region(_pid, _ks + _koff, 16)
-                                            if len(_cand) == 32:
-                                                key_recv = bytes.fromhex(_cand)
+                                            object_key_recv = bytes.fromhex(
+                                                _lc.read_region(_pid, _kr + 0x9C, 16))
+                                            key_recv = object_key_recv
+                                            # Optional legacy diagnostic override, never the
+                                            # default: five same-build captures match the derived
+                                            # S2C AES key at [conn+0x608]+0x9C.
+                                            if "LSG_KEYOFF" in os.environ:
+                                                _koff = int(os.environ["LSG_KEYOFF"], 0)
+                                                _cand = _lc.read_region(_pid, _ks + _koff, 16)
+                                                if len(_cand) == 32:
+                                                    key_recv = bytes.fromhex(_cand)
                                             # Hunt for every AES object reachable from the conn:
                                             # the C2S object is at conn+0x604 (vtable 0x2055D900);
                                             # a sibling field should hold the S2C object.
@@ -241,7 +242,7 @@ class LsgServer(AuthServer):
                                                                 reason=json.dumps(_found)[:1500])
                                             # Identify what these two objects actually are.
                                             for _lbl, _ptr, _key in (("604", _ks, key_send),
-                                                                     ("608", _kr, key_recv)):
+                                                                     ("608", _kr, object_key_recv)):
                                                 _head = _lc.read_region(_pid, _ptr, 0x40)
                                                 _tail = _lc.read_region(_pid, _ptr + 0x80, 0x40)
                                                 self.evidence.write(

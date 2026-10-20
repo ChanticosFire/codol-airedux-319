@@ -1,0 +1,26 @@
+{
+  "build": 1649370,
+  "method": "Offline replay of retained hello/gate/0x82 handshake and direct 64-byte key-object tail samples; compare object+0x9C with independently derived directional AES keys. Legacy key_object key= text is ignored because the probe could overwrite it with an offset candidate.",
+  "verifier": "python tools/verify_lsg_memory_keys.py runs/20261020-aeshunt runs/20261020-base runs/20261020-gate220 runs/20261020-keyobj runs/20261020-crypt",
+  "source_files": {
+    "runs/20261020-aeshunt/lsg.jsonl": "501ba5be0fe1fdba0acc27c437f2b8fba50cfbb597c3889875ef6aa28e03733a",
+    "runs/20261020-base/lsg.jsonl": "e84e720972af4f84888a5f73c87ebf4154b48ef111669603499a0552ff503802",
+    "runs/20261020-gate220/lsg.jsonl": "bcf792dc90d9ad19072ebfc2a6731f765c6a05fcb26d24951dc0de13bf6467b2",
+    "runs/20261020-keyobj/lsg.jsonl": "baaddab83d62229a56f01b6db0d1599c12b54345c02b825fb402f3d20dc6bd3d",
+    "runs/20261020-crypt/lsg.jsonl": "0b73cbf1dd51915fd2cbae97ab6407b5d51715fd17341a085e8a36e37082958e"
+  },
+  "results": [
+    "aeshunt: challenge, 604 C2S AES, 608 S2C AES and cross-direction mismatch verified",
+    "base: challenge, 604 C2S AES, 608 S2C AES and cross-direction mismatch verified",
+    "gate220: challenge, 604 C2S AES, 608 S2C AES and cross-direction mismatch verified",
+    "keyobj: challenge, 604 C2S AES, 608 S2C AES and cross-direction mismatch verified",
+    "crypt: challenge, 604 C2S AES, 608 S2C AES and cross-direction mismatch verified"
+  ],
+  "static_correlate": "runs/20261020-dump5/code-ba0000.asm.txt: 0xBA1F86-0xBA1FA1 loads the first 20-byte material block from [ebp-0xA8] into conn+0x60D and the second contiguous block from [ebp-0x94] into conn+0x621; 0xBA1FA6-0xBA206B allocates AES objects at conn+0x604/+0x608 and initializes from two distinct 16-byte stack blocks. runs/20261020-dump-ba3000/code-ba3000.asm.txt: 0xBA38E5-0xBA38F8 calls 0xBA02A0 in decode mode 0 to recover the 20-byte key from conn+0x621 before receiving-frame MAC verification. These are static code paths, not a live trace of S2C acceptance.",
+  "conclusion": "The existing Build 1649370 captures establish the derived S2C AES key at [conn+0x608]+0x9C. They refute the prior certificate-data claim for these captures.",
+  "unknowns": [
+    "Whether the current S2C AB85 frame passes the client's MAC check and decrypt call; the static key direction agrees with server_mac",
+    "Whether 0xBA3710 returns successfully and delivers the task reply to the waiting consumer",
+    "Whether svc71 task4/3/7/9 candidate payloads satisfy Build 1649370 business state"
+  ]
+}

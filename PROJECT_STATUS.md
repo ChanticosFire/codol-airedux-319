@@ -383,3 +383,15 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 利用既有同 Build 运行时解包代码（`runs/20261020-dump-ba3000/code-ba3000.bin`）继续静态复核 S2C：状态 3 的 `0x85` 分派进入 `0xBA3710`；成功处理 0x83 时，`0xBA3C1E–0xBA3C47` 把 `conn+0x5EC/+0x5F0` 都初始化为 1，因此当前服务首条回复的计数 1 与静态路径吻合。`0xBA3844–0xBA3859` 读取并递增 `+0x5EC`，再与入帧计数比较；`0xBA398D–0xBA39E2` 比较帧尾 8B 认证值；`0xBA39F3–0xBA3A05` 调用 `conn+0x608` 对象的解密方法。逐项定位见 [S2C 静态证据](evidence/experiments/20261020-s2c-parser-static.json)。**尚无同 Build 的 `+0x608` 密钥匹配及 `0xBA3710` 返回结果证据**；这两项是比继续猜业务包更靠前的核验点。
 
 又为隔离副本增加 [程序规则的 `-OnlyMainExe` 选项](tools/isolate_client_program.ps1)，只匹配游戏主 EXE，避免前次 77 个 EXE 的过宽范围。`runs/20261020-live-mainblock05/` 首个包装脚本因沿用 stale `$LASTEXITCODE` 在规则安装后误停，**从未启动客户端**；该条规则已手动删除、配置恢复。修正包装脚本的结果判定和 `finally` 清理后，`runs/20261020-live-mainblock06/` 核实仅 1 条主 EXE 规则生效，客户端仍在 13 秒前退出，未进入 Auth，内存补丁未执行；规则自动删除（剩余 0）、配置自动恢复（四份 pre-image 均吻合）。这缩小了“77 条规则过宽”的解释，但仍不能判断是外联依赖、回环被程序规则影响，还是客户端启动完整性检查。后续不在没有更可靠进程出站边界的情况下继续实机试错。
+
+## 14. 2026-10-20 既有实机内存复验：S2C AES 方向确认
+
+本轮未启动客户端、未更改主机网络/防火墙/驱动、未修改原始游戏文件。对既有五轮 Build 1649370 的 `lsg.jsonl` 做纯离线重放；来源路径、SHA-256、布尔结果和重跑命令见 [内存密钥审计](evidence/experiments/20261020-lsg-memory-key-audit.json) 与 [验证器](tools/verify_lsg_memory_keys.py)。每轮握手 challenge 均先由真实帧与本地票据会话字段验证；然后比较旧探针直接读取的对象 `tail=`：在对象起点 `+0x9C`，`conn+0x604` 指向的 16B 等于派生 C→S AES，`conn+0x608` 指向的 16B 等于派生 S→C AES，交叉方向不等。验证器不采用旧 `key_object` 的 `key=` 文本，因为该变量曾被来自 0x604 的候选读取覆盖。此前在 [HANDSHAKE-STATUS.md](HANDSHAKE-STATUS.md) 中将 0x608 判断为证书数据，以及本节前面“尚无 +0x608 密钥匹配”的判断，均已被这五轮样本纠正。
+
+同 Build 解包静态代码 `runs/20261020-dump5/code-ba0000.asm.txt` 的 `0xBA1F86–0xBA206B` 对应派生材料解码、两个 16B AES 对象初始化，和内存样本相互印证，但静态代码本身没有显示我们最近三轮候选回复的消费结果。旧 `--legacy-probe` 中 `LSG_KEYOFF` 现仅在显式设定时覆盖 S2C 候选；默认使用实际 0x608 对象密钥，日志中的 0x608 `key=` 也改回该对象的原始读取值。派生服务默认路径本来就使用 `keys.server_aes`，无需更改其 AES 方向。
+
+MAC 方向也做了同 Build 静态核对：握手初始化的 `0xBA1F86–0xBA1FA1` 将 72B 派生材料中的前两个连续 20B 块分别传给 `0xBA0420`（连接对象 `+0x60D`）和 `0xBA02A0`（`+0x621`）；S2C 接收路径 `0xBA38E5–0xBA38F8` 调用后者的解码模式，从 `+0x621` 恢复 20B 密钥，然后进入帧尾 MAC 计算与比较。这支持当前 `keys.server_mac = material[20:40]` 的方向，但**不能替代真实 S2C 帧的客户端通过证据**。
+
+**仍未解决**：客户端是否通过 S2C 帧尾 HMAC 比较、`0xBA3710` 解密及返回、普通任务 FIFO 与业务状态检查。M3 原生可交互大厅和 M4 对局均未验收。下一步在可核验的目标进程出站边界下做只读运行时观察。旧三轮出现非回环 socket，仍不能称完全离线。
+
+验证：五轮原始捕获的离线比较全部通过；`python -m unittest discover -s server319 -t . -p 'test_*.py' -q` 共 27 项通过；新证据 JSON 解析及修改过的 Python 文件编译通过。没有本轮新增的实机启动或画面证据。
