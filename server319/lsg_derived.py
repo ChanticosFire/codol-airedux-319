@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import dataclasses
+import json
+from pathlib import Path
 import os
 import socket
 import struct
@@ -149,6 +151,7 @@ class DerivedLsgServer(AuthServer):
                                 body_sha256=hashlib.sha256(client_auth).hexdigest(),
                                 body_hex=client_auth.hex())
             keys = derive_keys(hello, gate, client_auth, SESSION_KEY)
+            key_dump_done = False
             self.evidence.write("session_derived", session,
                                 reason="challenge_verified; client-memory-read=false")
             token = (struct.pack("<I", 10) + bytes([self.token_marker, 0x83])
@@ -210,15 +213,23 @@ class DerivedLsgServer(AuthServer):
                         conn.sendall(bytes(4))
                         self.evidence.write("idle_reply", session)
                     continue
-                if os.environ.get("LSG_DUMP_KEYS") == "1":
+                if os.environ.get("LSG_DUMP_KEYS") == "1" and not key_dump_done:
                     # Dump the derived session keys so captured client frames can
-                    # be decrypted offline later. Keys are per-session and only
-                    # useful against this process memory, so this is opt-in.
-                    self.evidence.write("session_keys", session,
-                                        reason="LSG_DUMP_KEYS=1",
-                                        keys_hex={f.name: getattr(keys, f.name).hex()
-                                                  for f in dataclasses.fields(keys)
-                                                  if isinstance(getattr(keys, f.name), (bytes, bytearray))})
+                    # be decrypted offline later. Written to a sidecar file rather
+                    # than the evidence log: EvidenceWriter rejects unknown fields
+                    # with ValueError, and that exception is not caught by the
+                    # session handler, so putting it there kills the connection.
+                    key_dump_done = True
+                    try:
+                        sidecar = Path(str(self.evidence.path) + ".keys.jsonl")
+                        record = {f.name: getattr(keys, f.name).hex()
+                                  for f in dataclasses.fields(keys)
+                                  if isinstance(getattr(keys, f.name), (bytes, bytearray))}
+                        sidecar.parent.mkdir(parents=True, exist_ok=True)
+                        with sidecar.open("a", encoding="utf-8") as stream:
+                            stream.write(json.dumps({"keys": record}) + "\n")
+                    except Exception as exc:  # never break the session for a dump
+                        print(f"key dump failed: {exc}", file=sys.stderr)
                 self.evidence.write("client_frame", session, body_len=len(frame),
                                     body_sha256=hashlib.sha256(frame).hexdigest(),
                                     body_hex=frame.hex())
