@@ -73,7 +73,6 @@ def _typed_string(text: bytes) -> bytes:
 
 def make_server_entry(ip: bytes = b"\x7f\x00\x00\x01", port: int = 8466,
                       name: bytes = b"TestServer") -> bytes:
-    """bdMatchMaking server entry, byte-for-byte as bdsvc319.make_server_entry.
 
     114 bytes when the name is TestServer. bdsvc319 builds it with the same
     typed-value codec this module already uses (0x08 u32, 0x06 u16, 0x10 str).
