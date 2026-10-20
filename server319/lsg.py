@@ -163,7 +163,9 @@ class LsgServer(AuthServer):
                                 # never return 2, so ui_state never reaches 5.
                                 # 0xBA3ABB: the u32 length field is added to the post-type
                                 # offset (5), so it must count only the payload bytes.
-                                f87_body = b"\x01" + b"\x00" * 15
+                                # 0xBA308E reads tag 1 with a 136-byte payload via 0xB75DE0,
+                                # so the 0x87 body must actually carry that much data.
+                                f87_body = b"\x01" + b"\x00" * 136
                                 f87 = (struct.pack("<I", len(f87_body))
                                        + b"\x87" + f87_body)
                                 # 0xBA2B5D: while crypt==0 the receiver requires
@@ -171,7 +173,9 @@ class LsgServer(AuthServer):
                                 # seconds after 0x83, so delay the 0x87 frame.
                                 # PROGRESS.md: svc28 must stay silent; pushing unsolicited
                                 # frames (0x87) only accelerates the disconnect.
-                                self.evidence.write("frame87", session, reason="suppressed")
+                                time.sleep(float(os.environ.get("LSG_F87_DELAY", "2")))
+                                conn.sendall(f87)
+                                self.evidence.write("frame87", session, reply_hex=f87.hex())
                                 # Keep reading: the client may answer with the
                                 # 0x85 encrypted channel frame right after.
                                 try:
