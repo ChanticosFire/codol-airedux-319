@@ -110,6 +110,28 @@ class LsgServer(AuthServer):
                                 # surrounding 16 bytes, i.e. the real CHAL and the
                                 # CHAL[8:16] half our 0x83 must carry.
                                 try:
+                                    if pid:
+                                        # Locate the bdAuthTicket we issued (magic 0xEFBDADDE) and
+                                        # read its bytes so the real session_key offset is known.
+                                        try:
+                                            _hits = lsg_client.search_bytes(
+                                                pid, b"\xde\xad\xbd\xef", limit=3, context=160)
+                                            self.evidence.write(
+                                                "ticket_search", session,
+                                                reason=json.dumps([
+                                                    {"hit": hex(h["hit"])}
+                                                    for h in _hits])[:600])
+                                            # The heap copy is the ticket the client kept; read the
+                                            # 24-byte session-key field at several candidate offsets.
+                                            for _h in _hits:
+                                                for _off in (97, 104, 40 + 64):
+                                                    _k24 = _lc.read_region(pid, _h["hit"] + _off, 24)
+                                                    self.evidence.write(
+                                                        "ticket_key", session,
+                                                        reason=f"hit={_h['hit']:#x} off={_off} key={_k24}")
+                                        except Exception as _exc:
+                                            self.evidence.write("ticket_search_error", session,
+                                                                reason=type(_exc).__name__)
                                     if pid and len(more) >= 8:
                                         tail8 = more[-8:]
                                         found = lsg_client.search_bytes(pid, tail8, limit=4,

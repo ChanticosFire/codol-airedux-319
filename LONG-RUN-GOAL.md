@@ -130,3 +130,4 @@
 | 2026-10-20 17:15–17:30 | 拉取社区仓库 + 1604220 服务端参考 | **重大线索**：`lobby.py` 给出 step1/step2 格式、密钥派生公式（SHA1/HMAC-SHA1/HKDF）、evt4 body、task_reply 格式、keepalive 为裸 4 零字节；包内 `wire.py` 被省略。实验仍 lstate 2→4，推断服务器→客户端密钥方向不匹配 | `HANDSHAKE-STATUS.md` 0.11 | 待提交 |
 | 2026-10-20 17:30–18:00 | conn 结构/seq 实测 + CHAL 派生穷举 | **校正**：`conn+0x5EC` 不是序号（1649370 改动），改为回显客户端 0x85 的 seq；`CHAL` 派生 14400 组合未命中（transcript 与 1604220 不同）；`0xBA4430` 的 type 4 是报废分支，S2C 不能用 type 4 | `HANDSHAKE-STATUS.md` 0.12、`runs/derive_chal.py` | 待提交 |
 | 2026-10-20 18:40–20:20 | 0x85 明文/密文探针与密钥对象识别 | **决定性**：`frame85_seen` 证明客户端收帧但解不开（明文从未出现）；`0x608` 是证书缓冲不是密钥；`0x604` 是唯一 AES 对象；已穷举 6 类候选密钥/格式全部失败 | `runs/20261020-seen/sym2/key14/keyac/aeshunt` | 待提交 |
+| 2026-10-20 23:40–00:10 | 0x85 解不开的根因层级 | **突破性结论**：`0xBA4430` 在 `[conn+0xC8]==4` 时直接 `ret`，CS=4 下客户端**根本不解析到达帧**；`frame85_seen pt []` 因此成立。后续应查 CS=4 的业务消费路径与 D=`*[0x3306D60]+0xC` | `HANDSHAKE-STATUS.md` 0.18 | 待提交 |
