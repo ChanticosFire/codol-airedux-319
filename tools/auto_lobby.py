@@ -38,6 +38,8 @@ k32.WaitForSingleObject.argtypes = [wt.HANDLE, wt.DWORD]
 EXE = "codomp_client_shipretail.exe"
 STAT_SETTER = 0x6B03D0
 ONBOARDED = 0xDC3EA0
+FIRSTLOGIN_FLAG = 0x331C5C0
+D_COND_PTR = 0x3306D60
 DW = 0x84ABA40
 CS = 0x84ABA50
 G1 = 0x82E1340
@@ -111,6 +113,25 @@ def call_stat(h, name_va: int) -> bool:
     return True
 
 
+def fix_firstlogin(h) -> bool:
+    """
+    0x6BBF30 returns 1 when either
+        [0x331C5C0]==1 and [0x84ABA50]==4, or
+        [[0x3306D60]+0xC] != 0
+    Offline both are false, so the FE ladder never leaves G1=0 and the character
+    screen stays up. Writing a non-zero value at [D+0xC] satisfies the second
+    path without touching ui_state.
+    """
+    ptr = read_u32(h, D_COND_PTR)
+    if not ptr:
+        print("D condition pointer is null")
+        return False
+    ok = write_u32(h, ptr + 0xC, 1)
+    if ok:
+        print(f"firstlogin: wrote 1 at {ptr + 0xC:#x} so 0x6BBF30 returns 1")
+    return ok
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--timeout", type=int, default=90,
@@ -149,6 +170,7 @@ def main() -> int:
                 if call_stat(h, ONBOARDED):
                     onboarded_done = True
                     print(f"dw={dw} -> onboard_character_selected set (early)")
+                fix_firstlogin(h)
             if dw == 5 and cs == 9:
                 print(f"dw={dw} cs={cs} -> forcing G1=2")
                 if not onboarded_done and call_stat(h, ONBOARDED):
