@@ -163,7 +163,11 @@ class LsgServer(AuthServer):
                                                 ip = bytes([127, 0, 0, 1])
                                                 port = struct.pack("<I", 4174)
                                                 tlv = b"\x0a\x08" + ip + port
-                                                inner = b"\x86" + tlv
+                                                # Business frame type 4 is the tag 0x0A
+                                                # lobby-address branch (0xB83A4B); 0x86 is the
+                                                # client->server hardware-fingerprint type and
+                                                # lands in the dispatcher default error path.
+                                                inner = b"\x04" + tlv
                                                 pt = struct.pack("<I", len(inner)) + inner
                                                 pt += b"\x00" * ((-len(pt)) % 16)
                                                 # The client expects our frame counter to equal
@@ -174,7 +178,7 @@ class LsgServer(AuthServer):
                                                 for _beat in range(8):
                                                     riv = os.urandom(16)
                                                     rct = AES.new(key_recv, AES.MODE_CBC,
-                                                                  iv=riv).encrypt(echo_pt)
+                                                                  iv=riv).encrypt(pt)
                                                     # Reference heartbeat reuses the SAME counter
                                                     # (exp) every 2s; do not increment.
                                                     seq_out = struct.pack("<I", _rxseq)
@@ -183,7 +187,7 @@ class LsgServer(AuthServer):
                                                     conn.sendall(struct.pack("<I", len(reply)) + reply)
                                                     self.evidence.write(
                                                         "frame85_reply", session,
-                                                        body_hex=echo_pt.hex(),
+                                                        body_hex=pt.hex(),
                                                         reply_hex=reply.hex(),
                                                         reason=f"beat={_beat} seq={_rxseq + _beat}")
                                                     time.sleep(2.0)

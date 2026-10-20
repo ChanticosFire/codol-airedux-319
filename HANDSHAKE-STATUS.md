@@ -136,3 +136,11 @@
 - `server319/lsg_client.py`：跨进程读 `conn`（vtable `0xD5A0C4` → `+0x398`，challenge `+0x5FC`/`+0x5F4`）。
 - `runs/20261020-dump-ba3000/`：`code-ba3000.bin`、`code-ba3000.asm.txt`（0x83 handler）。
 - 会话记录：`runs/20261020-session09..28/lsg.jsonl`。
+
+## 0.4 业务帧类型已定位（2026-10-20 16:0x）
+
+- `0xB765A0`（帧头解析）从**明文缓冲 offset 0** 读 1 字节作为业务 type。
+- `0xB838A0` 的跳表：type 1→`0xB839D5`、2→`0xB83A09`、3→`0xB83A2F`、**4→`0xB83A4B`（tag 0x0A 大厅地址分支）**、5→`0xB83997`；其他值走默认错误路径。
+- 调用链：`0x803780`（大厅轮询）→ `0x8037B8 call 0xB838A0` → type 4 → `0xB83A52 call 0xB769A0`（tag 0x0A）→ 写 `netobj+0x50/0x54` → `[+0x4F8]=1`。
+- 已把 0x85 明文改为 `[u32 11][0x04][0x0A 0x08][127.0.0.1][4174]` 发出（`runs/20261020-session43` 的 `frame85_reply`）。
+- **仍未成功**：客户端 23s 后 `与大厅服务器失去连接`。可能原因：帧没有被放入业务队列 `[0x84ABA7C]`（外层 0x85 布局/seq 问题），或 type 4 的 payload 需要更完整的 TLV。
