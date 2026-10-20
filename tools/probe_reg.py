@@ -128,6 +128,10 @@ def main() -> int:
     ap.add_argument("--secs", type=float, default=10.0)
     ap.add_argument("--interval", type=float, default=1.0)
     ap.add_argument("--label", default="")
+    ap.add_argument("--wait", type=float, default=0.0,
+                    help="seconds to wait for the client process before hooking; the hook must"
+                         " be in place before the window opens, so wait-then-hook is wrong here"
+                         " - hook first, then wait")
     args = ap.parse_args()
 
     hook = int(args.at, 16)
@@ -140,8 +144,19 @@ def main() -> int:
 
     pid = args.pid or find_pid()
     if not pid:
-        print("client not running")
-        return 3
+        if args.wait <= 0:
+            print("client not running")
+            return 3
+        deadline = time.time() + args.wait
+        while time.time() < deadline:
+            pid = find_pid()
+            if pid:
+                print(f"[{label}] client appeared after {args.wait - (deadline - time.time()):.1f}s")
+                break
+            time.sleep(0.02)
+        if not pid:
+            print("client did not appear")
+            return 3
     h = k32.OpenProcess(PROCESS_ALL, False, pid)
     if not h:
         print("OpenProcess failed")
