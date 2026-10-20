@@ -66,6 +66,10 @@ k32.GetThreadContext.restype = wt.BOOL
 # is the correct call for a WOW64 target and uses the same 716-byte layout.
 k32.Wow64GetThreadContext.argtypes = [wt.HANDLE, ctypes.POINTER(CONTEXT)]
 k32.Wow64GetThreadContext.restype = wt.BOOL
+k32.SuspendThread.argtypes = [wt.HANDLE]
+k32.SuspendThread.restype = wt.DWORD
+k32.ResumeThread.argtypes = [wt.HANDLE]
+k32.ResumeThread.restype = wt.DWORD
 k32.CloseHandle.argtypes = [wt.HANDLE]
 k32.CreateToolhelp32Snapshot.restype = wt.HANDLE
 
@@ -110,7 +114,12 @@ def read_context(tid: int) -> CONTEXT | None:
     th = k32.OpenThread(THREAD_ALL, False, tid)
     if not th:
         return None
+    suspended = False
     try:
+        # A WOW64 target thread must be suspended before its context can be read
+        # from a 64-bit host; without this both calls report success with zeros.
+        if k32.SuspendThread(th) != 0xFFFFFFFF:
+            suspended = True
         ctx = CONTEXT()
         ctx.ContextFlags = CONTEXT_FULL
         if not k32.Wow64GetThreadContext(th, ctypes.byref(ctx)):
@@ -121,6 +130,8 @@ def read_context(tid: int) -> CONTEXT | None:
             return None
         return ctx
     finally:
+        if suspended:
+            k32.ResumeThread(th)
         k32.CloseHandle(th)
 
 
