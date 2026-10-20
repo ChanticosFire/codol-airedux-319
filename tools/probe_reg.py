@@ -128,6 +128,8 @@ def main() -> int:
     ap.add_argument("--secs", type=float, default=10.0)
     ap.add_argument("--interval", type=float, default=1.0)
     ap.add_argument("--label", default="")
+    ap.add_argument("--ready-timeout", type=float, default=90.0,
+                    help="seconds to wait for the expected bytes to appear before giving up")
     ap.add_argument("--wait", type=float, default=0.0,
                     help="seconds to wait for the client process before hooking; the hook must"
                          " be in place before the window opens, so wait-then-hook is wrong here"
@@ -162,10 +164,18 @@ def main() -> int:
         print("OpenProcess failed")
         return 3
     try:
+        # The image is not mapped the instant the process appears, so wait for the expected
+        # bytes rather than assuming readiness. This also measures when mapping completes.
+        t_wait = time.time()
         live = read(h, hook, len(original))
+        while live != original and time.time() - t_wait < args.ready_timeout:
+            time.sleep(0.02)
+            live = read(h, hook, len(original))
         if live != original:
             print(f"byte mismatch at {hook:#x}: want {original.hex()} got {live.hex()}")
             return 4
+        if time.time() - t_wait > 0.05:
+            print(f"[{label}] image ready after {time.time() - t_wait:.2f}s")
         cave_addr = k32.VirtualAllocEx(h, None, 0x1000, MEM_COMMIT_RESERVE,
                                        PAGE_EXECUTE_READWRITE)
         if not cave_addr:
