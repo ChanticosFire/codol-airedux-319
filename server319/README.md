@@ -53,6 +53,7 @@ python -m server319.lsg --cert runs\<run-id>\tls\auth.crt `
     --key runs\<run-id>\tls\auth.key --port 4174 `
     --seconds 180 --log runs\<run-id>\lsg.jsonl
 python tools\verify_lsg_capture.py runs\20261020-base
+python tools\smoke_lsg_derived.py --run-dir runs\<new-run-id>
 ```
 
 The default LSG handler validates the entire 28/26/153-byte handshake,

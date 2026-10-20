@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "build": 1649370,
+  "kind": "synthetic_tcp_smoke_not_game_client",
+  "run": "runs/20261020-derived-smoke",
+  "command": "python tools/smoke_lsg_derived.py --run-dir runs/20261020-derived-smoke2",
+  "initial_local_run": "runs/20261020-derived-smoke",
+  "listener": "127.0.0.1:4174",
+  "observed": {
+    "four_anchor_preflight_passed": true,
+    "gate_bytes": 26,
+    "token_bytes": 14,
+    "client_frame_bytes": 50,
+    "reply_bytes": 82,
+    "derived_token_matches": true,
+    "reply_hmac_valid": true,
+    "reply_decrypts_to_candidate_svc71_task4": true,
+    "server_exit_code": 0,
+    "server_process_remaining": false,
+    "listener_remaining": false
+  },
+  "limit": "Only a synthetic local peer consumed the reply; no Build 1649370 client ran or entered a lobby"
+}

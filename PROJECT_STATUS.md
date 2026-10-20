@@ -358,4 +358,8 @@ EXE 的 Windows `FileVersion` 为 `1649370`。这证明上述文件与仓库登�
 
 追加独立对照：本项目 `svc71/task4` 候选应答与第三方 `bdsvc319.handle_service` 对同一合成输入均为 31B 且逐字节相等；这只确认来源移植无误，不是客户端接受。LSG CLI 启动前现在也直接校验隔离副本四项锚点，拒绝 Build/文件身份不符；原工作副本本轮 `server319 --preflight` 四项通过。
 
+随后运行 `python runs/20261020-derived-smoke/probe.py` 作**纯合成 TCP** 端到端检查：独立子进程在 `127.0.0.1:4174` 监听，四锚点预检通过；合成 peer 完成 28/26/153B 握手、发送带真 MAC 的 50B 0x85 请求，收到 82B `AB85` 应答并独立验证 HMAC、AES 解密及 `svc71/task4` 候选形状。服务进程返回 0，随后独立查询无该 PID/4174 监听。原始 `lsg.jsonl`、重跑脚本及 `result.json` 均在忽略的 [smoke run](runs/20261020-derived-smoke/)；审阅后布尔摘要见 [smoke 摘要](evidence/experiments/20261020-derived-lsg-smoke.json)。合成 peer 的成功不等于目标客户端接受，也未触及 M3 画面验收。
+
+为便于 Git 回档和交接，探针整理为 [smoke_lsg_derived.py](tools/smoke_lsg_derived.py)。首次从 `tools/` 运行发现相对根目录计算错误，导入 `server319` 失败、未启动监听；修正后用 `python tools/smoke_lsg_derived.py --run-dir runs/20261020-derived-smoke2` 再次通过同样的 TCP/密码学校验，子进程退出 0。失败尝试与修正已保留在本轮提交历史。
+
 下一实验应在符合 [LONG-RUN-GOAL.md](LONG-RUN-GOAL.md) 边界的现有隔离副本上，以独立 run 目录验证新 4174 的 token、客户端第一条 0x85、服务端 `candidate_task_reply` 与客户端下一状态；逐项核输入哈希、PID/端口、截图、补丁 pre-image/恢复和退出。当前 Medium 令牌下 IIPS Host 不会自然启动，故本轮仅完成离线证据与服务实现，不从合成 socket 测试推断游戏大厅已进入。
