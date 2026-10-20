@@ -71,6 +71,8 @@ def sample_lobby(process, base):
         "business_flag": global_value(0x84ABA78),
         "conn_4f4": read(net + 0x4F4) if net else None,
         "conn_lstate": read((read(net + 0x4F4) or 0) + 0xC8, 1) if net else None,
+        "conn_crypt": read((read(net + 0x4F4) or 0) + 0x644) if net else None,
+        "conn_stage": read((read(net + 0x4F4) or 0) + 0x5E8) if net else None,
         "conn_fsm": read((read(net + 0x4F4) or 0) + 0x9C) if net else None,
         "ready_4f8": read(net + 0x4F8) if net else None,
         "auth_candidate": auth_obj,

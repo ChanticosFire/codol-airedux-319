@@ -395,3 +395,39 @@ sete al ; inc eax           ; crypt==0 且 lstate==2 且 stage==3 → 2，否则
 **结论**：`payload[0]=4` 恰好是「报废」分支；`0x86/0x88/0x01` 等也都会落到 `0xBA4530` 的默认报废路径。`0xBA4430` 只服务握手帧（`0x81`/`0x83`/`0x90`），**真正的 0x85 明文分派在另一个函数**（0x83 成功后的加密通道处理），必须在它那里把 `crypt`/`stage` 推进，而不是靠控制帧类型蒙。
 
 **下一步**：定位 0x83 成功后接收加密帧并解密的函数（`0xBA3A00`–`0xBA3D00` 区间之外的 `0xBA17D0` 一带），确认它写入 `[conn+0x644]`（crypt）与 `[conn+0x5E8]=3`（stage 3）的时机。
+
+## 0.20 ★ gate 版本号改为 220 后 stage 到 3；crypt 仍未建立（2026-10-21 00:1x–00:5x）
+
+`0xBA3AD1` 的帧分派：
+
+```asm
+0xBA3AE0  mov cl, [ebp-0x389]        ; 收到的帧 type
+0xBA3AE6  cmp cl, 0x87               ; ★ 只有 0x87 会走加密通道建立
+0xBA3AEB  cmp dword [edi+0x640], 0xDC ; ★ 且版本必须 >= 220
+0xBA3AF5  jb 0xBA3B36
+0xBA3B02  call 0xBA3590              ; 建立 crypt
+```
+
+`0xBA3590` 内部：
+
+```asm
+0xBA35B0 call 0xB783C0               ; 从帧里读 1 字节
+0xBA35BC cmp byte [ebp+0x13], 1      ; 该字节必须 == 1
+0xBA35CA call 0xBA3420               ; 否则报废
+0xBA35D7 cmp [esi+0x644], 0          ; crypt 必须尚未建立
+0xBA35E2 call 0xBA3010               ; 初始化
+0xBA35EB mov [esi+0x644], 1          ; crypt = 1
+```
+
+**实测结果**：
+
+| gate 版本 | 观测 |
+|---|---|
+| `0xD2`(210) | `stage=2` → `lstate=4, stage=0` |
+| **`0xDC`(220)** | **`stage=3` 出现**（`lstate=2` 保持约 1 秒），随后仍 `lstate=4, stage=0` |
+| `0xDC` + 发 `0x87`（`[u32 17][0x87][01][0x00×15]`） | **`DW_LOBBY_ERROR`**（更差） |
+| `0xDC` + 0x83 后完全静默 | 12 秒后 `lstate=4`，仍弹「失去连接」 |
+
+- **gate 必须发 220**（`0xDC`）——这是本轮确认的硬要求，之前的 210 让 `stage` 永远停在 2。
+- `0xBA0780` 的条件 B（`crypt==0 && lstate==2 && stage==3`）在 gate 220 后**短暂成立**，但 `ui` 轮询没赶上就被打成 4。
+- `crypt` 仍然恒为 0，说明 `0x87` 帧的**格式**还不对（`0xBA3590` 要求读到的那个字节 == 1，且不同偏移含义待定）。

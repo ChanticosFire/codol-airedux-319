@@ -34,7 +34,7 @@ LSG_MARK = 0x1122334455667788  # reference handshake mark (lsg_echo319)
 
 # 26-byte gate reply observed in the reference: [u32 22][01][81][u32 0xD2][8B mark][8B nonce]
 LSG_GATE_OP = 0x81
-LSG_GATE_VALUE = 0xD2
+LSG_GATE_VALUE = 0xDC  # 220: 0xBA3AEB requires [conn+0x640] >= 220
 
 
 class LsgServer(AuthServer):
@@ -157,6 +157,17 @@ class LsgServer(AuthServer):
                                 conn.sendall(frame83)
                                 self.evidence.write("token_reply", session,
                                                     reply_hex=frame83.hex())
+                                # 0xBA3AEB: only a type-0x87 frame (with conn+0x640 >= 220)
+                                # reaches 0xBA3590, which builds the crypt channel and sets
+                                # [conn+0x644]=1. Without it crypt stays 0 and 0xBA0780 can
+                                # never return 2, so ui_state never reaches 5.
+                                f87_body = b"\x01" + b"\x00" * 15
+                                f87 = (struct.pack("<I", 1 + len(f87_body))
+                                       + b"\x87" + f87_body)
+                                # 0x87 turned out to trigger DW_LOBBY_ERROR on 1649370;
+                                # stay silent so the lobby poller can observe
+                                # lstate==2 && stage==3 (the 0xBA0780 condition B).
+                                self.evidence.write("frame87", session, reason="disabled")
                                 # Keep reading: the client may answer with the
                                 # 0x85 encrypted channel frame right after.
                                 try:
