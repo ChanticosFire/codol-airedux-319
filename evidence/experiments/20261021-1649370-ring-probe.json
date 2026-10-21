@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "test whether the type=2 loopback path can carry getchallenge without creating a transport channel",
+  "setup": {
+    "adr_bytes": "02 00000000 0000 7129 0000 00000000 00000000 9d000000",
+    "type": 2,
+    "port": 28969,
+    "channel": "0x9D",
+    "state": 4,
+    "invoked": "0x5C05F0 with ecx=connection"
+  },
+  "runs": [
+    {"name": "codex-1649370-ringprobe-20261021", "ring_a_cursor_start": "0x0", "ring_a_cursor_end": "0x0", "packets": 0},
+    {"name": "codex-1649370-ringprobe2-20261021", "breakpoint_0x6750A0": "no hit", "ring_a_cursor_start": "0x0", "ring_a_cursor_end": "0x0", "packets": 0}
+  ],
+  "interpretation": "The type=2 adr was written and 0x5C05F0 was called, but the loopback writer 0x6750A0 was never reached and ring A did not advance. This means the connection state machine returned before the send step, not that the ring layout is wrong. Missing preconditions are likely the connection state fields/timers that CL_CheckForResend checks before building getchallenge.",
+  "next": [
+    "breakpoint 0x5C05F0 and single-step/trace the branch that returns before 0x675260/0x6750A0",
+    "or call 0xBB2C40 with the same args as 0xBAD810 (arg1=[host+0xC], arg2=session object from 0xB74FE0) so the real gate initialization runs before 0x621E50",
+    "do not repeat the bare ring probe without a new precondition"
+  ],
+  "cleanup": "No client/server/guard process remains. tools/net_rollback.ps1 reported no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}
