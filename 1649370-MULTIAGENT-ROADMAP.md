@@ -156,3 +156,7 @@ type=4 的 `0x622040` 参数：len=0x26、data=0x1AE210、type=4、127.0.0.1:289
 ## 2026-10-21 G2 stdcall 修复、socket 成功（本轮）
 
 Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add esp` 后，`socket(2,2,17)` 返回有效句柄 `0xD00`，客户端存活、无 Com Error。socket+sendto/sendto-only 不再崩溃，但 `ring-probe.json` 不写出、服务端无包，sendto 路径变为挂起。下一步 sendto 放独立远程线程并记录返回值，或用 WSASendTo/非阻塞 socket。证据 `evidence/experiments/20261021-1649370-stdcall-socket.json`。
+
+## 2026-10-21 G2 客户端进程内真实 UDP 发送成功（本轮）
+
+`--remote-udp-send` 用 `CreateRemoteThread` 在客户端进程内执行 `WSAStartup(0x202)+socket(2,2,17)+sendto`，发送 `getchallenge 0 "a731…"` 到 28969；`sendto_return=37`，2697 日志出现 `SV packet 127.0.0.1:63053: getchallenge...`。证明真实 Winsock UDP 通道可用。剩余：接收 challengeResponse 并注入客户端、保持同一 socket/源端口用于 connect。证据 `evidence/experiments/20261021-1649370-remote-udp-success.json`。

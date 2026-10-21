@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "send a real UDP getchallenge from inside the 1649370 client process without the game transport channel",
+  "run": "codex-1649370-remoteudp-20261021",
+  "method": {
+    "remote_thread": "CreateRemoteThread on a cave in the client process",
+    "cave": "WSAStartup(0x202) + socket(2,2,17) + sendto(sock, '\\xff\\xff\\xff\\xffgetchallenge 0 \"a731af49a6a2c7e2\"', 37, 0, 127.0.0.1:28969, 16)",
+    "stdcall": "Winsock calls are __stdcall; no add esp after calls"
+  },
+  "result": {
+    "thread_exit": 1124859852,
+    "sendto_return": 37,
+    "server_log": "^2SV packet 127.0.0.1:63053: getchallenge 0 \"a731af49a6a2c7e2\"",
+    "meaning": "the 1649370 process can create a real Winsock UDP socket and the 2697 server receives the packet; the remaining gap is receiving the response and feeding it to the game/connection state"
+  },
+  "next": [
+    "keep the socket handle alive (global) and add a recvfrom loop in a remote thread",
+    "use the same socket for getchallenge and connect so the 2697 challenge cookie matches the source port",
+    "feed challengeResponse/connectResponse into the client via the ring/parser bridge, then observe the game state"
+  ],
+  "cleanup": "Client and 2697 server terminated; no WFP/process residue."
+}
