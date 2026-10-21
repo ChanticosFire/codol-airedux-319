@@ -618,3 +618,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 直调 0x4F3890 已不崩，但地图状态仍不变
 
 修正 cave 参数为 `push map; push 0; push map`（同时填 `[ebp+8]` 和 `[ebp+0x10]`）及 `call` 偏移 `+18` 后，房间内主线程直调 `0x4F3890` 安全返回、客户端存活；但 `0x3306910` 仍 `-1`、`0x35053DC=0`、地图队列仍 0。说明 `0x4F3890` 需要更多全局/playlist 上下文，或它只是“请求入队”而非立即加载。下一步读它的返回值/关键全局，或改调真正消费地图请求的 `0x4F7DA0`/`0x67...` worker 路径。
+
+## 2026-10-21 修正 CONTEXT 标志后房间 ready 真正执行，崩溃点从空 ECX 移到堆地址
+
+`_main_thread_call` 原来 `ContextFlags=0x10001` 只带 CONTROL，`ECX` 没被写入；改成 `0x10003`（CONTROL|INTEGER）后，`CODOL_ROOM_READY` 调 `0x62F840(ecx=room)` 不再在 `0x62F85A`（`[ebx+0x278]`，ebx=0）崩，而是在 `0x21A0A000` 堆地址访问冲突。说明 ready 方法已进入真实逻辑（读房间/发消息），下一步反汇编 `0x62F840` 的堆访问/发送路径，补有效房间字段或 stub 掉离线失败分支。

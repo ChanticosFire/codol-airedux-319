@@ -216,7 +216,7 @@ def _main_thread_call(session, handle, target: int, ecx_value=None) -> dict:
     storage = C.create_string_buffer(context_size + 16)
     aligned = (C.addressof(storage) + 15) & ~15
     C.memset(aligned, 0, context_size)
-    C.c_uint32.from_address(aligned).value = 0x00010001  # CONTEXT_i386 | CONTEXT_CONTROL
+    C.c_uint32.from_address(aligned).value = 0x00010003  # CONTEXT_i386 | CONTROL | INTEGER
     if not get_context(session.info.thread, C.c_void_p(aligned)):
         return {"status": "get_context_failed", "error": C.get_last_error()}
     original_eip = C.c_uint32.from_address(aligned + eip_offset).value
@@ -255,6 +255,9 @@ def _main_thread_call(session, handle, target: int, ecx_value=None) -> dict:
                                        len(name), C.byref(wrote)) or wrote.value != len(name)):
             return {"status": "string_write_failed", "cave": hex(cave), "error": C.get_last_error()}
         k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+        one = struct.pack("<I", 1)
+        k32.WriteProcessMemory(handle, C.c_void_p(0x3306994),
+                               C.create_string_buffer(one, 4), 4, C.byref(wrote))
     elif exec_cmd:
         string_address = cave + 0x800
         name = exec_cmd.encode("ascii") + b"\x00"
@@ -1981,6 +1984,11 @@ def _room_command_injector(session, command: str) -> None:
                 result.update(status="queued", length_before=length, length_after=new_length,
                               pointer=hex(pointer), payload_address=hex(pointer + length),
                               attempt=attempt + 1)
+                if os.environ.get("CODOL_ROOM_READY"):
+                    try:
+                        result["room_ready"] = _main_thread_call(session, handle, 0x62F840, room)
+                    except Exception as error:  # noqa: BLE001 - report, never hide
+                        result["room_ready"] = {"status": "exception", "error": repr(error)}
                 if os.environ.get("CODOL_MAP_CALL"):
                     try:
                         result["map_call"] = _main_thread_call(session, handle, 0x4F3890, None)
