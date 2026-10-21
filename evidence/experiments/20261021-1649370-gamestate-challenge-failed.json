@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "run the injected gamestate while the 2697 server and loopback guard are active",
+  "run": "codex-1649370-gamestate-server-20261021",
+  "setup": {
+    "server": "2697 codol_dedrun on 127.0.0.1:28969",
+    "guard": "private client_loopback_guard.exe",
+    "client": "ring-probe + inject-gamestate + loopback guard"
+  },
+  "result": {
+    "client": "black screen, then EXE_CLIENTFAILEDTOCHALLENGE",
+    "server_log": "no getchallenge/connect packet from the client",
+    "injection_json": "challenge-inject.json / ring-probe.json were not completed in this run; the client left the main-menu stage before the injector could queue"
+  },
+  "meaning": "The client's challenge is not sent to 127.0.0.1:28969, so starting the 2697 server does not satisfy it. Injecting only the gamestate makes the client request a challenge that this server never receives. The next attempt must provide the challengeResponse (and connectResponse) before the gamestate, or explicitly repoint the challenge target.",
+  "next": [
+    "queue challengeResponse + gamestate together at the main menu before changing connection state",
+    "or set the client connection address/challenge target to 127.0.0.1:28969",
+    "then verify the server receives getchallenge/connect"
+  ],
+  "cleanup": "Client/guard/server terminated; no WFP residue."
+}

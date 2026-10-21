@@ -244,3 +244,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 G2 gamestate 注入后客户端开始 challenge（本轮）
 
 `--ring-probe --ring-type 4 --inject-gamestate gamestate-final.bin` 把 3428 字节 gamestate 写入环 slot `0x786DBC0`（state 1→3，channel=0x9D，read/write cursor=1）。约 20 秒后客户端弹出 `EXE_CLIENTFAILEDTOCHALLENGE`，说明它已消费 gamestate 并推进到 challenge/连接阶段；该次没有启动 2697 服务端，所以 challenge 失败。下一步在注入 gamestate 的同时启动 2697 服务端 + loopback guard，观察是否能完成 challenge 并加载 `mp_cross_fire`。证据 `evidence/experiments/20261021-1649370-gamestate-injected.json`。
+
+## 2026-10-21 G2 带服务端的 gamestate 注入仍卡 challenge（本轮）
+
+2697 服务端 + loopback guard + `--ring-probe --ring-type 4 --inject-gamestate` 联合运行，客户端仍先黑屏再弹 `EXE_CLIENTFAILEDTOCHALLENGE`，而 2697 `qconsole.log` 没有任何 getchallenge/connect。说明客户端 challenge 目标不是 `127.0.0.1:28969`，单纯启动服务端不能满足；必须在改状态前把 `challengeResponse`（必要时还有 `connectResponse`）和 gamestate 一起排进环，或显式改客户端 challenge 目标地址。证据 `evidence/experiments/20261021-1649370-gamestate-challenge-failed.json`。
