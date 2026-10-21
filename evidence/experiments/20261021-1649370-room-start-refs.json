@@ -1,0 +1,108 @@
+{
+  "schema": 1,
+  "image": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+  "sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "method": "exact ASCII strings and direct 32-bit VA operand references",
+  "matches": [
+    {
+      "term": "room.startgame",
+      "file_offset": "0x9c6b98",
+      "string_va": "0xdc6b98",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x63a13d",
+          "preceding_opcode": "0xbe",
+          "context_hex": "0e90986300893db0033303be986bdc00e85a96ebff85c07521893d80679c0ebf"
+        },
+        {
+          "operand_va": "0x63a627",
+          "preceding_opcode": "0x68",
+          "context_hex": "6bdc00e8fd91ebff83c40468986bdc00e8f091ebff83c40468a86bdc00e8e391"
+        }
+      ]
+    },
+    {
+      "term": "StartMatch",
+      "file_offset": "0x9dd4e4",
+      "string_va": "0xddd4e4",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x7d08c3",
+          "preceding_opcode": "0x68",
+          "context_hex": "0fb6c0508d45dc508b471068e4d4dd0050ffd28b45e885f6740a8bcee8186505"
+        }
+      ]
+    },
+    {
+      "term": "StartMatchCountDown",
+      "file_offset": "0x9dd4f0",
+      "string_va": "0xddd4f0",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x7d0983",
+          "preceding_opcode": "0x68",
+          "context_hex": "0fb6c0508d45dc508b471068f0d4dd0050ffd28b45e885f6740a8bcee8586405"
+        }
+      ]
+    },
+    {
+      "term": "SetReadyState",
+      "file_offset": "0x9dd504",
+      "string_va": "0xddd504",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x7d0a43",
+          "preceding_opcode": "0x68",
+          "context_hex": "0fb6c0508d45dc508b47106804d5dd0050ffd28b45e885f6740a8bcee8986305"
+        }
+      ]
+    },
+    {
+      "term": "mmstart sv_resetServer; 2486 %d;",
+      "file_offset": "0x9c6800",
+      "string_va": "0xdc6800",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x632463",
+          "preceding_opcode": "0x68",
+          "context_hex": "520fb697fe050100505251680068dc00e81425140083c434e9c80100000fb6b7"
+        },
+        {
+          "operand_va": "0xb0029a",
+          "preceding_opcode": "0x0",
+          "context_hex": "2440538944240c0f84e500000068dc0000006834bcd3006a136a05e812340000"
+        }
+      ]
+    },
+    {
+      "term": "mmstart sv_resetServer; 2486 %d;",
+      "file_offset": "0x9c6888",
+      "string_va": "0xdc6888",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x6324cc",
+          "preceding_opcode": "0x68",
+          "context_hex": "528b97d805010050515652688868dc00e8ab24140083c430e95f0100000fb6b7"
+        }
+      ]
+    },
+    {
+      "term": "mmstart sv_resetServer; 2486 %d;",
+      "file_offset": "0x9c6948",
+      "string_va": "0xdc6948",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x632630",
+          "preceding_opcode": "0x68",
+          "context_hex": "0c56518b8fd80501005051684869dc00e84723140083c4288d4c241c8bf0e879"
+        }
+      ]
+    }
+  ],
+  "interpretation": {
+    "room_start_handler": "0x639890 reads room pointer [0x82e13fc] and jumps through vtable slot +0x38; runtime target unknown",
+    "room_start_register_candidate": "0x63a13c uses room.startgame pointer before call 0x4f37a0",
+    "map_command_builder": "0x632462 references mmstart/sv_resetServer/.../map %s format string",
+    "limitation": "Static references do not establish runtime execution or a playable match"
+  }
+}

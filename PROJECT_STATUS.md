@@ -9,6 +9,8 @@
 > 已验证解开 `development_mp.ff`（发行签名通过）：内有 `bots.cfg` 和 `devgui_maps_mp.cfg`，后者列出 `devmap mp_backlot/mp_strike/mp_war`。下一步获取对应地图 fastfile 并运行验证；仅凭开发配置不视为已能启动对局。
 >
 > 2026-10-21 续进：原始 IFS 中 `mp_strike_sh` 与 `mp_backlot_sh` 各三个 FF 已提取，发行签名与 zone 校验通过。`mp_strike_sh` 的启动参数探针仍进大厅；原生命令队列探针两次黑屏，但没有地图已装载的证据。三次均按时退出并清理动态 WFP 守卫。直接 `devmap` 路线暂转向自定义房间的原生开局条件，详见 `1649370-STATUS.md` 顶部。
+>
+> 房间链静态入口已定位：`room.startgame`、GFx 的 `StartMatch`/`StartMatchCountDown`/`SetReadyState` 与包含 `map %s` 的 `mmstart` 格式串。尚需在房间内观察实际回调和 vtable 目标，见 `evidence/experiments/20261021-1649370-room-start-refs.json`。
 
 
 更新：2026-10-26（Asia/Shanghai）；第 188 轮后新增顶部结论索引。
