@@ -184,3 +184,7 @@ Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add e
 ## 2026-10-21 G2 connect 后 9 字节包定量分析（本轮）
 
 `tools/analyze_2697_postconnect.py`：connect 成功后 2 秒收到 326 个 `[u32 seq][u32 0][u8 checksum]` 包，seq 1 递增；checksum 非 `0x67-seq`（1→26、2→25、3→24、4→31、326→93），更像 CRC/命令字节。下一步确认它是 stats 挑战、reliable command 还是 snapshot/keepalive 头。证据 `evidence/experiments/20261021-1649370-postconnect-packets.json`。
+
+## 2026-10-21 G2 9 字节包映射到 CODOL_WritePacket（本轮）
+
+源码 `CODOL_WritePacket` 在 server 侧为 4 字节 sequence + 消息；观测包 = 4 字节 sequence + 5 字节 `00 00 00 00 <byte>`，不是 reliable-transport `0xfffffff0` 头，也不是 512 槽 stats。326 个包是普通 netchan，消息 5 字节；byte 随 seq 变化。下一步确认 5 字节消息 opcode 与 ACK 需求。证据 `evidence/experiments/20261021-1649370-postconnect-format.json`。

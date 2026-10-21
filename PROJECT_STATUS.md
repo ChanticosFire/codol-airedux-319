@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 9 字节包映射到 CODOL_WritePacket（2026-10-21）**：源码 `CODOL_WritePacket` 在 server 侧为 4 字节 sequence + 消息；观测包 = 4 字节 sequence + 5 字节 `00 00 00 00 <byte>`，不是 reliable-transport/512 槽 stats。326 个包是普通 netchan，消息 5 字节。下一步确认 5 字节消息 opcode 与 ACK 需求。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-postconnect-format.json`。
+
 > **1649370 G2 connect 后 9 字节包定量分析（2026-10-21）**：connect 成功后 2 秒收到 326 个 `[u32 seq][u32 0][u8 checksum]` 包，seq 1 递增；checksum 非 `0x67-seq`（1→26、2→25、3→24、4→31、326→93），更像 CRC/命令字节。下一步确认它是 stats 挑战、reliable command 还是 snapshot/keepalive 头。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`tools/analyze_2697_postconnect.py` 和 `evidence/experiments/20261021-1649370-postconnect-packets.json`。
 
 > **1649370 G2 connect 后 512 个 9 字节包（2026-10-21）**：保持 socket 不断开时，2697 在 connectResponse 后发送 512 个 `[u32 seq][u32 0][u8 checksum]` 包（seq 1 递增，checksum 如 1→0x66、0x67→0x00），像 512 槽 stats/keepalive 挑战；socket 关闭后 disconnect。下一步确认语义并实现保活/响应。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-remote-connect-linger.json`。

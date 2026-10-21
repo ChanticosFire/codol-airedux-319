@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "map the observed 9-byte post-connect packets to the 2697 netchan writer",
+  "source": "runs/2697-native-src/src/codol/net/codol_wire.c CODOL_WritePacket",
+  "format": {
+    "header": "u32 sequence (4 bytes when server qport<0)",
+    "message": "remaining bytes; the observed packets have 5 message bytes: 00 00 00 00 <byte>",
+    "fragment_header": "only when sequence has CODOL_FRAGMENT_BIT; not set in these packets"
+  },
+  "observation": {
+    "packet_count": 326,
+    "size": 9,
+    "sequence": "1..326",
+    "payload": "00 00 00 00 <checksum>",
+    "checksum_examples": ["1->0x1A", "2->0x19", "3->0x18", "4->0x1F", "326->0x5D"],
+    "interpretation": "these are ordinary CODOL netchan packets with a 5-byte server message, not the reliable-transport header (0xfffffff0) and not a 512-slot stats bitmap"
+  },
+  "next": [
+    "identify the 5-byte message opcode/purpose (empty snapshot, server command, or keepalive)",
+    "inspect the server send path that produces a 5-byte message and whether the client is expected to ACK it",
+    "then implement the matching ACK/keepalive in the remote UDP thread"
+  ],
+  "cleanup": "2697 server terminated; no process/WFP residue."
+}
