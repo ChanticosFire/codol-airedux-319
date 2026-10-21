@@ -268,3 +268,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 G2 本地 challenge 读到，环注入不推进状态（本轮）
 
 远程线程调用 `0x5BF860(buf)`，读到客户端本地 challenge 字符串 `a731af49a6a2c7e2`。在黑屏 state=3 时再次注入 `OOB challengeResponse 1469978033` + `OOB connectResponse` + gamestate，read cursor 从 4 推进到 7（泵消费了），但 state 仍是 3。说明环里的 challengeResponse 文本不是把状态机从 3 推到 4 的事件；需要主线程调用 `0x5C0FD0` 解析器（正确帧），或改状态机接受注入响应。证据 `evidence/experiments/20261021-1649370-local-challenge.json`、脚本 `runs/_tmp_callchallenge.py`。
+
+## 2026-10-21 G2 强制 state4 仍黑屏（本轮）
+
+在原生 `mp_cross_fire` + 通道成功补丁 + gamestate 注入的黑屏基础上，把 `0x76446B0` 从 3 强制写成 4；20 秒后 state 仍为 4、channel 0x9D、read/write cursor 1，画面仍是纯黑屏（仅光标），进程响应。说明直接改状态值不能启动地图加载，客户端需要真实的 challenge/connect/gamestate 网络事件，而不是只改 state。当前阻断：没有能让 1649370 客户端完成这组事件的兼容服务端/网络对象；地图资产已就绪但客户端在 state 3/4 停滞、I/O 为 0。证据 `evidence/experiments/20261021-1649370-force-state4.json`。

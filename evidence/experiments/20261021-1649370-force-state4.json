@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "force the connection state to 4 and observe whether the client enters the world",
+  "run": "codex-1649370-state4-20261021",
+  "setup": "native mp_cross_fire map + branch-noop + ring-probe + gamestate injection",
+  "state_write": {"address": "0x76446B0", "from": 3, "to": 4},
+  "result": {
+    "state_after_20s": 4,
+    "channel": "0x9D",
+    "read_cursor": 1,
+    "write_cursor": 1,
+    "screen": "black with cursor only",
+    "process": "responsive",
+    "meaning": "forcing state 4 does not start map load or leave the black screen; the client needs the real server/network event, not just the state value"
+  },
+  "next": [
+    "deliver a genuine challenge/connect/gamestate exchange from a compatible server",
+    "or run the full client executable with its own network stack (requires confirming no anti-cheat driver loads)"
+  ],
+  "cleanup": "Client/guard terminated; no WFP residue."
+}
