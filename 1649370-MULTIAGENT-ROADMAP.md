@@ -402,3 +402,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 VEH 只读跟踪 0xC73900：guard 设置被拒（error 5）
 
 `tools/trace_c73900_veh.py` 成功注入 VEH（`addveh=0x74E8A442`），但 `VirtualProtectEx(0xC73000, 0x120 PAGE_EXECUTE_READ|PAGE_GUARD)` 返回 error 5 (access denied)，所以没有触发 guard，日志全 0。代码页有额外保护/不可改保护，PAGE_GUARD 路线不可用。下一步改用 DRx 执行断点（不改页保护）或在 `0xBA411A` 用不破坏栈的 naked hook（只记录后 jmp 回原 call）。
+
+## 2026-10-21 NOP 掉 0xBA4122 的 jne 后 conn 仍 c8=4
+
+原字节是 `75 27`（jne 0xBA414B），patch 成 `90 90` 后重新创建 conn：`conn=0x2460C338`，vtable `0xD5A4F4`，但 `conn+0xC8` 仍为 4，服务端仍无 getchallenge。说明 `0xBA4122` 不是 `0xBA4080` 实际走到的分支，或 `0xBA4080` 在更早的 `0xBA9970`/`0xBA0760` 就返回/异常。下一步：在 `0xBA4080` 入口和 `0xBA4122` 上计数/断点，确认是否执行到；或 patch `0xBA4080` 内部直接置 `c8=2` 并 call `0xBA32A0`。
