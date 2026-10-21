@@ -670,3 +670,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 dedrun：去掉 net_port 可 bind（17733），但 archive 加载失败
 
 保留 `net_ip 127.0.0.1`、删掉 `+set net_port` 后，dedrun 绑到默认 17733（`Get-NetUDPEndpoint` 可见），但 `sys_error.txt` 变成 `CoDOL startup archive loading failed`；`net_port 0` 同样绑 17733、archive 失败。说明 bind 失败与 `net_port` 参数强相关，而 archive 失败是另一条路径（资源/启动参数）。下一步从 dedrun 的 `Sys_Error` 字符串 xref 找 archive 失败条件，或改用 `server.cfg` 而不是命令行。
+
+## 2026-10-21 2.6.9.7 增强启动器里找到现成本地 bot 房间实现
+
+`launch_backend_enhanced.py` 用 `client_room2697.dll` + `run_room_match2697` 自动起本地 bot 对局，`gameplay-settings.json` 里 bot_count/bot_difficulty/score_limit 都可配；它通过 `client_room2697.dll` 注入房间逻辑，正是 1649370 缺的“房间 ready/start + bot”参考。下一步先跑一次 2.6.9.7 增强版对局，抓 room-bridge 的命令/字段，再把同样模式移植到 1649370（不直接加载 2697 DLL，避免 ABI 问题）。

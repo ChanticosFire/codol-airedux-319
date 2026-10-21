@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 参考 2.6.9.7 client_room2697.dll 本地 bot 房间（2026-10-21）**：增强启动器用 DLL+run_room_match 自动起 bot 对局；下一步跑一次抓 room-bridge 字段再移植。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 dedrun 默认端口可 bind、archive 失败（2026-10-21）**：去 net_port 绑 17733 但 archive 失败；下一步 xref Sys_Error 或 server.cfg。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 dedrun 参数 bind/archive 二选一（2026-10-21）**：完整参数 bind 失败；去 net_ip archive 失败；LAN IP 也 archive 失败。下一步 2.6.9.7 客户端验证或 xref Sys_Error。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
