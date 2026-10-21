@@ -237,13 +237,32 @@ def _main_thread_call(session, handle, target: int, ecx_value=None) -> dict:
     if not cave:
         return {"status": "alloc_failed", "error": C.get_last_error()}
     cave = int(cave)
-    call_next = cave + 6
-    code = b"\x60\xe8" + struct.pack("<I", (target - call_next) & 0xFFFFFFFF) + b"\x61\xc3"
-    wrote = C.c_size_t()
-    if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
-                                   len(code), C.byref(wrote)) or wrote.value != len(code)):
-        return {"status": "cave_write_failed", "cave": hex(cave), "error": C.get_last_error()}
-    k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+    main_map = os.environ.get("CODOL_MAIN_MAP")
+    if main_map:
+        string_address = cave + 0x800
+        name = main_map.encode("ascii") + b"\x00"
+        call_next = cave + 20
+        code = (b"\x60" + b"\x68" + struct.pack("<I", string_address) +
+                b"\x6a\x00\x6a\x00" + b"\xb9" + struct.pack("<I", 0x4F3890) +
+                b"\xe8" + struct.pack("<i", 0x4F2DE0 - call_next) +
+                b"\x81\xc4\x0c\x00\x00\x00" + b"\x61\xc3")
+        wrote = C.c_size_t()
+        if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                       len(code), C.byref(wrote)) or wrote.value != len(code)):
+            return {"status": "cave_write_failed", "cave": hex(cave), "error": C.get_last_error()}
+        if (not k32.WriteProcessMemory(handle, C.c_void_p(string_address),
+                                       C.create_string_buffer(name, len(name)),
+                                       len(name), C.byref(wrote)) or wrote.value != len(name)):
+            return {"status": "string_write_failed", "cave": hex(cave), "error": C.get_last_error()}
+        k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+    else:
+        call_next = cave + 6
+        code = b"\x60\xe8" + struct.pack("<I", (target - call_next) & 0xFFFFFFFF) + b"\x61\xc3"
+        wrote = C.c_size_t()
+        if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                       len(code), C.byref(wrote)) or wrote.value != len(code)):
+            return {"status": "cave_write_failed", "cave": hex(cave), "error": C.get_last_error()}
+        k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
     if (not k32.WriteProcessMemory(handle, C.c_void_p(original_esp - 4),
                                    C.create_string_buffer(struct.pack("<I", original_eip), 4),
                                    4, C.byref(wrote)) or wrote.value != 4):

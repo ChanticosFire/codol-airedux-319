@@ -570,3 +570,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 0x4F2DE0 调用约定已逆清，但远程线程直调仍崩溃；queue devmap 也无效
 
 `0x4F2DE0` 是“按 `;`/换行拆分字符串，再 `func(arg0,arg1,chunk)`”的包装，`ecx=func`、`[ebp+0x10]=字符串`、`[ebp+8]/[ebp+0xC]=参数`。按此把 map 字符串放到 `[ebp+0x10]` 重试，进程仍立即退出；`--map-command-mode queue` 的 `switchtomainmenu;devmap mp_cross_fire` 也只是回大厅，没有进图。说明它必须在主线程/命令上下文中调用，远程线程不行；下一步在主线程的 Cbuf/命令执行点 hook，注入 `devmap mp_cross_fire`，而不是远程线程裸调。
+
+## 2026-10-21 主线程 cave 调 0x4F2DE0→0x4F3890 不崩但也没进图
+
+给包装层加 `CODOL_MAIN_MAP`：在主线程暂停窗口分配 RWX cave，执行 `pushad; push "mp_cross_fire"; push 0; push 0; mov ecx,0x4F3890; call 0x4F2DE0; add esp,0xC; popad; ret`。结果进程存活、窗口正常、仍在大厅，没有黑屏/无包。说明这次调用没有崩，但发生在主菜单之前，地图队列没有立刻切换；下一步把同一 cave 调用挪到主菜单之后/房间有效时，并补 `map_restart` 或 `0x4F7DA0` 的立即加载路径。
