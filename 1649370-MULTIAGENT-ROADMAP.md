@@ -450,3 +450,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 冷调 0x5C0FD0 解析 challengeResponse 会把 netobj/conn 清零
 
 在 conn/socket 就绪后，把 `challengeResponse 6ad8d973` 放到目标内存，cave `eax=buf; call 0x5C0FD0`；调用后 `[0x8269774]` 和 `netobj+0x4F4` 都变成 0，服务端也没有 connect。说明 `0x5C0FD0` 不是可直接冷调的纯解析器，或它需要完整 OOB 帧/已注册的接收上下文，否则触发网络重置。下一步：不要冷调 parser；改为 hook/替换 `recvfrom` 让真实接收路径拿到 challengeResponse，或调用带完整帧/上下文的接收分发函数。
+
+## 2026-10-21 找到 recvfrom 包装 0xBB15E0
+
+`recvfrom` IAT 是 `0xCA851C`，调用点 `0xBB163C`；包装签名约 `[ebp+8]=socket, [ebp+0xC]=buf, [ebp+0x10]=len, [ebp+0x14]=flags, [ebp+0x18]=from`，返回读取字节数。它只做接收，不做协议解析。冷调 `0x5C0FD0` 已证明会清零 netobj/conn，所以下一步必须：用 `0xBB15E0` 收包后，找到真实接收分发/parser 调用点（谁在正常路径调用它并传上下文），而不是冷调 parser。

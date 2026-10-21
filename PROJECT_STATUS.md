@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 找到 recvfrom 包装 0xBB15E0（2026-10-21）**：IAT 0xCA851C，调用点 0xBB163C；只管收包不做解析。下一步找正常接收分发/parser 调用点。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 冷调 0x5C0FD0 解析 challengeResponse 会清零 netobj/conn（2026-10-21）**：eax=buf 调 parser 后 netobj/conn 变 0，服务端无 connect。不能冷调 parser；需 hook recvfrom 或完整接收分发。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 客户端收到 challengeResponse（2026-10-21）**：UDP socket 0xCCC sendto + recvfrom 均成功，服务端回 `challengeResponse 6ad8d973`。下一步喂 parser/connect。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-client-challenge-response.json`。
