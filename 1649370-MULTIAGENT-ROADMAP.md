@@ -690,3 +690,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 参考对局仍被 1346/UAC 挡住
 
 `Start-Process -Verb RunAs` 启动启动器后进程立即消失（UAC 未交互/被策略拒绝），没有客户端、没有 room 事件；非提升启动仍是 `OSError 1346`。说明当前会话拿不到参考对局的模拟级别。下一步不再依赖参考启动器，直接在 1649370 侧补 room backend（按已抓到的 `room_ready/room_start` 字符串格式），或改用 1649370 自己的 wrapper 令牌路径启动参考客户端。
+
+## 2026-10-21 确认 1649370 侧没有现成 dedicated server 二进制
+
+递归搜 `1649370` 和 `使命召唤OL` 的 `*ded*` 只命中贴图/资源名，没有 `codol_dedrun.exe` 一类服务端；2.6.9.7 的 dedrun/增强启动器又被 1346/UAC 挡住。因此 1649370 本地 bot 对局必须自己补 room backend（按 `room_ready/room_start/room_change` 文本/UDP 协议）或把 1649370 客户端接到一个可用的本地服务端。下一步先实现最小 room backend：监听 28969，记录并回应 room_ready/room_start，再用帧 hook 触发 0x62F840 观察它是否发包。
