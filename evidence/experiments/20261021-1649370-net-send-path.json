@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "explain EXE_HOSTUNREACH after the netadr fields were written correctly",
+  "wsa_error_mapping": {
+    "table": "0xBB1594",
+    "range": "WSA error 10004..10065",
+    "entry_10065": 4,
+    "client_error_string": "EXE_HOSTUNREACH at 0xDBFE4C",
+    "meaning": "sendto/WSA returned WSAEHOSTUNREACH (10065), not WSAENOTSOCK; the UDP send path was reached and failed at the network layer"
+  },
+  "call_chain": [
+    {"address": "0x5C0EF3", "note": "connection code calls 0x675260; failure jumps to the Com_Error at 0x5C0F0C"},
+    {"address": "0x5C0F0C", "note": "push EXE_HOSTUNREACH; push 0; call Com_Error (0x4F82E0)"},
+    {"address": "0x675260", "note": "builds the out-of-band string and calls 0x6751F0"},
+    {"address": "0x6751F0", "note": "if netadr type is 2 (loopback) calls 0x6750A0; otherwise calls UDP send 0x77FB80"},
+    {"address": "0x77FB80", "note": "UDP send wrapper; calls 0x622040 and maps the return"},
+    {"address": "0x622040", "note": "still needs audit: socket/route layer used by the offline client"}
+  ],
+  "interpretation": "The client has a valid netadr (127.0.0.1:28960) and reaches the UDP send wrapper, but sendto reports host unreachable. The loopback path (type 2) is in-process only and cannot reach the external 2.6.9.7 server. The remaining likely causes are an uninitialized/incorrectly bound client socket, a socket-family/route mismatch, or the loopback guard. This requires auditing 0x622040 and the client NET_Init/socket creation, not more netadr edits.",
+  "next": [
+    "disassemble 0x622040 and find the socket object it uses",
+    "trace whether the offline rebuild ever calls NET_Init/socket creation and binds a client UDP socket",
+    "if the network stack is intentionally disabled, a 1649370 server alone is insufficient without restoring this client path",
+    "request a 1649370 server/protocol capture if available"
+  ],
+  "cleanup": "No client/server process remains. tools/net_rollback.ps1 reported no guard/client processes, no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}
