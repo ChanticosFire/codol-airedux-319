@@ -678,3 +678,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 2697 房间 DLL 里逆出 room-bridge 协议线索
 
 `client_room2697_enhanced.dll` 含 `room-ready.txt`、`room_ready sequence=%u map=%s`、`room_start requested in_room=%d ready=%u sequence=%u ds=%d index=%d`、`room_change requested map=%s ready=%u`、`room_ready_set value=%u`、`local-room-options.txt`（`%15s %u %63s`）和 `udp:127.0.0.1:28969`。说明 2697 的本地房间是通过 UDP 127.0.0.1:28969 的 room backend 收发 `room_ready/room_start/room_change`，这正是 1649370 房间 ready 当前缺的后端。下一步跑一次 2697 增强对局抓 UDP 包，按 `room_ready/room_start` 格式给 1649370 补本地 room backend。
+
+## 2026-10-21 2.6.9.7 增强启动器 stage-check 通过
+
+正确游戏目录是 `E:\GAME\COD\codol-airedux\2.6.9.7\使命召唤Online`；系统 Python 3.14 缺 `cryptography`，改用启动器自带 `runtime\python\python.exe` 后 `--stage-check` 输出 `STAGE_OK`，并显示“团队竞技上限 200，时长 30 分钟，BOT veteran”。说明参考本地 bot 房间的 staging 链路可用。下一步实际启动一次，读 `room-ready.txt`/`local-room-options.txt` 或抓 28969 的 room_ready/room_start 包，再移植到 1649370。

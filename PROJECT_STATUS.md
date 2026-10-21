@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 2697 增强启动器 stage-check 通过（2026-10-21）**：正确目录 + 捆绑 Python 后 STAGE_OK，BOT veteran；下一步实际启动并读 room-ready/抓 28969。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 2697 room-bridge 协议线索（2026-10-21）**：room-ready/room_start/room_change + udp:127.0.0.1:28969；下一步抓包补 1649370 本地 room backend。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 参考 2.6.9.7 client_room2697.dll 本地 bot 房间（2026-10-21）**：增强启动器用 DLL+run_room_match 自动起 bot 对局；下一步跑一次抓 room-bridge 字段再移植。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
