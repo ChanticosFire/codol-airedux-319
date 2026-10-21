@@ -574,3 +574,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 主线程 cave 调 0x4F2DE0→0x4F3890 不崩但也没进图
 
 给包装层加 `CODOL_MAIN_MAP`：在主线程暂停窗口分配 RWX cave，执行 `pushad; push "mp_cross_fire"; push 0; push 0; mov ecx,0x4F3890; call 0x4F2DE0; add esp,0xC; popad; ret`。结果进程存活、窗口正常、仍在大厅，没有黑屏/无包。说明这次调用没有崩，但发生在主菜单之前，地图队列没有立刻切换；下一步把同一 cave 调用挪到主菜单之后/房间有效时，并补 `map_restart` 或 `0x4F7DA0` 的立即加载路径。
+
+## 2026-10-21 主线程 cave 追加 0x4F7DA0 仍无效；room-command devmap 只入队不执行
+
+主线程 cave 在 `0x4F2DE0→0x4F3890` 后再调 `0x4F7DA0`，进程仍正常但停大厅；改用 `--room-command "devmap mp_cross_fire"`，`room-command.json` 显示 `status=queued`、`length 0→22`、room `0x245C79B0`，但房间界面不变、无地图加载。说明房间命令缓冲区 `0x33821B0` 只是入队，消费点在主线程别处。下一步：找 `0x76595A4`/`0x33821B0` 的消费者（Cbuf 执行点），在主线程 hook 后执行队列，而不是只写入。

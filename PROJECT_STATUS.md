@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 room-command devmap 只入队不执行（2026-10-21）**：queued length 22，房间不变；主 cave 追加 0x4F7DA0 也无效。下一步找 0x33821B0/0x76595A4 消费点。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 主线程 cave 调地图加载不崩但未进图（2026-10-21）**：CODOL_MAIN_MAP 在主线程调 0x4F2DE0→0x4F3890，进程存活仍大厅；需挪到主菜单后或补 map_restart。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 0x4F2DE0 约定已逆清但远程直调仍崩（2026-10-21）**：queue devmap 也无效；必须主线程/命令上下文。下一步主线程 Cbuf hook 注入 devmap。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

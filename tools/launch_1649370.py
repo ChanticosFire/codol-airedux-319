@@ -245,7 +245,8 @@ def _main_thread_call(session, handle, target: int, ecx_value=None) -> dict:
         code = (b"\x60" + b"\x68" + struct.pack("<I", string_address) +
                 b"\x6a\x00\x6a\x00" + b"\xb9" + struct.pack("<I", 0x4F3890) +
                 b"\xe8" + struct.pack("<i", 0x4F2DE0 - call_next) +
-                b"\x81\xc4\x0c\x00\x00\x00" + b"\x61\xc3")
+                b"\x81\xc4\x0c\x00\x00\x00" +
+                b"\xe8" + struct.pack("<i", 0x4F7DA0 - (cave + 31)) + b"\x61\xc3")
         wrote = C.c_size_t()
         if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
                                        len(code), C.byref(wrote)) or wrote.value != len(code)):
