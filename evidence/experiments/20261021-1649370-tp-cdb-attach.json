@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "attach a debugger to the TP-protected full client after the synthetic TCLS hand-off",
+  "process_tree": {
+    "synthetic_tcls_root": 33424,
+    "game_child": 9264,
+    "note": "the root PID exited; the codoMP game process persisted as a child"
+  },
+  "cdb": {
+    "x86_cdb": "C:\\Program Files (x86)\\Windows Kits\\10\\Debuggers\\x86\\cdb.exe",
+    "attach_root": "failed: Cannot debug pid 33424 / Win32 error 87 (process gone)",
+    "attach_child": "cdb -p 9264 -c 'lm;q' hung with no prompt/output; killed after timeout"
+  },
+  "meaning": "TP/anti-debug blocks or stalls cdb attachment to the game child; debugger-based capture is not currently a reliable route",
+  "next": [
+    "static analysis of the TP URL format string in TASLoginBase.dll / TGuardBase.dll / ClientBase.dll",
+    "or an in-process API hook that does not rely on a debugger",
+    "before patching the warning/browser/terminate path"
+  ],
+  "cleanup": "All codoMP/cdb/TCLS/TGuard processes terminated; net_rollback passed."
+}
