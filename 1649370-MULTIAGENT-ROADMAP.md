@@ -314,3 +314,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 按命令行过滤的 CreateProcess hook：浏览器不再开，但游戏窗口仍不出现（本轮）
 
 `tools/hook_tp_browser.py` 现在 patch `shell32!ShellExecute*`，并在 `kernel32!CreateProcessA/W` 入口装 cave stub：只扫描命令行里的 `gamesafe`，命中才返回 0，否则执行原 prologue 后跳回。60 秒采样结果：TP 警告窗口/新浏览器进程都没有出现，但游戏进程仍 `exit_code=259`、0 个窗口。说明 TP 的阻断不只是“打开浏览器”这个通知；warning/exit 判定或另一个检查仍在阻止游戏窗口。下一步：hook/patch `TGuardBase`/`TASLoginBase`/`ClientBase` 的 warning/exit 判定，或 hook `ExitProcess/TerminateProcess` 看 TP 是否在终止子进程，或运行真实 TGuard 服务测试环境是否被接受。证据 `evidence/experiments/20261021-1649370-tp-hook-filtered.json`。
+
+## 2026-10-21 对话框/退出 API 全部中和后仍无游戏窗口（本轮）
+
+在 ShellExecute/CreateProcess 过滤补丁之上，又 patch `ExitProcess`、`TerminateProcess`、`MessageBoxA/W`、`DialogBoxParamW`、`CreateDialogParamW`（全部成功）。60 秒结果：TP 警告窗口不再出现，但游戏进程仍 `exit_code=259`、0 个窗口；同时出现若干新的 msedge 背景进程，无法确认是否 TP 启动。说明仅靠 API 级中和不足以让游戏继续：TP 的阻断在受保护的判定路径（TGuardBase/TASLoginBase/ClientBase）或要求真实 TGuard 服务。下一步只剩：启动真实 TGuard 服务测试，或对 `.tp3/.tls` 的 TP 判定做运行时 patch（需要能绕过 anti-debug 的跟踪手段）。证据 `evidence/experiments/20261021-1649370-tp-dialog-hook.json`。

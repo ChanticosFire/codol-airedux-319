@@ -1,0 +1,115 @@
+{
+  "pid": 5016,
+  "shell32": "0x755b0000",
+  "patches": [
+    {
+      "name": "ShellExecuteA",
+      "va": "0x7573b390",
+      "rva": "0x18b390",
+      "original": "ff25c0b2bb75cccc",
+      "patched": "b821000000c21800",
+      "status": "ok"
+    },
+    {
+      "name": "ShellExecuteW",
+      "va": "0x7573b3f0",
+      "rva": "0x18b3f0",
+      "original": "ff25b4b2bb75cccc",
+      "patched": "b821000000c21800",
+      "status": "ok"
+    },
+    {
+      "name": "ShellExecuteExA",
+      "va": "0x7573b3b0",
+      "rva": "0x18b3b0",
+      "original": "ff25bcb2bb75cccc",
+      "patched": "b801000000c20400",
+      "status": "ok"
+    },
+    {
+      "name": "ShellExecuteExW",
+      "va": "0x7573b3d0",
+      "rva": "0x18b3d0",
+      "original": "ff25b8b2bb75cccc",
+      "patched": "b801000000c20400",
+      "status": "ok"
+    },
+    {
+      "name": "ExitProcess",
+      "va": "0x74e1b6e0",
+      "rva": "0x2b6e0",
+      "original": "e9333e1dee",
+      "patched": "31c0c20400",
+      "status": "ok"
+    },
+    {
+      "name": "TerminateProcess",
+      "va": "0x74e234f0",
+      "rva": "0x334f0",
+      "original": "e9da3a1cee",
+      "patched": "31c0c20800",
+      "status": "ok"
+    },
+    {
+      "name": "MessageBoxA",
+      "va": "0x76d6a090",
+      "rva": "0xaa090",
+      "original": "8bff558bec833d5c",
+      "patched": "b801000000c21000",
+      "status": "ok"
+    },
+    {
+      "name": "MessageBoxW",
+      "va": "0x76d6a5b0",
+      "rva": "0xaa5b0",
+      "original": "8bff558bec833d5c",
+      "patched": "b801000000c21000",
+      "status": "ok"
+    },
+    {
+      "name": "DialogBoxParamW",
+      "va": "0x76d41270",
+      "rva": "0x81270",
+      "original": "8bff558bec",
+      "patched": "31c0c21400",
+      "status": "ok"
+    },
+    {
+      "name": "CreateDialogParamW",
+      "va": "0x76d40c50",
+      "rva": "0x80c50",
+      "original": "8bff558bec",
+      "patched": "31c0c21400",
+      "status": "ok"
+    },
+    {
+      "name": "CreateProcessA",
+      "va": "0x74e20b50",
+      "rva": "0x30b50",
+      "cave": "0x70000",
+      "original": "8bff558bec",
+      "stub": "8b74240885f67424b9000400008a0684c074193c677511813e67616d657509817e0473616665740e464975e18bff558bece91f0bdb7431c0c22800",
+      "status": "ok"
+    },
+    {
+      "name": "CreateProcessW",
+      "va": "0x74e0d570",
+      "rva": "0x1d570",
+      "cave": "0x80000",
+      "original": "8bff558bec",
+      "stub": "8b74240885f67424b9000400008a0684c074193c677511813e67616d657509817e0473616665740e464975e18bff558bece93fd5d87431c0c22800",
+      "status": "ok"
+    }
+  ],
+  "time": 1792593959.8489914,
+  "result": {
+    "tp_warning_window": "not observed",
+    "game_window": "none; process alive, exit_code 259, zero windows",
+    "browser": "several new msedge background processes appeared, but no visible browser window was confirmed as TP-launched",
+    "meaning": "neutralizing the browser, warning dialogs, ExitProcess and TerminateProcess still does not let the game create a window; TP's block is inside its protected decision path or requires the real TGuard service"
+  },
+  "next": [
+    "install/start the real TGuard service and see whether TP accepts the environment",
+    "or patch the TP decision in TGuardBase/TASLoginBase/ClientBase (protected .tp3/.tls)"
+  ]
+}

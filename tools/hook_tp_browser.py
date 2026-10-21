@@ -134,11 +134,19 @@ def main() -> int:
         ("ShellExecuteW", b"\xb8\x21\x00\x00\x00\xc2\x18\x00", "shell32"),
         ("ShellExecuteExA", b"\xb8\x01\x00\x00\x00\xc2\x04\x00", "shell32"),
         ("ShellExecuteExW", b"\xb8\x01\x00\x00\x00\xc2\x04\x00", "shell32"),
+        ("ExitProcess", b"\x31\xc0\xc2\x04\x00", "kernel32"),
+        ("TerminateProcess", b"\x31\xc0\xc2\x08\x00", "kernel32"),
+        ("MessageBoxA", b"\xb8\x01\x00\x00\x00\xc2\x10\x00", "user32"),
+        ("MessageBoxW", b"\xb8\x01\x00\x00\x00\xc2\x10\x00", "user32"),
+        ("DialogBoxParamW", b"\x31\xc0\xc2\x14\x00", "user32"),
+        ("CreateDialogParamW", b"\x31\xc0\xc2\x14\x00", "user32"),
     ]
     kernel = next((base for name, base in mods.items() if name == "kernel32.dll"), None)
+    user32 = next((base for name, base in mods.items() if name == "user32.dll"), None)
     hosts = {"shell32": r"C:\Windows\SysWOW64\shell32.dll",
-             "kernel32": r"C:\Windows\SysWOW64\kernel32.dll"}
-    bases = {"shell32": shell, "kernel32": kernel}
+             "kernel32": r"C:\Windows\SysWOW64\kernel32.dll",
+             "user32": r"C:\Windows\SysWOW64\user32.dll"}
+    bases = {"shell32": shell, "kernel32": kernel, "user32": user32}
     for name, patch, module in specs:
         base = bases.get(module)
         if not base:
