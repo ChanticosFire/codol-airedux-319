@@ -80,6 +80,7 @@ def main() -> int:
     w(h, flag, b"\x00")
     w(h, cave + 0x900, b"mp_cross_fire\x00")
     w(h, 0x4F38C8, b"\x90" * 6)  # bypass playlist-zero early return
+    w(h, 0x66C212, b"\xEB")       # force map validation success
     old = W.DWORD()
     if not k32.VirtualProtectEx(h, C.c_void_p(FRAME), 13, 0x40, C.byref(old)):
         raise OSError(f"protect: {C.get_last_error()}")
