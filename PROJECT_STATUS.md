@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 2697 实际启动 OSError 1346 模拟级别（2026-10-21）**：stage-check 过，实际客户端未起；下一步高完整性启动或绕过身份模拟。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 2697 增强启动器 stage-check 通过（2026-10-21）**：正确目录 + 捆绑 Python 后 STAGE_OK，BOT veteran；下一步实际启动并读 room-ready/抓 28969。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 2697 room-bridge 协议线索（2026-10-21）**：room-ready/room_start/room_change + udp:127.0.0.1:28969；下一步抓包补 1649370 本地 room backend。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
