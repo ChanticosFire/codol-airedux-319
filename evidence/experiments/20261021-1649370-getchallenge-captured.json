@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "capture the generated getchallenge at the loopback writer after fixing the connection state to 3",
+  "breakthrough": {
+    "state_fix": "state 4 is the connect branch; state 3 is the getchallenge branch (jump table 0x5C0F3C: [3]=0x5C070E, [4]=0x5C0776)",
+    "run": "codex-1649370-ringprobe6-20261021",
+    "breakpoint": "0x6750A0 (loopback writer) hit once",
+    "packet_ascii": "getchallenge 0 \"a731af49a6a2c7e2\"",
+    "packet_length": 38,
+    "registers": {"eax": "0x1AE1C8", "ecx": "0x9D", "edx": "0x0", "ebx": "0x13962FE0",
+                  "esi": "0x26", "edi": "0x26", "ebp": "0x1AE1E8", "esp": "0x1AE1BC"},
+    "stack_prefix": "395267000000000010e21a0002000000000000007129000000000000000000009d000000000000002600000014ea1a00f0526700",
+    "stack_decode": {
+      "return": "0x675239",
+      "arg1": "0x0 (ring A branch)",
+      "arg2": "0x1AE210 (packet data)",
+      "arg3": "2 (loopback type)",
+      "arg5": "0x7129 (28969)",
+      "arg8": "0x9D (loopback channel marker)",
+      "arg10": "0x26 (38-byte packet)"
+    }
+  },
+  "ring_monitor": {
+    "run": "codex-1649370-ringprobe7-20261021",
+    "cursor_start": "0x0",
+    "cursor_end": "0x0",
+    "packets": [],
+    "note": "the writer entry is proven, but the ring-A cursor 0x788680C did not advance in these runs; either the write goes through a different ring/cursor, or the one-shot breakpoint handling/timing interfered with the cursor observation. The packet content is already captured at the writer entry."
+  },
+  "next": [
+    "hook 0x6750A0 with a code cave (not a one-shot breakpoint) to capture every C2S packet, forward it to the 2697 UDP server, and write the S2C reply back through the client's receive ring",
+    "or determine the exact ring/cursor used by 0x6750A0 for arg1=0 and poll that instead of 0x788680C",
+    "the captured getchallenge confirms the 1649370/2697 text handshake is reachable without creating a transport channel"
+  ],
+  "cleanup": "Client terminated; no guard/server process remains. tools/net_rollback.ps1 reported no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}

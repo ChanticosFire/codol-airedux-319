@@ -271,6 +271,11 @@ def _transport_connect_injector(session) -> None:
         if not connection:
             result.update(status="connection_not_ready")
             return
+        result["state_before"] = u32(0x76446B0)
+        result["flag_100260"] = u32(connection + 0x100260)
+        result["channel_before"] = u32(connection + 0x28)
+        result["t30"] = u32(connection + 0x30)
+        result["t8"] = u32(connection + 8)
         if k32.SuspendThread(session.info.thread) == 0xFFFFFFFF:
             result.update(status="suspend_failed", error=C.get_last_error())
             return
@@ -318,7 +323,7 @@ def _transport_connect_injector(session) -> None:
                     or wrote.value != 3):
                 result.update(status="buf_write_failed", error=C.get_last_error())
                 return
-            state = struct.pack("<I", 4)
+            state = struct.pack("<I", 3)
             if (not k32.WriteProcessMemory(handle, C.c_void_p(0x76446B0), C.create_string_buffer(state, 4), 4,
                                            C.byref(wrote)) or wrote.value != 4):
                 result.update(status="state_write_failed", error=C.get_last_error())
@@ -421,6 +426,11 @@ def _ring_probe_injector(session) -> None:
         if not connection:
             result.update(status="connection_not_ready")
             return
+        result["state_before"] = u32(0x76446B0)
+        result["flag_100260"] = u32(connection + 0x100260)
+        result["channel_before"] = u32(connection + 0x28)
+        result["t30"] = u32(connection + 0x30)
+        result["t8"] = u32(connection + 8)
         if k32.SuspendThread(session.info.thread) == 0xFFFFFFFF:
             result.update(status="suspend_failed", error=C.get_last_error())
             return
@@ -447,7 +457,7 @@ def _ring_probe_injector(session) -> None:
                                            len(adr_bytes), C.byref(wrote)) or wrote.value != len(adr_bytes)):
                 result.update(status="adr_write_failed", error=C.get_last_error())
                 return
-            state = struct.pack("<I", 4)
+            state = struct.pack("<I", 3)
             if (not k32.WriteProcessMemory(handle, C.c_void_p(0x76446B0), C.create_string_buffer(state, 4), 4,
                                            C.byref(wrote)) or wrote.value != 4):
                 result.update(status="state_write_failed", error=C.get_last_error())
@@ -477,7 +487,7 @@ def _ring_probe_injector(session) -> None:
             k32.ResumeThread(session.info.thread)
         cursor = u32(0x788680C) or 0
         result["cursor_start"] = hex(cursor)
-        end = time.monotonic() + 12
+        end = time.monotonic() + 45
         while time.monotonic() < end:
             current = u32(0x788680C) or 0
             while cursor != current:

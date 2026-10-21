@@ -104,3 +104,7 @@
 ## 2026-10-21 G2 环桥探针（本轮）
 
 `--ring-probe`：adr type=2/28969/channel 0x9D、state=4，主线程调 `0x5C05F0`；环 A 光标 0→0，`0x6750A0` 断点零命中。结论：`0x5C05F0` 在构造 getchallenge 前早退，缺连接字段/计时器状态，不是环布局问题。下一步在 `0x5C05F0` 跟踪早退分支，或用 `0xBAD810` 参数调 `0xBB2C40` 完成真实初始化。证据 `evidence/experiments/20261021-1649370-ring-probe.json`。
+
+## 2026-10-21 G2 getchallenge 捕获（本轮）
+
+state 4 是 connect 分支，state 3 才是 getchallenge 分支（`0x5C0F3C` 跳表）。state=3 后在 `0x6750A0` 断点命中，栈上得到 `getchallenge 0 "a731af49a6a2c7e2"`（38B），arg1=0/ring A、arg3=2、arg5=28969、arg8=0x9D。文本握手可达，无需传输通道。环 A 光标 `0x788680C` 未观察到递增；下一步用代码 cave 持久 hook `0x6750A0` 捕获并桥接 2697。证据 `evidence/experiments/20261021-1649370-getchallenge-captured.json`。

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 getchallenge 已捕获（2026-10-21）**：状态 4 是 connect 分支，状态 3 才是 getchallenge 分支（`0x5C0F3C` 跳表）。state=3 后 `0x6750A0` 断点命中，栈上得到 `getchallenge 0 "a731af49a6a2c7e2"`（38 字节），arg1=0/ring A、arg3=2、arg5=28969、arg8=0x9D。证明文本握手可达，无需建传输通道。环 A 光标未观察到递增，下一步用代码 cave 持久 hook `0x6750A0` 捕获并桥接 2697。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-getchallenge-captured.json`。
+
 > **1649370 G2 环桥探针：type=2 未走到 loopback 发送（2026-10-21）**：`--ring-probe` 把 adr 设为 type=2/28969/channel 0x9D、state=4，主线程调 `0x5C05F0`；环 A 光标 0→0，`0x6750A0` 真实断点零命中。说明 `0x5C05F0` 在构造 getchallenge 前就早退，缺连接字段/计时器状态，而非环布局或通道索引。下一步在 `0x5C05F0` 入口跟踪早退分支，或用 `0xBAD810` 参数调 `0xBB2C40` 完成真实初始化。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-ring-probe.json`。
 
 > **1649370 G2 传输建链实测：0x621E50 闸门未开，poke 会崩（2026-10-21）**：实现 `--transport-connect`，主线程 cave 调 `0x621E50(adr,buf,len)` 建通道再调 `0x5C05F0`。实测 `0x621E50` 返回 -7（`[biz+0x18]=0`，`vt+0x20=0x8834A0` 读该字段），通道仍为 0x9D，服务端无包。静态确认 `0xBB4E60` 清 0、`0xBB2C40` 在 `0xBB2D20` 置 1，但必须先完成 `0xBB6FB0` 等子初始化；直接 poke `[biz+0x18]=1` 后调用会让客户端 `unhandled_exception`。下一步改为用 `0xBAD810` 的参数调用 `0xBB2C40`，或走进程内 loopback 环桥。`codol-offline-runtime.zip` 是完整 3.3.3.3 单机 Bot 服务端/启动器，但客户端哈希不匹配（e382… vs 3699…），只能作协议参考。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-transport-gate-crash.json`。
