@@ -598,3 +598,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 黑屏全内存转储已抓到，CDB 只显示 Wow64 等待栈
 
 `devmap` 黑屏后写 `runs/20261021-1649370-dump132.dmp`（进程 uptime 67s），CDB 离线加载显示各线程停在 `wow64!whNtWaitForWorkViaWorkerFactory` / `WaitForMultipleObjects`，主线程也是 Wow64 等待；`!wow64exts.sw` 加载扩展时挂起超过 120 秒，已终止。说明黑屏是用户态等待，下一步需要把 dump 的 32 位 CONTEXT 解出来（自写 minidump 解析/StackWalk64，或本地扩展路径）而不是依赖在线扩展。
+
+## 2026-10-21 minidump 解析器写好，但线程上下文是 AMD64 而不是 x86
+
+`parse_minidump_threads.py` 能读 Memory64List/ThreadList，dump 有 1028 个内存区间；线程 `ThreadContext` 大小 3263、`ContextFlags=0x10005F`（AMD64），`Rip/Rsp` 是 wow64 栈，不是游戏 32 位 `Eip/Esp`。所以离线栈还没展开到游戏代码。下一步改用活进程对每个线程 `OpenThread + Wow64GetThreadContext` 直接取 32 位 CONTEXT（不依赖 dump 的 64 位上下文），再按 EBP/栈扫描定位黑屏等待点。

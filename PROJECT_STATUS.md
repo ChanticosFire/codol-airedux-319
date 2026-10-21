@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 minidump 上下文为 AMD64（2026-10-21）**：ContextFlags=0x10005F，Rip/Rsp 是 wow64；下一步活进程 Wow64GetThreadContext 取 32 位 CONTEXT。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 黑屏全内存转储已抓到（2026-10-21）**：CDB 只看到 Wow64 等待栈，wow64exts 挂起；下一步自解析 32 位 CONTEXT/StackWalk。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 devmap+map_restart 仍黑屏、线程 Wait（2026-10-21）**：命令通、进程活、CPU44/WS1.2GB，线程均 Wait:UserRequest；地图加载等用户态事件/服务器状态。下一步 dump/ETW/线程栈或补 gamestate。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
