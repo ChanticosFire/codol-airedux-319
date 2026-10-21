@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "receive the challengeResponse in the client process",
+  "client": {"pid": 38384, "conn": "0x2460BBF0", "socket": "0xCCC"},
+  "send": {"getchallenge_length": 37, "wsa_error": 0},
+  "server": {
+    "log": "runs/ba4080-server.log.jsonl",
+    "peer": "127.0.0.1:61019",
+    "kind": "getchallenge",
+    "cookie": "6ad8d973"
+  },
+  "receive": {
+    "api": "ws2_32!recvfrom",
+    "bytes_read_buffer": 2048,
+    "ascii": "\\xff\\xff\\xff\\xffchallengeResponse 6ad8d973"
+  },
+  "meaning": "The client process sent a real getchallenge and received the server's challengeResponse. The send and receive UDP paths now work in the client process.",
+  "next": [
+    "feed the challengeResponse into the client's parser/connect path",
+    "send connect and receive connectResponse",
+    "drive gamestate/map loading"
+  ],
+  "cleanup": "Client/server terminated after capture; net_rollback passed."
+}
