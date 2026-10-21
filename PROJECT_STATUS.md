@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 找到 sendto 包装 0xBB1420（2026-10-21）**：IAT 0xCA8518，调用点 0xBB1492；签名 socket/ip/port/buf/len。下一步用客户端 socket 调它发 getchallenge。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 禁用 0xBA3420 后 c8 稳定为 2（2026-10-21）**：patch 0xBA3420 首字节为 C3，conn 创建后 c8=1，调 0xBA3100/0xBA0980/0xBA32A0(1) 后稳定 c8=2，但仍无 getchallenge。已越过错误重置；下一步找 c8=2 下真正发包调用。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 0xBA3100/0xBA0980 后 c8 仍 4（2026-10-21）**：c8=2 时调两者，均回到 4、无 getchallenge。需找真正写 c8=4 的指令和 conn+0xCC 调用链。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

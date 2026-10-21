@@ -418,3 +418,7 @@ conn 创建后写 `c8=2`，依次调 `0xBA3100(conn)`、`0xBA0980(conn)`，两�
 ## 2026-10-21 禁用 0xBA3420 重置后 conn 稳定在 c8=2
 
 把 `0xBA3420`（它显式写 `[conn+0xC8]=4` 并清字段）首字节 patch 成 `C3`（直接返回），再创建 conn：`conn_c8=1`；调用 `0xBA3100`/`0xBA0980`/`0xBA32A0(1)` 后 `c8` 稳定为 2，不再回 4。但服务端仍没有 getchallenge。说明已越过错误重置，进入“已连接/等待”状态；下一步要找 `c8=2` 状态下真正的发包调用（可能在 conn+0xCC 对象或网络 pump），而不是再改状态字段。
+
+## 2026-10-21 找到真正的 sendto 包装 0xBB1420
+
+`sendto` IAT 是 `0xCA8518`，调用点在 `0xBB1492`；所在函数 `0xBB1420` 构造 `sockaddr_in` 并调用 `sendto`。签名（stdcall）：`[ebp+8]=socket`、`[ebp+0xC]=ip`、`[ebp+0x90]=port`、`[ebp+0x94]=buf`、`[ebp+0x98]=len`。这是客户端真正的 UDP 发送入口。下一步：用客户端现有 socket（或 `ws2_32!socket` 远程创建）调 `0xBB1420` 发 getchallenge，验证 28969；再把它接回 conn 状态机。
