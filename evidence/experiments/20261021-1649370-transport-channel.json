@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "identify why the UDP send wrapper returns a host-unreachable error",
+  "send_wrapper": {
+    "address": "0x622040",
+    "table": "0xE3F4DB0",
+    "entry_size": "0x18",
+    "max_index": "0x9D (157 entries)",
+    "connection_index_observed": "0x9D = 157",
+    "result": "index 157 fails the `cmp esi, 0x9D; jge` guard, so edi stays 0 and the wrapper returns -7 (later mapped to EXE_HOSTUNREACH)"
+  },
+  "channel_table": {
+    "iterators": ["0x7F50E0 (teardown all entries, stride 0x18, up to 0xEB8)", "0x7F5060 (destroy one entry)", "0x7F5E40 (lookup/copy one entry)"],
+    "observation": "the table is a fixed 157-entry transport/channel table; the offline client does not appear to create an entry for the connection index used by the connect path"
+  },
+  "interpretation": "This is a stronger explanation than a netadr/socket-family error: the send wrapper cannot find a transport channel object at the index it is given (157 is outside the valid 0..156 range). The next work is either to make the client create/use a valid channel index, or to confirm that the offline rebuild intentionally never initializes this transport table.",
+  "next": [
+    "inspect 0x7F5xxx channel creation and find what index 0..156 is used for the client socket",
+    "try the connection path with a valid channel index if the index is stored in the connection object",
+    "if the table is never initialized by design, a 1649370-compatible server alone will not fix the client",
+    "request a 1649370 server/protocol capture from the user"
+  ],
+  "cleanup": "No process was started for this static analysis; the workspace has no client/server/guard process."
+}
