@@ -160,3 +160,7 @@ Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add e
 ## 2026-10-21 G2 客户端进程内真实 UDP 发送成功（本轮）
 
 `--remote-udp-send` 用 `CreateRemoteThread` 在客户端进程内执行 `WSAStartup(0x202)+socket(2,2,17)+sendto`，发送 `getchallenge 0 "a731…"` 到 28969；`sendto_return=37`，2697 日志出现 `SV packet 127.0.0.1:63053: getchallenge...`。证明真实 Winsock UDP 通道可用。剩余：接收 challengeResponse 并注入客户端、保持同一 socket/源端口用于 connect。证据 `evidence/experiments/20261021-1649370-remote-udp-success.json`。
+
+## 2026-10-21 G2 客户端进程内真实 UDP 收发成功（本轮）
+
+远程线程 `WSAStartup+socket+sendto+recvfrom` 从客户端进程发 getchallenge（sendto=37），收 `challengeResponse 1179435301`（recv=33），来源 127.0.0.1:28969，源端口 53648；2697 日志确认。真实 Winsock 双向通道可用。环注入那次未写出 JSON，尚未证明。下一步持久 socket/同源端口 + 按真实 from-adr 注入。证据 `evidence/experiments/20261021-1649370-remote-udp-recv.json`。

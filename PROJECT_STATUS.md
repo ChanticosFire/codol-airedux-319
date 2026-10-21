@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 客户端进程内真实 UDP 收发成功（2026-10-21）**：远程线程发 getchallenge（sendto=37），收 `challengeResponse 1179435301`（recv=33），来源 127.0.0.1:28969；2697 日志确认。真实 Winsock 双向通道可用；环注入那次未写出 JSON，尚未证明。下一步持久 socket/同源端口 + 按真实 from-adr 注入。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-remote-udp-recv.json`。
+
 > **1649370 G2 客户端进程内真实 UDP 发送成功（2026-10-21）**：`CreateRemoteThread` + `WSAStartup/socket/sendto` 从客户端进程发出 `getchallenge 0 "a731…"`，`sendto_return=37`，2697 日志出现 `SV packet 127.0.0.1:63053: getchallenge...`。证明真实 Winsock 通道可用；剩余是接收 challengeResponse 并注入客户端、保持同一 socket/源端口用于 connect。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-remote-udp-success.json`。
 
 > **1649370 G2 stdcall 修复、socket 成功（2026-10-21）**：Winsock 为 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add esp` 后，`socket(2,2,17)` 返回有效句柄 `0xD00`，客户端存活。socket+sendto/sendto-only 不再崩溃，但 `ring-probe.json` 不写出、服务端无包，sendto 路径变为挂起。下一步 sendto 放独立远程线程并记录返回值，或用 WSASendTo/非阻塞 socket。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-stdcall-socket.json`。

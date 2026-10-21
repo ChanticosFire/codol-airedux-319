@@ -101,6 +101,7 @@ BRANCH_CAPTURE = False
 BRANCH_SOCKET = False
 BRANCH_SENDTO = False
 REMOTE_UDP_SEND = False
+INJECT_REMOTE_RESPONSE = False
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -465,6 +466,10 @@ def _remote_udp_send(session) -> None:
         addr = cave + 0x300
         wsadata = cave + 0x400
         out = cave + 0x500
+        timeout = cave + 0x600
+        recvbuf = cave + 0x700
+        fromaddr = cave + 0x800
+        fromlen = cave + 0x820
         sockaddr = struct.pack("<HH4s8x", 2, socket.htons(28969), b"\x7f\x00\x00\x01")
         code = b"\x60"
         code += b"\x68" + struct.pack("<I", wsadata)
@@ -473,6 +478,12 @@ def _remote_udp_send(session) -> None:
         code += b"\x6a\x11\x6a\x02\x6a\x02"
         code += b"\xff\x15\x48\x85\xca\x00"       # socket (stdcall)
         code += b"\x8b\xd8"                       # mov ebx,eax
+        code += b"\x6a\x04"
+        code += b"\x68" + struct.pack("<I", timeout)
+        code += b"\x68\x06\x10\x00\x00"           # SO_RCVTIMEO
+        code += b"\x68\xff\xff\x00\x00"           # SOL_SOCKET
+        code += b"\x53"
+        code += b"\xff\x15\x58\x85\xca\x00"       # setsockopt (stdcall)
         code += b"\x6a\x10"
         code += b"\x68" + struct.pack("<I", addr)
         code += b"\x6a\x00"
@@ -481,9 +492,18 @@ def _remote_udp_send(session) -> None:
         code += b"\x53"
         code += b"\xff\x15\x18\x85\xca\x00"       # sendto (stdcall)
         code += b"\xa3" + struct.pack("<I", out)
+        code += b"\x68" + struct.pack("<I", fromlen)
+        code += b"\x68" + struct.pack("<I", fromaddr)
+        code += b"\x6a\x00"
+        code += b"\x68\x00\x08\x00\x00"           # recv buffer length 2048
+        code += b"\x68" + struct.pack("<I", recvbuf)
+        code += b"\x53"
+        code += b"\xff\x15\x1c\x85\xca\x00"       # recvfrom (stdcall)
+        code += b"\xa3" + struct.pack("<I", out + 4)
         code += b"\x61\xc3"
         wrote = C.c_size_t()
-        for address, blob in ((cave, code), (data, payload), (addr, sockaddr)):
+        for address, blob in ((cave, code), (data, payload), (addr, sockaddr),
+                              (timeout, struct.pack("<I", 3000)), (fromlen, struct.pack("<I", 16))):
             if (not k32.WriteProcessMemory(handle, C.c_void_p(address),
                                            C.create_string_buffer(blob, len(blob)), len(blob),
                                            C.byref(wrote)) or wrote.value != len(blob)):
@@ -505,6 +525,44 @@ def _remote_udp_send(session) -> None:
         got = C.c_size_t()
         if k32.ReadProcessMemory(handle, C.c_void_p(out), buffer, 4, C.byref(got)) and got.value == 4:
             result["sendto_return"] = struct.unpack("<i", buffer.raw)[0]
+        if k32.ReadProcessMemory(handle, C.c_void_p(out + 4), buffer, 4, C.byref(got)) and got.value == 4:
+            recv_length = struct.unpack("<i", buffer.raw)[0]
+            result["recv_return"] = recv_length
+            if 0 < recv_length <= 2048:
+                data_buffer = C.create_string_buffer(recv_length)
+                if (k32.ReadProcessMemory(handle, C.c_void_p(recvbuf), data_buffer, recv_length,
+                                          C.byref(got)) and got.value == recv_length):
+                    result["response_hex"] = data_buffer.raw.hex()
+                    result["response_ascii"] = data_buffer.raw.decode("latin-1", "replace")
+                from_buffer = C.create_string_buffer(16)
+                if (k32.ReadProcessMemory(handle, C.c_void_p(fromaddr), from_buffer, 16,
+                                          C.byref(got)) and got.value == 16):
+                    result["from"] = from_buffer.raw.hex()
+                    if INJECT_REMOTE_RESPONSE:
+                        cursor_buffer = C.create_string_buffer(4)
+                        if (k32.ReadProcessMemory(handle, C.c_void_p(0x7872C04), cursor_buffer, 4,
+                                                  C.byref(got)) and got.value == 4):
+                            write_cursor = struct.unpack("<I", cursor_buffer.raw)[0]
+                            slot = 0x786DBC0 + (write_cursor & 0xF) * 0x504
+                            for address, blob in ((slot, from_buffer.raw),
+                                                  (slot + 0x18, data_buffer.raw),
+                                                  (slot + 0x500, struct.pack("<I", recv_length))):
+                                if (not k32.WriteProcessMemory(handle, C.c_void_p(address),
+                                                               C.create_string_buffer(blob, len(blob)),
+                                                               len(blob), C.byref(got))
+                                        or got.value != len(blob)):
+                                    result["ring_inject"] = {"status": "write_failed",
+                                                             "address": hex(address)}
+                                    break
+                            else:
+                                if (k32.WriteProcessMemory(handle, C.c_void_p(0x7872C04),
+                                                           C.create_string_buffer(
+                                                               struct.pack("<I", write_cursor + 1), 4),
+                                                           4, C.byref(got)) and got.value == 4):
+                                    result["ring_inject"] = {"status": "ok",
+                                                             "slot": hex(slot),
+                                                             "cursor": write_cursor + 1,
+                                                             "length": recv_length}
         result["status"] = "done"
     finally:
         result["finished"] = time.time()
@@ -1792,7 +1850,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -1843,6 +1901,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="把 0x6221D8 替换成只调用 sendto(-1,...) 的 cave")
     parser.add_argument("--remote-udp-send", action="store_true",
                         help="在客户端进程内新建远程线程直接 sendto getchallenge")
+    parser.add_argument("--inject-remote-response", action="store_true",
+                        help="把远程线程收到的应答写入 loopback 接收环")
     parser.add_argument("--hook-loopback", action="store_true",
                         help="在 0x6750A0 安装持久 cave hook（实验性，可能崩溃）")
     parser.add_argument("--inject-challenge", action="store_true",
@@ -1879,6 +1939,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     BRANCH_SOCKET = known.branch_socket
     BRANCH_SENDTO = known.branch_sendto
     REMOTE_UDP_SEND = known.remote_udp_send
+    INJECT_REMOTE_RESPONSE = known.inject_remote_response
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 

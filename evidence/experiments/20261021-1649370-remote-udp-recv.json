@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "keep a real Winsock socket in the client process long enough to receive the 2697 challengeResponse",
+  "run": "codex-1649370-remoterecv-20261021",
+  "result": {
+    "sendto_return": 37,
+    "recv_return": 33,
+    "response_hex": "ffffffff6368616c6c656e6765526573706f6e7365203131373934333533303100",
+    "response_ascii": "\\xff\\xff\\xff\\xffchallengeResponse 1179435301\\x00",
+    "from": "020071297f0000010000000000000000",
+    "meaning": "the client process now has a real bidirectional UDP socket to the 2697 server; the source port for this exchange was 53648, and the source adr is 127.0.0.1:28969"
+  },
+  "followup": {
+    "run": "codex-1649370-remoteinject-20261021",
+    "goal": "write the received response into the loopback receive ring",
+    "result": "client exited without remote-udp.json / ring-probe.json; the injection path is not yet proven"
+  },
+  "next": [
+    "keep the socket handle in a cave global and reuse the same source port for connect",
+    "inject the captured challengeResponse with the exact from-adr into the client",
+    "or patch the client send path to use the persistent socket so the 2697 cookie matches"
+  ],
+  "cleanup": "Client and 2697 server terminated; no WFP/process residue."
+}
