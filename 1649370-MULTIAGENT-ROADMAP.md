@@ -252,3 +252,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 G2 三消息同序列注入仍 challenge 失败（本轮）
 
 `tools/inject_client_gamestate.py` 在改状态前依次排入 `challengeResponse 1469978033`、`connectResponse map=mp_cross_fire`、3428 字节 gamestate（slot `0x786DBC0/0x786E0C4/0x786E5C8`，cursor=3，state=3，connection adr 设为 127.0.0.1:28969）。客户端仍然黑屏后弹 `EXE_CLIENTFAILEDTOCHALLENGE`。trio 已进入环，但客户端要求自己的 challenge cookie/目标；下一步改写 challenge 目标/端点表，或截获 getchallenge 并用匹配 cookie 回答。证据 `evidence/experiments/20261021-1649370-gamestate-sequence-injected.json`。
+
+## 2026-10-21 G2 无效通道改为成功返回后，gamestate 注入进入黑屏加载态（本轮）
+
+把 `0x6221D8` 的 `mov ebx,-7` 改成 `mov ebx,1`（`--branch-noop`），让 `0x675260/0x622040` 的发送返回成功；再执行 `--ring-probe --ring-type 4 --inject-gamestate gamestate-final.bin`。结果不再出现 `EXE_CLIENTFAILEDTOCHALLENGE`，客户端进入纯黑屏（仅光标）并持续到 70 秒观察超时，进程响应、`stop_reason=observation_timeout`、无 Com Error。说明已越过 challenge 错误，进入“等后续数据/加载”状态。下一步在 gamestate 后继续喂快照/配置串，或确认它是否在等某个 server 包。证据 `evidence/experiments/20261021-1649370-branch-success-gamestate.json`。

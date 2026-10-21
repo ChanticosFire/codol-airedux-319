@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 通道成功补丁 + gamestate 注入进入黑屏加载态（2026-10-21）**：`0x6221D8` 改为 `mov ebx,1` 后发送返回成功，客户端不再 `EXE_CLIENTFAILEDTOCHALLENGE`；gamestate 注入后纯黑屏至 70 秒超时，进程响应、无 Com Error。已越过 challenge 错误。下一步喂后续快照/配置串。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-branch-success-gamestate.json`。
+
 > **1649370 G2 三消息同序列注入仍 challenge 失败（2026-10-21）**：challengeResponse + connectResponse + gamestate 依次入环（cursor=3，state=3，adr 127.0.0.1:28969），客户端仍 `EXE_CLIENTFAILEDTOCHALLENGE`。trio 已送达，但客户端要求自己的 challenge cookie/目标；下一步改写 challenge 目标/端点表，或截获 getchallenge 并用匹配 cookie 回答。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-gamestate-sequence-injected.json`。
 
 > **1649370 G2 带服务端 gamestate 注入仍卡 challenge（2026-10-21）**：2697 服务端 + loopback guard + gamestate 注入，客户端仍 `EXE_CLIENTFAILEDTOCHALLENGE`，服务端日志无 getchallenge/connect。客户端 challenge 目标不是 28969；下一步必须在改状态前同时排入 challengeResponse/connectResponse + gamestate，或改 challenge 目标地址。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-gamestate-challenge-failed.json`。

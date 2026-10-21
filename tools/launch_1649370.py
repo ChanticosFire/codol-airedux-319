@@ -1342,14 +1342,14 @@ def _install_branch_capture(k32, handle) -> dict:
 
 
 def _install_branch_noop(k32, handle) -> dict:
-    """把无效通道分支替换成 noop（ebx=0 后跳回），验证补丁机制。"""
+    """把无效通道分支替换成成功返回（ebx=1 后跳回）。"""
     k32.VirtualProtectEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, C.POINTER(W.DWORD)]
     k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
     k32.VirtualAllocEx.restype = C.c_void_p
     cave = int(k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40))
     if not cave:
         return {"status": "alloc_failed", "error": C.get_last_error()}
-    code = b"\x31\xdb\xe9" + struct.pack("<I", (0x6221DD - (cave + 7)) & 0xFFFFFFFF)
+    code = b"\xbb\x01\x00\x00\x00\xe9" + struct.pack("<I", (0x6221DD - (cave + 10)) & 0xFFFFFFFF)
     wrote = C.c_size_t()
     if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
                                    len(code), C.byref(wrote)) or wrote.value != len(code)):

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "make the invalid-channel send return success instead of -7, then inject the gamestate",
+  "patch": {
+    "site": "0x6221D8",
+    "new_code": "mov ebx,1; jmp 0x6221DD",
+    "cave": "0x3F990000",
+    "old_code": "mov ebx,-7",
+    "effect": "0x675260/0x622040 send path reports success instead of EXE_CLIENTFAILEDTOCHALLENGE"
+  },
+  "run": "codex-1649370-branch-success-20261021",
+  "injection": {
+    "payload_length": 3428,
+    "state_after": 3,
+    "channel_after": "0x9D",
+    "read_cursor": 1,
+    "write_cursor": 1
+  },
+  "result": {
+    "screen": "black with only the cursor, no error dialog",
+    "duration": "until the 70 s observation timeout",
+    "stop_reason": "observation_timeout",
+    "main_menu_verified": false,
+    "process": "responsive",
+    "meaning": "the challenge-failure error is gone and the client stays in a loading/black state; this is progress past the challenge error, but the map has not rendered"
+  },
+  "next": [
+    "feed subsequent snapshots (or a valid gamestate for this client's session) after the injected gamestate",
+    "or verify whether the client is waiting on a server/config string after the gamestate"
+  ],
+  "cleanup": "No client/guard process remains; no WFP residue."
+}
