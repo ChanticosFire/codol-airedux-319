@@ -666,3 +666,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 2.6.9.7 dedrun 参数试错：bind/archive 二选一失败
 
 完整 `cmd.json` + `net_ip 127.0.0.1`/`0.0.0.0` → `Could not bind to a IPv4 network socket`；去掉 `net_ip` 或改空串 → `CoDOL startup archive loading failed`；改 `net_ip 192.168.10.108`/换端口也回到 archive 失败。说明 dedrun 对参数顺序/`net_ip` 与资源根很敏感，当前命令行不能同时满足 bind 和 archive。下一步用 2.6.9.7 客户端验证 dedrun 本身，或从 dedrun 的 `Sys_Error` xref 找 bind 失败条件。
+
+## 2026-10-21 dedrun：去掉 net_port 可 bind（17733），但 archive 加载失败
+
+保留 `net_ip 127.0.0.1`、删掉 `+set net_port` 后，dedrun 绑到默认 17733（`Get-NetUDPEndpoint` 可见），但 `sys_error.txt` 变成 `CoDOL startup archive loading failed`；`net_port 0` 同样绑 17733、archive 失败。说明 bind 失败与 `net_port` 参数强相关，而 archive 失败是另一条路径（资源/启动参数）。下一步从 dedrun 的 `Sys_Error` 字符串 xref 找 archive 失败条件，或改用 `server.cfg` 而不是命令行。

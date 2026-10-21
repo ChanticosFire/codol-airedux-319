@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 dedrun 默认端口可 bind、archive 失败（2026-10-21）**：去 net_port 绑 17733 但 archive 失败；下一步 xref Sys_Error 或 server.cfg。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 dedrun 参数 bind/archive 二选一（2026-10-21）**：完整参数 bind 失败；去 net_ip archive 失败；LAN IP 也 archive 失败。下一步 2.6.9.7 客户端验证或 xref Sys_Error。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 试跑 2.6.9.7 dedrun，卡 IPv4 bind（2026-10-21）**：dedrun 进程活但报 Could not bind；无 28969 监听。下一步换端口/去掉 net_ip 或用 2.6.9.7 客户端验证。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
