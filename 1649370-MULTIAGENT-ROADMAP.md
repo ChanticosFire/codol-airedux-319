@@ -594,3 +594,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 devmap;map_restart 仍黑屏，线程全部 Wait/UserRequest
 
 命令执行器 `0x4F30C0` 执行 `devmap mp_cross_fire;map_restart`（`exec_cmd.status=armed`），客户端不再崩溃，黑屏、CPU 44、WS 1.2GB；`Get-Process Threads` 显示主/渲染线程均 `Wait:UserRequest`，没有异常退出。说明地图加载阶段在等某个用户态事件/服务器状态，而不是崩溃或命令失败。下一步：用转储/ETW/线程栈确认等待对象，或补本地 gamestate/`sv_` 初始化让加载完成。
+
+## 2026-10-21 黑屏全内存转储已抓到，CDB 只显示 Wow64 等待栈
+
+`devmap` 黑屏后写 `runs/20261021-1649370-dump132.dmp`（进程 uptime 67s），CDB 离线加载显示各线程停在 `wow64!whNtWaitForWorkViaWorkerFactory` / `WaitForMultipleObjects`，主线程也是 Wow64 等待；`!wow64exts.sw` 加载扩展时挂起超过 120 秒，已终止。说明黑屏是用户态等待，下一步需要把 dump 的 32 位 CONTEXT 解出来（自写 minidump 解析/StackWalk64，或本地扩展路径）而不是依赖在线扩展。
