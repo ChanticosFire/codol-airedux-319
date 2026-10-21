@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 TP3Helper.exe 5000 是看门狗/辅助（2026-10-21）**：父进程客户端，20 秒存活；下一步枚举其对话框控件文本。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 TP3Helper 弹无标题 #32770（2026-10-21）**：ETW 证据 1s 时 pid 26432 有可见 #32770 + 隐藏 GDI+ Window (TP3Helper.exe)；下一步抓其命令行/对话框/父进程。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 ETW 抓到 TP 痕迹（2026-10-21）**：WPR ETL 360MB/CSV 1.36GB，出现 tenprotect_id_52.tmp、TGuard/TenProtect/TP；下一步按客户端 PID 过滤 Image/Process。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

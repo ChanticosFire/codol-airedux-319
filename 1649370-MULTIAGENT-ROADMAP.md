@@ -738,3 +738,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 ETW 证据里找到 TP3Helper：可见 #32770 对话框 + 隐藏 GDI+ Window (TP3Helper.exe)
 
 `full-etw.json` 在 1 秒时 owned pids `[31296,26432]`，26432 有：可见 `#32770`，标题空；隐藏 `GDI+ Hook Window Class`，标题是 `GDI+ Window (TP3Helper.exe)`；`MSCTFIME UI`/`IME`。说明全客户端启动时 TP 由 TP3Helper.exe 接管并弹一个无标题对话框；`--dismiss-dialogs` 点掉后客户端 9 秒静默退出。下一步抓 TP3Helper 的命令行/对话框文本/父进程，确它是“检测到调试/注入→通知客户端退出”，再决定 patch TP3Helper 或跳过其对话框。
+
+## 2026-10-21 TP3Helper 命令行是 TP3Helper.exe 5000，父进程为客户端
+
+轮询记录到 `pid=36848 ppid=23924 cmd="E:\GAME\COD\使命召唤OL\TP3Helper.exe 5000"`，在整个 20 秒观察窗口内持续存活；观察结束后与父进程一起退出。参数 `5000` 很可能是超时/等待毫秒，TP3Helper 更像看门狗/辅助进程，不是主 TP 判定。下一步在它存活时枚举其 `#32770` 子控件文本（按钮/静态文本）和父进程命令行，确认它弹的是“警告/退出”还是普通登录提示。
