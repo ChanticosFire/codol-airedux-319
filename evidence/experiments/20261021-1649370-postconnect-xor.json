@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "explain why the 5-byte post-connect message varies with sequence",
+  "source": "runs/2697-native-src/src/sv_net_chan.c SV_Netchan_Encode",
+  "finding": {
+    "encoding": "SV_Netchan_Encode XORs data[4..] with key = challenge ^ netchan.outgoingSequence, then mixes in lastClientCommandString per byte (i & 1 shift)",
+    "packet": "The observed 9-byte packet is 4-byte netchan sequence + 5-byte encoded server message",
+    "consequence": "the last byte is not a plain checksum; it is the XOR-obfuscated message byte, so it changes with outgoingSequence/challenge/last command"
+  },
+  "next": [
+    "decode the 5-byte message using the connection challenge and last client command sequence",
+    "or treat the 9-byte packets as keepalive/ack-only while implementing the real client ACK path",
+    "avoid treating the varying byte as a stats bitmap or a simple checksum"
+  ],
+  "cleanup": "No server/client process remains; no WFP residue."
+}

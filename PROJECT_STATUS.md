@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 9 字节包是 netchan XOR 编码（2026-10-21）**：`SV_Netchan_Encode` 对 `data[4..]` 用 `challenge ^ outgoingSequence` + `lastClientCommandString` 做 XOR；9 字节包 = 4 字节 seq + 5 字节编码消息，变化字节不是 checksum/stats。下一步解码该消息或按 keepalive/ACK-only 处理。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-postconnect-xor.json`。
+
 > **1649370 G2 9 字节包映射到 CODOL_WritePacket（2026-10-21）**：源码 `CODOL_WritePacket` 在 server 侧为 4 字节 sequence + 消息；观测包 = 4 字节 sequence + 5 字节 `00 00 00 00 <byte>`，不是 reliable-transport/512 槽 stats。326 个包是普通 netchan，消息 5 字节。下一步确认 5 字节消息 opcode 与 ACK 需求。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-postconnect-format.json`。
 
 > **1649370 G2 connect 后 9 字节包定量分析（2026-10-21）**：connect 成功后 2 秒收到 326 个 `[u32 seq][u32 0][u8 checksum]` 包，seq 1 递增；checksum 非 `0x67-seq`（1→26、2→25、3→24、4→31、326→93），更像 CRC/命令字节。下一步确认它是 stats 挑战、reliable command 还是 snapshot/keepalive 头。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`tools/analyze_2697_postconnect.py` 和 `evidence/experiments/20261021-1649370-postconnect-packets.json`。

@@ -188,3 +188,7 @@ Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add e
 ## 2026-10-21 G2 9 字节包映射到 CODOL_WritePacket（本轮）
 
 源码 `CODOL_WritePacket` 在 server 侧为 4 字节 sequence + 消息；观测包 = 4 字节 sequence + 5 字节 `00 00 00 00 <byte>`，不是 reliable-transport `0xfffffff0` 头，也不是 512 槽 stats。326 个包是普通 netchan，消息 5 字节；byte 随 seq 变化。下一步确认 5 字节消息 opcode 与 ACK 需求。证据 `evidence/experiments/20261021-1649370-postconnect-format.json`。
+
+## 2026-10-21 G2 9 字节包是 netchan XOR 编码（本轮）
+
+`sv_net_chan.c` 的 `SV_Netchan_Encode` 把 `data[4..]` 与 `challenge ^ netchan.outgoingSequence` 做 XOR，再按 `lastClientCommandString` 逐字节混合。观测到的 9 字节包 = 4 字节 sequence + 5 字节编码消息；最后字节随 seq 变化不是 checksum/stats 位图，而是 XOR 混淆结果。下一步解码该 5 字节消息或按 keepalive/ACK-only 处理。证据 `evidence/experiments/20261021-1649370-postconnect-xor.json`。
