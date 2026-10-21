@@ -200,3 +200,7 @@ Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add e
 ## 2026-10-21 G2 离线菜单没有网络对象（本轮）
 
 `tools/scan_client_network_objects.py` 全用户地址扫描 vtable `0xC7AF2C`（recvfrom 包装器），两次均 0 个对象。离线重建客户端有 Winsock 导入、远程线程能建 socket，但自身网络对象从未构造；没有现成 socket 可改指。剩余路径：构造客户端网络对象，或把服务端数据喂进客户端环/解析器。证据 `evidence/experiments/20261021-1649370-network-object-scan.json`。
+
+## 2026-10-21 G2 客户端网络对象类已还原（本轮）
+
+vtable `0xC7AF2C`，对象布局 `+4 sockaddr_in`、`+0x14 SOCKET`、`+0x18 辅助句柄`；方法 `connect 0xC65480`、`init 0xC654A0`（自己创建 socket 并存 +0x14）、`send 0xC65560`、`recv 0xC655B0`、`sendto 0xC655E0`、`recvfrom 0xC65610`。离线菜单不实例化（扫描 0），但 init 可用来构造网络对象。下一步分配 0x40 对象、写 vtable、调 init 验证 socket。证据 `evidence/experiments/20261021-1649370-net-object-class.json`。

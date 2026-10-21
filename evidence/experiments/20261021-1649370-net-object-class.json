@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "map the client network-object class that owns the recvfrom wrapper",
+  "vtable": "0xC7AF2C",
+  "object_layout": {
+    "+0x00": "vtable (0xC7AF2C)",
+    "+0x04": "sockaddr_in (family at +4, port at +6, address at +8)",
+    "+0x14": "SOCKET handle",
+    "+0x18": "secondary handle/event used by the initializer"
+  },
+  "methods": {
+    "connect": "0xC65480 (calls connect(sock, &obj+4, 16))",
+    "init": "0xC654A0 (creates a socket, stores it at +0x14; arg = port)",
+    "send": "0xC65560",
+    "recv": "0xC655B0",
+    "sendto": "0xC655E0",
+    "recvfrom": "0xC65610"
+  },
+  "finding": "The offline menu does not instantiate this object (scan count 0), but the class initializer 0xC654A0 exists and can create the socket itself. This gives a concrete way to construct the client network object instead of repointing an existing one.",
+  "next": [
+    "allocate a 0x40-byte object in the client, write vtable 0xC7AF2C, call 0xC654A0 with a test port",
+    "verify +0x14 becomes a valid SOCKET",
+    "then call 0xC655E0/0xC65610 or wire the object into the client's network globals"
+  ],
+  "cleanup": "No client/guard process remains."
+}
