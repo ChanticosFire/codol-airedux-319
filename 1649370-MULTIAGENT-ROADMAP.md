@@ -474,3 +474,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 0x5C13A0 的两个调用者都依赖队列/流对象
 
 调用点在 `0x5C2040`/`0x5C2112`；调用前先 `0x4F36C0` 分配队列、`0x66EFD0` 取流，再 `ecx=ebx`（队列/流对象）、`push [ebp+8]`、6 dword netadr，最后 call parser。所以 parser 不是独立函数，冷调缺少 `ebx` 流对象和队列状态，才会清零网络。下一步：复刻 `ebx` 流对象/队列上下文，或 hook 这两个调用者的正常入口，而不是继续冷调。
+
+## 2026-10-21 parser 上下文成为新阻断
+
+`0x5C13A0` 必须由 `0x5C2040`/`0x5C2112` 用 `ebx` 队列/流对象调用；冷调会清零 netobj/conn。已确认 `0x5C0FD0` 是错误处理器，真正 parser 是 `0x5C13A0`；收发 UDP 链路已通（getchallenge/challengeResponse 都成功）。但要把 challengeResponse 送进 parser，必须复刻 `0x4F36C0`/`0x66EFD0` 构造的队列/流对象，或抓一次真实接收循环的 `ebx`/栈上下文。当前没有可产生真实接收循环的客户端（社区 exe 无网络对象、完整 exe 被 TP 挡），冷调 parser 每次都会重置网络。下一步只能：抓真实接收上下文（需要能正常连接的客户端），或从 `0x4F36C0`/`0x66EFD0` 逆向构造完整队列对象。
