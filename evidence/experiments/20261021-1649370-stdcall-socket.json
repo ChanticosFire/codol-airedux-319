@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "fix Winsock __stdcall stack cleanup in the invalid-branch cave and verify socket()",
+  "stdcall_fix": {
+    "problem": "Winsock WSAAPI functions are __stdcall; the cave also did add esp after socket/sendto/WSAStartup, double-popping the stack",
+    "fix": "removed add esp after WSAStartup/socket/sendto",
+    "run": "codex-1649370-branchesocket3-20261021",
+    "result": "client survived; socket_handle=0xD00 (valid); no Com Error",
+    "evidence": "ring-probe.json socket_handle=0xd00"
+  },
+  "sendto_followup": {
+    "runs": ["codex-1649370-rawbranch2-20261021", "codex-1649370-branchsendto2-20261021"],
+    "result": "client stayed responsive but ring-probe.json was never written; no crash, no server packet",
+    "interpretation": "the sendto call path now hangs/stalls before the probe thread completes, instead of the previous stack-corruption crash"
+  },
+  "next": [
+    "call sendto from a separate remote thread with a known-good socket handle instead of inside the branch cave",
+    "or use WSASendTo with an explicit overlapped/nonblocking setup",
+    "capture the return value of sendto before the branch returns, so a hang can be distinguished from a blocking call"
+  ],
+  "cleanup": "No client/guard process remains; no WFP residue."
+}

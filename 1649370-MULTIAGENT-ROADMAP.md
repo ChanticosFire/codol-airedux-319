@@ -152,3 +152,7 @@ type=4 的 `0x622040` 参数：len=0x26、data=0x1AE210、type=4、127.0.0.1:289
 ## 2026-10-21 G2 socket-only 存活、WSAStartup 崩（本轮）
 
 无效分支只调 `socket(2,2,17)` 时客户端存活、无 Com Error，但 handle=0；在 cave 内加 `WSAStartup(0x202,&wsadata)` 后以 `0xC0000409` 退出。socket-only stub 安全，问题在 WSAStartup 导入/ABI 或句柄无效。下一步 WSAStartup 走独立远程线程/用已有 WSA，并单独测 sendto。证据 `evidence/experiments/20261021-1649370-branch-socket.json`。
+
+## 2026-10-21 G2 stdcall 修复、socket 成功（本轮）
+
+Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add esp` 后，`socket(2,2,17)` 返回有效句柄 `0xD00`，客户端存活、无 Com Error。socket+sendto/sendto-only 不再崩溃，但 `ring-probe.json` 不写出、服务端无包，sendto 路径变为挂起。下一步 sendto 放独立远程线程并记录返回值，或用 WSASendTo/非阻塞 socket。证据 `evidence/experiments/20261021-1649370-stdcall-socket.json`。
