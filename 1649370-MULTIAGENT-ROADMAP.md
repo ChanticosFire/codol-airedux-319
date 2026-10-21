@@ -208,3 +208,7 @@ vtable `0xC7AF2C`，对象布局 `+4 sockaddr_in`、`+0x14 SOCKET`、`+0x18 辅�
 ## 2026-10-21 G2 0xC654A0 是 TCP accept（本轮）
 
 构造 0xC7AF2C 对象并调用 `0xC654A0(port=-1)` 后 `[obj+0x14]=0`；解析 IAT 发现 `0xCA8500 = ws2_32!accept`，该函数在 `[obj+0x18]` 的 listen socket 上 accept，并把结果存 +0x14。不能拿它建 UDP socket。下一步用 WSA 建 UDP socket 存 `obj+0x14`，再用对象 `sendto 0xC655E0`/`recvfrom 0xC65610` 方法；或找在线 UDP 对象/vtable。证据 `evidence/experiments/20261021-1649370-netobj-accept.json`。
+
+## 2026-10-21 G2 UI 本地对战入口探索（本轮）
+
+模拟点击 `游戏大厅 → 开始游戏` 后出现 `多人竞技(PVP)`、`闯关模式(PVE)`、`勇者游戏`、`排位赛`、`自定义`、`训练`、`影院` 子页；`自定义` 有完整建房面板（模式/地图/房间名/人数 12/创建房间），但点 `创建房间` 无响应；`多人竞技` 显示“未找到房间”，`勇者游戏` 空白，`训练` 标签点不亮。1649370 资源树只有 common/ui/post-gfx fastfile，没有 `mp_*` 地图 fastfile。结论：UI 建房后端驱动，无房间服务不会开本地局；下一步构造客户端网络对象/环消息路径，或跑兼容房间/lobby 后端。证据 `evidence/experiments/20261021-1649370-ui-custom-room.json`。

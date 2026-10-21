@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "walk the offline client UI to look for a serverless local/custom/bot match path",
+  "steps": [
+    {"ui": "游戏大厅", "action": "click 开始游戏 at (460,56)", "result": "shows sub-tabs 多人竞技(PVP), 闯关模式(PVE), 勇者游戏, 排位赛, 自定义, 训练, 影院; defaults to 自定义"},
+    {"ui": "自定义", "result": "room creation panel: 模式/地图/房间名称/人数上限 12/创建房间; clicking 创建房间 (1480,848) leaves the panel unchanged"},
+    {"ui": "多人竞技(PVP)", "result": "empty '未找到房间' because no room server"},
+    {"ui": "勇者游戏", "result": "blank content"},
+    {"ui": "训练", "action": "click (676,108)", "result": "tab does not activate; no training map"},
+    {"ui": "PVE/闯关玩法", "action": "click lobby tile (880,225)", "result": "lands on 勇者游戏 blank view; no local mission"}
+  ],
+  "asset_finding": "The 1649370 resource tree has only common/ui/post-gfx fastfiles (code_post_gfx_mp.ff, common_mp.ff, ui_mp.ff, ...), no mp_* map fastfile. The map probes staged 3.3.3.3 maps but the client stayed in the lobby.",
+  "conclusion": "The offline UI exposes custom-room creation but it is backend-driven; without a room/lobby server it does not start a local match. There are no 1649370 map assets for a serverless local match.",
+  "next": [
+    "construct the client network object / ring-fed message path, or",
+    "run a compatible room/lobby backend that can answer 创建房间 and start a map"
+  ],
+  "cleanup": "Client/guard terminated; no WFP residue."
+}
