@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "call 0xC73900 with the conn's own 0x88 config and capture its return",
+  "conn": {
+    "netobj": "0x24679FE0",
+    "conn": "0x2467BBE8",
+    "netadr": {"type": 4, "ip": "127.0.0.1", "port": 28969},
+    "c8": 4
+  },
+  "calls": [
+    {"struct": "zero 0x88", "return": -1},
+    {"struct": "conn+8 (0x88 copy)", "return": -1}
+  ],
+  "meaning": "0xC73900 returns -1 for both the zero struct and the conn's own 0x88 block even with a valid 127.0.0.1:28969 netadr, so it is not simply an address parser success. The function's expected input/state is still unknown; c8=4 is consistent with this failure path.",
+  "next": [
+    "trace the actual stack/struct passed at 0xBA4114 and the return value of 0xC73900 at runtime",
+    "or identify 0xC73900 by its imports/strings (it calls 0xC76920)",
+    "then fix the state machine input"
+  ],
+  "cleanup": "Client terminated; net_rollback passed."
+}
