@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 VEH 全副本重试无命中（2026-10-21）**：VEH 有效、Base.dll 页 guard 成功，但 10 秒内无异常/EIP=0，游戏无窗口；TP 不通过该副本读格式串。按约定转 method 3 或社区 exe+自写 server。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-tp-veh-retry.json`。
+
 > **1649370 PAGE_GUARD+VEH 跟踪 TP URL 未命中（2026-10-21）**：只找到 Base.dll 的 URL 格式串副本 `0x61E56B98`，页 guard 设置成功并注入 VEH，但 8–12 秒内无异常/EIP=0，游戏仍无窗口。TP 不读该副本或 VEH 未生效。下一步进程恢复前装 VEH/保护所有副本，或转 ETW/内核级跟踪。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-tp-veh-trace.json`。
 
 > **1649370 真实 TGuard 服务也不能放行 TP（2026-10-21）**：私有副本 `TGuardSvc.exe -install`，服务 Running；合成 TCLS 启动完整客户端仍无游戏窗口，TP 警告未出现但也不放行。随后已卸载服务。TP 仍要求真实 TCLS/TesSafe token，或需 patch 受保护判定。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-tguard-service.json`。

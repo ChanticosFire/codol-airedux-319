@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "retry the TP URL trace with a VEH installed before the guard and all module copies protected",
+  "run": {
+    "pid": 30668,
+    "needle_hits": [{"module": "codoMP_client_shipRetailBase.dll", "address": "0x61E56B98"}],
+    "veh_exit": "0xFFFFFFFF (non-null handler handle)",
+    "guarded_pages": [{"page": "0x61E56000", "module": "codoMP_client_shipRetailBase.dll", "ok": true}],
+    "exception_address": "0x0",
+    "eip": "0x0"
+  },
+  "result": "VEH installed and the Base.dll URL page was guarded, but no guard exception or EIP was recorded; the game still did not create a window",
+  "meaning": "TP does not read the Base.dll copy through this page, or it copied/decrypted the string earlier, or the TP reader runs before the VEH/guard is active. The in-process PAGE_GUARD approach has not located the TP decision.",
+  "next": [
+    "method 2 alternative: ETW/kernel tracing (not implemented in this session)",
+    "or method 3: redesign static/process patch without relying on anti-debug-sensitive tracing",
+    "or return to the community offline exe + own server, which avoids TP entirely"
+  ],
+  "cleanup": "Game/synthetic processes terminated; net_rollback passed."
+}

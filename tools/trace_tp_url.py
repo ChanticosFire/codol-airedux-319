@@ -125,11 +125,31 @@ def main() -> int:
     tid = W.DWORD()
     thread = k32.CreateRemoteThread(handle, None, 0, C.c_void_p(cave + 0x100), None, 0, C.byref(tid))
     k32.WaitForSingleObject(thread, 5000)
-    old = W.DWORD()
-    ok = k32.VirtualProtectEx(handle, C.c_void_p(page), 0x1000, 0x102, C.byref(old))
-    result["guard_set"] = bool(ok)
-    result["guard_error"] = None if ok else C.get_last_error()
-    time.sleep(args.wait)
+    code = W.DWORD()
+    k32.GetExitCodeThread(thread, C.byref(code))
+    result["veh_exit"] = code.value
+    seen = set()
+    for _ in range(max(1, int(args.wait * 2))):
+        for name, base, size in modules(pid):
+            offset = 0
+            while offset < size:
+                chunk = min(0x100000, size - offset)
+                buf = C.create_string_buffer(chunk)
+                got = C.c_size_t()
+                if k32.ReadProcessMemory(handle, C.c_void_p(base + offset), buf, chunk, C.byref(got)):
+                    pos = buf.raw[:got.value].find(needle)
+                    while pos >= 0:
+                        address = base + offset + pos
+                        page = address & ~0xFFF
+                        if page not in seen:
+                            seen.add(page)
+                            old = W.DWORD()
+                            ok = k32.VirtualProtectEx(handle, C.c_void_p(page), 0x1000, 0x102, C.byref(old))
+                            result.setdefault("guarded_pages", []).append(
+                                {"page": hex(page), "module": name, "ok": bool(ok)})
+                        pos = buf.raw[:got.value].find(needle, pos + 1)
+                offset += chunk
+        time.sleep(0.5)
     logbuf = C.create_string_buffer(8)
     got = C.c_size_t()
     k32.ReadProcessMemory(handle, C.c_void_p(log), logbuf, 8, C.byref(got))
