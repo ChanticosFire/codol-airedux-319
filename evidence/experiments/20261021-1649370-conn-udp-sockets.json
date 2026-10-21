@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "check whether the client has a real UDP socket after conn creation",
+  "client": {
+    "pid": 8444,
+    "launch": "--full --local-profile --loopback-guard --loopback-port 28969",
+    "udp_endpoints": [
+      {"address": "0.0.0.0", "port": 58843},
+      {"address": "0.0.0.0", "port": 22011}
+    ]
+  },
+  "conn": {
+    "netobj": "0x24629F90",
+    "conn": "0x2462BB98",
+    "vtable": "0xD5A4F4",
+    "c8": 4,
+    "calls": ["0xBA0980", "0xBA3100"],
+    "result": "c8 stayed 4; no UDP getchallenge reached the private server"
+  },
+  "meaning": "The client does create/bind UDP sockets, so the network stack is present. conn creation succeeds, but the connect state still ends at c8=4; the failure is inside the conn state machine/address validation, not a missing socket.",
+  "next": [
+    "read the return/error of 0xBA4080 and 0xC73900",
+    "or call the 0xBA3420/0xBA32A0 branches explicitly",
+    "or send a raw getchallenge through the existing client socket to verify the server path independently"
+  ],
+  "cleanup": "Client/guard terminated; net_rollback passed."
+}

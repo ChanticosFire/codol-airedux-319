@@ -382,3 +382,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 0xBA32A0 不是发送函数
 
 反汇编显示它是 conn 的事件/状态回调：按 `[ebp+8]` 分支，操作 `conn+0x100/0x110` 定时器，调用 `conn+0xCC` 对象的 vtable 方法，并在 `conn+0x90` 时调 `0xBA3100`；没有 `sendto`。真正的发送更可能在 `0xBA0980`（`0xBA32A0` 里第一个 call）或 `0xBA3100` 内。下一步直接调 `0xBA0980`/`0xBA3100`（ecx=conn），或对 `sendto` 下 IAT 断点看谁发包。
+
+## 2026-10-21 客户端确实有 UDP socket，conn 仍卡 c8=4
+
+用 `--loopback-guard --loopback-port 28969` 启动后，`Get-NetUDPEndpoint -OwningProcess` 显示客户端绑定了 `0.0.0.0:58843` 和 `0.0.0.0:22011`，证明网络栈存在。`0xB82070` 创建的 conn（`0x2462BB98`，vtable `0xD5A4F4`）调 `0xBA4080`/`0xBA0980`/`0xBA3100` 后 `c8` 仍为 4，服务端没收到 getchallenge。说明失败在 conn 状态机/地址校验内部，不是“没有 socket”。下一步：读 `0xBA4080`/`0xC73900` 的返回值/错误码，或直接走 `0xBA3420`/`0xBA32A0` 分支，或用客户端现有 socket 发原始 getchallenge 单独验证服务端路径。
