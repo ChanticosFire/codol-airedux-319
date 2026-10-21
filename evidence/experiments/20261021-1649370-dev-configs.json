@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "fastfile": "E:\\GAME\\COD\\1649370\\resources\\v1649370\\offline-resources\\client_shipretail\\chinese\\development_mp.ff",
+  "fastfile_sha256": "bcbd303c210f3c42b3105554ed65f53238f470771645e0d7c3dc8f192236d04d",
+  "publisher_signature_verified": true,
+  "zone_sha256": "7e36138aafe372fa53e0111e36344b7c5e7ec736df09958e0a77067cf2f8b5fe",
+  "zone_asset_count": 47,
+  "assets": [
+    {
+      "name": "devgui_maps_mp.cfg",
+      "asset_index": 11,
+      "size": 164,
+      "sha256": "3e9a48d97ebe0733c6100371afab738bbbb8205bfa15324f3c96d19309e76a6a",
+      "selected_lines": [
+        "devgui_cmd \"Main:1/Maps:3/mp_backlot\" \"devmap mp_backlot\"",
+        "devgui_cmd \"Main:1/Maps:3/mp_strike\" \"devmap mp_strike\"",
+        "devgui_cmd \"Main:1/Maps:3/mp_war\" \"devmap mp_war\""
+      ]
+    },
+    {
+      "name": "bots.cfg",
+      "asset_index": 42,
+      "size": 1208,
+      "sha256": "829cb8825f4f8eef67aa3686e824498b529382b89c35f3ca7964878fa487708a",
+      "selected_lines": [
+        "set bot_DisableFirstPlayerSpawnWait 0",
+        "set bot_StuckReaction 1",
+        "set bot_ForceRawPath 0",
+        "set bot_DisablePowerUse 0",
+        "set bot_BoostTraversalWeight 0.0",
+        "set scr_game_spectatetype 2"
+      ]
+    }
+  ],
+  "limitation": "Config text proves shipped data only; command registration and runtime bot behavior remain unverified."
+}

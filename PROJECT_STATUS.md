@@ -5,6 +5,8 @@
 > `tools/launch_1649370.py` 现以 `CreateProcessW` 绕过 WinError 1346，但恢复社区动态 WFP 守卫的 ready 校验，运行结束时过滤器自动清理。社区原包中的 `fileSysCheck.cfg` 已在资源清单中（77 字节），旧致命错误的实际运行栈指向缺失 IWI。装载完整 image/loose 库并启用 `--local-profile` 后，已**进入原生大厅并创建自定义本地房间**；截图见 [1649370-STATUS.md](1649370-STATUS.md) 顶部索引。房内“准备”尚未触发地图；bot 对战仍未完成。1604220 记录继续作为历史保留。
 >
 > 用户指定昵称“南韩超人朴玄俊”已写入 `319/data/v1649370/local.sqlite3` 私有存档，启动包装层现使用该存档及同目录设置库；原生大厅截图已核对新名字。社区原存档 SHA-256 未变化。静态镜像发现 `devmap`、`map_restart`、`botsAddAll` 引用，尚未证明可启动 bot 对局。参见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+>
+> 已验证解开 `development_mp.ff`（发行签名通过）：内有 `bots.cfg` 和 `devgui_maps_mp.cfg`，后者列出 `devmap mp_backlot/mp_strike/mp_war`。下一步获取对应地图 fastfile 并运行验证；仅凭开发配置不视为已能启动对局。
 
 
 更新：2026-10-26（Asia/Shanghai）；第 188 轮后新增顶部结论索引。
