@@ -310,3 +310,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 进程内 hook 成功压掉 TP 浏览器，但 blanket CreateProcess 也压掉游戏窗口（本轮）
 
 `tools/hook_tp_browser.py` 在完整客户端进程内 patch `shell32!ShellExecuteA/W`、`ShellExecuteExA/W` 和 `kernel32!CreateProcessA/W`（原字节已记录）。结果：TP 警告窗口和浏览器都不再出现；但 60 秒采样内游戏进程始终 `exit_code=259`、0 个窗口。说明 blocking 所有 CreateProcess 同时阻断了游戏/CEF 的窗口路径。下一步改成按命令行过滤的 CreateProcess hook：允许游戏/CEF，只拦截 `gamesafe`/浏览器启动；再观察 TP 警告是否非致命、游戏窗口是否出现。证据 `evidence/experiments/20261021-1649370-tp-hook-results.json`、工具 `tools/hook_tp_browser.py`。
+
+## 2026-10-21 按命令行过滤的 CreateProcess hook：浏览器不再开，但游戏窗口仍不出现（本轮）
+
+`tools/hook_tp_browser.py` 现在 patch `shell32!ShellExecute*`，并在 `kernel32!CreateProcessA/W` 入口装 cave stub：只扫描命令行里的 `gamesafe`，命中才返回 0，否则执行原 prologue 后跳回。60 秒采样结果：TP 警告窗口/新浏览器进程都没有出现，但游戏进程仍 `exit_code=259`、0 个窗口。说明 TP 的阻断不只是“打开浏览器”这个通知；warning/exit 判定或另一个检查仍在阻止游戏窗口。下一步：hook/patch `TGuardBase`/`TASLoginBase`/`ClientBase` 的 warning/exit 判定，或 hook `ExitProcess/TerminateProcess` 看 TP 是否在终止子进程，或运行真实 TGuard 服务测试环境是否被接受。证据 `evidence/experiments/20261021-1649370-tp-hook-filtered.json`。

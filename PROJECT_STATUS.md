@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 按命令行过滤的 CreateProcess hook（2026-10-21）**：只拦 `gamesafe` 的 CreateProcess stub + ShellExecute patch 后，TP 浏览器/警告不再出现，但 60 秒内游戏进程 0 窗口、exit_code 259。TP 阻断不止浏览器通知；需继续 patch warning/exit 判定或观察 TerminateProcess。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`tools/hook_tp_browser.py` 和 `evidence/experiments/20261021-1649370-tp-hook-filtered.json`。
+
 > **1649370 进程内 hook 压掉 TP 浏览器但游戏窗口也消失（2026-10-21）**：patch shell32 ShellExecute*/kernel32 CreateProcess* 后 TP 警告/浏览器不再出现，但 60 秒内进程 0 窗口、exit_code 259。blanket CreateProcess 阻断游戏/CEF 窗口路径。下一步按命令行过滤，只拦 gamesafe/浏览器。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`tools/hook_tp_browser.py` 和 `evidence/experiments/20261021-1649370-tp-hook-results.json`。
 
 > **1649370 TP URL 静态定位（2026-10-21）**：URL 格式串在 ClientBase/tpsvcBase/TASLoginBase（VA 0x101CC8E4）、TGuardBase（0x106C41E8）、Base.dll；无正常绝对引用/静态 ShellExecute 导入，TP 调用图受保护。cdb 附加挂起。下一步改进程内 API hook 或 TGuardBase 数据流补丁。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-tp-static.json`。

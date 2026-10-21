@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "filter CreateProcessW/A by command line instead of blocking all process creation",
+  "tool": "tools/hook_tp_browser.py",
+  "patches": {
+    "shell32": ["ShellExecuteA/W", "ShellExecuteExA/W"],
+    "kernel32": ["CreateProcessA", "CreateProcessW (cave stub scans for 'gamesafe' and returns 0 only for that command line)"]
+  },
+  "result": {
+    "tp_warning_window": "not observed",
+    "new_browser_process": "not observed",
+    "game_window": "none; process alive with exit_code 259 and zero windows for the full 60 s sample",
+    "meaning": "the filtered hook suppresses TP's browser launch without breaking normal CreateProcess, but the game still never creates a window. TP's block is not limited to the browser notification; the warning/exit path or another check still prevents the game window."
+  },
+  "next": [
+    "hook or patch the TP warning/exit decision in TGuardBase/TASLoginBase/ClientBase",
+    "or hook ExitProcess/TerminateProcess to observe whether TP is terminating a child",
+    "or install/run the real TGuard service and see whether TP accepts the environment"
+  ],
+  "cleanup": "All codoMP/synthetic processes terminated; net_rollback passed."
+}
