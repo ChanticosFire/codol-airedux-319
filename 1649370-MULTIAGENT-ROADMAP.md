@@ -362,3 +362,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 conn 方法没有直接 vtable 指针，构造函数高度混淆
 
 对 `0xBA0780`/`0xBA0DE0`/`0xBA34D0` 做全文件 dword 搜索，0 个直接引用；说明 conn 的 vtable/构造路径不是普通绝对指针，可能被加密/重定位或由运行时生成。结合 `netobj+0x4F4` 只有清零/读取、没有非零写入，静态定位 conn 构造函数已到瓶颈。下一步只能 DR0 硬件写断点 + 真实触发（需要一次实际连接尝试），或从有网络对象的完整客户端抓一次正常连接做对照。当前没有可触发真实连接的环境。
+
+## 2026-10-21 找到真正的 conn 构造函数 0xBA2800 和连接函数 0xB81EF0
+
+`0xB81F7C` 处 `push 0xAE8; call new; ecx=object; call 0xBA2800`，构造后 `0xB81FFD` 写 `[netobj+0x4F4]`，再 `0xB82025` 调 `0xBA4080(conn, netobj+0x500)` 启动连接。`0xBA2800` 设置 vtable `0xD5A4F4`、复制 0x88 字节结构、`ret 0x9C`。直接构造尝试失败：用 `VirtualAllocEx(0xAE8)` + cave 传 0x9C 零参数调 `0xBA2800`，客户端在 ~12 秒内 unhandled exception 终止，没有产生 conn 证据。说明参数结构/堆分配方式不对；下一步应直接调整个 `0xB81EF0` 并传完整 0x88 结构，或先用游戏 `new 0xB74220` 分配对象。证据 `evidence/experiments/20261021-1649370-conn-constructor-found.json`。

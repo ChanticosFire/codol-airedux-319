@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "locate the real conn object constructor and start routine",
+  "allocation": {
+    "site": "0xB81F7C (push 0xAE8; call 0xB74220 new; ecx=object; call 0xBA2800)",
+    "constructor": "0xBA2800 (sets vtable 0xD5A4F4, copies 0x88-byte struct, ret 0x9C)",
+    "assign": "0xB81FFD (mov [netobj+0x4F4], esi)",
+    "start": "0xB82025 call 0xBA4080(conn, netobj+0x500)"
+  },
+  "attempt": {
+    "method": "VirtualAllocEx(0xAE8) + cave: sub esp,0x9C; ecx=object; call 0xBA2800; then write netobj+0x4F4 and call 0xBA4080 with netadr 127.0.0.1:28969",
+    "result": "the client terminated with an unhandled exception during the probe; no conn evidence was produced",
+    "meaning": "the direct constructor call did not receive the expected 0x88-byte argument structure/stack or the object must be allocated by the game's own allocator; the constructor/start routine itself is real and is the next target"
+  },
+  "next": [
+    "call 0xB81EF0 (the whole connect function) with the full 0x88-byte struct instead of calling the constructor directly",
+    "or allocate 0xAE8 through game new 0xB74220 before 0xBA2800",
+    "then 0xBA4080(conn, netobj+0x500) and check for getchallenge"
+  ],
+  "cleanup": "Client terminated; net_rollback passed."
+}

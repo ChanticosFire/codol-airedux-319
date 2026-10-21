@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 找到 conn 构造函数 0xBA2800（2026-10-21）**：`0xB81F7C` new 0xAE8 → `0xBA2800` 构造 → `[netobj+0x4F4]` 赋值 → `0xBA4080` 启动。直接构造因参数/堆不对导致客户端异常；下一步调整个 `0xB81EF0` 或游戏 new。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-conn-constructor-found.json`。
+
 > **1649370 conn 方法无直接 vtable 引用（2026-10-21）**：0xBA0780/0xBA0DE0/0xBA34D0 全文件 dword 搜索 0 命中，构造路径混淆；netobj+0x4F4 无静态非零写入。需 DR0 写断点+真实连接触发，或完整客户端正常连接对照。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 conn 类方法确认、构造函数未定位（2026-10-21）**：0xBA0780/0xBA0DE0/0xBA34D0 是 conn 实例方法（读 +0x644/+0xC8/+0x5E8，写 +0xAE4），但无函数把 netobj+0x4F4 写非零。下一步 DR0 硬件写断点或按 vtable 反查构造函数。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
