@@ -212,3 +212,7 @@ vtable `0xC7AF2C`，对象布局 `+4 sockaddr_in`、`+0x14 SOCKET`、`+0x18 辅�
 ## 2026-10-21 G2 UI 本地对战入口探索（本轮）
 
 模拟点击 `游戏大厅 → 开始游戏` 后出现 `多人竞技(PVP)`、`闯关模式(PVE)`、`勇者游戏`、`排位赛`、`自定义`、`训练`、`影院` 子页；`自定义` 有完整建房面板（模式/地图/房间名/人数 12/创建房间），但点 `创建房间` 无响应；`多人竞技` 显示“未找到房间”，`勇者游戏` 空白，`训练` 标签点不亮。1649370 资源树只有 common/ui/post-gfx fastfile，没有 `mp_*` 地图 fastfile。结论：UI 建房后端驱动，无房间服务不会开本地局；下一步构造客户端网络对象/环消息路径，或跑兼容房间/lobby 后端。证据 `evidence/experiments/20261021-1649370-ui-custom-room.json`。
+
+## 2026-10-21 G2 主菜单 Cbuf 注入成功、地图加载失败（本轮）
+
+新增 `--cbuf-command`，在主菜单 stage 5 直接向原生 Cbuf 追加命令；`devmap mp_strike_sh` 注入成功（old_length 0 → new_length 22），画面黑屏数秒后回到大厅，进程仍响应。Cbuf 注入机制可用，但 1649370 客户端不接受 3.3.3.3 的 `mp_strike_sh` 地图（缺 1649370 原生 `mp_*` fastfile/版本不匹配）。下一步必须拿到 1649370 兼容地图 fastfile，或跑兼容房间后端。证据 `evidence/experiments/20261021-1649370-cbuf-devmap.json`。

@@ -80,6 +80,7 @@ OriginalSettingsStore = game_settings_mod.SettingsStore
 MAP_PROBE = None
 MAP_COMMAND_MODE = "startup"
 ROOM_COMMAND = None
+CBUF_COMMAND = None
 ROOM_COMMAND_TIMEOUT = 180
 PREFIX_CBUF = None
 MAIN_CALL = None
@@ -1633,6 +1634,99 @@ def _ring_probe_injector(session) -> None:
         k32.CloseHandle(handle)
 
 
+def _cbuf_injector(session, command: str) -> None:
+    """在主菜单阶段把一条控制台命令追加到原生 Cbuf，不依赖房间对象。"""
+    k32 = C.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
+    k32.OpenProcess.restype = W.HANDLE
+    k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.SuspendThread.argtypes = [W.HANDLE]
+    k32.SuspendThread.restype = W.DWORD
+    k32.ResumeThread.argtypes = [W.HANDLE]
+    k32.ResumeThread.restype = W.DWORD
+    output = session.run_dir / "cbuf-command.json"
+    result = {"command": command, "started": time.time(), "status": "waiting"}
+    handle = k32.OpenProcess(0x0438, False, session.info.pid)
+    if not handle:
+        result.update(status="open_process_failed", error=C.get_last_error())
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return
+
+    def read(va: int, count: int):
+        buffer = C.create_string_buffer(count)
+        got = C.c_size_t()
+        if not k32.ReadProcessMemory(handle, C.c_void_p(va), buffer, count, C.byref(got)) or got.value != count:
+            return None
+        return buffer.raw
+
+    def u32(va: int):
+        data = read(va, 4)
+        return struct.unpack("<I", data)[0] if data else None
+
+    try:
+        deadline = time.monotonic() + 120
+        while time.monotonic() < deadline:
+            stage = u32(0xE59D20) or 0
+            if stage >= 4:
+                break
+            time.sleep(0.5)
+        payload = ("\n" + command + "\n").encode("ascii") + b"\0"
+        for _ in range(30):
+            descriptor = read(0x76595A4, 12)
+            if not descriptor:
+                result.update(status="descriptor_unreadable")
+                return
+            pointer, capacity, length = struct.unpack("<3I", descriptor)
+            if pointer != 0x33821B0 or capacity != 0x20000 or length + len(payload) > capacity:
+                result.update(status="descriptor_mismatch", pointer=hex(pointer),
+                              capacity=capacity, length=length)
+                return
+            lock = read(0x81A55A0, 16)
+            if not lock:
+                result.update(status="lock_unreadable")
+                return
+            recursion = struct.unpack("<4I", lock)[2]
+            if recursion:
+                time.sleep(0.2)
+                continue
+            if k32.SuspendThread(session.info.thread) == 0xFFFFFFFF:
+                result.update(status="suspend_failed", error=C.get_last_error())
+                return
+            try:
+                descriptor = read(0x76595A4, 12)
+                pointer, capacity, length = struct.unpack("<3I", descriptor)
+                if pointer != 0x33821B0 or capacity != 0x20000 or length + len(payload) > capacity:
+                    result.update(status="descriptor_changed")
+                    return
+                wrote = C.c_size_t()
+                target = 0x33821B0 + length
+                if (not k32.WriteProcessMemory(handle, C.c_void_p(target),
+                                               C.create_string_buffer(payload, len(payload)),
+                                               len(payload), C.byref(wrote))
+                        or wrote.value != len(payload)):
+                    result.update(status="write_failed", error=C.get_last_error())
+                    return
+                new_length = length + len(payload)
+                if (not k32.WriteProcessMemory(handle, C.c_void_p(0x76595A4 + 8),
+                                               C.create_string_buffer(struct.pack("<I", new_length), 4),
+                                               4, C.byref(wrote)) or wrote.value != 4):
+                    result.update(status="length_failed", error=C.get_last_error())
+                    return
+                result.update(status="injected", stage=stage, old_length=length,
+                              new_length=new_length)
+                time.sleep(0.5)
+            finally:
+                k32.ResumeThread(session.info.thread)
+            break
+        if result["status"] == "waiting":
+            result["status"] = "stage_timeout"
+    finally:
+        result["finished"] = time.time()
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("[patched] cbuf command:", json.dumps(result, ensure_ascii=False), flush=True)
+
+
 def _room_command_injector(session, command: str) -> None:
     """在主线程暂停的瞬间把一条控制台命令写入原生命令缓冲。
 
@@ -1908,6 +2002,9 @@ def patched_start(self, exe, settings_session) -> None:
     if ROOM_COMMAND:
         threading.Thread(target=_room_command_injector, args=(self, ROOM_COMMAND),
                          name="room-command", daemon=True).start()
+    if CBUF_COMMAND:
+        threading.Thread(target=_cbuf_injector, args=(self, CBUF_COMMAND),
+                         name="cbuf-command", daemon=True).start()
     if TRANSPORT_CONNECT:
         threading.Thread(target=_transport_connect_injector, args=(self,),
                          name="transport-connect", daemon=True).start()
@@ -2040,7 +2137,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -2056,6 +2153,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     parser.add_argument("--capture-ui-movie", action="store_true")
     parser.add_argument("--room-command",
                         help="等本地房间有效后，在主线程暂停时把一条 ASCII 控制台命令写入原生命令缓冲")
+    parser.add_argument("--cbuf-command",
+                        help="主菜单阶段把一条 ASCII 控制台命令追加到原生 Cbuf")
     parser.add_argument("--prefix-cbuf",
                         help="在 BeforeCbuf 断点处给已生成的命令文本补一个前缀，例如 mmstart")
     parser.add_argument("--loopback-guard", action="store_true",
@@ -2111,6 +2210,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
     ROOM_COMMAND = known.room_command
+    CBUF_COMMAND = known.cbuf_command
     PREFIX_CBUF = known.prefix_cbuf
     LOOPBACK_GUARD = known.loopback_guard
     LOOPBACK_PORT = known.loopback_port

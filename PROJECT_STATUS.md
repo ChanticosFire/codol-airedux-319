@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 主菜单 Cbuf 注入成功、地图加载失败（2026-10-21）**：`--cbuf-command` 在 stage 5 注入 `devmap mp_strike_sh`（0→22 字节），画面黑屏数秒后回大厅；进程响应。Cbuf 注入可用，但客户端不接受 3.3.3.3 地图，缺 1649370 原生 `mp_*` fastfile。下一步需 1649370 地图资产或兼容房间后端。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-cbuf-devmap.json`。
+
 > **1649370 G2 UI 本地对战入口探索（2026-10-21）**：`开始游戏` 有 PVP/PVE/勇者/排位/自定义/训练/影院；自定义建房面板可操作但“创建房间”无响应，PVP 空房间，训练不可点；资源树无 `mp_*` 地图 fastfile，无法无服务端开本地图。结论：建房需房间后端，或必须构造客户端网络对象/环消息路径。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-ui-custom-room.json`。
 
 > **1649370 G2 0xC654A0 是 TCP accept（2026-10-21）**：`0xCA8500 = ws2_32!accept`；调用后 `[obj+0x14]=0`，不能建 UDP socket。下一步用 WSA 建 UDP socket 存 `obj+0x14`，再用对象 sendto/recvfrom 方法；或找在线 UDP 对象。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-netobj-accept.json`。

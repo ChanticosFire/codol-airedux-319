@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "inject a console command at the main menu through the native Cbuf and try to load a staged map",
+  "tool": "tools/launch_1649370.py --cbuf-command",
+  "run": "codex-1649370-cbufdevmap-20261021",
+  "setup": {
+    "command": "devmap mp_strike_sh",
+    "stage": 5,
+    "old_length": 0,
+    "new_length": 22,
+    "injection": "ok"
+  },
+  "result": {
+    "screen": "black for a few seconds, then returned to the 游戏大厅 lobby",
+    "process": "responsive",
+    "conclusion": "Cbuf injection works, but the client cannot load the staged 3.3.3.3 mp_strike_sh map; it falls back to the lobby, consistent with missing 1649370 map fastfiles/version mismatch"
+  },
+  "asset_finding": "The 1649370 resource tree has no mp_* map fastfile; the staged maps are 3.3.3.3 assets and are not accepted by this client.",
+  "next": [
+    "obtain 1649370-compatible map fastfiles, or",
+    "run a compatible room/lobby backend that can supply the map/loading path"
+  ],
+  "cleanup": "Client/guard terminated; no WFP residue."
+}
