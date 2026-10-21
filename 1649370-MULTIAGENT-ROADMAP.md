@@ -602,3 +602,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 minidump 解析器写好，但线程上下文是 AMD64 而不是 x86
 
 `parse_minidump_threads.py` 能读 Memory64List/ThreadList，dump 有 1028 个内存区间；线程 `ThreadContext` 大小 3263、`ContextFlags=0x10005F`（AMD64），`Rip/Rsp` 是 wow64 栈，不是游戏 32 位 `Eip/Esp`。所以离线栈还没展开到游戏代码。下一步改用活进程对每个线程 `OpenThread + Wow64GetThreadContext` 直接取 32 位 CONTEXT（不依赖 dump 的 64 位上下文），再按 EBP/栈扫描定位黑屏等待点。
+
+## 2026-10-21 活进程 32 位线程栈已抓到：主线程在正常帧循环 Sleep(1)，不是死锁
+
+`dump_threads32_live.py` 用 `Wow64GetThreadContext` 取到主线程 TID 6768 `EIP=76F4858C`（ntdll 等待），EBP 链回到 `0x4FE37E`（`0x4FE220` 客户端帧循环里的 `Sleep(1)`），再上 `0x4FEA95`、`0x77FA69`（`0x77FA04` 主循环）、`0xC42788`；其余线程在 `0x67CBAE`/`0x67C6BD`/`0x49F32D` 等 worker。说明黑屏时游戏主循环仍在跑，地图/世界没有完成初始化，不是死锁。下一步：从这些 worker 和地图加载状态全局变量定位“地图请求已入队但未完成”的原因。

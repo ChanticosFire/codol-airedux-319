@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 活进程 32 位栈：主线程正常帧循环 Sleep(1)（2026-10-21）**：不是死锁，黑屏是地图/世界未初始化；下一步查地图加载 worker/状态全局。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 minidump 上下文为 AMD64（2026-10-21）**：ContextFlags=0x10005F，Rip/Rsp 是 wow64；下一步活进程 Wow64GetThreadContext 取 32 位 CONTEXT。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 黑屏全内存转储已抓到（2026-10-21）**：CDB 只看到 Wow64 等待栈，wow64exts 挂起；下一步自解析 32 位 CONTEXT/StackWalk。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
