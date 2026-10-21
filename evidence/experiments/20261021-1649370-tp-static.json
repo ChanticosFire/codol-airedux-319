@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "locate the TP browser URL string and its static references in the shipped modules",
+  "url_format": "?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d",
+  "modules": [
+    {"file": "codoMP_client_shipRetailBase.dll", "file_offset": 8870808, "section": ".rdata"},
+    {"file": "TCLS/ClientBase.dll", "file_offset": 1881316, "va": "0x101CC8E4"},
+    {"file": "TCLS/tpsvcBase.dll", "file_offset": 1879780, "va": "0x101CC8E4"},
+    {"file": "TCLS/TenProtect/TASLoginBase.dll", "file_offset": 1881316, "va": "0x101CC8E4"},
+    {"file": "TGuard/TGuardBase.dll", "file_offset": 7089640, "va": "0x106C41E8"}
+  ],
+  "references": {
+    "ClientBase/tpsvcBase/TASLoginBase": "no absolute dword reference found",
+    "TGuardBase": ["0x11337EA1 (one absolute reference, likely a data pointer)"],
+    "base_dll": "no absolute reference found"
+  },
+  "imports": "none of these TP modules statically import ShellExecute/CreateProcess/WinExec; the browser API is resolved at runtime or executed in a protected/unpacked path",
+  "meaning": "The TP warning/browser code is protected and does not expose a normal static call graph. Debugger attach hangs, so the practical next step is an in-process API hook (shell32/processthreads) or runtime patching of the TGuardBase URL reference, not cdb.",
+  "next": [
+    "in-process hook of shell32!ShellExecuteW/ShellExecuteExW and kernel32!CreateProcessW with URL filtering",
+    "or patch the TGuardBase reference/data flow after locating its consumer",
+    "then verify no browser/warning and a game window"
+  ],
+  "cleanup": "No game/TP/cdb process remains; net_rollback passed."
+}

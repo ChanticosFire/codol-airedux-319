@@ -302,3 +302,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 cdb 附加 TP 进程失败，改静态/进程内 hook（本轮）
 
 synthetic TCLS 启动后存在进程树：root `33424` 退出、游戏子进程 `codoMP_client_shipRetail` `9264` 存活。`cdb -p 33424` 报 Win32 error 87（进程已退出）；`cdb -p 9264 -c "lm;q"` 挂起、无提示/输出，被超时终止。说明 TP/anti-debug 会阻挡或冻结调试器附加，cdb 不是可靠路线。下一步改：对 `TASLoginBase.dll`/`TGuardBase.dll`/`ClientBase.dll` 的 TP URL 格式串做静态分析，或用进程内 API hook（不依赖调试器）拦截 `ShellExecute/浏览器` 调用后再打补丁。证据 `evidence/experiments/20261021-1649370-tp-cdb-attach.json`。
+
+## 2026-10-21 TP URL 静态定位完成，调用图受保护（本轮）
+
+TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase.dll`/`tpsvcBase.dll`/`TASLoginBase.dll`（VA `0x101CC8E4`）、`TGuardBase.dll`（VA `0x106C41E8`）、`Base.dll`；但前三者没有绝对 dword 引用，TGuardBase 只有一处 `0x11337EA1`（像数据指针）。这些模块也没有静态导入 `ShellExecute`/`CreateProcess`/`WinExec`，浏览器 API 是运行时解析或保护/解包路径。结合 cdb 附加挂起，结论：正常静态调用图不可用；下一步走进程内 API hook（shell32/kernel32，按 URL 过滤）或 TGuardBase URL 数据流补丁，而不是继续 cdb。证据 `evidence/experiments/20261021-1649370-tp-static.json`。
