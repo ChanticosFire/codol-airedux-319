@@ -686,3 +686,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 2697 增强对局实际启动失败：OSError 1346 模拟级别
 
 `stage-check` 通过，但实际 `launch_backend_enhanced.py` 报 `client_error=OSError(22, '未提供所需的模拟级别，或提供的模拟级别无效。', None, 1346)`，客户端未起来、无 `room_events`。说明启动器的身份/令牌模拟步骤在当前非高完整性进程里失败；下一步用高完整性/管理员启动该 Python，或绕过 `launcher_identity2697` 的模拟调用，再抓 room-ready/28969 包。
+
+## 2026-10-21 参考对局仍被 1346/UAC 挡住
+
+`Start-Process -Verb RunAs` 启动启动器后进程立即消失（UAC 未交互/被策略拒绝），没有客户端、没有 room 事件；非提升启动仍是 `OSError 1346`。说明当前会话拿不到参考对局的模拟级别。下一步不再依赖参考启动器，直接在 1649370 侧补 room backend（按已抓到的 `room_ready/room_start` 字符串格式），或改用 1649370 自己的 wrapper 令牌路径启动参考客户端。
