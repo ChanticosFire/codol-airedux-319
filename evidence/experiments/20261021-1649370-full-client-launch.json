@@ -14,6 +14,11 @@
       "result": "process alive but no window; only WOW64 loader modules; Base.dll still not loaded"
     },
     {
+      "method": "direct launch + thread/window inspection",
+      "result": "process alive with 15 threads; waits include EventPairLow and ExecutionDelay; no visible or hidden windows for the PID; tasklist /M shows only 64-bit/WOW64 loader modules",
+      "meaning": "the process is stuck in an early TCLS/launcher/anti-cheat handshake before creating any window or loading the 32-bit game modules"
+    },
+    {
       "method": "wrapper --image full exe",
       "result": "rejected: 仅运行项目固定版本基底或 workspaces 内候选"
     },
@@ -26,10 +31,10 @@
       "result": "exit code 3221225781 (0xC0000135 STATUS_DLL_NOT_FOUND) because the wrapper runtime only copies the image, not Base.dll/sibling DLLs"
     }
   ],
-  "finding": "The full client executable is not a drop-in replacement for the community offline image. It does not reach its window/main loop when launched directly (with or without +devmap); it stays in the WOW64 loader with no Base.dll, so it is waiting on the TCLS/launcher/dependency chain. The wrapper's patch/runtime model also does not carry its dependencies.",
+  "finding": "The full client executable is not a drop-in replacement for the community offline image. It does not reach its window/main loop when launched directly (with or without +devmap): 15 threads wait on EventPairLow/ExecutionDelay and no window is ever created. It is stuck in an early TCLS/launcher/anti-cheat handshake before the 32-bit game modules/window exist. The wrapper's patch/runtime model also does not carry its dependencies.",
   "next": [
-    "run TCLS/Client.exe or identify the full exe's required startup pipe/dependency",
-    "or copy the full client root dependency set (Base.dll/siblings) into a private runtime and launch there",
+    "run TCLS/Client.exe or identify the TCLS pipe/handshake the full exe waits on",
+    "or emulate the TCLS/launcher handshake in a private harness",
     "and check explicitly whether TCLS loads ACE/TGuard drivers before using it"
   ],
   "cleanup": "No codoMP/TCLS/ACE/TGuard process remains; net_rollback passed."

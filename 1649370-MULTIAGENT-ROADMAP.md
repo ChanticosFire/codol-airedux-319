@@ -280,3 +280,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 完整 exe 直接 +devmap 仍无窗口（本轮）
 
 用私有副本 `runs/full-client-private` 直接启动 `codoMP_client_shipRetail.exe +set fs_basepath ... +devmap mp_cross_fire`，进程存活但 20 秒后仍无窗口，只加载 WOW64 基础模块，`codoMP_client_shipRetailBase.dll` 未加载。说明完整 exe 在进入游戏前等待 TCLS/启动链/依赖，不是 `+devmap` 能绕过。包装层失败点（候选限制/补丁不匹配/空补丁缺 DLL）已记在证据里。下一步走 TCLS 启动链并监控是否加载 ACE/TGuard 驱动，或补齐 Base.dll/同目录依赖后直接启动。证据 `evidence/experiments/20261021-1649370-full-client-launch.json`。
+
+## 2026-10-21 完整 exe 卡在 TCLS/启动握手，无任何窗口（本轮）
+
+直接启动私有副本的 `codoMP_client_shipRetail.exe` 后，进程有 15 个线程，等待原因包含 `EventPairLow` 与 `ExecutionDelay`；枚举该 PID 的所有窗口（含隐藏）结果为 0 个窗口；`tasklist /M` 只显示 64 位/WOW64 基础模块。说明它停在创建窗口/加载 32 位游戏模块之前的 TCLS/launcher/反作弊握手，而不是 `+devmap` 或地图问题。下一步必须走 `TCLS\Client.exe` 或模拟 TCLS 管道/握手，并监控是否加载 ACE/TGuard 驱动。证据 `evidence/experiments/20261021-1649370-full-client-launch.json`。
