@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "instantiate the 0xC7AF2C network object with 0xC654A0",
+  "run": "codex-1649370-netobj-20261021",
+  "result": {
+    "object": "0x3F180000",
+    "vtable": "0xC7AF2C",
+    "socket_after_init": "0x0",
+    "thread_exit": 1059979212
+  },
+  "correction": {
+    "0xCA8500": "ws2_32!accept",
+    "0xC654A0": "TCP accept initializer, not a UDP socket creator; it accepts on the listening socket at [obj+0x18] and stores the accepted socket at +0x14",
+    "meaning": "calling 0xC654A0 with port=-1 cannot create a UDP socket; socket 0 is accept failure"
+  },
+  "next": [
+    "do not use 0xC654A0 as a UDP socket initializer",
+    "create a UDP socket with the known WSA calls, store it at obj+0x14, and use obj methods 0xC655E0/0xC65610 directly",
+    "or locate the separate UDP transport object/vtable used by the online client"
+  ],
+  "cleanup": "Client/guard terminated; no WFP residue."
+}

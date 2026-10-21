@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 0xC654A0 是 TCP accept（2026-10-21）**：`0xCA8500 = ws2_32!accept`；调用后 `[obj+0x14]=0`，不能建 UDP socket。下一步用 WSA 建 UDP socket 存 `obj+0x14`，再用对象 sendto/recvfrom 方法；或找在线 UDP 对象。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-netobj-accept.json`。
+
 > **1649370 G2 网络对象类已还原（2026-10-21）**：vtable `0xC7AF2C`，`+4` sockaddr、`+0x14` SOCKET；方法 connect `0xC65480`、init `0xC654A0`（自己建 socket）、send/recv/sendto/recvfrom。离线菜单不实例化，但 init 可用来构造对象；下一步分配对象、写 vtable、调 init 验证 socket。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-net-object-class.json`。
 
 > **1649370 G2 离线菜单没有网络对象（2026-10-21）**：扫描 vtable `0xC7AF2C`（recvfrom 包装器）两次均 0 个对象。客户端有 Winsock 导入/远程线程可建 socket，但自身网络对象从未构造，没有现成 socket 可改指。剩余路径：构造客户端网络对象，或把服务端数据喂进客户端环/解析器。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`tools/scan_client_network_objects.py` 和 `evidence/experiments/20261021-1649370-network-object-scan.json`。

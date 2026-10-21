@@ -103,6 +103,7 @@ BRANCH_SENDTO = False
 REMOTE_UDP_SEND = False
 INJECT_REMOTE_RESPONSE = False
 REMOTE_UDP_CONNECT = False
+REMOTE_NETOBJ = False
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -429,6 +430,72 @@ def _install_loopback_hook(k32, handle) -> dict:
         return {"status": "patch_failed", "error": C.get_last_error()}
     return {"status": "ok", "cave": hex(cave), "copy_len": hex(copy_len),
             "seq": hex(seq), "buf": hex(buf), "code": code.hex()}
+
+
+def _remote_netobj(session) -> None:
+    """在客户端进程内构造一个 0xC7AF2C 网络对象并调用 0xC654A0 建 socket。"""
+    k32 = C.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
+    k32.OpenProcess.restype = W.HANDLE
+    k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
+    k32.VirtualAllocEx.restype = C.c_void_p
+    k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.FlushInstructionCache.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t]
+    k32.CreateRemoteThread.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, C.c_void_p, C.c_void_p,
+                                       W.DWORD, C.POINTER(W.DWORD)]
+    k32.CreateRemoteThread.restype = W.HANDLE
+    k32.WaitForSingleObject.argtypes = [W.HANDLE, W.DWORD]
+    k32.GetExitCodeThread.argtypes = [W.HANDLE, C.POINTER(W.DWORD)]
+    output = session.run_dir / "remote-netobj.json"
+    result = {"started": time.time(), "status": "waiting"}
+    handle = k32.OpenProcess(0x0438, False, session.info.pid)
+    if not handle:
+        result.update(status="open_process_failed", error=C.get_last_error())
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return
+    try:
+        time.sleep(8)
+        obj = int(k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40))
+        cave = int(k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40))
+        if not obj or not cave:
+            result.update(status="alloc_failed", error=C.get_last_error())
+            return
+        obj_bytes = bytearray(0x40)
+        struct.pack_into("<I", obj_bytes, 0, 0xC7AF2C)
+        code = b"\x60\xb9" + struct.pack("<I", obj)
+        code += b"\x6a\xff"                      # port = -1 (skip select/bind)
+        code += b"\xe8" + struct.pack("<I", (0xC654A0 - (cave + len(code) + 5)) & 0xFFFFFFFF)
+        code += b"\x61\xc3"
+        wrote = C.c_size_t()
+        for address, blob in ((obj, bytes(obj_bytes)), (cave, code)):
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(address),
+                                           C.create_string_buffer(blob, len(blob)), len(blob),
+                                           C.byref(wrote)) or wrote.value != len(blob)):
+                result.update(status="write_failed", address=hex(address), error=C.get_last_error())
+                return
+        k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+        tid = W.DWORD()
+        thread = k32.CreateRemoteThread(handle, None, 0, C.c_void_p(cave), None, 0, C.byref(tid))
+        if not thread:
+            result.update(status="thread_failed", error=C.get_last_error())
+            return
+        k32.WaitForSingleObject(thread, 5000)
+        exit_code = W.DWORD()
+        k32.GetExitCodeThread(thread, C.byref(exit_code))
+        result.update(thread_id=tid.value, thread_exit=exit_code.value, obj=hex(obj), cave=hex(cave))
+        time.sleep(1)
+        buffer = C.create_string_buffer(0x40)
+        got = C.c_size_t()
+        if (k32.ReadProcessMemory(handle, C.c_void_p(obj), buffer, 0x40, C.byref(got))
+                and got.value == 0x40):
+            result["object_hex"] = buffer.raw.hex()
+            result["socket"] = hex(struct.unpack_from("<I", buffer.raw, 0x14)[0])
+        result["status"] = "done"
+    finally:
+        result["finished"] = time.time()
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("[patched] remote netobj:", json.dumps(result, ensure_ascii=False), flush=True)
+        k32.CloseHandle(handle)
 
 
 def _remote_udp_send(session) -> None:
@@ -1865,6 +1932,9 @@ def patched_start(self, exe, settings_session) -> None:
     if REMOTE_UDP_CONNECT:
         threading.Thread(target=_remote_udp_connect, args=(self,),
                          name="remote-udp-connect", daemon=True).start()
+    if REMOTE_NETOBJ:
+        threading.Thread(target=_remote_netobj, args=(self,),
+                         name="remote-netobj", daemon=True).start()
 
 
 # 社区 DEPENDENCIES 只覆盖 DLL 与 CEF；原版根目录还有一批数据/配置文件没被复制。
@@ -1970,7 +2040,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -2025,6 +2095,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="把远程线程收到的应答写入 loopback 接收环")
     parser.add_argument("--remote-udp-connect", action="store_true",
                         help="在客户端进程内用固定源端口完成 getchallenge+connect")
+    parser.add_argument("--remote-netobj", action="store_true",
+                        help="在客户端进程内构造 0xC7AF2C 网络对象并建 socket")
     parser.add_argument("--hook-loopback", action="store_true",
                         help="在 0x6750A0 安装持久 cave hook（实验性，可能崩溃）")
     parser.add_argument("--inject-challenge", action="store_true",
@@ -2063,6 +2135,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     REMOTE_UDP_SEND = known.remote_udp_send
     INJECT_REMOTE_RESPONSE = known.inject_remote_response
     REMOTE_UDP_CONNECT = known.remote_udp_connect
+    REMOTE_NETOBJ = known.remote_netobj
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 

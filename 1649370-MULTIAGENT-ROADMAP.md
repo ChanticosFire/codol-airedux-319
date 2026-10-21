@@ -204,3 +204,7 @@ Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add e
 ## 2026-10-21 G2 客户端网络对象类已还原（本轮）
 
 vtable `0xC7AF2C`，对象布局 `+4 sockaddr_in`、`+0x14 SOCKET`、`+0x18 辅助句柄`；方法 `connect 0xC65480`、`init 0xC654A0`（自己创建 socket 并存 +0x14）、`send 0xC65560`、`recv 0xC655B0`、`sendto 0xC655E0`、`recvfrom 0xC65610`。离线菜单不实例化（扫描 0），但 init 可用来构造网络对象。下一步分配 0x40 对象、写 vtable、调 init 验证 socket。证据 `evidence/experiments/20261021-1649370-net-object-class.json`。
+
+## 2026-10-21 G2 0xC654A0 是 TCP accept（本轮）
+
+构造 0xC7AF2C 对象并调用 `0xC654A0(port=-1)` 后 `[obj+0x14]=0`；解析 IAT 发现 `0xCA8500 = ws2_32!accept`，该函数在 `[obj+0x18]` 的 listen socket 上 accept，并把结果存 +0x14。不能拿它建 UDP socket。下一步用 WSA 建 UDP socket 存 `obj+0x14`，再用对象 `sendto 0xC655E0`/`recvfrom 0xC65610` 方法；或找在线 UDP 对象/vtable。证据 `evidence/experiments/20261021-1649370-netobj-accept.json`。
