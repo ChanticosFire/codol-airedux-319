@@ -306,3 +306,7 @@ synthetic TCLS 启动后存在进程树：root `33424` 退出、游戏子进程 
 ## 2026-10-21 TP URL 静态定位完成，调用图受保护（本轮）
 
 TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase.dll`/`tpsvcBase.dll`/`TASLoginBase.dll`（VA `0x101CC8E4`）、`TGuardBase.dll`（VA `0x106C41E8`）、`Base.dll`；但前三者没有绝对 dword 引用，TGuardBase 只有一处 `0x11337EA1`（像数据指针）。这些模块也没有静态导入 `ShellExecute`/`CreateProcess`/`WinExec`，浏览器 API 是运行时解析或保护/解包路径。结合 cdb 附加挂起，结论：正常静态调用图不可用；下一步走进程内 API hook（shell32/kernel32，按 URL 过滤）或 TGuardBase URL 数据流补丁，而不是继续 cdb。证据 `evidence/experiments/20261021-1649370-tp-static.json`。
+
+## 2026-10-21 进程内 hook 成功压掉 TP 浏览器，但 blanket CreateProcess 也压掉游戏窗口（本轮）
+
+`tools/hook_tp_browser.py` 在完整客户端进程内 patch `shell32!ShellExecuteA/W`、`ShellExecuteExA/W` 和 `kernel32!CreateProcessA/W`（原字节已记录）。结果：TP 警告窗口和浏览器都不再出现；但 60 秒采样内游戏进程始终 `exit_code=259`、0 个窗口。说明 blocking 所有 CreateProcess 同时阻断了游戏/CEF 的窗口路径。下一步改成按命令行过滤的 CreateProcess hook：允许游戏/CEF，只拦截 `gamesafe`/浏览器启动；再观察 TP 警告是否非致命、游戏窗口是否出现。证据 `evidence/experiments/20261021-1649370-tp-hook-results.json`、工具 `tools/hook_tp_browser.py`。

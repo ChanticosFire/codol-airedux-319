@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "patch shell32/kernel32 exports in the full 1649370 process to suppress TP browser launch",
+  "tool": "tools/hook_tp_browser.py",
+  "patches": [
+    {"name": "ShellExecuteA", "va": "0x7573B390", "patched": "mov eax,33; ret 0x18"},
+    {"name": "ShellExecuteW", "va": "0x7573B3F0", "patched": "mov eax,33; ret 0x18"},
+    {"name": "ShellExecuteExA", "va": "0x7573B3B0", "patched": "mov eax,1; ret 4"},
+    {"name": "ShellExecuteExW", "va": "0x7573B3D0", "patched": "mov eax,1; ret 4"},
+    {"name": "CreateProcessA", "va": "0x74E20B50", "patched": "xor eax,eax; ret 0x28"},
+    {"name": "CreateProcessW", "va": "0x74E0D570", "patched": "xor eax,eax; ret 0x28"}
+  ],
+  "result": {
+    "tp_warning_window": "not observed",
+    "browser": "not observed to be launched by the client",
+    "game_window": "none; process alive with exit_code 259 and zero windows for the full 60 s sample",
+    "meaning": "blanket ShellExecute/CreateProcess blocking suppresses the TP browser/warning, but also prevents the game/CEF window path; the next iteration must filter CreateProcess by command line (allow the game/CEF, block gamesafe/browser) instead of blocking all processes"
+  },
+  "next": [
+    "implement command-line filtering in the CreateProcessW hook",
+    "restore normal CreateProcess for the game/CEF, block only gamesafe/browser launches",
+    "then check whether the TP warning is non-fatal once the browser is suppressed"
+  ],
+  "cleanup": "All codoMP/synthetic processes terminated; net_rollback passed."
+}

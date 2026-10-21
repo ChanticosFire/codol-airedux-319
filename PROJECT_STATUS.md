@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 进程内 hook 压掉 TP 浏览器但游戏窗口也消失（2026-10-21）**：patch shell32 ShellExecute*/kernel32 CreateProcess* 后 TP 警告/浏览器不再出现，但 60 秒内进程 0 窗口、exit_code 259。blanket CreateProcess 阻断游戏/CEF 窗口路径。下一步按命令行过滤，只拦 gamesafe/浏览器。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`tools/hook_tp_browser.py` 和 `evidence/experiments/20261021-1649370-tp-hook-results.json`。
+
 > **1649370 TP URL 静态定位（2026-10-21）**：URL 格式串在 ClientBase/tpsvcBase/TASLoginBase（VA 0x101CC8E4）、TGuardBase（0x106C41E8）、Base.dll；无正常绝对引用/静态 ShellExecute 导入，TP 调用图受保护。cdb 附加挂起。下一步改进程内 API hook 或 TGuardBase 数据流补丁。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-tp-static.json`。
 
 > **1649370 cdb 附加 TP 进程失败（2026-10-21）**：synthetic TCLS 后游戏子进程 `9264` 存活，但 `cdb -p 9264 -c "lm;q"` 挂起无输出；root 33424 已退出。TP/anti-debug 阻挡调试器。下一步改静态分析 TASLoginBase/TGuardBase/ClientBase 的 TP URL，或进程内 API hook。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-tp-cdb-attach.json`。
