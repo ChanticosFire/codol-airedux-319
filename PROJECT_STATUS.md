@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 dispatcher arg0=netobj 仍不解析（2026-10-21）**：0x5C1EE0 两个 arg0 组合都只保持 c8=1、无 connect；0x5C13A0 冷调清零网络。UDP 收发已通但 parser 上下文仍缺。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 0x5C1EE0 dispatcher 非破坏性但未解析（2026-10-21）**：最小 buffer 对象调用后 netobj/conn 未清零，c8 仍 1、无 connect；需调 arg0/字段。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 parser 上下文成为新阻断（2026-10-21）**：0x5C13A0 需要 0x5C2040/0x5C2112 的 ebx 队列/流对象；冷调重置网络。UDP 收发已通，但无真实接收循环可抓；需复刻队列对象或真实客户端上下文。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

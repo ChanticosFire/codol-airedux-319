@@ -482,3 +482,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 0x5C1EE0 dispatcher 非破坏性但未解析
 
 构造 0x30 字节 buffer 对象（`+8/+0xC=buf`, `+0x14=0`, `+0x18=len`, `+0x1C=0`），以 `arg0=0`、`arg1=obj`、6 dword netadr 调 `0x5C1EE0`；调用后 `netobj/conn` 没有清零（比冷调 parser 安全），`c8` 仍 1，服务端无 connect。说明入口/字段还不完整（可能 `arg0` 要是 netobj/连接对象，或 `+0x8/+0xC/+0x14` 的 buffer 语义不同）。下一步：试 `arg0=netobj`、调整 buffer 字段，并读返回值。
+
+## 2026-10-21 dispatcher arg0=netobj 仍不解析
+
+`0x5C1EE0(arg0=netobj, arg1=fake buffer obj, netadr)` 调用后 `netobj/conn` 未清零，但 `c8` 仍 1、服务端无 connect。结合 `arg0=0` 也无效，说明 `0x5C1EE0` 不是正确的消息入口，或 buffer 对象字段/前置 `0x66EFD0` 流对象仍缺。UDP 收发已通，但 challengeResponse 无法进入真实 parser；冷调 `0x5C13A0` 会清零网络，`0x5C1EE0` 不解析。下一步只能：完整复刻 `0x4F36C0`/`0x66EFD0` 的队列/流对象，或抓一次真实接收循环的 `ebx`/栈上下文。
