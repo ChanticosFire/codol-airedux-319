@@ -5,7 +5,7 @@
 （ERROR_BAD_IMPERSONATION_LEVEL），即使当前令牌是 Primary + Full elevation。
 
 本包装层不修改社区源码，只在 import 之后替换 ProcessSession.start：
-用 CreateProcessW 以当前用户令牌挂起创建进程，跳过令牌校验与 UAC 断网守卫。
+用 CreateProcessW 以当前用户令牌挂起创建进程，等原版动态 WFP 守卫确认后再恢复。
 
 **关键**：启动参数必须由本文件显式构造。社区的 tools/launch_offline.py 会在
 build_plan() 里补上 --image / --patches / --overlay / --queue-main-menu，
@@ -21,10 +21,13 @@ from __future__ import annotations
 
 import argparse
 import ctypes as C
+import hashlib
+import json
 import os
 import shutil
 import subprocess
 import sys
+import time
 from ctypes import wintypes as W
 from pathlib import Path
 
@@ -36,7 +39,7 @@ if not COMMUNITY_ROOT.is_dir():
     raise SystemExit(f"找不到社区项目目录: {COMMUNITY_ROOT}")
 sys.path.insert(0, str(COMMUNITY_SRC))
 
-from codol_rebuild.platform.win32 import K, PTR, SI, PI, api, check  # noqa: E402
+from codol_rebuild.platform.win32 import K, PTR, SI, PI, SHELLINFO, api, check, wait  # noqa: E402
 from codol_rebuild.runtime import session as session_mod  # noqa: E402
 from codol_rebuild.adapters.game.v1649370.observation_points import BREAKPOINTS  # noqa: E402
 import codol_rebuild.bootstrap.launch as launch_mod  # noqa: E402
@@ -77,7 +80,7 @@ def _build_environment(stage: Path) -> C.Array:
 
 
 def patched_start(self, exe, settings_session) -> None:
-    """替换 ProcessSession.start：CreateProcessW + 跳过令牌校验与断网守卫。"""
+    """替换令牌派生；仍须等动态 WFP 守卫确认后才恢复客户端。"""
     self.settings = settings_session
 
     si = SI()
@@ -103,12 +106,52 @@ def patched_start(self, exe, settings_session) -> None:
         C.cast(environment, PTR), str(self.stage), C.byref(si), C.byref(self.info)))
 
     self.log["pid"] = self.info.pid
-    self.log["launch_path"] = "CreateProcessW (patched, no low token, no offline guard)"
+    self.log["launch_path"] = "CreateProcessW (patched token path, guarded)"
     self.log["token"] = {
         "verified": False,
-        "reason": "patched launch bypasses low-token isolation and offline guard",
+        "reason": "patched launch bypasses low-token isolation",
     }
-    self.log["guard"] = {"skipped": True, "reason": "patched launch"}
+
+    times = [C.c_uint64() for _ in range(4)]
+    check(api(K, "GetProcessTimes", W.BOOL, PTR, *[PTR] * 4)(
+        self.info.process, *(C.byref(t) for t in times)))
+    self.log["creation_time"] = times[0].value
+    guard_path = self.guard_path
+    self.log["guard_sha256"] = hashlib.sha256(guard_path.read_bytes()).hexdigest()
+    request = SHELLINFO()
+    request.size = C.sizeof(request)
+    request.mask = 320
+    request.verb = "runas"
+    request.file = str(guard_path)
+    expected_bound = 0 if self.args.until_close else max(120, self.args.seconds + 60)
+    request.parameters = subprocess.list2cmdline([
+        str(self.run_dir), str(self.info.pid), str(exe),
+        str(times[0].value), str(expected_bound)])
+    request.show = 0
+    check(api(C.WinDLL("shell32", use_last_error=True), "ShellExecuteExW",
+              W.BOOL, C.POINTER(SHELLINFO))(C.byref(request)))
+    self.guard = request.process
+    deadline = time.monotonic() + 30
+    ready_path = self.run_dir / "guard-ready.json"
+    while time.monotonic() < deadline and not ready_path.exists() and wait(self.guard, 100) != 0:
+        pass
+    if not ready_path.exists():
+        raise RuntimeError("动态 WFP 守卫未确认 ready；客户端保持挂起")
+    while True:
+        try:
+            ready = json.loads(ready_path.read_text(encoding="utf-8"))
+            break
+        except json.JSONDecodeError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(0.05)
+    if (ready.get("scope") != "offline-deny-all" or len(ready.get("filter_ids", [])) != 4
+            or not ready.get("job_kill_on_close") or ready.get("max_processes") != 1
+            or ready.get("child_pid") != self.info.pid
+            or int(ready.get("creation_filetime", -1)) != times[0].value
+            or not ready.get("dynamic") or ready.get("bound_seconds") != expected_bound):
+        raise ValueError("动态 WFP 守卫状态不符；客户端保持挂起")
+    self.log["guard"] = ready
 
     self.phase_done("process-and-uac-guard")
 
@@ -144,10 +187,10 @@ FS_CHECK_CANDIDATES = (
     "client_shipretail\\chinese",
     "players",
 )
-# 环境变量 CODOL_FSCHECK_BYTES 可切换内容形态：
-#   empty  -> 0 字节        comment -> 社区那 77 字节注释
+# 环境变量 CODOL_FSCHECK_BYTES 可切换内容形态；默认使用已校验的原包 77 字节：
+#   empty  -> 0 字节        comment -> 原包 77 字节注释
 #   newline-> 单个换行      probe   -> 用 0x4F5120 打开的那个名字当占位
-_FS_CHECK_MODE = os.environ.get("CODOL_FSCHECK_BYTES", "empty").lower()
+_FS_CHECK_MODE = os.environ.get("CODOL_FSCHECK_BYTES", "comment").lower()
 _FF_DIR = OVERLAY / "client_shipretail" / "chinese"
 
 

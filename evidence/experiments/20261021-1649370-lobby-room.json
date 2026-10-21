@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "client_build": 1649370,
+  "source_ifs_sha256": "b544f992fe962247845f57094d4c8a52ab616c4b003f8c2dcb73b87c89a842b4",
+  "filesyscheck_sha256": "d753023fba1af8e6952c7d7204a1737d26bce038d689570798a46565fa6d3fbd",
+  "runs": [
+    {
+      "name": "codex-1649370-full-20261021",
+      "result_path": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\codex-1649370-full-20261021\\result.json",
+      "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+      "guard_scope": "offline-deny-all",
+      "guard_dynamic": true,
+      "guard_filter_count": 4,
+      "guard_cleanup_closed": true,
+      "stop_reason": "observation_timeout",
+      "engine_init_returned": true,
+      "menu_command_queued": true,
+      "local_profile": null,
+      "local_profile_ui_stats_ready": null
+    },
+    {
+      "name": "codex-1649370-capture-20261021",
+      "result_path": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\codex-1649370-capture-20261021\\result.json",
+      "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+      "guard_scope": "offline-deny-all",
+      "guard_dynamic": true,
+      "guard_filter_count": 4,
+      "guard_cleanup_closed": true,
+      "stop_reason": "observation_timeout",
+      "engine_init_returned": true,
+      "menu_command_queued": true,
+      "local_profile": null,
+      "local_profile_ui_stats_ready": null
+    },
+    {
+      "name": "codex-1649370-retry-20261021",
+      "result_path": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\codex-1649370-retry-20261021\\result.json",
+      "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+      "guard_scope": "offline-deny-all",
+      "guard_dynamic": true,
+      "guard_filter_count": 4,
+      "guard_cleanup_closed": true,
+      "stop_reason": "observation_timeout",
+      "engine_init_returned": true,
+      "menu_command_queued": true,
+      "local_profile": {
+        "uid": 922154387090621709,
+        "revision": 49,
+        "new_account": false,
+        "unlock_report": {
+          "preserved": true
+        }
+      },
+      "local_profile_ui_stats_ready": true
+    }
+  ],
+  "ui_evidence": [
+    "evidence/1649370-retry-ui-20261021.png",
+    "evidence/1649370-custom-20261021.png",
+    "evidence/1649370-room-20261021.png",
+    "evidence/1649370-room-ready-20261021.png"
+  ],
+  "observed_boundary": "Lobby and local room verified; no map load or bots verified"
+}

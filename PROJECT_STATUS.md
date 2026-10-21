@@ -1,5 +1,10 @@
 # 阶段状态与证据
 
+> ## 1649370 主线更新（2026-10-21，本轮）
+>
+> `tools/launch_1649370.py` 现以 `CreateProcessW` 绕过 WinError 1346，但恢复社区动态 WFP 守卫的 ready 校验，运行结束时过滤器自动清理。社区原包中的 `fileSysCheck.cfg` 已在资源清单中（77 字节），旧致命错误的实际运行栈指向缺失 IWI。装载完整 image/loose 库并启用 `--local-profile` 后，已**进入原生大厅并创建自定义本地房间**；截图见 [1649370-STATUS.md](1649370-STATUS.md) 顶部索引。房内“准备”尚未触发地图；bot 对战仍未完成。1604220 记录继续作为历史保留。
+
+
 更新：2026-10-26（Asia/Shanghai）；第 188 轮后新增顶部结论索引。
 阶段：M0 完成；M1 进行中；M2 已有目标 Build 的 TCLS/IIPS/Auth/LSG 运行证据，但当前进程令牌为 Medium、没有新实机运行；**M3 完成（大厅已渲染）**；**M4 受阻，根因已定位到服务端数据**（见下方索引）。
 目标：离线复活 CODOL 3.19.26.17 / **Build 1604220**（详见 [VERSION-SWITCH.md](VERSION-SWITCH.md)）。
