@@ -626,3 +626,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 0x62F840(1,0,0) 主线程执行成功，进入黑屏开局等待
 
 修正 CONTEXT_INTEGER 后，用 cave `push 1; push 0; push 0; call 0x62F840`（ECX=room）调用房间开始方法，不再崩溃；客户端黑屏、CPU 52、WS 1.2GB，地图索引仍 -1，`roomstart139-server` 无 UDP。说明 ready/start 方法已真正执行到“开始对局”路径，黑屏是等服务器 gamestate/加载完成。下一步：给本地连接注入 gamestate，或 patch 掉等待服务器的加载门槛。
+
+## 2026-10-21 0x62F840 的 arg0=0/1 都黑屏，怀疑注入点不在安全帧边界
+
+用 cave `push 0/1; push 0; push 0; call 0x62F840`（ecx=room）分别执行，均无崩溃、黑屏、CPU 53、WS 1.2GB、无 UDP；地图索引仍 -1。`original_eip` 落在 `0x945D00`/`0x9F40FE` 一带，可能是在 UI/渲染重入区改了主线程上下文，导致黑屏而非真正开局。下一步：把调用挂到客户端帧边界（`0x4FE220` 入口）做 one-shot hook，而不是在任意 EIP 直接切上下文。

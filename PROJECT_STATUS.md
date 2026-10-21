@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 0x62F840 两种参数都黑屏（2026-10-21）**：无崩溃、CPU53/WS1.2GB；怀疑主线程任意 EIP 注入导致 UI/渲染重入。下一步挂 0x4FE220 帧边界 one-shot。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 房间开始方法 0x62F840(1,0,0) 执行成功（2026-10-21）**：CS 黑屏 CPU52/WS1.2GB，地图索引 -1、无 UDP；黑屏等服务器 gamestate。下一步注入 gamestate 或 patch 加载门槛。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 修正 CONTEXT_INTEGER 后 ready 真正执行（2026-10-21）**：ContextFlags 0x10003 使 ECX=room 生效；0x62F840 不再因 ebx=0 崩，改在堆 0x21A0A000 崩。下一步反汇编 ready 的堆访问/发送路径。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

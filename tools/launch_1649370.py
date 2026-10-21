@@ -240,7 +240,7 @@ def _main_thread_call(session, handle, target: int, ecx_value=None) -> dict:
     main_map = os.environ.get("CODOL_MAIN_MAP")
     exec_cmd = os.environ.get("CODOL_EXEC_CMD")
     if os.environ.get("CODOL_ROOM_START"):
-        code = (b"\x60" + b"\x6a\x01" + b"\x6a\x00" + b"\x6a\x00" +
+        code = (b"\x60" + b"\x6a\x00" + b"\x6a\x00" + b"\x6a\x00" +
                 b"\xe8" + struct.pack("<i", target - (cave + 12)) + b"\x61\xc3")
         wrote = C.c_size_t()
         if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
