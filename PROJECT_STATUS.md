@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 三消息同序列注入仍 challenge 失败（2026-10-21）**：challengeResponse + connectResponse + gamestate 依次入环（cursor=3，state=3，adr 127.0.0.1:28969），客户端仍 `EXE_CLIENTFAILEDTOCHALLENGE`。trio 已送达，但客户端要求自己的 challenge cookie/目标；下一步改写 challenge 目标/端点表，或截获 getchallenge 并用匹配 cookie 回答。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-gamestate-sequence-injected.json`。
+
 > **1649370 G2 带服务端 gamestate 注入仍卡 challenge（2026-10-21）**：2697 服务端 + loopback guard + gamestate 注入，客户端仍 `EXE_CLIENTFAILEDTOCHALLENGE`，服务端日志无 getchallenge/connect。客户端 challenge 目标不是 28969；下一步必须在改状态前同时排入 challengeResponse/connectResponse + gamestate，或改 challenge 目标地址。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-gamestate-challenge-failed.json`。
 
 > **1649370 G2 gamestate 注入后进入 challenge（2026-10-21）**：环注入 3428 字节 gamestate（state 1→3，channel 0x9D，cursor 1）后约 20 秒客户端弹 `EXE_CLIENTFAILEDTOCHALLENGE`，证明它已消费 gamestate 并推进到 challenge；该次无服务端。下一步带 2697 服务端 + loopback guard 注入，观察 challenge 与 `mp_cross_fire` 加载。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-gamestate-injected.json`。

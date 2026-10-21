@@ -248,3 +248,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 G2 带服务端的 gamestate 注入仍卡 challenge（本轮）
 
 2697 服务端 + loopback guard + `--ring-probe --ring-type 4 --inject-gamestate` 联合运行，客户端仍先黑屏再弹 `EXE_CLIENTFAILEDTOCHALLENGE`，而 2697 `qconsole.log` 没有任何 getchallenge/connect。说明客户端 challenge 目标不是 `127.0.0.1:28969`，单纯启动服务端不能满足；必须在改状态前把 `challengeResponse`（必要时还有 `connectResponse`）和 gamestate 一起排进环，或显式改客户端 challenge 目标地址。证据 `evidence/experiments/20261021-1649370-gamestate-challenge-failed.json`。
+
+## 2026-10-21 G2 三消息同序列注入仍 challenge 失败（本轮）
+
+`tools/inject_client_gamestate.py` 在改状态前依次排入 `challengeResponse 1469978033`、`connectResponse map=mp_cross_fire`、3428 字节 gamestate（slot `0x786DBC0/0x786E0C4/0x786E5C8`，cursor=3，state=3，connection adr 设为 127.0.0.1:28969）。客户端仍然黑屏后弹 `EXE_CLIENTFAILEDTOCHALLENGE`。trio 已进入环，但客户端要求自己的 challenge cookie/目标；下一步改写 challenge 目标/端点表，或截获 getchallenge 并用匹配 cookie 回答。证据 `evidence/experiments/20261021-1649370-gamestate-sequence-injected.json`。
