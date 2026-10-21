@@ -430,3 +430,7 @@ conn 创建后写 `c8=2`，依次调 `0xBA3100(conn)`、`0xBA0980(conn)`，两�
 ## 2026-10-21 找到 conn 的 socket 字段 conn+0xC4 并成功创建 0xCCC
 
 `0xC738D0` 只把 `[conn+0xC4]` 初始化为 `-1`；`0xC738E0` 是 socket 创建包装（`socket(AF_INET)` 后写回 `conn+0xC4`）。调用 `0xC738E0(conn+0xC4, 2)` 后 `conn+0xC4=0xCCC`（有效 SOCKET），`conn+0xC8` 仍 1/2。用该 socket 调 `0xBB1420` 发 getchallenge（host/network 序端口都试过）仍未在 28969 抓到包，说明 `0xBB1420` 的参数结构/返回值还有问题。下一步：捕获 `0xBB1420` 的 eax 和 `WSAGetLastError`，或直接调 `ws2_32!sendto` 用 socket 0xCCC 验证。
+
+## 2026-10-21 直接 ws2_32!sendto 用 socket 0xCEC 返回 -1
+
+`0xC738E0` 创建并写回 `conn+0xC4=0xCEC`，但直接调 `ws2_32!sendto(socket=0xCEC, ...)` 返回 -1 (SOCKET_ERROR)，服务端仍无包。说明 `conn+0xC4` 很可能不是 Winsock SOCKET，而是客户端内部 socket 索引/句柄；`0xBB1420` 需要的是另一层映射后的真实 socket。下一步：调 `WSAGetLastError` 确认错误码（可能 10038 not a socket），并找内部 socket ID 到 Winsock SOCKET 的映射/`NET_GetSocket` 函数。

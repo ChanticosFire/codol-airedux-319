@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 direct sendto 用 conn socket 返回 -1（2026-10-21）**：socket 0xCEC 被 ws2_32!sendto 拒绝，服务端无包；conn+0xC4 可能是内部 socket 索引而非 Winsock SOCKET。下一步 WSAGetLastError + 内部→Winsock 映射。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/direct-sendto.json`。
+
 > **1649370 conn socket 字段 0xC4 创建为 0xCCC（2026-10-21）**：0xC738E0 建 socket 并写回；用 0xBB1420 发 getchallenge 仍未到 28969，需捕获返回值/WSA 错误或直接 sendto。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 客户端进程内 socket+0xBB1420 尝试崩溃（2026-10-21）**：远程 socket cave 后客户端退出，未发 UDP 包；远程调 socket 方式/地址/调用约定不对。下一步用 conn 已持有 socket 字段。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
