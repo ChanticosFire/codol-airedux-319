@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "verify the private mini server's stats and gamestate fragment path",
+  "server": "tools/mini_1649370_server.py",
+  "probe": "tools/probe_mini_gamestate.py",
+  "result": {
+    "connect": "connectResponse mapname=mp_cross_fire gametype=war",
+    "stats_replies": 3,
+    "stats_reply": "\\xff\\xff\\xff\\xffstatResponse",
+    "gamestate_fragment_lengths": [1172, 1172, 1114]
+  },
+  "meaning": "The private server now has a working handshake, stats replies, and a usermove-triggered 2697 gamestate fragment burst. This is a server-side prototype only; no 1649370 client with a network object is connected yet.",
+  "next": [
+    "encode the gamestate in the 1649370 framing (not the captured 2697 fragments)",
+    "connect a client that has a network object",
+    "add bot/waypoint state after a client reaches the map"
+  ],
+  "cleanup": "Server process stopped; no game process was started."
+}

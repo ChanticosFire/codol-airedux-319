@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 最小服务端 stats+gamestate 分片通过（2026-10-21）**：每个 stats 包回 statResponse；usermove 后发 2697 捕获分片 `[1172,1172,1114]`，探针实测通过。仍是服务端原型/2697 帧，1649370 客户端尚无网络对象。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-mini-server-gamestate.json`。
+
 > **1649370 自写最小服务端握手通过（2026-10-21）**：`tools/mini_1649370_server.py` 在 28969 实现 getchallenge/connect/stats 记录与 connectResponse；`probe_2697_connect.py` 实测 ok=true。下一步补 stats/usermove/gamestate 编码，再接有网络对象的客户端。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-mini-server-handshake.json`。
 
 > **1649370 VEH 全副本重试无命中（2026-10-21）**：VEH 有效、Base.dll 页 guard 成功，但 10 秒内无异常/EIP=0，游戏无窗口；TP 不通过该副本读格式串。按约定转 method 3 或社区 exe+自写 server。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-tp-veh-retry.json`。

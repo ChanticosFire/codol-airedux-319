@@ -25,6 +25,8 @@ def main() -> int:
     parser.add_argument("--gametype", default="war")
     parser.add_argument("--gamestate", type=Path,
                         default=Path("runs/2697-gamestate-packets/gamestate-final.bin"))
+    parser.add_argument("--gamestate-dir", type=Path, default=Path("runs/2697-gamestate-packets"))
+    parser.add_argument("--send-gamestate", action="store_true", default=True)
     parser.add_argument("--log", type=Path, default=Path("runs/mini-1649370-server.log.jsonl"))
     args = parser.parse_args()
 
@@ -68,10 +70,18 @@ def main() -> int:
                     entry.update({"kind": "oob-other", "body": body.decode("latin-1", "replace")})
             else:
                 entry.update({"kind": "payload"})
-                # A real client sends usermove here; reply with the captured gamestate
-                # only when explicitly requested, because the 1649370 framing differs.
-                if data and data[0] == 1 and args.gamestate.exists():
-                    entry["note"] = "usermove-like packet; gamestate not sent by this prototype"
+                # A real client sends usermove here; reply with the captured
+                # 2697 gamestate fragments as a framing test.
+                if data and data[0] == 1 and args.send_gamestate:
+                    fragments = []
+                    for name in ("033-1172.bin", "034-1172.bin", "035-1114.bin"):
+                        path = args.gamestate_dir / name
+                        if path.exists():
+                            fragments.append(path.read_bytes())
+                    for fragment in fragments:
+                        sock.sendto(fragment, peer)
+                        time.sleep(0.02)
+                    entry["gamestate_fragments"] = [len(f) for f in fragments]
             log.write(json.dumps(entry, ensure_ascii=False) + "\n")
             log.flush()
             print(json.dumps(entry, ensure_ascii=False), flush=True)

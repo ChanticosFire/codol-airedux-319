@@ -334,3 +334,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 自写最小 1649370 服务端握手通过（本轮）
 
 新增 `tools/mini_1649370_server.py`（UDP `127.0.0.1:28969`，不改社区源码），实现 `getchallenge`→`challengeResponse <cookie>`、`connect`→`connectResponse \mapname\mp_cross_fire\gametype\war\sv_maxclients\12\protocol\1\shortversion\1.1.1.13`，并记录 `stats`/payload 包。用 `tools/probe_2697_connect.py` 实测 `ok=true`。下一步补 stats/usermove/gamestate 编码，再接有网络对象的客户端；社区离线 exe 仍缺网络对象，完整 exe 仍被 TP 挡。证据 `evidence/experiments/20261021-1649370-mini-server-handshake.json`。
+
+## 2026-10-21 最小服务端补齐 stats + gamestate 分片（本轮）
+
+`tools/mini_1649370_server.py` 现在对每个 `stats` 包回 `\xff\xff\xff\xffstatResponse`，并在收到 usermove 类包（首字节 1）后依次发送捕获的 2697 gamestate 分片 `[1172, 1172, 1114]`。`tools/probe_mini_gamestate.py` 实测：connectResponse 正常、3 个 statResponse、3 个分片长度正确。注意：这是服务端原型，分片仍是 2697 捕获帧；1649370 客户端还没有网络对象可接。证据 `evidence/experiments/20261021-1649370-mini-server-gamestate.json`。
