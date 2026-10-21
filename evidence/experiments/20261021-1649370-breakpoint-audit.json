@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "run": "codex-1649370-bp-audit-20261021",
+  "run_dir": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\codex-1649370-bp-audit-20261021",
+  "command": "C:\\Python314\\python.exe -B -X utf8 tools\\launch_1649370.py --full --local-profile --audit-breakpoints --seconds 45 --name codex-1649370-bp-audit-20261021 --breakpoint '0x639890:Room start game' --breakpoint '0x7cb572:Ready request' --breakpoint '0x7d08c2:GFx StartMatch' --breakpoint '0x632462:Match command builder'",
+  "input_image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "audit_phases": ["CRT entry", "Switch to main menu", "Local navigation resource"],
+  "custom_points": {
+    "0x639890": "Room start game",
+    "0x7cb572": "Ready request",
+    "0x7d08c2": "GFx StartMatch",
+    "0x632462": "Match command builder"
+  },
+  "observation": "At all three audit phases, every custom point remained registered in DebugLoop.breaks and the target byte read back as 0xCC. Startup and community/local-profile patch installation had not overwritten these traps by Local navigation resource.",
+  "scope_limit": "No Ready or Start click was performed in this run. The audit does not show whether a later UI action overwrites a trap or whether the selected instruction is on the executed callback path.",
+  "stop_reason": "observation_timeout",
+  "guard_cleanup_closed": true,
+  "engine_close_status": 0,
+  "child_terminated": true,
+  "next": "In a room interaction run, audit the same traps immediately before and after Ready and trace the GFx button/action callback. Treat earlier zero hits as limited to the selected addresses."
+}

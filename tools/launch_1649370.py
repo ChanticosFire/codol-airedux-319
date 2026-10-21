@@ -45,6 +45,7 @@ from codol_rebuild.adapters.persistence.sqlite_accounts import AccountRepository
 from codol_rebuild.adapters.persistence import game_settings as game_settings_mod  # noqa: E402
 from codol_rebuild.adapters.game.v1649370.observation_points import BREAKPOINTS  # noqa: E402
 from codol_rebuild.adapters.game.v1649370 import menu_queue as menu_queue_mod  # noqa: E402
+from codol_rebuild.adapters.game.v1649370 import session_bridge as bridge_mod  # noqa: E402
 import codol_rebuild.bootstrap.launch as launch_mod  # noqa: E402
 
 _original_prepare = launch_mod.prepare
@@ -295,6 +296,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     parser.add_argument("--verify-resources", action="store_true")
     parser.add_argument("--map-probe", choices=tuple(MAP_PROBE_FILES))
     parser.add_argument("--map-command-mode", choices=("startup", "queue"), default="startup")
+    parser.add_argument("--audit-breakpoints", action="store_true")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
@@ -356,7 +358,29 @@ def main(argv=None) -> int:
         if not database.is_file():
             raise SystemExit(f"缺少 319 私有档案 {database}；先运行 tools/prepare_1649370_profile.py")
     user = list(sys.argv[1:] if argv is None else argv)
+    audit_breakpoints = "--audit-breakpoints" in user
     host_args = build_host_arguments(user)
+    if audit_breakpoints:
+        original_breakpoint = bridge_mod.GameSessionBridge.breakpoint
+
+        def audited_breakpoint(self, event, address, original, label, row, thread, ctx):
+            original_breakpoint(self, event, address, original, label, row, thread, ctx)
+            if label not in ("CRT entry", "Local navigation resource", "Switch to main menu"):
+                return
+            points = []
+            for value in self.args.breakpoint:
+                point, name = value.split(":", 1)
+                target = int(point, 0)
+                armed = self.debug.breaks.get(target)
+                actual = self.process.read(target, 1).hex()
+                points.append({"address": hex(target), "label": name,
+                               "registered": armed is not None,
+                               "armed_byte": actual == "cc",
+                               "actual_byte": actual,
+                               "saved_original": armed[0].hex() if armed else None})
+            self.record({"breakpoint_audit": {"phase": label, "points": points}})
+
+        bridge_mod.GameSessionBridge.breakpoint = audited_breakpoint
     if MAP_PROBE and MAP_COMMAND_MODE == "queue":
         menu_queue_mod.COMMAND = ("\nswitchtomainmenu\ndevmap " + MAP_PROBE + "\n").encode("ascii")
         print("[patched] map probe queued after main-menu transition:", MAP_PROBE, flush=True)
