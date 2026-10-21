@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 netadr 正确但 EXE_HOSTUNREACH（2026-10-21）**：从 `NET_AdrToString` 确认 1649370 `netadr_t` 为 `+0x14` 类型、`+0x18` IPv4、`+0x1C` 网络序端口；写入 `type=4, 127.0.0.1, 28960` 后调用 `0x5C05F0`，客户端仍报 `EXE_HOSTUNREACH`，服务端无 getchallenge，客户端无 28960 UDP。地址/端口/类型偏移已排除，剩余是客户端网络栈/socket 未初始化或守卫/发送路径问题。下一步审计 `NET_SendPacket`/`NET_Init` 与 connection sock，或获取 1649370 服务端/协议。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-netadr-hostunreach.json`。
+
 > **1649370 G2 在线 lobby 路径受“不加载驱动”限制（2026-10-21）**：v0.0.7 本地服务端已成功启动（health ok，3074/3075/17500/8000/8080 监听），但客户端启动器要求原版 `codoMP_client_shipRetailBase.dll`/反作弊栈，与目标“不加载驱动”冲突，且该服务端没有房间/对局应答。已停止服务端，端口释放。剩余选项：1649370 专用服务器，或继续离线客户端的地址/连接适配并验证 2.6.9.7 wire 兼容。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-online-lobby-feasibility.json`。
 
 > **1649370 G2 换向：直接调用只置连接状态（2026-10-21）**：预写 `0x76446A1` 端点表与 `0xC7AF590` 为 `localhost` 后调用 `0x5BE730`，断点命中、连接状态置 4、前端状态 5，但 `[0x84244B8]` 地址结构全 0、connection 对象地址字段全 0，28969/28960 均无 UDP 包。直接调用连续三轮无连接，按路线停止，改走在线 lobby：用 1649370 v0.0.7 服务端/启动器进大厅，捕获房间/服务器列表请求并返回本地服务器条目，让客户端自己的连接代码填地址。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-prewrite-port.json`。

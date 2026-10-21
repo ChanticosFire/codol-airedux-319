@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "run": "codex-1649370-netadr3-20261021",
+  "purpose": "populate the 1649370 connection netadr_t with 127.0.0.1:28960 and run the connect state machine",
+  "netadr_layout": {
+    "source": "1649370 NET_AdrToString at 0x5C7C13",
+    "type_0x14": 4,
+    "ipv4_0x18": "7f 00 00 01",
+    "port_0x1c": "network order 0x7120 (28960)",
+    "note": "This differs from the 2.6.9.7 netadr_t layout inferred earlier; the address is at +0x18 and the port at +0x1c."
+  },
+  "prewrite_result": {
+    "connection": "0x1311032C",
+    "address_bytes": "040000007f00000171200000",
+    "status": "ok"
+  },
+  "main_call": {
+    "status": "armed",
+    "target": "0x5C05F0",
+    "ecx": "0x1311032C",
+    "cave": "0x50480000"
+  },
+  "observed_result": {
+    "client_error": "EXE_HOSTUNREACH",
+    "server_connection": "no getchallenge/connect in the 2.6.9.7 qconsole.log",
+    "client_udp_to_28960": "none",
+    "guard": "loopback UDP 127.0.0.1:28960 allowed",
+    "guard_cleanup": {"closed": true, "engine_close_status": 0, "error": ""}
+  },
+  "interpretation": "The netadr address/port/type are now written at the offsets actually used by 1649370, but the client still fails with EXE_HOSTUNREACH before any packet reaches the server. The remaining causes are the client's network stack/socket being disabled in the offline build, the send path using a different socket/type field, or the loopback guard rejecting the actual send. This is no longer an address-format problem.",
+  "next": [
+    "inspect NET_SendPacket/NET_Init and the connection sock field in 1649370",
+    "determine whether the offline rebuild ever initializes the client UDP socket",
+    "if the socket path is intentionally disabled, a 1649370 dedicated server alone will not help without restoring that client path",
+    "request a 1649370 server/protocol capture from the user if available"
+  ],
+  "cleanup": "Client and reference server terminated. tools/net_rollback.ps1 reported no guard/client processes, no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}

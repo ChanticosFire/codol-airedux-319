@@ -27,6 +27,7 @@ import hashlib
 import json
 import os
 import shutil
+import socket
 import struct
 import subprocess
 import sys
@@ -82,7 +83,9 @@ ROOM_COMMAND = None
 ROOM_COMMAND_TIMEOUT = 180
 PREFIX_CBUF = None
 MAIN_CALL = None
+MAIN_CALL_ECX = None
 PREWRITES = []
+CONNECTION_ADR_PORT = None
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -124,7 +127,7 @@ def _build_environment(stage: Path) -> C.Array:
     return C.create_unicode_buffer(joined, len(joined))
 
 
-def _main_thread_call(session, handle, target: int) -> dict:
+def _main_thread_call(session, handle, target: int, ecx_value=None) -> dict:
     """在已暂停的游戏主线程上调用一个无参函数。
 
     在主线程栈上压入原 EIP 作为返回地址，把 EIP 指向分配好的代码 cave：
@@ -162,6 +165,18 @@ def _main_thread_call(session, handle, target: int) -> dict:
         return {"status": "get_context_failed", "error": C.get_last_error()}
     original_eip = C.c_uint32.from_address(aligned + eip_offset).value
     original_esp = C.c_uint32.from_address(aligned + esp_offset).value
+    ecx = None
+    if ecx_value == "connection":
+        buffer = C.create_string_buffer(4)
+        got = C.c_size_t()
+        if (not k32.ReadProcessMemory(handle, C.c_void_p(0x331C0C8), buffer, 4, C.byref(got))
+                or got.value != 4):
+            return {"status": "connection_read_failed", "error": C.get_last_error()}
+        ecx = struct.unpack("<I", buffer.raw)[0] ^ 0xD362501F
+        if not 0x10000 <= ecx < 0x7FFF0000:
+            return {"status": "connection_decode_failed", "encoded": buffer.raw.hex()}
+    elif ecx_value is not None:
+        ecx = int(ecx_value)
     cave = k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40)  # COMMIT|RESERVE, RWX
     if not cave:
         return {"status": "alloc_failed", "error": C.get_last_error()}
@@ -181,11 +196,14 @@ def _main_thread_call(session, handle, target: int) -> dict:
                 "error": C.get_last_error()}
     C.c_uint32.from_address(aligned + esp_offset).value = original_esp - 4
     C.c_uint32.from_address(aligned + eip_offset).value = cave
+    if ecx is not None:
+        C.c_uint32.from_address(aligned + 172).value = ecx
     if not set_context(session.info.thread, C.c_void_p(aligned)):
         return {"status": "set_context_failed", "cave": hex(cave), "error": C.get_last_error()}
     return {"status": "armed", "target": hex(target), "cave": hex(cave),
             "cave_code": code.hex(), "original_eip": hex(original_eip),
-            "original_esp": hex(original_esp), "new_esp": hex(original_esp - 4)}
+            "original_esp": hex(original_esp), "new_esp": hex(original_esp - 4),
+            "ecx": hex(ecx) if ecx is not None else None}
 
 
 def _room_command_injector(session, command: str) -> None:
@@ -294,6 +312,36 @@ def _room_command_injector(session, command: str) -> None:
                     prewrite_rows.append({"address": hex(address), "bytes": data.hex(), "status": "ok"})
                 if prewrite_rows:
                     result["prewrites"] = prewrite_rows
+                if CONNECTION_ADR_PORT:
+                    encoded = u32(0x331C0C8)
+                    connection = (encoded ^ 0xD362501F) if encoded is not None else 0
+                    if not 0x10000 <= connection < 0x7FFF0000:
+                        result["connection_adr"] = {"status": "invalid_connection",
+                                                    "encoded": hex(encoded or 0)}
+                        result["status"] = "connection_address_failed"
+                        return
+                    # 1649370 netadr_t: +0x14 type, +0x18 IPv4 bytes, +0x1c
+                    # network-order port. Set type=NA_IP(4) so the sender does
+                    # not treat the endpoint as loopback/IPv6/unspecified.
+                    adr = struct.pack("<I4sHH", 4, b"\x7f\x00\x00\x01",
+                                      socket.htons(CONNECTION_ADR_PORT), 0)
+                    target_address = connection + 0x14
+                    wrote = C.c_size_t()
+                    if (not k32.WriteProcessMemory(handle, C.c_void_p(target_address),
+                                                   C.create_string_buffer(adr, len(adr)),
+                                                   len(adr), C.byref(wrote))
+                            or wrote.value != len(adr) or read(target_address, len(adr)) != adr):
+                        result["connection_adr"] = {"status": "write_failed",
+                                                    "connection": hex(connection),
+                                                    "address": hex(target_address),
+                                                    "error": C.get_last_error()}
+                        result["status"] = "connection_address_failed"
+                        return
+                    result["connection_adr"] = {"status": "ok", "connection": hex(connection),
+                                                "address": hex(target_address),
+                                                "bytes": adr.hex(),
+                                                "port": CONNECTION_ADR_PORT,
+                                                "ip": "127.0.0.1"}
                 wrote = C.c_size_t()
                 if not k32.WriteProcessMemory(handle, C.c_void_p(pointer + length),
                                               C.create_string_buffer(payload, len(payload)),
@@ -315,7 +363,7 @@ def _room_command_injector(session, command: str) -> None:
                               attempt=attempt + 1)
                 if MAIN_CALL:
                     try:
-                        result["main_call"] = _main_thread_call(session, handle, MAIN_CALL)
+                        result["main_call"] = _main_thread_call(session, handle, MAIN_CALL, MAIN_CALL_ECX)
                     except Exception as error:  # noqa: BLE001 - report, never hide
                         result["main_call"] = {"status": "exception", "error": repr(error)}
                 return
@@ -538,7 +586,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, PREWRITES
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -562,9 +610,13 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="loopback guard 允许的 UDP 端口；非 28969 时使用打过补丁的私有副本")
     parser.add_argument("--main-call", type=lambda value: int(value, 0),
                         help="在 room-command 注入后、主线程仍暂停时调用一个无参函数地址")
+    parser.add_argument("--main-call-ecx",
+                        help="调用前设置 ECX；填 connection 表示解码后的连接对象指针")
     parser.add_argument("--prewrite", action="append", type=_parse_prewrite, default=[],
                         metavar="ADDRESS=HEX",
                         help="在主线程暂停窗口写入固定内存；可重复")
+    parser.add_argument("--connection-adr-port", type=int,
+                        help="把解码后的 connection 对象 netadr_t 写成 127.0.0.1:<port>")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
@@ -573,7 +625,9 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     LOOPBACK_GUARD = known.loopback_guard
     LOOPBACK_PORT = known.loopback_port
     MAIN_CALL = known.main_call
+    MAIN_CALL_ECX = known.main_call_ecx
     PREWRITES = known.prewrite
+    CONNECTION_ADR_PORT = known.connection_adr_port
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 
