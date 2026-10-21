@@ -1,8 +1,9 @@
 {
-  "pid": 33728,
+  "pid": 22236,
   "ws2_32": "0x76bc0000",
   "sendto": "0x76bdad80",
-  "socket": "0xcec",
-  "sendto_return": 4294967295,
+  "socket": "0xcd4",
+  "sendto_return": 37,
+  "wsa_error": 0,
   "packet_len": 37
 }

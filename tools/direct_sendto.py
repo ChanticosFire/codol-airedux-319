@@ -94,6 +94,8 @@ def main() -> int:
     w(h, pkt, packet)
     w(h, sa, struct.pack("<HH4s8x", 2, socket.htons(28969), socket.inet_aton("127.0.0.1")))
     cave = int(k32.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x40))
+    log = cave + 0x400
+    wsaerr = ws + export_rva(r"C:\Windows\SysWOW64\ws2_32.dll", "WSAGetLastError")
     code = bytearray()
     code += b"\x6a\x10"                          # tolen=16
     code += b"\x68" + struct.pack("<I", sa)      # to
@@ -103,16 +105,25 @@ def main() -> int:
     code += b"\x68" + struct.pack("<I", sock)
     call_pos = len(code)
     code += b"\xe8\x00\x00\x00\x00"
+    code += b"\xa3" + struct.pack("<I", log)
+    err_pos = len(code)
+    code += b"\xe8\x00\x00\x00\x00"
+    code += b"\xa3" + struct.pack("<I", log + 4)
     code += b"\xc3"
     struct.pack_into("<i", code, call_pos + 1, sendto - (cave + call_pos + 5))
+    struct.pack_into("<i", code, err_pos + 1, wsaerr - (cave + err_pos + 5))
     w(h, cave, bytes(code))
     tid = W.DWORD()
     th = k32.CreateRemoteThread(h, None, 0, C.c_void_p(cave), None, 0, C.byref(tid))
     k32.WaitForSingleObject(th, 3000)
     code_out = W.DWORD()
     k32.GetExitCodeThread(th, C.byref(code_out))
+    lb = C.create_string_buffer(8)
+    g = C.c_size_t()
+    k32.ReadProcessMemory(h, C.c_void_p(log), lb, 8, C.byref(g))
+    r, err = struct.unpack("<II", lb.raw)
     out = {"pid": p, "ws2_32": hex(ws), "sendto": hex(sendto), "socket": hex(sock),
-           "sendto_return": code_out.value, "packet_len": len(packet)}
+           "sendto_return": r, "wsa_error": err, "packet_len": len(packet)}
     Path("evidence/experiments/direct-sendto.json").write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(out, indent=2))
     return 0

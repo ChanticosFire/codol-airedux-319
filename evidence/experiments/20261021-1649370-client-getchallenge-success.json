@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "send the first getchallenge from the client process through a real UDP socket",
+  "method": "ws2_32!socket(2,2,0) via remote cave -> store at conn+0xC4 -> ws2_32!sendto",
+  "client": {"pid": 22236, "conn": "0x2462BC00", "socket": "0xCD4"},
+  "sendto": {"return": 37, "wsa_error": 0},
+  "server": {
+    "log": "runs/udp-socket-server.log.jsonl",
+    "packet": "ffffffff6765746368616c6c656e6765203020226137333161663439613661326337653222",
+    "ascii": "\\xff\\xff\\xff\\xffgetchallenge 0 \"a731af49a6a2c7e2\"",
+    "peer": "127.0.0.1:49314",
+    "kind": "getchallenge"
+  },
+  "meaning": "The client process now sends a real UDP getchallenge to the private 1649370 server. Previous failures were because conn+0xC4 held an internal socket id, not a Winsock UDP SOCKET; ws2_32!socket(2,2,0) works.",
+  "next": [
+    "receive/process challengeResponse in the client (recvfrom or the client's recv wrapper)",
+    "drive connect/connectResponse and gamestate",
+    "then the map/loading path"
+  ],
+  "cleanup": "Client/server still running at capture time; will be terminated after evidence."
+}

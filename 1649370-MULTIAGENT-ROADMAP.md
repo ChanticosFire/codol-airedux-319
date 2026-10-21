@@ -434,3 +434,9 @@ conn 创建后写 `c8=2`，依次调 `0xBA3100(conn)`、`0xBA0980(conn)`，两�
 ## 2026-10-21 直接 ws2_32!sendto 用 socket 0xCEC 返回 -1
 
 `0xC738E0` 创建并写回 `conn+0xC4=0xCEC`，但直接调 `ws2_32!sendto(socket=0xCEC, ...)` 返回 -1 (SOCKET_ERROR)，服务端仍无包。说明 `conn+0xC4` 很可能不是 Winsock SOCKET，而是客户端内部 socket 索引/句柄；`0xBB1420` 需要的是另一层映射后的真实 socket。下一步：调 `WSAGetLastError` 确认错误码（可能 10038 not a socket），并找内部 socket ID 到 Winsock SOCKET 的映射/`NET_GetSocket` 函数。
+
+## 2026-10-21 成功从客户端进程发出第一个 UDP getchallenge，服务端已收到
+
+`0xC738E0` 建的不是 Winsock UDP socket（`sendto` 报 10057 WSAENOTCONN）；改用 `ws2_32!socket(2,2,0)` 远程创建并写回 `conn+0xC4=0xCD4`，再调 `ws2_32!sendto`：返回 37、WSA error 0；私有服务端日志收到：
+`ffffffff6765746368616c6c656e6765203020226137333161663439613661326337653222`
+ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49314`。这证明客户端 UDP 发送链路已通，之前的失败都是因为 `conn+0xC4` 是内部 socket id 而不是 Winsock SOCKET。下一步：在客户端接收/处理 challengeResponse（recvfrom 或客户端 recv 包装），再驱动 connect/gamestate。证据 `evidence/experiments/20261021-1649370-client-getchallenge-success.json`。
