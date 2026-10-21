@@ -370,3 +370,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 conn 构造函数两次调用都崩溃
 
 第一次用 `VirtualAllocEx(0xAE8)` + 0x9C 零参数调 `0xBA2800`，客户端 unhandled exception；第二次改用游戏 `new 0xB74220(0xAE8)`，并按 `0xB81EF0` 的栈布局传 0x88 零结构 + `[netobj,1,0,0,0]`，仍然 `unhandled_exception`，没有 conn 状态。说明仅调构造函数不够：0x88 结构内容、`0xB81EF0` 的完整前置（`[ebp+0x94]/[ebp+0x98]/[ebp+0x9C]`、初始化）必须一起满足。下一步直接调整个 `0xB81EF0`，或先完整复刻它的参数结构/前置状态。
+
+## 2026-10-21 成功创建真实 conn 对象 0x245EBBF0（vtable 0xD5A4F4）
+
+改用 `0xB82070` 连接包装函数（内部 `0xB81EF0`，默认 flags `0x80000`），cave 传 `cfg`（netadr 127.0.0.1:28969）+ 0x88 零结构，`ecx=netobj`，调用成功。结果：`netobj+0x4F4 = 0x245EBBF0`，vtable `0xD5A4F4`，`conn+0xC8=4`，`conn+0x644=0`，`netobj+0x4F8` 仍 `0xBAADF000`。随后调 `0xBA4080(conn, netobj+0x500)`，conn 状态仍 4，服务端没有收到 UDP getchallenge。说明 conn 已创建，但发送/tick 路径还没接通。下一步：调 `0xB7A670`/`0xBA0780` 驱动状态机，或把 conn 接到全局连接对象 `0x5C05F0`/`0x5C0EF3`，再观察 28969。证据 `evidence/experiments/20261021-1649370-conn-object-created.json`、工具 `tools/start_conn.py`、`tools/conn_send.py`。

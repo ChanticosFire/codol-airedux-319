@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "create the real conn object through the 0xB82070 connect wrapper",
+  "method": "remote cave: push cfg + arg1; 0x88 zero struct; ecx=netobj; call 0xB82070",
+  "result": {
+    "netobj": "0x245E9FE8",
+    "conn": "0x245EBBF0",
+    "vtable": "0xD5A4F4",
+    "conn_c8": "0x4",
+    "conn_644": "0x0",
+    "state_4F8": "0xBAADF000"
+  },
+  "send_attempt": {
+    "method": "0xBA4080(conn, netobj+0x500)",
+    "result": "conn created but conn_c8 stayed 4; no UDP getchallenge reached the private server"
+  },
+  "meaning": "0xB82070 successfully allocates/constructs the real conn object (vtable 0xD5A4F4). The remaining gap is the send/tick path: 0xBA4080 alone did not send, so the client network pump or another connect/tick call is still needed.",
+  "next": [
+    "call 0xB7A670 / 0xBA0780 with netobj/conn to tick the state machine",
+    "or call 0x5C05F0/0x5C0EF3 after wiring the global connection object",
+    "then watch for UDP getchallenge on 127.0.0.1:28969"
+  ],
+  "cleanup": "Client terminated; private server stopped; net_rollback passed."
+}

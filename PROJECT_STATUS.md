@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 真实 conn 对象创建成功（2026-10-21）**：`0xB82070` 包装调用创建 `conn=0x245EBBF0`（vtable 0xD5A4F4，c8=4），但 `0xBA4080` 后服务端仍无 getchallenge。下一步驱动 0xB7A670/状态机或接全局 0x5C05F0。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-conn-object-created.json`。
+
 > **1649370 conn 构造函数两次调用崩溃（2026-10-21）**：VirtualAllocEx 零参数、游戏 new + 0x88 零结构 + `[netobj,1,0,0,0]` 都触发 unhandled_exception；需直接调整个 0xB81EF0/完整前置。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-conn-constructor-found.json`。
 
 > **1649370 找到 conn 构造函数 0xBA2800（2026-10-21）**：`0xB81F7C` new 0xAE8 → `0xBA2800` 构造 → `[netobj+0x4F4]` 赋值 → `0xBA4080` 启动。直接构造因参数/堆不对导致客户端异常；下一步调整个 `0xB81EF0` 或游戏 new。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-conn-constructor-found.json`。
