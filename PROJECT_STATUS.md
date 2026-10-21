@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 补 mp_nuked 后仍黑屏（2026-10-21）**：提取 ff/lf/const 并 map-probe，准备后仍黑屏 CPU56/WS1.2GB；不是单纯地图资产缺失。下一步交叉火力对照 + gamestate 接入。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 准备后黑屏、疑似 mp_nuked 资产缺失（2026-10-21）**：room.startgame 注入成功（length 0→16），双击准备后黑屏、CPU 69/WS 1.2GB；房间地图核弹小镇 mp_nuked 未提取。下一步改交叉火力或提取 nuked。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 AI 开关已打开并应用（2026-10-21）**：高级选项显示 AI开关=打开，关闭后房间地图变为化学工厂；但“准备”不开始。下一步 room.startgame/主线程开始。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
