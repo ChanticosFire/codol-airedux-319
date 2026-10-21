@@ -606,3 +606,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 活进程 32 位线程栈已抓到：主线程在正常帧循环 Sleep(1)，不是死锁
 
 `dump_threads32_live.py` 用 `Wow64GetThreadContext` 取到主线程 TID 6768 `EIP=76F4858C`（ntdll 等待），EBP 链回到 `0x4FE37E`（`0x4FE220` 客户端帧循环里的 `Sleep(1)`），再上 `0x4FEA95`、`0x77FA69`（`0x77FA04` 主循环）、`0xC42788`；其余线程在 `0x67CBAE`/`0x67C6BD`/`0x49F32D` 等 worker。说明黑屏时游戏主循环仍在跑，地图/世界没有完成初始化，不是死锁。下一步：从这些 worker 和地图加载状态全局变量定位“地图请求已入队但未完成”的原因。
+
+## 2026-10-21 worker 反汇编：0x67CBA0 是 1ms 事件等待，0x49F32D 是线程退出/错误路径
+
+黑屏时主线程正常 `Sleep(1)` 帧循环；worker `0x67CBA0` 对 `[0x7886BBC]` 句柄调用 `WaitForSingleObject(...,1)`，`0x67C6BD` 只是线程 proc 返回后的 `add esp,4`；`0x49F32D` 走 `0x66D930`（字符串 `0xDCA224`）后发事件，像线程退出/错误清理。说明没有线程卡在加载函数里；下一步直接读地图/世界状态全局（`0x35053DC`、`0x766A20C`、`0x7886BBC`）判断地图请求是否被消费。
