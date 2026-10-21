@@ -132,3 +132,7 @@ state 4 是 connect 分支，state 3 才是 getchallenge 分支（`0x5C0F3C` 跳
 ## 2026-10-21 G2 通道表为空、客户端捷径耗尽（本轮）
 
 扫描 `0xE3F4DB0` 157 项全空；伪造 0xA8 会话调 `0xBB2C40`、fake EBP 帧调 `0x5C1678` 均 `unhandled_exception`。2697 的 challengeResponse 已可用，但离线客户端无法接受/建真实通道。下一步需裁决：继续真实 `0xBAD810` 会话对象逆向（高风险），或改做 2.6.9.7/3.3.3.3 可玩构建。证据 `evidence/experiments/20261021-1649370-transport-table-empty.json`。
+
+## 2026-10-21 G2 raw UDP 补丁首试（本轮）
+
+type=4 的 `0x622040` 参数：len=0x26、data=0x1AE210、type=4、127.0.0.1:28969、channel=0x9D；Com Error `EXE_CLIENTFAILEDTOCHALLENGE`。把入口 9 字节改成 socket/sendto cave 后客户端 `unhandled_exception`；ABI/调用路径不安全。下一步只替换无效通道分支、保留原函数其它路径，并先逐指令 trace。证据 `evidence/experiments/20261021-1649370-raw-udp-patch-crash.json`。

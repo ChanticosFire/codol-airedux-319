@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 raw UDP 补丁首试崩溃（2026-10-21）**：type=4 的 `0x622040` 参数已捕获（len=0x26、data=0x1AE210、127.0.0.1:28969、channel=0x9D），Com Error `EXE_CLIENTFAILEDTOCHALLENGE`。把入口 9 字节改成 socket/sendto cave 后客户端 `unhandled_exception`；ABI/调用路径不安全。下一步只替换无效通道分支并保留原函数其它路径。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-raw-udp-patch-crash.json`。
+
 > **1649370 G2 通道表为空（2026-10-21）**：`0xE3F4DB0` 157 项全部为空；伪造 0xA8 会话调 `0xBB2C40`、fake EBP 帧调 `0x5C1678` 均 `unhandled_exception`。客户端侧捷径耗尽；2697 的 challengeResponse 已可用，但离线客户端无法接受/建真实通道。需裁决继续真实 `0xBAD810` 会话对象逆向，或改做 2.6.9.7/3.3.3.3 可玩构建。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-transport-table-empty.json`。
 
 > **1649370 G2 传输初始化冷调用崩溃（2026-10-21）**：`0xBB2C40(arg1=[host+0xC], arg2=connection, ecx=biz)` → 客户端 `unhandled_exception`。它需要 `0xBAD810/0xB74FE0` 的真实会话对象，冷调用不可行。客户端侧最后一条捷径关闭；需要 1649370 服务端/协议资产，或改用其它可玩构建。详见 [1649370-G2-GAP.md](1649370-G2-GAP.md) 和 `evidence/experiments/20261021-1649370-init-transport-crash.json`。

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "bypass the transport channel table by patching 0x622040 to send directly through Winsock",
+  "type4_args": {
+    "run": "codex-1649370-wrapper4-20261021",
+    "breakpoint": "0x622040",
+    "stack_prefix": "b5fb77002600000010e21a00040000007f0000017129000000000000000000009d000000e8e11a0047526700",
+    "decoded": {
+      "len_or_index": "0x26",
+      "data": "0x1AE210",
+      "type": "4",
+      "ip": "0x0100007F (127.0.0.1)",
+      "port": "0x7129 (28969)",
+      "channel": "0x9D"
+    },
+    "com_error": "EXE_CLIENTFAILEDTOCHALLENGE"
+  },
+  "raw_patch": {
+    "run": "codex-1649370-rawudp-20261021",
+    "patch": "0x622040 first 9 bytes -> jmp cave; cave creates socket(2,2,17) and calls sendto(sock, [ebp+0xc], [ebp+8], 0, sockaddr(127.0.0.1:28969), 16); returns eax=0",
+    "result": "client stop_reason=unhandled_exception before ring-probe.json",
+    "meaning": "the raw sendto stub is not yet ABI-safe: 0x622040 may be called for other paths, the argument slots or return contract are wrong, or the caller expects the original function's side effects"
+  },
+  "next": [
+    "patch only the type=4/getchallenge path, preserving the original function for all other calls",
+    "validate the 0x622040 stack contract with a per-instruction trace before the first call",
+    "or keep the original function and only replace its invalid-channel branch with a raw sendto",
+    "do not repeat the blanket 9-byte patch"
+  ],
+  "cleanup": "Client and 2697 server terminated; no WFP/process residue."
+}
