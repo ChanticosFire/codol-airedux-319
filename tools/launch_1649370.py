@@ -92,6 +92,7 @@ HOOK_LOOPBACK = False
 INJECT_CHALLENGE = False
 CALL_CHALLENGE_PARSER = False
 INIT_TRANSPORT = False
+CALL_CHALLENGE_BRANCH = False
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -420,6 +421,145 @@ def _install_loopback_hook(k32, handle) -> dict:
             "seq": hex(seq), "buf": hex(buf), "code": code.hex()}
 
 
+def _call_challenge_branch(session) -> None:
+    """直接进入 0x5C1678 challengeResponse 分支，使用伪造的 EBP 帧。"""
+    k32 = C.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
+    k32.OpenProcess.restype = W.HANDLE
+    k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.SuspendThread.argtypes = [W.HANDLE]
+    k32.SuspendThread.restype = W.DWORD
+    k32.ResumeThread.argtypes = [W.HANDLE]
+    k32.ResumeThread.restype = W.DWORD
+    k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
+    k32.VirtualAllocEx.restype = C.c_void_p
+    k32.FlushInstructionCache.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t]
+    wow64_get = getattr(k32, "Wow64GetThreadContext", k32.GetThreadContext)
+    wow64_set = getattr(k32, "Wow64SetThreadContext", k32.SetThreadContext)
+    wow64_get.argtypes = [W.HANDLE, C.c_void_p]
+    wow64_set.argtypes = [W.HANDLE, C.c_void_p]
+    output = session.run_dir / "challenge-branch.json"
+    text = b"challengeResponse -486178985\x00"
+    result = {"started": time.time(), "status": "waiting", "text": text.decode("latin-1")}
+    handle = k32.OpenProcess(0x0438, False, session.info.pid)
+    if not handle:
+        result.update(status="open_process_failed", error=C.get_last_error())
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return
+
+    def read(va: int, count: int):
+        buffer = C.create_string_buffer(count)
+        got = C.c_size_t()
+        if not k32.ReadProcessMemory(handle, C.c_void_p(va), buffer, count, C.byref(got)) or got.value != count:
+            return None
+        return buffer.raw
+
+    def u32(va: int):
+        data = read(va, 4)
+        return struct.unpack("<I", data)[0] if data else None
+
+    def call_rel(target: int, at: int) -> bytes:
+        return b"\xe8" + struct.pack("<I", (target - (at + 5)) & 0xFFFFFFFF)
+
+    connection = 0
+    try:
+        deadline = time.monotonic() + 180
+        while time.monotonic() < deadline:
+            stage = u32(0xE59D20) or 0
+            encoded = u32(0x331C0C8) or 0
+            candidate = encoded ^ 0xD362501F
+            if stage >= 4 and 0x10000 <= candidate < 0x7FFF0000:
+                connection = candidate
+                break
+            time.sleep(0.5)
+        if not connection:
+            result.update(status="connection_not_ready")
+            return
+        if k32.SuspendThread(session.info.thread) == 0xFFFFFFFF:
+            result.update(status="suspend_failed", error=C.get_last_error())
+            return
+        try:
+            context_size, eip_offset, esp_offset = 716, 184, 196
+            storage = C.create_string_buffer(context_size + 16)
+            aligned = (C.addressof(storage) + 15) & ~15
+            C.memset(aligned, 0, context_size)
+            C.c_uint32.from_address(aligned).value = 0x00010001
+            if not wow64_get(session.info.thread, C.c_void_p(aligned)):
+                result.update(status="get_context_failed", error=C.get_last_error())
+                return
+            original_eip = C.c_uint32.from_address(aligned + eip_offset).value
+            original_esp = C.c_uint32.from_address(aligned + esp_offset).value
+            cave = int(k32.VirtualAllocEx(handle, None, 0x4000, 0x3000, 0x40))
+            if not cave:
+                result.update(status="alloc_failed", error=C.get_last_error())
+                return
+            text_addr = cave + 0x100
+            stub = cave + 0x200
+            saved_esp = cave + 0x300
+            frame = cave + 0x1000
+            frame_ebp = frame + 0x2800
+            cookie = (u32(0xE3F240) or 0) ^ frame_ebp
+            frame_bytes = bytearray(0x3000)
+            base = 0x2800
+            struct.pack_into("<I", frame_bytes, base, 0)              # saved ebp
+            struct.pack_into("<I", frame_bytes, base + 4, stub)       # return
+            struct.pack_into("<I", frame_bytes, base + 0xc, 4)        # netadr type
+            struct.pack_into("<I", frame_bytes, base + 0x10, 0x0100007F)  # ip
+            struct.pack_into("<I", frame_bytes, base + 0x14, 0x00007129)  # port/pad
+            struct.pack_into("<I", frame_bytes, base + 0x24, 0)       # channel
+            struct.pack_into("<I", frame_bytes, base - 8, cookie & 0xFFFFFFFF)
+            wrote = C.c_size_t()
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(frame), C.create_string_buffer(bytes(frame_bytes), len(frame_bytes)),
+                                           len(frame_bytes), C.byref(wrote)) or wrote.value != len(frame_bytes)):
+                result.update(status="frame_write_failed", error=C.get_last_error())
+                return
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(text_addr),
+                                           C.create_string_buffer(text, len(text)), len(text),
+                                           C.byref(wrote)) or wrote.value != len(text)):
+                result.update(status="text_write_failed", error=C.get_last_error())
+                return
+            stub_code = b"\x8b\x25" + struct.pack("<I", saved_esp) + b"\x61\xc3"
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(stub),
+                                           C.create_string_buffer(stub_code, len(stub_code)), len(stub_code),
+                                           C.byref(wrote)) or wrote.value != len(stub_code)):
+                result.update(status="stub_write_failed", error=C.get_last_error())
+                return
+            code = b"\x60\x89\x25" + struct.pack("<I", saved_esp)
+            code += b"\xbe" + struct.pack("<I", text_addr)
+            code += b"\xbd" + struct.pack("<I", frame_ebp)
+            code += b"\x31\xdb"
+            code += call_rel(0x5C1678, cave + len(code))
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                           len(code), C.byref(wrote)) or wrote.value != len(code)):
+                result.update(status="cave_write_failed", error=C.get_last_error())
+                return
+            k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(original_esp - 4),
+                                           C.create_string_buffer(struct.pack("<I", original_eip), 4), 4,
+                                           C.byref(wrote)) or wrote.value != 4):
+                result.update(status="return_write_failed", error=C.get_last_error())
+                return
+            C.c_uint32.from_address(aligned + esp_offset).value = original_esp - 4
+            C.c_uint32.from_address(aligned + eip_offset).value = cave
+            if not wow64_set(session.info.thread, C.c_void_p(aligned)):
+                result.update(status="set_context_failed", error=C.get_last_error())
+                return
+            result.update(status="armed", connection=hex(connection), cave=hex(cave),
+                          frame=hex(frame_ebp), code=code.hex())
+        finally:
+            k32.ResumeThread(session.info.thread)
+        time.sleep(5)
+        result["state_after"] = u32(0x76446B0)
+        result["channel_after"] = u32(connection + 0x28)
+        result["status"] = "done"
+    finally:
+        result["finished"] = time.time()
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("[patched] challenge branch:", json.dumps(result, ensure_ascii=False), flush=True)
+        k32.CloseHandle(handle)
+
+
 def _init_transport(session) -> None:
     """尝试用真实参数调用 0xBB2C40，让 biz+0x18 闸门自然置 1。"""
     k32 = C.WinDLL("kernel32", use_last_error=True)
@@ -500,13 +640,21 @@ def _init_transport(session) -> None:
             if not cave:
                 result.update(status="alloc_failed", error=C.get_last_error())
                 return
+            fake = cave + 0x800
+            fake_bytes = bytearray(0x100)
+            fake_bytes[4:8] = struct.pack("<I", 1)  # refcount used by 0x7F5E40
+            wrote = C.c_size_t()
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(fake), C.create_string_buffer(bytes(fake_bytes), len(fake_bytes)),
+                                           len(fake_bytes), C.byref(wrote)) or wrote.value != len(fake_bytes)):
+                result.update(status="fake_write_failed", error=C.get_last_error())
+                return
+            result["fake"] = hex(fake)
             code = b"\x60"
-            code += b"\x68" + struct.pack("<I", connection)
+            code += b"\x68" + struct.pack("<I", fake)
             code += b"\x68" + struct.pack("<I", arg1)
             code += b"\xb9" + struct.pack("<I", biz)
             code += call_rel(0xBB2C40, cave + len(code))
             code += b"\x83\xc4\x08\x61\xc3"
-            wrote = C.c_size_t()
             if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
                                            len(code), C.byref(wrote)) or wrote.value != len(code)):
                 result.update(status="cave_write_failed", error=C.get_last_error())
@@ -1170,6 +1318,9 @@ def patched_start(self, exe, settings_session) -> None:
     if INIT_TRANSPORT:
         threading.Thread(target=_init_transport, args=(self,),
                          name="init-transport", daemon=True).start()
+    if CALL_CHALLENGE_BRANCH:
+        threading.Thread(target=_call_challenge_branch, args=(self,),
+                         name="call-challenge-branch", daemon=True).start()
 
 
 # 社区 DEPENDENCIES 只覆盖 DLL 与 CEF；原版根目录还有一批数据/配置文件没被复制。
@@ -1275,7 +1426,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -1318,6 +1469,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="主线程直接调用 0x5C0FD0 解析 challengeResponse")
     parser.add_argument("--init-transport", action="store_true",
                         help="用 host+0xC/connection 参数调用 0xBB2C40 初始化传输闸门")
+    parser.add_argument("--call-challenge-branch", action="store_true",
+                        help="用伪造 EBP 帧直接进入 0x5C1678 challengeResponse 分支")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
@@ -1335,6 +1488,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     INJECT_CHALLENGE = known.inject_challenge
     CALL_CHALLENGE_PARSER = known.call_challenge_parser
     INIT_TRANSPORT = known.init_transport
+    CALL_CHALLENGE_BRANCH = known.call_challenge_branch
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 

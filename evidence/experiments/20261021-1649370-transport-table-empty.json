@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "check for any pre-existing transport channel before attempting more client injection",
+  "table_scan": {
+    "run": "codex-1649370-table-scan-20261021",
+    "table": "0xE3F4DB0, 157 entries * 0x18",
+    "nonnull_entries": 0,
+    "conclusion": "the offline client has no pre-existing transport channel to reuse"
+  },
+  "additional_attempts": {
+    "fake_session_0xBB2C40": "allocated a 0xA8-style fake object with refcount=1 at +4, arg1=[host+0xC], ecx=biz -> client unhandled_exception",
+    "fake_ebp_0x5C1678": "constructed a fake EBP frame with netadr, cookie and return stub, called the challengeResponse branch directly -> client unhandled_exception"
+  },
+  "state": "no client-side shortcut remains that has not either crashed or been ignored. The 2697 server response is known-good, but the offline client cannot be driven to accept it or to open a real transport channel without the genuine lobby/session initialization.",
+  "cleanup": "No client/guard process remains."
+}
