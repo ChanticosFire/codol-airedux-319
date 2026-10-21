@@ -322,3 +322,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 安装真实 TGuard 服务也不能让 TP 放行（本轮）
 
 从私有副本运行 `TGuardSvc.exe -install`（服务名 `TGuardSvc`，Manual），`Start-Service` 后 Status=Running；再用合成 TCLS 启动完整客户端，结果仍没有游戏窗口（采样进程无窗口后结束），TP 警告这次未出现。随后已 `-uninstall` 移除服务。结论：单靠真实 TGuard 服务不能满足 TP；TP 仍要求真实 TCLS/TesSafe 登录/token 环境，或必须在受保护的 TP 判定里做运行时 patch。证据 `evidence/experiments/20261021-1649370-tguard-service.json`。
+
+## 2026-10-21 PAGE_GUARD+VEH 跟踪 TP URL 未命中（本轮）
+
+`tools/trace_tp_url.py` 在完整客户端内存中只找到 Base.dll 的 URL 格式串副本 `0x61E56B98`，把页 `0x61E56000` 设为 `PAGE_READONLY|PAGE_GUARD` 成功，并注入 VEH（handler `0x11230000`）。等待 8–12 秒，`exception_address/eip` 仍为 0，游戏仍无窗口。说明 TP 不读这个 Base.dll 副本，或读的是稍后加载模块里的另一份，或 VEH 安装未生效。下一步：在进程恢复前安装 VEH 并保护所有模块的所有副本，或按用户允许的 method 2 转 ETW/内核驱动级跟踪。证据 `evidence/experiments/20261021-1649370-tp-veh-trace.json`。

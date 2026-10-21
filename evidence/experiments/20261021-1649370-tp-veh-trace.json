@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "trace the TP URL reader with a one-shot PAGE_GUARD and an in-process VEH (no debugger)",
+  "tool": "tools/trace_tp_url.py",
+  "run": {
+    "pid": 33908,
+    "needle_hits": [{"module": "codoMP_client_shipRetailBase.dll", "address": "0x61E56B98"}],
+    "guard": {"page": "0x61E56000", "protection": "PAGE_READONLY|PAGE_GUARD (0x102)", "guard_set": true},
+    "veh": {"handler": "0x11230000", "addveh": "0x74E8A442"},
+    "exception_address": "0x0",
+    "eip": "0x0"
+  },
+  "result": "the guard was set successfully but no guard exception was recorded after 8-12 s; the full client still did not create a game window",
+  "meaning": "TP either reads a different copy of the URL format string (another module/loaded later), reads it before the guard is installed, or the VEH installer did not take effect. The Base.dll copy alone is not the reader.",
+  "next": [
+    "install the VEH and guard earlier (before the process resumes) and scan/protect every copy in every module",
+    "or move to the allowed method 2: ETW/kernel/driver-level tracing that survives TP anti-debug",
+    "then patch the caller of the format string"
+  ],
+  "cleanup": "Game/synthetic processes terminated; net_rollback passed."
+}
