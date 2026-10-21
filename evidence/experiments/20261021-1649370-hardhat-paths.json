@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "try the native v461 hardhat map from the full client in every plausible runtime directory",
+  "map": "runs/20261021-1649370-hardhat/mp_hardhat_sh.ff (35,578,133 bytes, version 461, publisher signature verified)",
+  "placements": [
+    "runtime/client_shipretail/chinese (map-probe default)",
+    "runtime/main",
+    "runtime/zone"
+  ],
+  "commands": ["devmap mp_hardhat_sh", "map mp_hardhat_sh"],
+  "result": "Cbuf injection succeeded (old_length 0 -> new_length 23/20), but the community codol1649370-offline.exe did not enter the map; the window showed black or returned to the lobby/inventory. No Com Error was raised.",
+  "prior_finding": "the roadmap already recorded that devmap/map are not registered commands in this client and have no effect; this run confirms it with a native signed map",
+  "conclusion": "The full client map assets are valid and extractable, but the community offline executable is client-only: it has no listen server / local map-load entry. A map can only be entered through a server gamestate (or a different executable that includes the server).",
+  "next": [
+    "use the full client maps with a 1649370-compatible server, or",
+    "construct/wire the client network object so the 2697 server gamestate can drive map load"
+  ],
+  "cleanup": "Client/guard terminated; no WFP residue."
+}

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 原生 hardhat 三目录均不进图（2026-10-21）**：v461 签名 `mp_hardhat_sh.ff` 放入 `client_shipretail/chinese`、`main`、`zone` 后，Cbuf `devmap`/`map` 注入成功但仍黑屏/回大厅；`devmap`/`map` 不是该客户端注册命令，社区 exe 无 listen server/本地开图入口，地图只能由服务端 gamestate 驱动。完整客户端地图资产可用于 2697 服务端，剩余是客户端网络对象/连接路径。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-hardhat-paths.json`。
+
 > **1649370 自检纠正：完整客户端在 `使命召唤OL`（2026-10-21）**：此前只搜了 `1649370` 和 `Original Client`，漏掉 `E:\GAME\COD\使命召唤OL`。该目录有 `IIPS\IIPSDownload\*.ifs` 地图包；已提取原生 v461 签名的 `mp_hardhat_sh.ff`（35.5MB，zone 76.5MB）并加入 `--map-probe mp_hardhat_sh`。Cbuf `devmap`/`map` 注入成功，但社区 exe 黑屏后回大厅，未进地图。下一步确认社区 exe 是否缺 listen-server/map-load，或改用完整客户端 exe。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-full-client-maps.json`。
 
 

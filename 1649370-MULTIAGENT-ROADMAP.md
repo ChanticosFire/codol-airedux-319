@@ -224,3 +224,7 @@ vtable `0xC7AF2C`，对象布局 `+4 sockaddr_in`、`+0x14 SOCKET`、`+0x18 辅�
 ## 2026-10-21 自检纠正：完整客户端在使命召唤OL（本轮）
 
 此前只搜了 `E:\GAME\COD\1649370` 与 `Original Client`，漏掉 `E:\GAME\COD\使命召唤OL`。该目录有 `IIPS\IIPSDownload\*.ifs` 地图包；用 `extract_signed_ifs_fastfiles_1649370.py` 从 `ff_dlc18_mp_hardhat_sh_V37.ifs` 提取出原生 v461、发布者签名验证通过的 `mp_hardhat_sh.ff`（35.5MB，zone 76.5MB，382 assets）及 load/const，并加入 `--map-probe mp_hardhat_sh`。Cbuf `devmap`/`map mp_hardhat_sh` 注入成功（0→23/20），但社区 exe 黑屏数秒后回大厅/仓库，未进地图。下一步确认社区 exe 是否缺 listen-server/map-load 路径，或改用完整客户端 `codoMP_client_shipRetail.exe`。证据 `evidence/experiments/20261021-1649370-full-client-maps.json`。
+
+## 2026-10-21 原生 hardhat 三目录均不进图（本轮）
+
+把从完整客户端 `ff_dlc18_mp_hardhat_sh_V37.ifs` 提取的 v461 签名 `mp_hardhat_sh.ff` 分别放到 `runtime\client_shipretail\chinese`、`runtime\main`、`runtime\zone`，Cbuf `devmap`/`map` 都注入成功（0→23/20），但社区 `codol1649370-offline.exe` 仍黑屏/回大厅，无 Com Error。结合路线图既有结论：`devmap`/`map` 在此客户端不是注册命令，社区 exe 是 client-only，没有 listen server/本地开图入口；地图只能由服务端 gamestate 驱动。完整客户端地图资产已可用（可喂 2697 服务端），剩余是客户端网络对象/连接路径。证据 `evidence/experiments/20261021-1649370-hardhat-paths.json`。
