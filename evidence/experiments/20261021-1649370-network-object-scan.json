@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "look for the client network object whose vtable contains the recvfrom wrapper 0xC65610",
+  "vtable": "0xC7AF2C",
+  "scanner": "tools/scan_client_network_objects.py",
+  "runs": [
+    {"pid": 24452, "result": "no object found"},
+    {"pid": 24452, "result": "no object found on a second scan"}
+  ],
+  "interpretation": "The offline client does not instantiate the vtable 0xC7AF2C network object while sitting in the menu. This is consistent with the earlier findings: the offline rebuild has Winsock imports and can create sockets via a remote thread, but its own network object/socket is never constructed.",
+  "consequence": [
+    "there is no existing network object socket to repoint at the remote UDP socket",
+    "the remote-thread socket + ring/parser bridge remains the only available path",
+    "constructing the client network object or feeding its parser remains the open problem"
+  ],
+  "cleanup": "No client/guard process remains; no WFP residue."
+}

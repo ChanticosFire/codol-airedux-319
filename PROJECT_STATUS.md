@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 离线菜单没有网络对象（2026-10-21）**：扫描 vtable `0xC7AF2C`（recvfrom 包装器）两次均 0 个对象。客户端有 Winsock 导入/远程线程可建 socket，但自身网络对象从未构造，没有现成 socket 可改指。剩余路径：构造客户端网络对象，或把服务端数据喂进客户端环/解析器。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`tools/scan_client_network_objects.py` 和 `evidence/experiments/20261021-1649370-network-object-scan.json`。
+
 > **1649370 G2 connect 后 9 字节包 = 空快照（2026-10-21）**：用 cookie/seq XOR 解码，消息最后一字节恒为 `0x06` = `svc_snapshot`；326 个/2 秒是服务端持续推送空/最小快照，不是 stats/keepalive。前 4 字节为快照头。下一步保持 socket 收流并桥接客户端或复现 ACK/命令。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-postconnect-decode.json`。
 
 > **1649370 G2 9 字节包是 netchan XOR 编码（2026-10-21）**：`SV_Netchan_Encode` 对 `data[4..]` 用 `challenge ^ outgoingSequence` + `lastClientCommandString` 做 XOR；9 字节包 = 4 字节 seq + 5 字节编码消息，变化字节不是 checksum/stats。下一步解码该消息或按 keepalive/ACK-only 处理。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-postconnect-xor.json`。
