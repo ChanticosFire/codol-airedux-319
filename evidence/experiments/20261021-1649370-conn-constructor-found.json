@@ -9,9 +9,11 @@
     "start": "0xB82025 call 0xBA4080(conn, netobj+0x500)"
   },
   "attempt": {
-    "method": "VirtualAllocEx(0xAE8) + cave: sub esp,0x9C; ecx=object; call 0xBA2800; then write netobj+0x4F4 and call 0xBA4080 with netadr 127.0.0.1:28969",
-    "result": "the client terminated with an unhandled exception during the probe; no conn evidence was produced",
-    "meaning": "the direct constructor call did not receive the expected 0x88-byte argument structure/stack or the object must be allocated by the game's own allocator; the constructor/start routine itself is real and is the next target"
+    "method_1": "VirtualAllocEx(0xAE8) + cave: sub esp,0x9C; ecx=object; call 0xBA2800; then write netobj+0x4F4 and call 0xBA4080 with netadr 127.0.0.1:28969",
+    "result_1": "the client terminated with an unhandled exception during the probe; no conn evidence was produced",
+    "method_2": "game new 0xB74220(0xAE8) + 0x88 zero struct + args [netobj,1,0,0,0] + call 0xBA2800; then assign netobj+0x4F4 and call 0xBA4080",
+    "result_2": "the client also terminated with unhandled_exception; no conn state was recorded",
+    "meaning": "the constructor/start arguments are still not fully correct (the 0x88-byte struct or the surrounding 0xB81EF0 setup matters), and calling the constructor alone is not enough"
   },
   "next": [
     "call 0xB81EF0 (the whole connect function) with the full 0x88-byte struct instead of calling the constructor directly",

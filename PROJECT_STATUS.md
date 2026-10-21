@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 conn 构造函数两次调用崩溃（2026-10-21）**：VirtualAllocEx 零参数、游戏 new + 0x88 零结构 + `[netobj,1,0,0,0]` 都触发 unhandled_exception；需直接调整个 0xB81EF0/完整前置。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-conn-constructor-found.json`。
+
 > **1649370 找到 conn 构造函数 0xBA2800（2026-10-21）**：`0xB81F7C` new 0xAE8 → `0xBA2800` 构造 → `[netobj+0x4F4]` 赋值 → `0xBA4080` 启动。直接构造因参数/堆不对导致客户端异常；下一步调整个 `0xB81EF0` 或游戏 new。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-conn-constructor-found.json`。
 
 > **1649370 conn 方法无直接 vtable 引用（2026-10-21）**：0xBA0780/0xBA0DE0/0xBA34D0 全文件 dword 搜索 0 命中，构造路径混淆；netobj+0x4F4 无静态非零写入。需 DR0 写断点+真实连接触发，或完整客户端正常连接对照。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

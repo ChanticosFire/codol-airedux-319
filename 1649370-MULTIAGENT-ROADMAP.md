@@ -366,3 +366,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 找到真正的 conn 构造函数 0xBA2800 和连接函数 0xB81EF0
 
 `0xB81F7C` 处 `push 0xAE8; call new; ecx=object; call 0xBA2800`，构造后 `0xB81FFD` 写 `[netobj+0x4F4]`，再 `0xB82025` 调 `0xBA4080(conn, netobj+0x500)` 启动连接。`0xBA2800` 设置 vtable `0xD5A4F4`、复制 0x88 字节结构、`ret 0x9C`。直接构造尝试失败：用 `VirtualAllocEx(0xAE8)` + cave 传 0x9C 零参数调 `0xBA2800`，客户端在 ~12 秒内 unhandled exception 终止，没有产生 conn 证据。说明参数结构/堆分配方式不对；下一步应直接调整个 `0xB81EF0` 并传完整 0x88 结构，或先用游戏 `new 0xB74220` 分配对象。证据 `evidence/experiments/20261021-1649370-conn-constructor-found.json`。
+
+## 2026-10-21 conn 构造函数两次调用都崩溃
+
+第一次用 `VirtualAllocEx(0xAE8)` + 0x9C 零参数调 `0xBA2800`，客户端 unhandled exception；第二次改用游戏 `new 0xB74220(0xAE8)`，并按 `0xB81EF0` 的栈布局传 0x88 零结构 + `[netobj,1,0,0,0]`，仍然 `unhandled_exception`，没有 conn 状态。说明仅调构造函数不够：0x88 结构内容、`0xB81EF0` 的完整前置（`[ebp+0x94]/[ebp+0x98]/[ebp+0x9C]`、初始化）必须一起满足。下一步直接调整个 `0xB81EF0`，或先完整复刻它的参数结构/前置状态。

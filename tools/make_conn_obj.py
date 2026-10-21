@@ -71,22 +71,38 @@ def main() -> int:
     if not netobj:
         return 1
 
-    conn = int(k32.VirtualAllocEx(h, None, 0xAE8, 0x3000, 0x04))
-    # sub esp,0x9c; mov ecx,conn; call constructor; ret (constructor ret 0x9c cleans args)
-    code = (b"\x81\xec\x9c\x00\x00\x00" +
-            b"\xb9" + struct.pack("<I", conn) +
-            b"\xe8" + struct.pack("<i", 0xBA2800 - (0 + 0)) + b"\xc3")
-    # call target is cave-relative; relocate below
-    result["stub_note"] = "built below"
-    addr = int(k32.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x40))
-    code = (b"\x81\xec\x9c\x00\x00\x00" +
-            b"\xb9" + struct.pack("<I", conn) +
-            b"\xe8" + struct.pack("<i", 0xBA2800 - (addr + 16)) + b"\xc3")
-    w(h, addr, code)
+    conn_box = None
+    cave_addr = int(k32.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x40))
+    code = bytearray()
+    code += b"\x68\xe8\x0a\x00\x00"                 # push 0xAE8
+    new_call = len(code)
+    code += b"\xe8\x00\x00\x00\x00"                 # call new
+    code += b"\x83\xc4\x04"                         # add esp,4
+    code += b"\xa3" + struct.pack("<I", cave_addr + 0x800)  # mov [box],eax
+    code += b"\x68" + struct.pack("<I", 0)          # arg4
+    code += b"\x68" + struct.pack("<I", 0)          # arg3
+    code += b"\x68" + struct.pack("<I", 0)          # arg2 bool
+    code += b"\x68" + struct.pack("<I", 1)          # arg1
+    code += b"\x68" + struct.pack("<I", netobj)     # arg0 netobj
+    code += b"\x81\xec\x88\x00\x00\x00"             # sub esp,0x88
+    code += b"\xb9\x22\x00\x00\x00"                 # mov ecx,0x22
+    code += b"\x31\xc0"                             # xor eax,eax
+    code += b"\x89\xe7"                             # mov edi,esp
+    code += b"\xf3\xab"                             # rep stosd
+    code += b"\x8b\x0d" + struct.pack("<I", cave_addr + 0x800)  # mov ecx,[box]
+    ctor_call = len(code)
+    code += b"\xe8\x00\x00\x00\x00"                 # call constructor
+    code += b"\xa1" + struct.pack("<I", cave_addr + 0x800)      # mov eax,[box]
+    code += b"\xc3"
+    struct.pack_into("<i", code, new_call + 1, 0xB74220 - (cave_addr + new_call + 5))
+    struct.pack_into("<i", code, ctor_call + 1, 0xBA2800 - (cave_addr + ctor_call + 5))
+    w(h, cave_addr, bytes(code))
     tid = W.DWORD()
-    thread = k32.CreateRemoteThread(h, None, 0, C.c_void_p(addr), None, 0, C.byref(tid))
+    thread = k32.CreateRemoteThread(h, None, 0, C.c_void_p(cave_addr), None, 0, C.byref(tid))
     k32.WaitForSingleObject(thread, 3000)
-    time.sleep(0.5)
+    exit_code = W.DWORD()
+    k32.GetExitCodeThread(thread, C.byref(exit_code))
+    conn = u32(h, cave_addr + 0x800) or exit_code.value
     result["conn"] = hex(conn)
     result["vtable"] = hex(u32(h, conn))
     w(h, netobj + 0x4F4, struct.pack("<I", conn))
