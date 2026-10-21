@@ -108,3 +108,7 @@
 ## 2026-10-21 G2 getchallenge 捕获（本轮）
 
 state 4 是 connect 分支，state 3 才是 getchallenge 分支（`0x5C0F3C` 跳表）。state=3 后在 `0x6750A0` 断点命中，栈上得到 `getchallenge 0 "a731af49a6a2c7e2"`（38B），arg1=0/ring A、arg3=2、arg5=28969、arg8=0x9D。文本握手可达，无需传输通道。环 A 光标 `0x788680C` 未观察到递增；下一步用代码 cave 持久 hook `0x6750A0` 捕获并桥接 2697。证据 `evidence/experiments/20261021-1649370-getchallenge-captured.json`。
+
+## 2026-10-21 G2 持久 hook 崩溃（本轮）
+
+`0x6750A0` 入口 cave hook（保存 flags/regs、复制 `[esp+8]`、重放 prologue、跳回 `0x6750A5`）两次都让客户端 `unhandled_exception`（加 `cld` 前后）。一次性断点仍可靠，已抓到 `getchallenge 0 "a731af49a6a2c7e2"`。hook 由 `--hook-loopback` 控制、默认关闭。下一步用一次性断点 + Python UDP 桥完成 challenge/connect，不继续修 hook。证据 `evidence/experiments/20261021-1649370-loopback-hook-crash.json`。

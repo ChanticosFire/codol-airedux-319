@@ -88,6 +88,7 @@ PREWRITES = []
 CONNECTION_ADR_PORT = None
 TRANSPORT_CONNECT = False
 RING_PROBE = False
+HOOK_LOOPBACK = False
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -372,6 +373,50 @@ def _transport_connect_injector(session) -> None:
         k32.CloseHandle(handle)
 
 
+def _install_loopback_hook(k32, handle) -> dict:
+    """在 0x6750A0 入口装持久 cave hook，把每帧 C2S 数据复制到共享缓冲。"""
+    k32.VirtualProtectEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, C.POINTER(W.DWORD)]
+    k32.VirtualProtectEx.restype = W.BOOL
+    k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
+    k32.VirtualAllocEx.restype = C.c_void_p
+    cave = int(k32.VirtualAllocEx(handle, None, 0x2000, 0x3000, 0x40))
+    if not cave:
+        return {"status": "alloc_failed", "error": C.get_last_error()}
+    copy_len, seq, buf = cave + 0x1000, cave + 0x1004, cave + 0x1008
+    code = b"\x9c\x60\xfc"                  # pushfd; pushad; cld
+    code += b"\x8d\x6c\x24\x24"             # lea ebp,[esp+0x24]  (original esp)
+    code += b"\x8b\x75\x08"                 # mov esi,[ebp+8]    data
+    code += b"\x8b\x4d\x28"                 # mov ecx,[ebp+0x28] length
+    code += b"\xba\xe6\x04\x00\x00"         # mov edx,0x4e6
+    code += b"\x3b\xca"                     # cmp ecx,edx
+    code += b"\x76\x02"                     # jbe +2
+    code += b"\x8b\xca"                     # mov ecx,edx
+    code += b"\x89\x0d" + struct.pack("<I", copy_len)
+    code += b"\xbf" + struct.pack("<I", buf)
+    code += b"\xf3\xa4"                     # rep movsb
+    code += b"\xff\x05" + struct.pack("<I", seq)
+    code += b"\x61\x9d"                     # popad; popfd
+    code += b"\x55\x8b\xec\x53\x56"         # original 5 prologue bytes
+    code += b"\xe9" + struct.pack("<I", (0x6750A5 - (cave + len(code) + 5)) & 0xFFFFFFFF)
+    wrote = C.c_size_t()
+    if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                   len(code), C.byref(wrote)) or wrote.value != len(code)):
+        return {"status": "cave_write_failed", "error": C.get_last_error()}
+    k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+    old = W.DWORD()
+    if not k32.VirtualProtectEx(handle, C.c_void_p(0x6750A0), 5, 0x40, C.byref(old)):
+        return {"status": "protect_failed", "error": C.get_last_error()}
+    jump = b"\xe9" + struct.pack("<I", (cave - 0x6750A5) & 0xFFFFFFFF)
+    ok = k32.WriteProcessMemory(handle, C.c_void_p(0x6750A0), C.create_string_buffer(jump, 5), 5,
+                                C.byref(wrote))
+    k32.VirtualProtectEx(handle, C.c_void_p(0x6750A0), 5, old.value, C.byref(old))
+    k32.FlushInstructionCache(handle, C.c_void_p(0x6750A0), 5)
+    if not ok or wrote.value != 5:
+        return {"status": "patch_failed", "error": C.get_last_error()}
+    return {"status": "ok", "cave": hex(cave), "copy_len": hex(copy_len),
+            "seq": hex(seq), "buf": hex(buf), "code": code.hex()}
+
+
 def _ring_probe_injector(session) -> None:
     """把连接 adr 设为 type=2 loopback，调用 0x5C05F0，观察环 A 是否写入 getchallenge。"""
     k32 = C.WinDLL("kernel32", use_last_error=True)
@@ -449,6 +494,11 @@ def _ring_probe_injector(session) -> None:
             if not cave:
                 result.update(status="alloc_failed", error=C.get_last_error())
                 return
+            if HOOK_LOOPBACK:
+                result["hook"] = _install_loopback_hook(k32, handle)
+                if result["hook"].get("status") != "ok":
+                    result.update(status="hook_failed")
+                    return
             adr = connection + 0x14
             adr_bytes = struct.pack("<I4sHHIII", 2, b"\0\0\0\0", socket.htons(28969),
                                     0, 0, 0, 0x9D)
@@ -502,6 +552,13 @@ def _ring_probe_injector(session) -> None:
                 cursor = (cursor + 1) & 0xFFFFFFFF
             time.sleep(0.1)
         result["cursor_end"] = hex(u32(0x788680C) or 0)
+        hook = result.get("hook") or {}
+        if hook.get("status") == "ok":
+            seq_value = u32(int(hook["seq"], 16)) or 0
+            length = u32(int(hook["copy_len"], 16)) or 0
+            data = read(int(hook["buf"], 16), min(max(length, 1), 0x4E6)) or b""
+            result["hook_packets"] = {"seq": seq_value, "length": length, "data": data.hex(),
+                                      "ascii": data.decode("latin-1", "replace")}
         result["status"] = "done"
     finally:
         result["finished"] = time.time()
@@ -896,7 +953,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -931,6 +988,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="主线程调用 0x621E50 建传输通道，再调用 0x5C05F0 发 getchallenge")
     parser.add_argument("--ring-probe", action="store_true",
                         help="把连接设为 type=2 loopback，调用 0x5C05F0 并捕获环 A 写入")
+    parser.add_argument("--hook-loopback", action="store_true",
+                        help="在 0x6750A0 安装持久 cave hook（实验性，可能崩溃）")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
@@ -944,6 +1003,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     CONNECTION_ADR_PORT = known.connection_adr_port
     TRANSPORT_CONNECT = known.transport_connect
     RING_PROBE = known.ring_probe
+    HOOK_LOOPBACK = known.hook_loopback
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 

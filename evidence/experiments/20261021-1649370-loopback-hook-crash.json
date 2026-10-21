@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "persistently capture every 0x6750A0 loopback send by patching the function entry",
+  "attempts": [
+    {
+      "name": "codex-1649370-hook-20261021",
+      "hook": "0x6750A0 -> cave (pushfd/pushad, copy [esp+8] data with length [esp+0x28], replay 5 prologue bytes, jmp 0x6750A5)",
+      "result": "client terminated unhandled_exception before ring-probe.json was written"
+    },
+    {
+      "name": "codex-1649370-hook2-20261021",
+      "change": "added cld before rep movsb",
+      "result": "client again terminated unhandled_exception; no ring-probe.json"
+    }
+  ],
+  "known_good": {
+    "method": "one-shot debugger breakpoint at 0x6750A0",
+    "packet": "getchallenge 0 \"a731af49a6a2c7e2\"",
+    "length": 38,
+    "evidence": "evidence/experiments/20261021-1649370-getchallenge-captured.json"
+  },
+  "interpretation": "The persistent cave hook is not yet safe. The one-shot breakpoint proves the packet and arguments, but the hook crashes on the first call. Likely causes are the replay of the original prologue with a mismatched EBP/ESP, the absolute jmp-back displacement, or clobbered flags/registers. The hook is now behind --hook-loopback and disabled by default so --ring-probe remains usable.",
+  "next": [
+    "fix the hook by replaying the exact original bytes and validating EBP/ESP with a single-step comparison",
+    "or avoid the hook: use the one-shot breakpoint capture and a Python UDP bridge for the first getchallenge/connect exchange",
+    "the immediate goal is to get challengeResponse back into the client, not to perfect the hook"
+  ],
+  "cleanup": "No client/guard process remains. tools/net_rollback.ps1 reported no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}
