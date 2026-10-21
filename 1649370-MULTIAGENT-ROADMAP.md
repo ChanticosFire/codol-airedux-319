@@ -330,3 +330,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 VEH 全副本重试仍无命中，长时间失败转 method 3
 
 `trace_tp_url.py` 在 VEH 安装后（`veh_exit=0xFFFFFFFF`，handler 有效）轮询保护所有找到的 URL 副本；仍只发现 Base.dll `0x61E56B98`，保护页 `0x61E56000` 成功，但 10 秒内 `exception_address/eip=0`，游戏仍无窗口。说明 TP 不通过这个可读副本读取格式串（可能提前解密/复制），进程内 PAGE_GUARD 无法定位 TP 判定。按“长时间失败转 3”的约定：停止在这条 VEH/调试器思路上继续消耗，转向 method 3（重新设计不依赖 anti-debug 的静态/进程内 patch），或回到社区离线 exe + 自写 server（完全绕开 TP）。证据 `evidence/experiments/20261021-1649370-tp-veh-retry.json`。
+
+## 2026-10-21 自写最小 1649370 服务端握手通过（本轮）
+
+新增 `tools/mini_1649370_server.py`（UDP `127.0.0.1:28969`，不改社区源码），实现 `getchallenge`→`challengeResponse <cookie>`、`connect`→`connectResponse \mapname\mp_cross_fire\gametype\war\sv_maxclients\12\protocol\1\shortversion\1.1.1.13`，并记录 `stats`/payload 包。用 `tools/probe_2697_connect.py` 实测 `ok=true`。下一步补 stats/usermove/gamestate 编码，再接有网络对象的客户端；社区离线 exe 仍缺网络对象，完整 exe 仍被 TP 挡。证据 `evidence/experiments/20261021-1649370-mini-server-handshake.json`。

@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "verify the private minimal 1649370 lab server handshake",
+  "server": "tools/mini_1649370_server.py",
+  "listen": "127.0.0.1:28969",
+  "probe": "tools/probe_2697_connect.py",
+  "result": {
+    "getchallenge": "challengeResponse <cookie>",
+    "connect": "connectResponse \\mapname\\mp_cross_fire\\gametype\\war\\sv_maxclients\\12\\protocol\\1\\shortversion\\1.1.1.13",
+    "ok": true
+  },
+  "meaning": "The private server now speaks the text handshake and can be extended with stats/usermove/gamestate for a 1649370 client. It does not modify the community server.",
+  "next": [
+    "add stats/usermove state and the captured gamestate/snapshot encoder",
+    "connect a client that has a network object (community offline exe still lacks one; full client still blocked by TP)",
+    "then add a bot/waypoint loop"
+  ],
+  "cleanup": "Server process stopped; no game process was started."
+}
