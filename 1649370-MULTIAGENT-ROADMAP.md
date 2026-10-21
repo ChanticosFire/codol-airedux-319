@@ -136,3 +136,7 @@ state 4 是 connect 分支，state 3 才是 getchallenge 分支（`0x5C0F3C` 跳
 ## 2026-10-21 G2 raw UDP 补丁首试（本轮）
 
 type=4 的 `0x622040` 参数：len=0x26、data=0x1AE210、type=4、127.0.0.1:28969、channel=0x9D；Com Error `EXE_CLIENTFAILEDTOCHALLENGE`。把入口 9 字节改成 socket/sendto cave 后客户端 `unhandled_exception`；ABI/调用路径不安全。下一步只替换无效通道分支、保留原函数其它路径，并先逐指令 trace。证据 `evidence/experiments/20261021-1649370-raw-udp-patch-crash.json`。
+
+## 2026-10-21 G2 无效分支 raw UDP 补丁仍崩（本轮）
+
+只替换 `0x6221D8`（`mov ebx,-7`）为 socket/sendto cave，保留 `0x622040` 其它路径；客户端仍 `unhandled_exception`。参数已知（data=0x1AE210、len=0x26、127.0.0.1:28969、channel=0x9D）。下一步逐指令 trace 首个 type=4 调用，再用“先走原分支、后 sendto”的隔离 stub。证据 `evidence/experiments/20261021-1649370-raw-udp-branch-crash.json`。

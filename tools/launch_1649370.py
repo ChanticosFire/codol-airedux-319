@@ -95,6 +95,7 @@ INIT_TRANSPORT = False
 CALL_CHALLENGE_BRANCH = False
 RING_TYPE = 2
 RAW_UDP_PATCH = False
+RAW_UDP_BRANCH = False
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -880,6 +881,50 @@ def _inject_challenge_response(session) -> None:
         k32.CloseHandle(handle)
 
 
+def _install_raw_udp_branch(k32, handle) -> dict:
+    """只替换 0x622040 的无效通道分支，保留原函数其它路径。"""
+    k32.VirtualProtectEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, C.POINTER(W.DWORD)]
+    k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
+    k32.VirtualAllocEx.restype = C.c_void_p
+    cave = int(k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40))
+    if not cave:
+        return {"status": "alloc_failed", "error": C.get_last_error()}
+    addr = cave + 0x100
+    sockaddr = struct.pack("<HH4s8x", 2, socket.htons(28969), b"\x7f\x00\x00\x01")
+    code = b"\x60"                              # pushad
+    code += b"\x8b\x75\x0c"                     # mov esi,[ebp+0xc] data
+    code += b"\x8b\x7d\x28"                     # mov edi,[ebp+0x28] len
+    code += b"\x6a\x11\x6a\x02\x6a\x02"         # push 17,2,2
+    code += b"\xff\x15\x48\x85\xca\x00"         # call socket
+    code += b"\x83\xc4\x0c\x8b\xd8"             # add esp,12; mov ebx,eax
+    code += b"\x6a\x10"                         # push 16
+    code += b"\x68" + struct.pack("<I", addr)   # push sockaddr
+    code += b"\x6a\x00\x57\x56\x53"             # push 0,len,data,sock
+    code += b"\xff\x15\x18\x85\xca\x00"         # call sendto
+    code += b"\x83\xc4\x18\x61\x31\xdb"         # add esp,24; popad; xor ebx,ebx
+    code += b"\xe9" + struct.pack("<I", (0x6221DD - (cave + len(code) + 5)) & 0xFFFFFFFF)
+    wrote = C.c_size_t()
+    if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                   len(code), C.byref(wrote)) or wrote.value != len(code)):
+        return {"status": "cave_write_failed", "error": C.get_last_error()}
+    if (not k32.WriteProcessMemory(handle, C.c_void_p(addr),
+                                   C.create_string_buffer(sockaddr, len(sockaddr)), len(sockaddr),
+                                   C.byref(wrote)) or wrote.value != len(sockaddr)):
+        return {"status": "addr_write_failed", "error": C.get_last_error()}
+    k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+    old = W.DWORD()
+    if not k32.VirtualProtectEx(handle, C.c_void_p(0x6221D8), 5, 0x40, C.byref(old)):
+        return {"status": "protect_failed", "error": C.get_last_error()}
+    jump = b"\xe9" + struct.pack("<I", (cave - 0x6221DD) & 0xFFFFFFFF)
+    ok = k32.WriteProcessMemory(handle, C.c_void_p(0x6221D8), C.create_string_buffer(jump, 5), 5,
+                                C.byref(wrote))
+    k32.VirtualProtectEx(handle, C.c_void_p(0x6221D8), 5, old.value, C.byref(old))
+    k32.FlushInstructionCache(handle, C.c_void_p(0x6221D8), 5)
+    if not ok or wrote.value != 5:
+        return {"status": "patch_failed", "error": C.get_last_error()}
+    return {"status": "ok", "cave": hex(cave), "code": code.hex(), "sockaddr": sockaddr.hex()}
+
+
 def _install_raw_udp_patch(k32, handle) -> dict:
     """把 0x622040 发送包装器改成直接 sendto，绕过传输通道表。"""
     k32.VirtualProtectEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, C.POINTER(W.DWORD)]
@@ -1010,6 +1055,11 @@ def _ring_probe_injector(session) -> None:
                 result["raw_udp"] = _install_raw_udp_patch(k32, handle)
                 if result["raw_udp"].get("status") != "ok":
                     result.update(status="raw_udp_patch_failed")
+                    return
+            if RAW_UDP_BRANCH:
+                result["raw_udp_branch"] = _install_raw_udp_branch(k32, handle)
+                if result["raw_udp_branch"].get("status") != "ok":
+                    result.update(status="raw_udp_branch_failed")
                     return
             adr = connection + 0x14
             adr_bytes = struct.pack("<I4sHHIII", RING_TYPE,
@@ -1478,7 +1528,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -1517,6 +1567,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="ring-probe 使用的 adr type（2=loopback，4=IP）")
     parser.add_argument("--raw-udp-patch", action="store_true",
                         help="把 0x622040 改成直接 sendto（绕过通道表）")
+    parser.add_argument("--raw-udp-branch", action="store_true",
+                        help="只替换 0x622040 的无效通道分支为 sendto")
     parser.add_argument("--hook-loopback", action="store_true",
                         help="在 0x6750A0 安装持久 cave hook（实验性，可能崩溃）")
     parser.add_argument("--inject-challenge", action="store_true",
@@ -1547,6 +1599,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     CALL_CHALLENGE_BRANCH = known.call_challenge_branch
     RING_TYPE = known.ring_type
     RAW_UDP_PATCH = known.raw_udp_patch
+    RAW_UDP_BRANCH = known.raw_udp_branch
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 

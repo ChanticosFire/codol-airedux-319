@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "patch only the invalid-channel branch of 0x622040 to a raw sendto stub, preserving the rest of the send wrapper",
+  "patch": {
+    "site": "0x6221D8 (mov ebx,-7 in the invalid-channel branch)",
+    "stub": "pushad; data=[ebp+0xc]; len=[ebp+0x28]; socket(2,2,17); sendto(sock,data,len,0,127.0.0.1:28969,16); popad; ebx=0; jmp 0x6221DD",
+    "run": "codex-1649370-rawbranch-20261021",
+    "result": "client stop_reason=unhandled_exception before ring-probe.json"
+  },
+  "known_args": {
+    "data": "[ebp+0xc] = 0x1AE210",
+    "length": "[ebp+0x28] = 0x26",
+    "type": "[ebp+0x10] = 4",
+    "ip": "[ebp+0x14] = 0x0100007F",
+    "port": "[ebp+0x18] = 0x7129",
+    "channel": "[ebp+0x24] = 0x9D"
+  },
+  "interpretation": "Even the branch-only patch crashes. The remaining suspects are: the socket/sendto import call or stack alignment in the cave, the branch's local/stack cleanup contract (edi/ebx/esi and the critical-section lock), or 0x6221D8 not being the only invalid path reached for this call.",
+  "next": [
+    "trace 0x622040 instruction-by-instruction for the first type=4 call and record the exact branch taken",
+    "replace 0x6221D8 with a stub that calls the original branch first and only logs, to prove the stub itself is safe",
+    "then add sendto after the original branch returns, so caller-visible behavior is unchanged"
+  ],
+  "cleanup": "Client and 2697 server terminated; no WFP/process residue."
+}
