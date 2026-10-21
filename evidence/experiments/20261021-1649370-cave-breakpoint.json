@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "run": "codex-1649370-maincall4-bp-20261021",
+  "purpose": "prove whether the main-thread cave actually executes the 0x5BE730 call and whether that function starts a local connection",
+  "main_call": {
+    "status": "armed",
+    "target": "0x5BE730",
+    "cave": "0x10BD0000",
+    "cave_code": "60e82ae79eef61c3",
+    "original_eip": "0xA04A02",
+    "original_esp": "0x1AE16C",
+    "new_esp": "0x1AE168"
+  },
+  "breakpoint_proof": {
+    "address": "0x5BE730",
+    "label": "CL_MapLoading_cave_entry",
+    "hits": 1,
+    "tid": 26132,
+    "registers": {"eax": "0x1F9932C8", "ecx": "0x1F993000", "edx": "0x1F986380",
+                  "ebx": "0x1F985A80", "esi": "0xBC", "edi": "0xA6",
+                  "ebp": "0x1AE180", "esp": "0x1AE144"},
+    "stack_prefix": "0600bd10a6000000bc00000080e11a0068e11a00",
+    "interpretation": "The cave did execute and did call 0x5BE730; this is no longer a 'cave never ran' problem."
+  },
+  "post_call_observation": {
+    "screen": "persistent black screen",
+    "server_connection": "no connection/challenge entry in the 2.6.9.7 qconsole.log",
+    "com_error_or_fatal": false,
+    "guard_cleanup": {"closed": true, "engine_close_status": 0, "error": ""}
+  },
+  "function_analysis": {
+    "entry": "0x5BE730",
+    "early_block": "The function scans 0x20-byte entries from 0x76446A1 to 0x76446C1 and returns immediately if none is non-empty; the observed call happens when that table is likely empty.",
+    "consequence": "0x5BE730 is not a no-argument 'load map now' entry. It depends on the client's server-list/endpoint table (and later the localhost branch) being populated. A blind second call without preparing that state would repeat the same no-op."
+  },
+  "next": [
+    "inspect the 0x5BE730 early-return predicate and the 0x76446A1 table layout",
+    "either populate a minimal localhost entry and call 0x5BE730 again, or locate the real CL_MapLoading/CL_Connect entry above/below this function",
+    "keep the real breakpoint on any candidate so execution is proven, not inferred"
+  ],
+  "cleanup": "Client and reference server terminated. tools/net_rollback.ps1 reported no guard/client processes, no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}
