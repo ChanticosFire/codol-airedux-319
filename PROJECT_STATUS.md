@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 合成快照流未推进（2026-10-21）**：补丁 + ring-probe 后注入 gamestate + 13 条合成 `svc_snapshot`（queued=14，cursor=14，state=3），客户端黑屏无错误但 **read cursor=0**，环泵未消费。下一步改用真实快照字节或主线程调用泵/解析。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`tools/feed_client_snapshots.py` 和 `evidence/experiments/20261021-1649370-feed-snapshots-black.json`。
+
 > **1649370 G2 通道成功补丁 + gamestate 注入进入黑屏加载态（2026-10-21）**：`0x6221D8` 改为 `mov ebx,1` 后发送返回成功，客户端不再 `EXE_CLIENTFAILEDTOCHALLENGE`；gamestate 注入后纯黑屏至 70 秒超时，进程响应、无 Com Error。已越过 challenge 错误。下一步喂后续快照/配置串。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-branch-success-gamestate.json`。
 
 > **1649370 G2 三消息同序列注入仍 challenge 失败（2026-10-21）**：challengeResponse + connectResponse + gamestate 依次入环（cursor=3，state=3，adr 127.0.0.1:28969），客户端仍 `EXE_CLIENTFAILEDTOCHALLENGE`。trio 已送达，但客户端要求自己的 challenge cookie/目标；下一步改写 challenge 目标/端点表，或截获 getchallenge 并用匹配 cookie 回答。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-gamestate-sequence-injected.json`。

@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "feed synthetic svc_snapshot messages after the injected gamestate",
+  "run": "codex-1649370-branch-feed-20261021",
+  "tool": "tools/feed_client_snapshots.py runs/2697-gamestate-packets/gamestate-final.bin --count 80 --interval 0.1",
+  "state": {
+    "queued": 14,
+    "cursor": 14,
+    "read_cursor": 0,
+    "connection": "0x133DA9BC",
+    "state": 3
+  },
+  "result": {
+    "screen": "black with only the cursor, no error dialog",
+    "process": "responsive",
+    "meaning": "the branch-success patch removed the challenge error, but the ring pump did not consume the queued messages (read cursor stayed 0) and no map rendered"
+  },
+  "next": [
+    "feed a real captured snapshot message format rather than the synthetic serverId+svc_snapshot",
+    "or call the pump/parse function on the main thread after setting the active state",
+    "then check whether the read cursor advances and the black screen becomes a map"
+  ],
+  "cleanup": "Client/guard terminated; no WFP residue."
+}
