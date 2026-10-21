@@ -216,3 +216,7 @@ vtable `0xC7AF2C`，对象布局 `+4 sockaddr_in`、`+0x14 SOCKET`、`+0x18 辅�
 ## 2026-10-21 G2 主菜单 Cbuf 注入成功、地图加载失败（本轮）
 
 新增 `--cbuf-command`，在主菜单 stage 5 直接向原生 Cbuf 追加命令；`devmap mp_strike_sh` 注入成功（old_length 0 → new_length 22），画面黑屏数秒后回到大厅，进程仍响应。Cbuf 注入机制可用，但 1649370 客户端不接受 3.3.3.3 的 `mp_strike_sh` 地图（缺 1649370 原生 `mp_*` fastfile/版本不匹配）。下一步必须拿到 1649370 兼容地图 fastfile，或跑兼容房间后端。证据 `evidence/experiments/20261021-1649370-cbuf-devmap.json`。
+
+## 2026-10-21 G2 阻断结论：缺 1649370 地图资产/房间后端（本轮）
+
+`--cbuf-command` 已能在 stage 5 注入 `devmap mp_strike_sh`（0→22）和 `map mp_strike_sh`（0→19）；两者都被客户端接受执行，但画面要么黑屏数秒后回大厅，要么直接留在大厅，进程始终响应。全盘搜索确认 1649370 资源树只有 common/ui/post-gfx fastfile 和 `mp_playlists.ff`，没有 1649370 原生 `mp_*` 地图 fastfile；3.3.3.3 的 `mp_strike_sh`/`mp_arkaden_sh` 不被接受。同时离线客户端没有网络/房间对象。结论：没有兼容地图或能提供地图加载路径的房间/lobby 后端，无法进入任何本地 bot 地图。证据 `evidence/experiments/20261021-1649370-map-load-failure.json`。

@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "final map-load checks with native Cbuf and a full asset search",
+  "runs": [
+    {
+      "command": "devmap mp_strike_sh",
+      "injected": true,
+      "stage": 5,
+      "result": "black screen for a few seconds, then returned to the lobby; process responsive"
+    },
+    {
+      "command": "map mp_strike_sh",
+      "injected": true,
+      "stage": 5,
+      "result": "remained in the lobby; process responsive"
+    }
+  ],
+  "asset_search": {
+    "1649370_native_map_fastfiles": [],
+    "found": [
+      "resources/v1649370/offline-resources/client_shipretail/chinese/mp_playlists.ff (playlist, not a map)",
+      "only common/ui/post-gfx fastfiles in the 1649370 tree"
+    ],
+    "staged_333_maps": "mp_strike_sh/mp_arkaden_sh from the 3.3.3.3 runtime; both are not accepted by the 1649370 client"
+  },
+  "conclusion": "The Cbuf command path is proven, but the 1649370 client has no 1649370-compatible mp_* map fastfile and rejects the 3.3.3.3 maps. A local bot match cannot start without those assets or a compatible room/lobby backend that supplies them.",
+  "cleanup": "Client/guard terminated; no WFP residue."
+}
