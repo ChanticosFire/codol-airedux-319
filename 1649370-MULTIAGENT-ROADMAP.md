@@ -674,3 +674,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 2.6.9.7 增强启动器里找到现成本地 bot 房间实现
 
 `launch_backend_enhanced.py` 用 `client_room2697.dll` + `run_room_match2697` 自动起本地 bot 对局，`gameplay-settings.json` 里 bot_count/bot_difficulty/score_limit 都可配；它通过 `client_room2697.dll` 注入房间逻辑，正是 1649370 缺的“房间 ready/start + bot”参考。下一步先跑一次 2.6.9.7 增强版对局，抓 room-bridge 的命令/字段，再把同样模式移植到 1649370（不直接加载 2697 DLL，避免 ABI 问题）。
+
+## 2026-10-21 2697 房间 DLL 里逆出 room-bridge 协议线索
+
+`client_room2697_enhanced.dll` 含 `room-ready.txt`、`room_ready sequence=%u map=%s`、`room_start requested in_room=%d ready=%u sequence=%u ds=%d index=%d`、`room_change requested map=%s ready=%u`、`room_ready_set value=%u`、`local-room-options.txt`（`%15s %u %63s`）和 `udp:127.0.0.1:28969`。说明 2697 的本地房间是通过 UDP 127.0.0.1:28969 的 room backend 收发 `room_ready/room_start/room_change`，这正是 1649370 房间 ready 当前缺的后端。下一步跑一次 2697 增强对局抓 UDP 包，按 `room_ready/room_start` 格式给 1649370 补本地 room backend。
