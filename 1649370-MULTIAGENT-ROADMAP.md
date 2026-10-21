@@ -116,3 +116,7 @@ state 4 是 connect 分支，state 3 才是 getchallenge 分支（`0x5C0F3C` 跳
 ## 2026-10-21 G2 2697 challengeResponse 兼容确认（本轮）
 
 1649370 的 `getchallenge 0 "a731af49a6a2c7e2"` 加 `\xff\xff\xff\xff` 前缀直接发 2697，收到 `\xff\xff\xff\xffchallengeResponse -486178985\0`，协议兼容。把应答注入 loopback 接收环（`0x786DBC0`）后读光标 0→1，但状态保持 3、无 connect；type=4/2、带/不带前缀均如此。下一步直接调用 `0x5C1678` 解析器或找网络泵真正接收队列。证据 `evidence/experiments/20261021-1649370-challenge-response-probe.json`。
+
+## 2026-10-21 G2 直接 OOB 解析器 fatal（本轮）
+
+主线程调 `0x5C0FD0`（eax="challengeResponse -486178985"，栈 netadr，arg0=0）→ 客户端 `fatal_dialog`，无 JSON。环注入（`0x786DBC0`）读光标 0→1 但状态仍 3、无 connect。目前无已验证的 challengeResponse 回送方法；2697 文本应答已确认可用。下一步 hook 真实 `0x5C0FD0` 调用路径，或回到 `0xBB2C40` 完整初始化。证据 `evidence/experiments/20261021-1649370-parser-fatal.json`。

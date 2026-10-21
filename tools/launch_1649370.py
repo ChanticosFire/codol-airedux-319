@@ -90,6 +90,7 @@ TRANSPORT_CONNECT = False
 RING_PROBE = False
 HOOK_LOOPBACK = False
 INJECT_CHALLENGE = False
+CALL_CHALLENGE_PARSER = False
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -416,6 +417,121 @@ def _install_loopback_hook(k32, handle) -> dict:
         return {"status": "patch_failed", "error": C.get_last_error()}
     return {"status": "ok", "cave": hex(cave), "copy_len": hex(copy_len),
             "seq": hex(seq), "buf": hex(buf), "code": code.hex()}
+
+
+def _call_challenge_parser(session) -> None:
+    """主线程直接调用 0x5C0FD0 解析 challengeResponse，绕过接收环。"""
+    k32 = C.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
+    k32.OpenProcess.restype = W.HANDLE
+    k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.SuspendThread.argtypes = [W.HANDLE]
+    k32.SuspendThread.restype = W.DWORD
+    k32.ResumeThread.argtypes = [W.HANDLE]
+    k32.ResumeThread.restype = W.DWORD
+    k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
+    k32.VirtualAllocEx.restype = C.c_void_p
+    k32.FlushInstructionCache.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t]
+    wow64_get = getattr(k32, "Wow64GetThreadContext", k32.GetThreadContext)
+    wow64_set = getattr(k32, "Wow64SetThreadContext", k32.SetThreadContext)
+    wow64_get.argtypes = [W.HANDLE, C.c_void_p]
+    wow64_set.argtypes = [W.HANDLE, C.c_void_p]
+    output = session.run_dir / "challenge-parser.json"
+    text = b"challengeResponse -486178985\x00"
+    result = {"started": time.time(), "status": "waiting", "text": text.decode("latin-1")}
+    handle = k32.OpenProcess(0x0438, False, session.info.pid)
+    if not handle:
+        result.update(status="open_process_failed", error=C.get_last_error())
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return
+
+    def read(va: int, count: int):
+        buffer = C.create_string_buffer(count)
+        got = C.c_size_t()
+        if not k32.ReadProcessMemory(handle, C.c_void_p(va), buffer, count, C.byref(got)) or got.value != count:
+            return None
+        return buffer.raw
+
+    def u32(va: int):
+        data = read(va, 4)
+        return struct.unpack("<I", data)[0] if data else None
+
+    def call_rel(target: int, at: int) -> bytes:
+        return b"\xe8" + struct.pack("<I", (target - (at + 5)) & 0xFFFFFFFF)
+
+    connection = 0
+    try:
+        deadline = time.monotonic() + 180
+        while time.monotonic() < deadline:
+            stage = u32(0xE59D20) or 0
+            encoded = u32(0x331C0C8) or 0
+            candidate = encoded ^ 0xD362501F
+            if stage >= 4 and 0x10000 <= candidate < 0x7FFF0000:
+                connection = candidate
+                break
+            time.sleep(0.5)
+        if not connection:
+            result.update(status="connection_not_ready")
+            return
+        if k32.SuspendThread(session.info.thread) == 0xFFFFFFFF:
+            result.update(status="suspend_failed", error=C.get_last_error())
+            return
+        try:
+            context_size, eip_offset, esp_offset = 716, 184, 196
+            storage = C.create_string_buffer(context_size + 16)
+            aligned = (C.addressof(storage) + 15) & ~15
+            C.memset(aligned, 0, context_size)
+            C.c_uint32.from_address(aligned).value = 0x00010001
+            if not wow64_get(session.info.thread, C.c_void_p(aligned)):
+                result.update(status="get_context_failed", error=C.get_last_error())
+                return
+            original_eip = C.c_uint32.from_address(aligned + eip_offset).value
+            original_esp = C.c_uint32.from_address(aligned + esp_offset).value
+            cave = int(k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40))
+            if not cave:
+                result.update(status="alloc_failed", error=C.get_last_error())
+                return
+            text_addr = cave + 0x100
+            wrote = C.c_size_t()
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(text_addr),
+                                           C.create_string_buffer(text, len(text)), len(text),
+                                           C.byref(wrote)) or wrote.value != len(text)):
+                result.update(status="text_write_failed", error=C.get_last_error())
+                return
+            code = b"\x60"
+            for value in (0, 0, 0, 0x00007129, 0x0100007F, 4, 0):
+                code += b"\x68" + struct.pack("<I", value)
+            code += b"\xb8" + struct.pack("<I", text_addr)
+            code += call_rel(0x5C0FD0, cave + len(code))
+            code += b"\x83\xc4\x1c\x61\xc3"
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                           len(code), C.byref(wrote)) or wrote.value != len(code)):
+                result.update(status="cave_write_failed", error=C.get_last_error())
+                return
+            k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(original_esp - 4),
+                                           C.create_string_buffer(struct.pack("<I", original_eip), 4), 4,
+                                           C.byref(wrote)) or wrote.value != 4):
+                result.update(status="return_write_failed", error=C.get_last_error())
+                return
+            C.c_uint32.from_address(aligned + esp_offset).value = original_esp - 4
+            C.c_uint32.from_address(aligned + eip_offset).value = cave
+            if not wow64_set(session.info.thread, C.c_void_p(aligned)):
+                result.update(status="set_context_failed", error=C.get_last_error())
+                return
+            result.update(status="armed", connection=hex(connection), cave=hex(cave), code=code.hex())
+        finally:
+            k32.ResumeThread(session.info.thread)
+        time.sleep(5)
+        result["state_after"] = u32(0x76446B0)
+        result["channel_after"] = u32(connection + 0x28)
+        result["status"] = "done"
+    finally:
+        result["finished"] = time.time()
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("[patched] challenge parser:", json.dumps(result, ensure_ascii=False), flush=True)
+        k32.CloseHandle(handle)
 
 
 def _inject_challenge_response(session) -> None:
@@ -931,6 +1047,9 @@ def patched_start(self, exe, settings_session) -> None:
     if INJECT_CHALLENGE:
         threading.Thread(target=_inject_challenge_response, args=(self,),
                          name="inject-challenge", daemon=True).start()
+    if CALL_CHALLENGE_PARSER:
+        threading.Thread(target=_call_challenge_parser, args=(self,),
+                         name="call-challenge-parser", daemon=True).start()
 
 
 # 社区 DEPENDENCIES 只覆盖 DLL 与 CEF；原版根目录还有一批数据/配置文件没被复制。
@@ -1036,7 +1155,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -1075,6 +1194,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="在 0x6750A0 安装持久 cave hook（实验性，可能崩溃）")
     parser.add_argument("--inject-challenge", action="store_true",
                         help="向 loopback 接收环注入 challengeResponse")
+    parser.add_argument("--call-challenge-parser", action="store_true",
+                        help="主线程直接调用 0x5C0FD0 解析 challengeResponse")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
@@ -1090,6 +1211,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     RING_PROBE = known.ring_probe
     HOOK_LOOPBACK = known.hook_loopback
     INJECT_CHALLENGE = known.inject_challenge
+    CALL_CHALLENGE_PARSER = known.call_challenge_parser
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 

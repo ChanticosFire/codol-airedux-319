@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "deliver the known-good 2697 challengeResponse directly to the client OOB parser",
+  "attempt": {
+    "run": "codex-1649370-parser-20261021",
+    "parser": "0x5C0FD0 (CL OOB dispatch; challengeResponse branch at 0x5C1678)",
+    "call": "eax=string 'challengeResponse -486178985', stack netadr {type=4, 127.0.0.1, htons(28969), channel=0}, arg0=0, cdecl cleanup 0x1c",
+    "result": "client stop_reason=fatal_dialog; challenge-parser.json was not written (the injector thread did not reach the post-call phase)",
+    "process_cleanup": "guard_cleanup closed=true, engine_close_status=0"
+  },
+  "previous_attempts": {
+    "ring_injection": "write challengeResponse into 0x786DBC0 slot + increment 0x7872C04; read cursor advanced 0->1 but state stayed 3, no connect",
+    "known_good_server_reply": "\\xff\\xff\\xff\\xffchallengeResponse -486178985\\x00 from 2697 for the 1649370 getchallenge"
+  },
+  "interpretation": "The direct parser call is not yet valid: the signature/stack layout or the required connection/message state is wrong, and the engine treats it as fatal. The ring path is consumed but does not dispatch the OOB payload. There is currently no proven way to feed a server challengeResponse back into this offline client.",
+  "next": [
+    "do not repeat the same direct parser call without first validating its argument layout against a real caller",
+    "use a caller in the client (e.g. the network pump path that calls 0x5C0FD0) and hook there, instead of calling the parser cold",
+    "or return to the transport channel path with a fully initialized 0xBB2C40",
+    "consider requesting a 1649370-compatible server/protocol capture; the 2697 text reply itself is already known-good"
+  ],
+  "cleanup": "No client/guard process remains; tools/net_rollback.ps1 reported no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}

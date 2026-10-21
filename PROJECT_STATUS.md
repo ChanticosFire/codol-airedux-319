@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 直接 OOB 解析器调用 fatal（2026-10-21）**：主线程调 `0x5C0FD0`（`eax="challengeResponse -486178985"`，栈 netadr，arg0=0）→ 客户端 `fatal_dialog`，无 JSON。环注入虽被 `0x675140` 消费（读光标 0→1），但状态仍 3、无 connect。目前没有已验证的 challengeResponse 回送方法；2697 的文本应答已确认可用。下一步 hook 真实 `0x5C0FD0` 调用路径，或回到 `0xBB2C40` 完整初始化。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-parser-fatal.json`。
+
 > **1649370 G2 2697 确认 challengeResponse（2026-10-21）**：1649370 的 `getchallenge 0 "a731…"` 加 OOB 前缀直接发 2697，收到 `\xff\xff\xff\xffchallengeResponse -486178985\0`，协议兼容。把应答注入 loopback 接收环（`0x786DBC0`）后，读光标 0→1（被 `0x675140` 消费），但状态保持 3、无 connect；type=4/2、带/不带前缀均如此。下一步直接调用 `0x5C1678` 解析器或找网络泵真正接收队列。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-challenge-response-probe.json`。
 
 > **1649370 G2 持久 loopback hook 崩溃（2026-10-21）**：在 `0x6750A0` 入口写 cave hook，保存 flags/regs、复制 `[esp+8]` 数据、重放 prologue 后跳回 `0x6750A5`；加 `cld` 前后两次都让客户端 `unhandled_exception`。一次性断点仍可靠，已抓到 `getchallenge 0 "a731af49a6a2c7e2"`。hook 已由 `--hook-loopback` 控制、默认关闭。下一步用一次性断点 + Python UDP 桥完成 challenge/connect，不继续修 hook。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-loopback-hook-crash.json`。
