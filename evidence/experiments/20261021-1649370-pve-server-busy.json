@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "run": "codex-1649370-pve-probe-20261021",
+  "purpose": "test whether the offline PVE/training UI can load a map without the match service",
+  "ui_actions": [
+    "entered Start Game, switched to PVE (闯关模式)",
+    "opened 剧情模式任务, map list and 开始匹配 were visible",
+    "clicked 训练, which opened the 靶场 dialog with 进入靶场 / 取消 / X",
+    "synthetic clicks on 进入靶场, 取消 and X produced no visible response",
+    "a human then clicked 进入靶场 and received the dialog '服务器繁忙中，请稍候重试。'"
+  ],
+  "observed_result": "The PVE training entry sends a request to the match service and is rejected when that service is absent. It is not a local map loader.",
+  "screenshots": [
+    "319/runs/codex-1649370-pve-probe-20261021/pve-tab.png",
+    "319/runs/codex-1649370-pve-probe-20261021/pve-story2.png",
+    "319/runs/codex-1649370-pve-probe-20261021/train-tab.png",
+    "319/runs/codex-1649370-pve-probe-20261021/range.png"
+  ],
+  "interpretation": "Both the custom-room path and the PVE/training path depend on the remote match/lobby service. There is no offline UI path that loads a map by itself. A local match now requires a service implementation or a verified native map-start path independent of the match service. The synthetic-click silence on the modal is a separate input-routing limitation and is not used as evidence that the button is inert.",
+  "cleanup": "Run terminated by the coordinator. tools/net_rollback.ps1 reported no guard/client processes, no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports.",
+  "next": "Evaluate whether 319/server319 can serve the 1649370 lobby/match protocol, or capture the client's match request with a loopback service. Do not repeat PVE UI probing as a local map path."
+}

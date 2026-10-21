@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 PVE 也需要服务端（2026-10-21）**：PVE“剧情模式任务”和“训练/靶场”入口可见，但真人点“进入靶场”弹出“服务器繁忙中，请稍候重试。”，说明 PVE 同样依赖匹配服务，不是本地地图入口。结合自定义房间的 `room.startgame` 服务端请求，离线 UI 已没有可自行装载地图的路径。下一分支转向 `319/server319` 兼容性评估或 loopback 匹配服务抓包。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-pve-server-busy.json`。
+
 > **1649370 G2 换向：room.startgame 是服务端请求（2026-10-21）**：在 `0x62FAF4` 捕获到 Cbuf 完整文本 ` sv_resetServer; ... map mp_radiation_sh; ...`，确认缺少 `mmstart` 前缀；新增 `--prefix-cbuf mmstart` 回读 231→238 后仍黑屏、无错误、无地图。客户端没有独立的 `mmstart\0` 命令注册，只有服务端格式串；`room.startgame` 是发给匹配服务的请求，客户端不含 listen server。按三轮无进展规则，停止 Cbuf/mmstart 方向，下一分支优先验证离线 PVE/训练 UI，其次复用/适配 `319/server319` 本地服务。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-mmstart-cbuf-text.json`。
 
 > **1649370 G2 mmstart 构造为空（2026-10-21）**：`devmap mp_strike_sh`/`map mp_strike_sh` 注入后房间画面不变，且无错误，说明二者不是该客户端的注册命令。改用 `room.startgame` 时，`0x631E90`（mmstart 构造函数）命中但返回 EAX=0，`0x62FA3E` 处 Cbuf 长度仍为 0，`0x632462` 未命中。本地房间 `+0x105fc=0xFF`（playlist）、`+0x1061c=0xFF`（gametype）；只把 playlist 改成 0 仍无效。阻断已定位为无效本地 playlist/gametype 使 mmstart 构造返回 NULL。下一步补最小有效本地 playlist/gametype，或绕过构造函数走已核实的原生地图启动路径。两次运行均由协调者终止，`net_rollback.ps1` 复核无残留。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`evidence/experiments/20261021-1649370-console-map-noop.json` 和 `20261021-1649370-mmstart-constructor-null.json`。
