@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "determine whether Build 1649370 contains a dedicated server or can use the existing 2.6.9.7 server",
+  "build_1649370_client": {
+    "image": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+    "sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+    "server_strings_present": {
+      "loadingnewmap": true,
+      "g_gametype": true
+    },
+    "server_strings_absent": [
+      "------ Server Initialization ------",
+      "SV_SpawnServer checksum feed",
+      "SV_Startup: svs.initialized",
+      "codol_zoneType",
+      "sys_loadWatchdog",
+      "sv_maxclients",
+      "CS_PRIMED",
+      "Server: %s"
+    ],
+    "community_source": "E:\\GAME\\COD\\1649370\\src\\codol_rebuild has no online/network/server module; README states that multiplayer and a complete match loop are not implemented",
+    "interpretation": "The 1649370 image is client-only. It can consume a server's loadingnewmap notice, but it does not contain SV_SpawnServer/SV_Startup or the server-side game/bot code."
+  },
+  "reference_2697_server": {
+    "image": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\runtime\\game\\server2697\\native\\bin2697\\codol_dedrun.exe",
+    "size": 7295919,
+    "sha256": "1736926655100b53499ae75ea5bddd0741983c12c89cdb51d49aef8a0be03243",
+    "server_strings_present": ["SV_SpawnServer", "codol_zoneType", "sh1x_status", "BOT-Client", "SV_BotFreeClient"],
+    "protocol_strings": ["IW4OL2.6.9.7", "This server requires protocol version: %d"],
+    "source_tree": "319/runs/2697-native-src (extracted from CODOL-2.6.9.7-Launcher/source/native-source.zip, read-only reference)",
+    "interpretation": "This is a complete 2.6.9.7 server with bot support, but it is version-bound to the 2.6.9.7 protocol."
+  },
+  "compatibility": {
+    "1649370_has_IW4OL": false,
+    "1649370_has_2_6_9_7": false,
+    "assessment": "The 1649370 client image does not contain the IW4OL/2.6.9.7 protocol markers, while codol_dedrun.exe rejects clients with a different protocol version. A direct pairing is therefore not supported by the artifacts; an adapter would require the 1649370 wire protocol, which is not present in the workspace."
+  },
+  "conclusion": "Build 1649370 has no local dedicated server in the workspace. The existing 2.6.9.7 codol_dedrun.exe is a complete server but speaks the 2.6.9.7 protocol, and the 1649370 client does not carry matching IW4OL markers. A playable local bot match therefore needs either a 1649370 server implementation or a protocol adapter derived from 1649370 wire captures; neither exists yet. This is the current G2 hard blocker.",
+  "next": [
+    "search the workspace and community sources once more for a 1649370 server binary or protocol implementation",
+    "if none exists, capture the 1649370 match-service wire protocol and assess a minimal server adapter",
+    "do not treat the 2.6.9.7 server as directly compatible without a real handshake test"
+  ]
+}

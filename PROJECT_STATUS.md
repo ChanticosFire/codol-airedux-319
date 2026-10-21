@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 硬阻断：无 1649370 本地服务器（2026-10-21）**：1649370 镜像没有 `SV_SpawnServer`/`SV_Startup`/`codol_zoneType`/`sv_maxclients` 等服务端串，只有 `loadingnewmap` 客户端处理串；社区源码也没有 online/server 模块。工作区有完整的 2.6.9.7 `codol_dedrun.exe`（含 Bot），但协议为 `IW4OL2.6.9.7`，1649370 镜像没有 `IW4OL`/`2.6.9.7` 标记，直接配对无兼容依据。当前 G2 阻断是缺少 1649370 专用服务器/协议实现。下一步检索 1649370 服务端资料，或捕获其匹配/战斗协议后做最小适配。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-no-native-server.json`。
+
 > **1649370 G2 PVE 也需要服务端（2026-10-21）**：PVE“剧情模式任务”和“训练/靶场”入口可见，但真人点“进入靶场”弹出“服务器繁忙中，请稍候重试。”，说明 PVE 同样依赖匹配服务，不是本地地图入口。结合自定义房间的 `room.startgame` 服务端请求，离线 UI 已没有可自行装载地图的路径。下一分支转向 `319/server319` 兼容性评估或 loopback 匹配服务抓包。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-pve-server-busy.json`。
 
 > **1649370 G2 换向：room.startgame 是服务端请求（2026-10-21）**：在 `0x62FAF4` 捕获到 Cbuf 完整文本 ` sv_resetServer; ... map mp_radiation_sh; ...`，确认缺少 `mmstart` 前缀；新增 `--prefix-cbuf mmstart` 回读 231→238 后仍黑屏、无错误、无地图。客户端没有独立的 `mmstart\0` 命令注册，只有服务端格式串；`room.startgame` 是发给匹配服务的请求，客户端不含 listen server。按三轮无进展规则，停止 Cbuf/mmstart 方向，下一分支优先验证离线 PVE/训练 UI，其次复用/适配 `319/server319` 本地服务。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-mmstart-cbuf-text.json`。
