@@ -630,3 +630,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 0x62F840 的 arg0=0/1 都黑屏，怀疑注入点不在安全帧边界
 
 用 cave `push 0/1; push 0; push 0; call 0x62F840`（ecx=room）分别执行，均无崩溃、黑屏、CPU 53、WS 1.2GB、无 UDP；地图索引仍 -1。`original_eip` 落在 `0x945D00`/`0x9F40FE` 一带，可能是在 UI/渲染重入区改了主线程上下文，导致黑屏而非真正开局。下一步：把调用挂到客户端帧边界（`0x4FE220` 入口）做 one-shot hook，而不是在任意 EIP 直接切上下文。
+
+## 2026-10-21 帧边界 hook 已稳定：0x4FE220 13 字节 trampoline 不崩，但地图仍不加载
+
+在 `0x4FE220` 入口写 `E9` 跳 cave，cave 只执行一次 `push map; push 0; push map; call 0x4F3890`，再执行原 13 字节并跳回 `0x4FE22D`。客户端存活、无崩溃、房间界面正常；`0x3306910` 仍 `-1`、地图队列仍 0。说明帧边界安全，但 `0x4F3890` 仍因 playlist 计数为 0 提前返回。下一步在 cave 里先写 `[0x3306994]=1` 再调用，或改调 `0x62F840`（ready/start）在帧边界执行。
