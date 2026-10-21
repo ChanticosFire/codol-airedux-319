@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 dedrun 参数 bind/archive 二选一（2026-10-21）**：完整参数 bind 失败；去 net_ip archive 失败；LAN IP 也 archive 失败。下一步 2.6.9.7 客户端验证或 xref Sys_Error。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 试跑 2.6.9.7 dedrun，卡 IPv4 bind（2026-10-21）**：dedrun 进程活但报 Could not bind；无 28969 监听。下一步换端口/去掉 net_ip 或用 2.6.9.7 客户端验证。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 0x33069D4 是命令字符串数组（2026-10-21）**：不是 map record；房间区无 mp_ 名。下一步改走 gamestate/本地服务端或从 UI 地图下拉写入点反查真正字段。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

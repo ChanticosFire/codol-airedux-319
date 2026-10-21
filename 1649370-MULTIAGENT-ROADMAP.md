@@ -662,3 +662,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 试跑 2.6.9.7 dedrun 本地 bot 服务端，卡在 IPv4 bind
 
 按 `runs/2697-server-test/cmd.json` 启动 `codol_dedrun.exe`（mp_cross_fire、12 bots、net_ip 127.0.0.1/net_port 28969），进程存活但 `sys_error.txt` 报 `Sys_Error: Could not bind to a IPv4 network socket`，`Get-NetUDPEndpoint`/netstat 均无 28969 监听；改成 `net_ip 0.0.0.0` 仍同样失败。说明 dedrun 的 socket 初始化/绑定路径有问题，暂时不能作为 1649370 的本地 bot 服务端。下一步换端口、去掉 net_ip、或用 2.6.9.7 客户端先验证 dedrun 本身可连。
+
+## 2026-10-21 2.6.9.7 dedrun 参数试错：bind/archive 二选一失败
+
+完整 `cmd.json` + `net_ip 127.0.0.1`/`0.0.0.0` → `Could not bind to a IPv4 network socket`；去掉 `net_ip` 或改空串 → `CoDOL startup archive loading failed`；改 `net_ip 192.168.10.108`/换端口也回到 archive 失败。说明 dedrun 对参数顺序/`net_ip` 与资源根很敏感，当前命令行不能同时满足 bind 和 archive。下一步用 2.6.9.7 客户端验证 dedrun 本身，或从 dedrun 的 `Sys_Error` xref 找 bind 失败条件。
