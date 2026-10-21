@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "run": "codex-1649370-mmstart-dump-20261021",
+  "purpose": "explain why room.startgame reaches the start request but never builds an mmstart command",
+  "breakpoints": [
+    {
+      "address": "0x631E90",
+      "label": "mmstart_constructor",
+      "hits": 1,
+      "registers": {"edi": "0x245678e0 (room object)", "eax": "0x2456ef1c", "ebx": "0x245678e0", "esi": "0x2456eec0", "tid": 38464}
+    },
+    {
+      "address": "0x62FA3E",
+      "label": "BeforeCbuf",
+      "hits": 1,
+      "eax": "0x0",
+      "eax_string": "",
+      "cbuf_pointer": "0x33821b0",
+      "cbuf_length": 0,
+      "note": "the call to 0x632070 receives EAX=0 from 0x631E90; the start request then queues no command"
+    },
+    {
+      "address": "0x632462",
+      "label": "mmstart_builder",
+      "hits": 0
+    }
+  ],
+  "room_state_before_patch": {
+    "room": "0x245678e0",
+    "vtable": "0xdc7274",
+    "playlist_id_0x105fc": "0xff",
+    "max_players_0x105fe": "0x0c",
+    "members_0x105d8": 1,
+    "gametype_bytes_0x1061c": "ffffff00",
+    "screen": "persistent black screen"
+  },
+  "playlist_patch_experiment": {
+    "write": {"address": "room+0x105fc", "before": "ff010c0c", "after": "00010c0c"},
+    "reinject": {"command": "room.startgame", "status": "queued", "length_before": 0, "length_after": 16},
+    "observed_result": "Still no mmstart hit, no Com Error, and the screen stayed black. Changing only the playlist id is insufficient."
+  },
+  "interpretation": "The native start request calls the mmstart constructor 0x631E90, but it returns NULL. The local room has playlist id -1 and gametype -1; the local playlist adapter deliberately publishes -1 to avoid an empty online season. The start request then passes NULL to 0x632070, queues nothing, and leaves the frontend in a black waiting state. The next fix must supply a minimal valid local playlist/gametype, or bypass 0x631E90 with a verified native map-start path; do not fabricate a loaded map from the black screen.",
+  "cleanup": "Run terminated by the coordinator after the observation. tools/net_rollback.ps1 reported no guard/client processes, no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}

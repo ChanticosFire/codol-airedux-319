@@ -422,7 +422,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     parser.add_argument("--local-profile", action="store_true")
     parser.add_argument("--verify-resources", action="store_true")
     parser.add_argument("--map-probe", choices=tuple(MAP_PROBE_FILES))
-    parser.add_argument("--map-command-mode", choices=("startup", "queue"), default="startup")
+    parser.add_argument("--map-command-mode", choices=("startup", "queue", "none"), default="startup")
     parser.add_argument("--audit-breakpoints", action="store_true")
     parser.add_argument("--capture-ui-movie", action="store_true")
     parser.add_argument("--room-command",
