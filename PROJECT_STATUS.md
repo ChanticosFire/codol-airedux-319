@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 传输初始化冷调用崩溃（2026-10-21）**：`0xBB2C40(arg1=[host+0xC], arg2=connection, ecx=biz)` → 客户端 `unhandled_exception`。它需要 `0xBAD810/0xB74FE0` 的真实会话对象，冷调用不可行。客户端侧最后一条捷径关闭；需要 1649370 服务端/协议资产，或改用其它可玩构建。详见 [1649370-G2-GAP.md](1649370-G2-GAP.md) 和 `evidence/experiments/20261021-1649370-init-transport-crash.json`。
+
 > **1649370 G2 缺口裁决（2026-10-21）**：2697 对 1649370 的 getchallenge 已回 `challengeResponse -486178985`；但客户端回送路径全部未打通（环注入被消费但状态仍 3、冷调 `0x5C0FD0` 直接 fatal、poke 闸门崩）。详见 [1649370-G2-GAP.md](1649370-G2-GAP.md)。下一步优先“真实传输通道”：还原 `0xBAD810 → 0xBB2C40` 参数，让 `[biz+0x18]` 自然置 1；其次服务端侧补齐。不再重复冷调解析器/poke 闸门/裸环注入。
 
 > **1649370 G2 直接 OOB 解析器调用 fatal（2026-10-21）**：主线程调 `0x5C0FD0`（`eax="challengeResponse -486178985"`，栈 netadr，arg0=0）→ 客户端 `fatal_dialog`，无 JSON。环注入虽被 `0x675140` 消费（读光标 0→1），但状态仍 3、无 connect。目前没有已验证的 challengeResponse 回送方法；2697 的文本应答已确认可用。下一步 hook 真实 `0x5C0FD0` 调用路径，或回到 `0xBB2C40` 完整初始化。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-parser-fatal.json`。

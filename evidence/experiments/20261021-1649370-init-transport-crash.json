@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "initialize the transport gate by calling 0xBB2C40 with the host+0xC / connection arguments",
+  "attempt": {
+    "run": "codex-1649370-init-transport-20261021",
+    "args": "arg1=[host+0xC], arg2=connection, ecx=[host+0x1F0] (biz)",
+    "call": "0xBB2C40 (biz vtable slot3)",
+    "result": "client stop_reason=unhandled_exception; init-transport.json was not written",
+    "cleanup": "guard_cleanup closed=true, engine_close_status=0"
+  },
+  "context": {
+    "host": "[0xE85C68]",
+    "biz": "[host+0x1F0], vtable 0xD5AFA4",
+    "gate": "[biz+0x18], set by 0xBB2C40 at 0xBB2D20 only after its sub-initializers succeed",
+    "connection": "decoded [0x331C0C8]^0xD362501F"
+  },
+  "interpretation": "Calling 0xBB2C40 with these cold arguments is not valid; it needs the real session object produced by 0xBAD810/0xB74FE0 and probably a fully populated host state. This closes the last tested client-side shortcut for the transport gate.",
+  "state_of_g2": {
+    "server_side": "2697 answers the 1649370 getchallenge with a valid challengeResponse",
+    "client_send": "getchallenge is generated into loopback ring A",
+    "client_receive": "ring injection is consumed but not dispatched; direct parser call is fatal",
+    "transport_gate": "0x621E50 returns -7; poke crashes; 0xBB2C40 cold call crashes",
+    "online_path": "requires the original Base.dll/anti-cheat, conflicting with the no-driver rule",
+    "compatible_server": "no 1649370 server/protocol implementation is present"
+  },
+  "next_if_unblocked": [
+    "provide a 1649370 server/protocol capture, or",
+    "accept a different build (3.3.3.3 runtime with its own client, or 2.6.9.7) for a working local bot match, or",
+    "reconstruct the real 0xBAD810 session object before calling 0xBB2C40"
+  ],
+  "cleanup": "No client/guard process remains. tools/net_rollback.ps1 reported no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}

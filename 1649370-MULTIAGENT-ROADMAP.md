@@ -124,3 +124,7 @@ state 4 是 connect 分支，state 3 才是 getchallenge 分支（`0x5C0F3C` 跳
 ## 2026-10-21 G2 缺口裁决（本轮）
 
 2697 对 1649370 的 getchallenge 已回 `challengeResponse -486178985`；客户端回送路径全部未打通（环注入被消费但状态仍 3、冷调 `0x5C0FD0` 直接 fatal、poke 闸门崩）。详见 `1649370-G2-GAP.md`。下一步优先“真实传输通道”：还原 `0xBAD810 → 0xBB2C40` 参数，让 `[biz+0x18]` 自然置 1；其次服务端侧补齐。不再重复冷调解析器/poke 闸门/裸环注入。
+
+## 2026-10-21 G2 传输初始化冷调用崩溃（本轮）
+
+`0xBB2C40(arg1=[host+0xC], arg2=connection, ecx=biz)` → 客户端 `unhandled_exception`；需要 `0xBAD810/0xB74FE0` 的真实会话对象，冷调用不可行。客户端侧最后一条捷径关闭；需要 1649370 服务端/协议资产，或改用其它可玩构建。证据 `evidence/experiments/20261021-1649370-init-transport-crash.json`。
