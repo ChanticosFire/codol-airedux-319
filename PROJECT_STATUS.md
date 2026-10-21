@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 0x5C13A0 调用者依赖队列/流对象（2026-10-21）**：0x5C2040/0x5C2112 调用前用 0x4F36C0/0x66EFD0 准备 ebx 流对象；冷调缺上下文会清零网络。下一步复刻流对象/队列或 hook 调用者。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 冷调真正 parser 0x5C13A0 也清零 netobj/conn（2026-10-21）**：challengeResponse+netadr+length 调用后网络对象归零，无 connect；需正常调用者/完整上下文。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 真正 server-message parser 0x5C13A0（2026-10-21）**：0x5C0FD0 是错误处理器（EXE_SERVER_DISCONNECTED），冷调 challengeResponse 触发断线；实际 parser 在 0x5C13A0，0x5C1684 比较 challengeResponse 后调 0x5C1300。下一步用正确参数调它。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
