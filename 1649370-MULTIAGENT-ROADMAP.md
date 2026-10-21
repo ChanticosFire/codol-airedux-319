@@ -478,3 +478,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 parser 上下文成为新阻断
 
 `0x5C13A0` 必须由 `0x5C2040`/`0x5C2112` 用 `ebx` 队列/流对象调用；冷调会清零 netobj/conn。已确认 `0x5C0FD0` 是错误处理器，真正 parser 是 `0x5C13A0`；收发 UDP 链路已通（getchallenge/challengeResponse 都成功）。但要把 challengeResponse 送进 parser，必须复刻 `0x4F36C0`/`0x66EFD0` 构造的队列/流对象，或抓一次真实接收循环的 `ebx`/栈上下文。当前没有可产生真实接收循环的客户端（社区 exe 无网络对象、完整 exe 被 TP 挡），冷调 parser 每次都会重置网络。下一步只能：抓真实接收上下文（需要能正常连接的客户端），或从 `0x4F36C0`/`0x66EFD0` 逆向构造完整队列对象。
+
+## 2026-10-21 0x5C1EE0 dispatcher 非破坏性但未解析
+
+构造 0x30 字节 buffer 对象（`+8/+0xC=buf`, `+0x14=0`, `+0x18=len`, `+0x1C=0`），以 `arg0=0`、`arg1=obj`、6 dword netadr 调 `0x5C1EE0`；调用后 `netobj/conn` 没有清零（比冷调 parser 安全），`c8` 仍 1，服务端无 connect。说明入口/字段还不完整（可能 `arg0` 要是 netobj/连接对象，或 `+0x8/+0xC/+0x14` 的 buffer 语义不同）。下一步：试 `arg0=netobj`、调整 buffer 字段，并读返回值。
