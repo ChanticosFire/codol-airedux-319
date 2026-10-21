@@ -116,6 +116,8 @@ MAP_PROBE_DIRS = {
     "mp_hardhat_sh": "runs/20261021-1649370-hardhat",
     "mp_cross_fire_native": "runs/20261021-1649370-crossfire-base",
     "mp_nuked_native": "runs/20261021-1649370-nuked",
+    "mp_overgrown_native": "runs/20261021-1649370-overgrown",
+    "mp_afghan_native": "runs/20261021-1649370-afghan",
 }
 MAP_PROBE_FILES = {
     "mp_strike_sh": {
@@ -147,6 +149,16 @@ MAP_PROBE_FILES = {
         "mp_nuked.ff": "cba6309d58ab5614f5ab1eb85238700cf743addc907cc8387ad7d7e8886590a0",
         "mp_nuked_load.ff": "185a2356bd02e415e767f4ebe0a62c3b3268afe22bb18b86e5338b58e68b02a1",
         "mp_nuked_const.ff": "39930bb58190a02aaf1402705240e94ae66a011e2a6f8a488979086f0ad824da",
+    },
+    "mp_overgrown_native": {
+        "mp_overgrown.ff": "b12a175ece0da61e2be320ea412733d7f2875a3c26e758db6c12726d1675ab1a",
+        "mp_overgrown_load.ff": "153978e880567df40e8acfee3a98f509803bc23048c2ed01c0e6d929bc5a6304",
+        "mp_overgrown_const.ff": "11ee7976f514e77427e42ca4a2e143722a2460ae9214d9c84a352d1dd9f90cc5",
+    },
+    "mp_afghan_native": {
+        "mp_afghan.ff": "1507866c39489bb1055920ba33aac801bf0e12f1985de6bc09160af4fe0466c0",
+        "mp_afghan_load.ff": "8af4a2ee8122176445974018e60b4029455edec918c401a65e43ae441ee49586",
+        "mp_afghan_const.ff": "5e43f6006428ed2fcedaa4f8a08e954125cc0ba57b6f26c36d1524036d3d5fe4",
     },
 }
 
