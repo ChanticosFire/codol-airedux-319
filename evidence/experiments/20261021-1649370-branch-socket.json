@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "isolate socket() from sendto() in the invalid-channel branch",
+  "socket_only": {
+    "run": "codex-1649370-branchesocket-20261021",
+    "cave": "pushad; socket(2,2,17); store eax; popad; ebx=0; jmp 0x6221DD",
+    "result": "client survived, ring-probe.json written, no Com Error",
+    "socket_handle": "0x0"
+  },
+  "socket_with_wsa": {
+    "run": "codex-1649370-branchesocket2-20261021",
+    "cave": "WSAStartup(0x202, &wsadata) then socket(2,2,17)",
+    "result": "client exit code 3221226505 (0xC0000409 STATUS_STACK_BUFFER_OVERRUN/fail-fast)",
+    "meaning": "the WSAStartup call or its import/ABI is wrong; the socket-only stub itself is safe"
+  },
+  "arguments_already_known": {
+    "data": "0x1AE210",
+    "len": 38,
+    "type": 4,
+    "ip": "127.0.0.1",
+    "port": "network order 0x2971",
+    "channel": "0x9D"
+  },
+  "next": [
+    "do not add WSAStartup inline in the branch cave; call it from a separate remote thread or use the client's existing WSA initialization",
+    "test sendto with the socket handle returned by the socket-only stub (even if 0) in a separate cave, with no WSAStartup",
+    "if the handle is invalid, resolve ws2_32!socket directly instead of wsock32!socket"
+  ],
+  "cleanup": "No client/guard process remains; no WFP residue."
+}
