@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 0x847155 是 conn 清理而非构造（2026-10-21）**：`0x847100` 清理 `[+0x57C]/[+0x4F4]/[+0x4EC]`，非创建。conn 非零写入点未找到；下一步 DRx 写断点或审计全局连接对象 `[0x331C0C8]`。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 反汇编确认 0xB838A0 不建 conn（2026-10-21）**：conn `+0x4F4` 为 0 时它只走 lobby 分支 `0xB83AA7`；`0xB769A0` 是 tag 0x0A 读取器，`0xB83A52` 只写 lobby+0x50/54。需独立 conn 构造函数/连接入口。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 netobj 驱动仍未建 conn（2026-10-21）**：`0x803830` 创建 netobj（`0x23E39FE0`），但 `0x803780`/`0xB838A0`/`0xB7A670` 调用后 conn `+0x4F4` 仍 0；手写 netadr+state=1 也不建 conn。下一步走 `0xB769A0`/`0xB83A52` tag 0x0A 或 conn 构造函数。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-netobj-drive.json`。
