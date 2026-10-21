@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "test whether the real TGuard service satisfies TP after the synthetic TCLS hand-off",
+  "service": {
+    "installer": "runs/full-client-private/TGuard/TGuardSvc.exe -install",
+    "name": "TGuardSvc",
+    "status_after_install": "Stopped (Manual)",
+    "status_after_start": "Running",
+    "uninstall": "TGuardSvc.exe -uninstall; service removed afterwards"
+  },
+  "result": {
+    "synthetic_tcls": "launched full private client with TGP-sign mapping",
+    "window": "none",
+    "process": "no game window; the sampled process ended without a window",
+    "tp_warning": "not observed in this run",
+    "meaning": "starting the real TGuard service alone does not satisfy TP; it still blocks the game window, consistent with TP requiring a real TCLS/TesSafe login/token environment, not just the service"
+  },
+  "next": [
+    "real TCLS account/token (requires credentials) or",
+    "runtime patch of the protected TP decision (TGuardBase/TASLoginBase/ClientBase)"
+  ],
+  "cleanup": "TGuardSvc stopped/uninstalled; codoMP terminated; net_rollback passed."
+}

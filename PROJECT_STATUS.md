@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 真实 TGuard 服务也不能放行 TP（2026-10-21）**：私有副本 `TGuardSvc.exe -install`，服务 Running；合成 TCLS 启动完整客户端仍无游戏窗口，TP 警告未出现但也不放行。随后已卸载服务。TP 仍要求真实 TCLS/TesSafe token，或需 patch 受保护判定。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-tguard-service.json`。
+
 > **1649370 对话框/退出 API 中和后仍无游戏窗口（2026-10-21）**：ShellExecute/CreateProcess 过滤之外再 patch ExitProcess/TerminateProcess/MessageBox/DialogBox，全部成功；TP 警告消失但 60 秒内仍 0 窗口、exit 259。API 级中和不足；TP 阻断在保护判定路径或需真实 TGuard 服务。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-tp-dialog-hook.json`。
 
 > **1649370 按命令行过滤的 CreateProcess hook（2026-10-21）**：只拦 `gamesafe` 的 CreateProcess stub + ShellExecute patch 后，TP 浏览器/警告不再出现，但 60 秒内游戏进程 0 窗口、exit_code 259。TP 阻断不止浏览器通知；需继续 patch warning/exit 判定或观察 TerminateProcess。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`tools/hook_tp_browser.py` 和 `evidence/experiments/20261021-1649370-tp-hook-filtered.json`。
