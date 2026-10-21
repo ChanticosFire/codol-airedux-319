@@ -778,3 +778,7 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 ## 2026-10-21 CEF 远程调试参数被客户端接受但 9222 无 CDP
 
 用 `-- --remote-debugging-port=9222` 启动社区客户端，进程正常运行（使命召唤online），但 `http://127.0.0.1:9222/json` 5 秒超时，netstat 无监听。说明客户端虽基于 CEF，但未开启 DevTools 远程调试（或端口被禁用）。下一步只能走 UI 事件/room 命令桥接，无法用 CDP 直接执行 JS 点“准备”。
+
+## 2026-10-21 UI 资源里也搜不到 room_ready/“准备”
+
+在 `1649370\resources` 和 `bin\v1649370` 下遍历文件搜 `room_ready`/`roomReady`/UTF-8/GBK“准备”，零命中；客户端 exe 也没有 `room_ready`/`room_start` 字符串。说明 ready 按钮逻辑在 CEF 二进制/加密资源里，或走 native UI 事件而不是文本命令。下一步只能从窗口消息/辅助功能（MSAA/UIA）或 native 事件表反查，无法再靠字符串定位。

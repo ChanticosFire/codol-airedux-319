@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 UI 资源无 room_ready/准备（2026-10-21）**：exe/资源零命中；下一步 MSAA/native 事件表。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 CEF 9222 无 CDP（2026-10-21）**：--remote-debugging-port 被接受但端口无监听；下一步 UI 事件/room 桥接。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 自然准备不调用 0x62F840（2026-10-21）**：准备点击后 hook count=0；说明 0x62F840 是 host/backend start 事件，不是 ready 处理。下一步找真正 ready 处理。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
