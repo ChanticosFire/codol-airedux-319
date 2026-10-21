@@ -398,3 +398,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 0xC73900 真正 call 点是 0xBA411A，但 hook 后 conn 创建失败
 
 `0xBA4114` 是 `lea ecx,[ebx+0xC4]`，`0xBA411A` 才是 `call 0xC73900`（原始字节 `e8 e1 f7 0c 00`）。把 `0xBA411A` 改到 cave 后，`0xB82070` 连接调用返回 `conn=0`，cave 日志全 0，说明 hook 的栈/返回约定破坏了调用（或 cave 未执行）。下一步：修正 cave 的 `ret 0x88` 栈平衡/调用约定，或在 `0xC73900` 入口用更简单的 VEH/断点只记录不替换调用。
+
+## 2026-10-21 VEH 只读跟踪 0xC73900：guard 设置被拒（error 5）
+
+`tools/trace_c73900_veh.py` 成功注入 VEH（`addveh=0x74E8A442`），但 `VirtualProtectEx(0xC73000, 0x120 PAGE_EXECUTE_READ|PAGE_GUARD)` 返回 error 5 (access denied)，所以没有触发 guard，日志全 0。代码页有额外保护/不可改保护，PAGE_GUARD 路线不可用。下一步改用 DRx 执行断点（不改页保护）或在 `0xBA411A` 用不破坏栈的 naked hook（只记录后 jmp 回原 call）。

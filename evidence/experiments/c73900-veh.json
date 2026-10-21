@@ -1,0 +1,17 @@
+{
+  "pid": 40348,
+  "cave": "0x40ac0000",
+  "kernel32": "0x74df0000",
+  "addveh": "0x74e8a442",
+  "guard": false,
+  "guard_error": 5,
+  "log": [
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x0"
+  ]
+}

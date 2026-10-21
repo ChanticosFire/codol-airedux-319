@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 VEH guard 0xC73900 被拒 error 5（2026-10-21）**：VEH 注入成功，但代码页 `PAGE_GUARD` 设置 access denied，日志全 0。改用 DRx 执行断点或不破坏栈的 naked hook。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/c73900-veh.json`。
+
 > **1649370 0xC73900 call 点在 0xBA411A；hook 后 conn=0（2026-10-21）**：0xBA4114 是 lea，0xBA411A 才是 call；替换后连接调用失败、日志全 0，需修 cave 栈平衡或改用 VEH。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/c73900-hook.json`。
 
 > **1649370 0xC73900 两次返回 -1（2026-10-21）**：conn netadr 有效（4/127.0.0.1/28969），但传零结构或 conn+8 结构都返回 -1，c8=4。需在 0xBA4114 真实调用点抓参数，或从 0xC76920 反查语义。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-c73900-probe.json`。
