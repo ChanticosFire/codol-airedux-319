@@ -192,3 +192,7 @@ Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add e
 ## 2026-10-21 G2 9 字节包是 netchan XOR 编码（本轮）
 
 `sv_net_chan.c` 的 `SV_Netchan_Encode` 把 `data[4..]` 与 `challenge ^ netchan.outgoingSequence` 做 XOR，再按 `lastClientCommandString` 逐字节混合。观测到的 9 字节包 = 4 字节 sequence + 5 字节编码消息；最后字节随 seq 变化不是 checksum/stats 位图，而是 XOR 混淆结果。下一步解码该 5 字节消息或按 keepalive/ACK-only 处理。证据 `evidence/experiments/20261021-1649370-postconnect-xor.json`。
+
+## 2026-10-21 G2 connect 后 9 字节包 = 空快照（本轮）
+
+用 getchallenge cookie 与 seq 做 XOR 解码，5 字节消息最后一字节恒为 `0x06` = `svc_snapshot`；326 个/2 秒是服务端持续推送空/最小快照，不是 stats/keepalive。前 4 字节是快照头字段。下一步保持 socket 收流并桥接客户端或复现 ACK/命令。证据 `evidence/experiments/20261021-1649370-postconnect-decode.json`。

@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "decode the 5-byte post-connect netchan message using the getchallenge cookie",
+  "method": "plaintext_last = encoded_last XOR (cookie & 0xFF) XOR (sequence & 0xFF), assuming an empty lastClientCommandString",
+  "run": "runs/_tmp_decode_postconnect.py",
+  "samples": {
+    "seq1": {"raw": "00000000aa", "decoded": "acacacac06"},
+    "seq2": {"raw": "00000000a9", "decoded": "afafafaf06"},
+    "seq3": {"raw": "00000000a8", "decoded": "aeaeaeae06"},
+    "seq4": {"raw": "00000000af", "decoded": "a9a9a9a906"},
+    "seq8": {"raw": "00000000a3", "decoded": "a5a5a5a506"}
+  },
+  "finding": {
+    "last_byte": "0x06 = svc_snapshot (enum: nop0, gamestate1, configstring2, baseline3, serverCommand4, download5, snapshot6, EOF7)",
+    "meaning": "the post-connect 9-byte packets are empty/minimal SNAPSHOT packets, not stats challenges or keepalive",
+    "rate": "326 packets in ~2 s, i.e. the server is streaming snapshots to the connected slot",
+    "first_four_bytes": "decode to repeated key bytes with the simple model; they are snapshot header fields obfuscated by the same XOR (lastClientCommandString may be non-empty), so only the opcode is certain from this test"
+  },
+  "next": [
+    "keep the remote socket open and receive the snapshot stream continuously",
+    "bridge the snapshots into the client's connection/loopback path",
+    "or reproduce the client's ACK/command path so the server's snapshot sequence advances"
+  ],
+  "cleanup": "2697 server terminated; no process/WFP residue."
+}
