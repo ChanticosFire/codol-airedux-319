@@ -44,6 +44,7 @@ from codol_rebuild.runtime import session as session_mod  # noqa: E402
 from codol_rebuild.adapters.persistence.sqlite_accounts import AccountRepository as OriginalAccountRepository  # noqa: E402
 from codol_rebuild.adapters.persistence import game_settings as game_settings_mod  # noqa: E402
 from codol_rebuild.adapters.game.v1649370.observation_points import BREAKPOINTS  # noqa: E402
+from codol_rebuild.adapters.game.v1649370 import menu_queue as menu_queue_mod  # noqa: E402
 import codol_rebuild.bootstrap.launch as launch_mod  # noqa: E402
 
 _original_prepare = launch_mod.prepare
@@ -68,6 +69,15 @@ PRIVATE_DATA = Path(__file__).resolve().parents[1] / "data" / "v1649370"
 ACCOUNT_DB = PRIVATE_DATA / "local.sqlite3"
 SETTINGS_DB = PRIVATE_DATA / "game-settings.sqlite3"
 OriginalSettingsStore = game_settings_mod.SettingsStore
+MAP_PROBE = None
+MAP_COMMAND_MODE = "startup"
+MAP_PROBE_FILES = {
+    "mp_strike_sh": {
+        "mp_strike_sh.ff": "9025460fa95446422729d0881494c6a4a0c376c9d0650bca7dfdf55aaa7b83cb",
+        "mp_strike_sh_load.ff": "0d1340d88ba65ce055d5af9c73b33a1d3179b6fa44e0ef5498ee404420613064",
+        "mp_strike_sh_const.ff": "f6d077630d5451ac9594e26a6617653ba013f6b2da564ae4648fc084a003326d",
+    },
+}
 
 
 def _build_environment(stage: Path) -> C.Array:
@@ -239,6 +249,20 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
         log["extra_root_files"] = copied
         print("[patched] copied extra root files:", ",".join(copied), flush=True)
 
+    if MAP_PROBE:
+        source_dir = Path(__file__).resolve().parents[1] / "runs/20261021-1649370-map"
+        destination_dir = stage / "client_shipretail/chinese"
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        staged = []
+        for name, expected in MAP_PROBE_FILES[MAP_PROBE].items():
+            source = source_dir / name
+            if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != expected:
+                raise ValueError(f"地图探针源文件缺失或指纹不符: {source}")
+            destination = destination_dir / name
+            shutil.copyfile(source, destination)
+            staged.append({"name": name, "sha256": expected, "size": destination.stat().st_size})
+        log["map_probe_resources"] = staged
+
     # 0x4F5120 打开 fileSysCheck.cfg，返回 -7 即 Com_Error("WIN_FILE_NOT_FOUND", NULL)。
     # 这个名字暗示它本应是「文件系统检查清单」，社区写的 77 字节注释版可能被拒。
     # 用一个可控开关逐一试内容形态和搜索根。
@@ -259,6 +283,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
+    global MAP_PROBE, MAP_COMMAND_MODE
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -268,7 +293,13 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--local-profile", action="store_true")
     parser.add_argument("--verify-resources", action="store_true")
+    parser.add_argument("--map-probe", choices=tuple(MAP_PROBE_FILES))
+    parser.add_argument("--map-command-mode", choices=("startup", "queue"), default="startup")
     known, passthrough = parser.parse_known_args(user_argv)
+    MAP_PROBE = known.map_probe
+    MAP_COMMAND_MODE = known.map_command_mode
+    if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
+        parser.error("--map-command-mode queue requires --map-probe")
 
     session = known.name or ("patched-" + __import__("uuid").uuid4().hex[:8])
 
@@ -313,7 +344,10 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
         args += ["--breakpoint", point]
 
     # 游戏参数必须放在 -- 之后，否则会被 host 当成自己的参数
-    args += ["--", *GAME_ARGUMENTS]
+    game_arguments = [*GAME_ARGUMENTS]
+    if MAP_PROBE and MAP_COMMAND_MODE == "startup":
+        game_arguments += ["+devmap", MAP_PROBE]
+    args += ["--", *game_arguments]
     return args
 
 
@@ -323,6 +357,9 @@ def main(argv=None) -> int:
             raise SystemExit(f"缺少 319 私有档案 {database}；先运行 tools/prepare_1649370_profile.py")
     user = list(sys.argv[1:] if argv is None else argv)
     host_args = build_host_arguments(user)
+    if MAP_PROBE and MAP_COMMAND_MODE == "queue":
+        menu_queue_mod.COMMAND = ("\nswitchtomainmenu\ndevmap " + MAP_PROBE + "\n").encode("ascii")
+        print("[patched] map probe queued after main-menu transition:", MAP_PROBE, flush=True)
     print("[patched] host arguments:", " ".join(host_args), flush=True)
     session_mod.ProcessSession.start = patched_start
     launch_mod.prepare = patched_prepare

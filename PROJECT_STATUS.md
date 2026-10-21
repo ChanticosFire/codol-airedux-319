@@ -7,6 +7,8 @@
 > 用户指定昵称“南韩超人朴玄俊”已写入 `319/data/v1649370/local.sqlite3` 私有存档，启动包装层现使用该存档及同目录设置库；原生大厅截图已核对新名字。社区原存档 SHA-256 未变化。静态镜像发现 `devmap`、`map_restart`、`botsAddAll` 引用，尚未证明可启动 bot 对局。参见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 >
 > 已验证解开 `development_mp.ff`（发行签名通过）：内有 `bots.cfg` 和 `devgui_maps_mp.cfg`，后者列出 `devmap mp_backlot/mp_strike/mp_war`。下一步获取对应地图 fastfile 并运行验证；仅凭开发配置不视为已能启动对局。
+>
+> 2026-10-21 续进：原始 IFS 中 `mp_strike_sh` 与 `mp_backlot_sh` 各三个 FF 已提取，发行签名与 zone 校验通过。`mp_strike_sh` 的启动参数探针仍进大厅；原生命令队列探针两次黑屏，但没有地图已装载的证据。三次均按时退出并清理动态 WFP 守卫。直接 `devmap` 路线暂转向自定义房间的原生开局条件，详见 `1649370-STATUS.md` 顶部。
 
 
 更新：2026-10-26（Asia/Shanghai）；第 188 轮后新增顶部结论索引。

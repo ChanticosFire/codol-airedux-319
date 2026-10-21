@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "ifs_packages": [
+    {
+      "name": "ff_init_mp_strike_sh_V16.ifs",
+      "sha256": "4c193bb9e0e26af4733a20e2a5fd5f2ac386e379338cf1165560b2f98bd40985",
+      "verified_members": [
+        {"name": "mp_strike_sh.ff", "sha256": "9025460fa95446422729d0881494c6a4a0c376c9d0650bca7dfdf55aaa7b83cb", "zone_asset_count": 443},
+        {"name": "mp_strike_sh_load.ff", "sha256": "0d1340d88ba65ce055d5af9c73b33a1d3179b6fa44e0ef5498ee404420613064", "zone_asset_count": 5},
+        {"name": "mp_strike_sh_const.ff", "sha256": "f6d077630d5451ac9594e26a6617653ba013f6b2da564ae4648fc084a003326d", "zone_asset_count": 8}
+      ]
+    },
+    {
+      "name": "ff_dlc28_mp_backlot_sh_V13.ifs",
+      "sha256": "d6016acecf08ad498ab444fbeba0ce02499ead883c4296b6a0594f2f305beb43",
+      "verified_members": [
+        {"name": "mp_backlot_sh.ff", "sha256": "b7a60b6905bdd20624ebe23f48cb2a90f5b5317977de55a3e94fbbaf8db8594c", "zone_asset_count": 335},
+        {"name": "mp_backlot_sh_load.ff", "sha256": "4ea1d5bddd9eaeed74b4a591d2f16a494a3ac3ef2c1b53464dc75c9a82c489dc", "zone_asset_count": 5},
+        {"name": "mp_backlot_sh_const.ff", "sha256": "7cdac28cd73e90e4d17137a273d09736adc0d6e651b7bcf4f361b319e6066ceb", "zone_asset_count": 5}
+      ]
+    }
+  ],
+  "runs": [
+    {"name": "codex-1649370-map-probe-20261021", "command_mode": "startup", "observation": "lobby displayed; no map seen", "stop_reason": "observation_timeout", "guard_cleanup_closed": true, "engine_close_status": 0},
+    {"name": "codex-1649370-map-queue-20261021", "command_mode": "queue", "observation": "black window; frontend events continued; map load unverified", "stop_reason": "observation_timeout", "guard_cleanup_closed": true, "engine_close_status": 0},
+    {"name": "codex-1649370-map-trace-20261021", "command_mode": "queue + failed-file trace", "observation": "no mp_strike path among failed opens; trace cannot show successful reads", "failed_file_events": 7171, "map_named_failed_file_events": 0, "stop_reason": "observation_timeout", "guard_cleanup_closed": true, "engine_close_status": 0}
+  ],
+  "conclusion": "Signed map assets are available, but neither direct command mode verifies a loaded playable map. Pivot to native room-start call chain."
+}
