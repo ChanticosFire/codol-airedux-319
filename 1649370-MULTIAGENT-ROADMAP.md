@@ -566,3 +566,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 按“绕过房间直接进图”尝试：map/devmap Cbuf 无效，原生 0x4F3890 直调崩溃
 
 按用户提示不走房间接口，先用 `--cbuf-command "map mp_cross_fire"`，再用 `"devmap mp_cross_fire"`（`--map-command-mode none`）注入，客户端都停在大厅，没进图；随后按 `0x4F8B20` 命令处理里的调用形态，直调 `0x4F3890(map,0,0)`（经 `0x4F2DE0`），进程立即退出/窗口消失，说明该调用还需要命令上下文或正确的 this/ret 约定。下一步：反汇编 `0x4F8B20`/`0x4F2DE0` 确认 `devmap` 命令真正调用的入口与参数，再用正确约定调用；不再盲调。
+
+## 2026-10-21 0x4F2DE0 调用约定已逆清，但远程线程直调仍崩溃；queue devmap 也无效
+
+`0x4F2DE0` 是“按 `;`/换行拆分字符串，再 `func(arg0,arg1,chunk)`”的包装，`ecx=func`、`[ebp+0x10]=字符串`、`[ebp+8]/[ebp+0xC]=参数`。按此把 map 字符串放到 `[ebp+0x10]` 重试，进程仍立即退出；`--map-command-mode queue` 的 `switchtomainmenu;devmap mp_cross_fire` 也只是回大厅，没有进图。说明它必须在主线程/命令上下文中调用，远程线程不行；下一步在主线程的 Cbuf/命令执行点 hook，注入 `devmap mp_cross_fire`，而不是远程线程裸调。

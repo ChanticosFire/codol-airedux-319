@@ -41,8 +41,8 @@ def main() -> int:
     s = int(k32.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x04))
     w(h, s, name + b"\x00")
     cave = int(k32.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x40))
-    code = (b"\x6a\x00" + b"\x6a\x00" +
-            b"\x68" + struct.pack("<I", s) +
+    code = (b"\x68" + struct.pack("<I", s) +
+            b"\x6a\x00" + b"\x6a\x00" +
             b"\xb9" + struct.pack("<I", 0x4F3890) +
             b"\xe8" + struct.pack("<i", 0x4F2DE0 - (cave + 19)) + b"\xc3")
     w(h, cave, code)
