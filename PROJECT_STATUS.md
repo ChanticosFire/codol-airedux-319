@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 TP3Helper 弹无标题 #32770（2026-10-21）**：ETW 证据 1s 时 pid 26432 有可见 #32770 + 隐藏 GDI+ Window (TP3Helper.exe)；下一步抓其命令行/对话框/父进程。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 ETW 抓到 TP 痕迹（2026-10-21）**：WPR ETL 360MB/CSV 1.36GB，出现 tenprotect_id_52.tmp、TGuard/TenProtect/TP；下一步按客户端 PID 过滤 Image/Process。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 全客户端退出原因待 ETW（2026-10-21）**：隐藏登录窗、9 秒 exit0、无 TCP；下一步 ETW 抓模块/线程。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

@@ -734,3 +734,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 WPR/ETW 抓到全客户端启动，CSV 里出现 TP 痕迹
 
 `wpr -start GeneralProfile` 下启动全客户端后停止，ETL 359,661,568 字节（drop 22889 事件），`tracerpt` 转 CSV 1.36GB。grep 到 `%TEMP%\tenprotect_id_52.tmp`、`TGuard`/`TenProtect`/`TP` 目录、`sstpsvc.dll` 等；说明 TP 在启动阶段确实活动。下一步从 CSV 里按 `codoMP_client_shipRetail.exe` 的 PID 过滤 Image/Process 事件，取退出前最后加载的模块和 TP 模块时间线，再定位 patch 点（不再盲启）。
+
+## 2026-10-21 ETW 证据里找到 TP3Helper：可见 #32770 对话框 + 隐藏 GDI+ Window (TP3Helper.exe)
+
+`full-etw.json` 在 1 秒时 owned pids `[31296,26432]`，26432 有：可见 `#32770`，标题空；隐藏 `GDI+ Hook Window Class`，标题是 `GDI+ Window (TP3Helper.exe)`；`MSCTFIME UI`/`IME`。说明全客户端启动时 TP 由 TP3Helper.exe 接管并弹一个无标题对话框；`--dismiss-dialogs` 点掉后客户端 9 秒静默退出。下一步抓 TP3Helper 的命令行/对话框文本/父进程，确它是“检测到调试/注入→通知客户端退出”，再决定 patch TP3Helper 或跳过其对话框。
