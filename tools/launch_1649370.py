@@ -238,7 +238,16 @@ def _main_thread_call(session, handle, target: int, ecx_value=None) -> dict:
         return {"status": "alloc_failed", "error": C.get_last_error()}
     cave = int(cave)
     main_map = os.environ.get("CODOL_MAIN_MAP")
-    if main_map:
+    if os.environ.get("CODOL_CBUF_EXEC"):
+        call_next = cave + 10
+        code = (b"\x60" + b"\x6a\x00" + b"\x31\xc0" +
+                b"\xe8" + struct.pack("<i", target - call_next) + b"\x61\xc3")
+        wrote = C.c_size_t()
+        if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                       len(code), C.byref(wrote)) or wrote.value != len(code)):
+            return {"status": "cave_write_failed", "cave": hex(cave), "error": C.get_last_error()}
+        k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+    elif main_map:
         string_address = cave + 0x800
         name = main_map.encode("ascii") + b"\x00"
         call_next = cave + 20
@@ -1939,6 +1948,11 @@ def _room_command_injector(session, command: str) -> None:
                 result.update(status="queued", length_before=length, length_after=new_length,
                               pointer=hex(pointer), payload_address=hex(pointer + length),
                               attempt=attempt + 1)
+                if os.environ.get("CODOL_CBUF_EXEC"):
+                    try:
+                        result["cbuf_exec"] = _main_thread_call(session, handle, 0x4F3080, None)
+                    except Exception as error:  # noqa: BLE001 - report, never hide
+                        result["cbuf_exec"] = {"status": "exception", "error": repr(error)}
                 if MAIN_CALL:
                     try:
                         result["main_call"] = _main_thread_call(session, handle, MAIN_CALL, MAIN_CALL_ECX)

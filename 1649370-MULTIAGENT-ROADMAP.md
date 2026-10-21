@@ -582,3 +582,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 找到命令缓冲消费者 0x4F2EC0/0x4F3080；远程执行队列崩溃
 
 `0x4F2EC0` 按行拆分 `0x76595A4` 描述符并直接 `call 0x4F3890(line)`，是真正执行 Cbuf 的函数；`0x4F3080` 是它的包装（先 `0x4F2FF0` flush，再 `0x4F2EC0(descriptor,arg)`）。在 `--room-command "devmap mp_cross_fire"` 已入队（length 22）后，用远程线程调 `0x4F3080`，客户端立即退出/窗口消失，说明 Cbuf 执行也必须在主线程。下一步：把 `0x4F3080` 调用嵌进 room-command 注入器的主线程暂停窗口（写队列后、ResumeThread 前设 EIP），再让它自己执行 devmap。
+
+## 2026-10-21 Cbuf 执行终于进入命令处理，但在 0xA3942A 崩溃
+
+修正两个错误后——`0x4F2EC0` 的 `[ebp+8]` 是缓冲区索引（eax=0，不是 `0x76595A4`），以及 cave 里 `call` 相对偏移（`call_next=cave+10`）——主线程 cave 执行 `push 0; xor eax,eax; call 0x4F3080`，`devmap mp_cross_fire` 不再停在队列，而是进入命令解析后在 `0xA3942A`（`mov ebx,[eax+0x40]`，eax 指向损坏字符串）访问冲突。说明 Cbuf 执行已经打通，剩下是命令字符串/参数或 `devmap` 上下文。下一步改 `map mp_cross_fire`、补 `sv_cheats 1`，或修正注入文本的前导换行。
