@@ -534,3 +534,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 AI 开关已成功切到“打开”，但房间“准备”仍不开始
 
 用户手动点击后，高级选项显示 `AI开关 = 打开`；关闭对话框后房间地图变为化学工厂，说明设置已应用。随后点击“准备”多次（(1843,1051)），按钮仍显示“准备”，没有加载地图、28969 无包。下一步：房间内找“开始游戏”控件/键盘 Enter，或用主线程调用 `room.startgame`（`0x6398A0`）/`0x62FAF4` 触发开局。AI 开关本身已确认可用，这是本地 bot 对战的关键前置。
+
+## 2026-10-21 双击“准备”后出现黑屏加载态（CPU 69、WS 1.2GB）
+
+进入自定义房间（地图核弹小镇）后，`--room-command room.startgame` 注入成功（`room-command.json` status=queued、length 0→16、room 0x23D978B8），再双击“准备”，窗口立即变黑，进程存活、CPU 持续上升、工作集 1.2GB，10–30 秒仍未出现画面。结合房间地图是“核弹小镇”（`mp_nuked`），而我们目前只提取了 `mp_cross_fire`/`mp_hardhat_sh` 的原生 fastfile，黑屏很可能是缺失 `mp_nuked` 地图资产导致加载卡住，不是网络问题。用户确认：AI bot 本来就不会出现在 lobby、只在对局内出现。下一步：把房间地图改成已提取的交叉火力，或从 `ff_init_mp_nuked_V74.ifs`/`lf_init_mp_nuked_V8.ifs` 提取 `mp_nuked` 后再开局。
