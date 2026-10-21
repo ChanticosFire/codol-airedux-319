@@ -2008,6 +2008,9 @@ def _room_command_injector(session, command: str) -> None:
                             k32.WriteProcessMemory(handle, C.c_void_p(address),
                                                    C.create_string_buffer(data, len(data)),
                                                    len(data), C.byref(wrote))
+                        # 0x945CEB: mov esi,[ecx] -> xor esi,esi (avoid invalid container deref)
+                        k32.WriteProcessMemory(handle, C.c_void_p(0x945CEB),
+                                               C.create_string_buffer(b"\x31\xf6", 2), 2, C.byref(wrote))
                         result["room_start"] = _main_thread_call(session, handle, 0x62F840, room)
                     except Exception as error:  # noqa: BLE001 - report, never hide
                         result["room_start"] = {"status": "exception", "error": repr(error)}

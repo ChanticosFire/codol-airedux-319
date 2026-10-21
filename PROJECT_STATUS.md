@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 单点 patch 0x945CEB 阻止崩溃、回到大厅（2026-10-21）**：8B31→31F6 后房间开始不崩，但容器 null 导致 start 中止；下一步补容器/map 记录。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 两条路线都停在启动/房间门（2026-10-21）**：全客户端 WIN_NO_TCLS；社区客户端 0x945CEB/地图 -1。下一步单点 patch：社区客户端 start 分支直调 0x4F3890，或全客户端 hook MessageBox 抓调用者。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 找到 WIN_NO_TCLS key（2026-10-21）**：localization.txt 有该 key，exe 字符串在 VA 0xDDDF80 但无绝对引用；下一步 hook MessageBox/本地化查表定位分支。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
