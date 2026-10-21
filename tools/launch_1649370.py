@@ -28,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import time
+import zlib
 from ctypes import wintypes as W
 from pathlib import Path
 
@@ -46,6 +47,7 @@ from codol_rebuild.adapters.persistence import game_settings as game_settings_mo
 from codol_rebuild.adapters.game.v1649370.observation_points import BREAKPOINTS  # noqa: E402
 from codol_rebuild.adapters.game.v1649370 import menu_queue as menu_queue_mod  # noqa: E402
 from codol_rebuild.adapters.game.v1649370 import session_bridge as bridge_mod  # noqa: E402
+from codol_rebuild.adapters.game.v1649370 import ui_movie as ui_movie_mod  # noqa: E402
 import codol_rebuild.bootstrap.launch as launch_mod  # noqa: E402
 
 _original_prepare = launch_mod.prepare
@@ -297,6 +299,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     parser.add_argument("--map-probe", choices=tuple(MAP_PROBE_FILES))
     parser.add_argument("--map-command-mode", choices=("startup", "queue"), default="startup")
     parser.add_argument("--audit-breakpoints", action="store_true")
+    parser.add_argument("--capture-ui-movie", action="store_true")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
@@ -359,7 +362,25 @@ def main(argv=None) -> int:
             raise SystemExit(f"缺少 319 私有档案 {database}；先运行 tools/prepare_1649370_profile.py")
     user = list(sys.argv[1:] if argv is None else argv)
     audit_breakpoints = "--audit-breakpoints" in user
+    capture_ui_movie = "--capture-ui-movie" in user
     host_args = build_host_arguments(user)
+    if capture_ui_movie:
+        session_name = host_args[host_args.index("--name") + 1]
+        output = Path(__file__).resolve().parents[1] / "runs" / session_name / "codo-original.gfx"
+        original_find_resource_patch = ui_movie_mod.find_resource_patch
+
+        def captured_find_resource_patch(read, regions, rules=None):
+            plan = original_find_resource_patch(read, regions, rules)
+            movie = zlib.decompress(plan["data_before"])
+            if len(movie) != ui_movie_mod.RESOURCE_SIZE or hashlib.sha256(movie).hexdigest() != ui_movie_mod.RESOURCE_SHA256:
+                raise ValueError("原始 codo.gfx 指纹不符")
+            output.parent.mkdir(parents=True, exist_ok=True)
+            with output.open("xb") as stream:
+                stream.write(movie)
+            print("[patched] captured original UI movie:", output, flush=True)
+            return plan
+
+        ui_movie_mod.find_resource_patch = captured_find_resource_patch
     if audit_breakpoints:
         original_breakpoint = bridge_mod.GameSessionBridge.breakpoint
 

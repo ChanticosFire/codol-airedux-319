@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G1 UI 主电影（2026-10-21）**：从原有运行时资源校验路径捕获并校验原始 `codo.gfx` 私有副本，精确字符串扫描定位 `LobbyController/private:onChangeReadyStateHandle` 与相邻的 `SetReadyState`，还有 `cppSetMemberReadyState`。这是 ABC 调用链线索，尚非按钮实际执行证据；下一步解析方法字节码并验证 native 目标。捕获运行正常结束、动态守卫已清理。见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-ui-movie-leads.json`。
+
 > **1649370 G1 断点审计（2026-10-21）**：包装层新增只读 `--audit-breakpoints`。一次完整冷启动的三个检查点表明，房间开始、ready 候选、GFx StartMatch 候选和 `mmstart` 候选断点均仍登记且为 `0xCC`，启动期适配器未覆盖它们。此轮没有点击房间按钮，因此 G1 未通过；下一步审计按钮动作前后与 GFx 调用边。运行结束动态 WFP 守卫正常清理。见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-breakpoint-audit.json`。
 
 > **1649370 多 agent 路线（2026-10-21）**：详见 [1649370-MULTIAGENT-ROADMAP.md](1649370-MULTIAGENT-ROADMAP.md)。当前 G0 大厅与本地房基线已验证，G1 房间开局调用链待确认，G2 地图、G3 bot、G4 回大厅闭环未通过。路线规定静态研究可并行、实机运行独占，逐门槛保留证据、每轮更新两份状态文档并本地提交；同一阻断连续三轮无进展即换向。本轮只编写路线，未运行客户端。
