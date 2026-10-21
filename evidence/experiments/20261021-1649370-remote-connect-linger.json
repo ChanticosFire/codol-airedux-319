@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "observe what the 2697 server sends after a successful connect while the socket stays open",
+  "run": "runs/_tmp_linger.py",
+  "handshake": {
+    "challenge": "challengeResponse 628518497",
+    "connect": "connectResponse map=mp_cross_fire gametype=war"
+  },
+  "post_connect": {
+    "packets": "512 small UDP datagrams",
+    "size": 9,
+    "layout": "[u32 sequence][u32 0][u8 checksum]",
+    "sequence": "1,2,3,... (low byte cycles 0x00..0xFF)",
+    "checksum_examples": ["seq=1 -> 0x66", "seq=2 -> 0x65", "seq=0x67 -> 0x00", "seq=0x68 -> 0x0F"],
+    "meaning": "the server drives a 512-slot challenge/keepalive (likely stats chunk slots) immediately after connect; a client that does not answer eventually disconnects"
+  },
+  "next": [
+    "identify whether these 9-byte packets are the stats upload challenge or netchan keepalive",
+    "implement the matching client response/keepalive in the remote thread",
+    "then keep the socket alive and bridge the server's gamestate/native data to the client"
+  ],
+  "cleanup": "2697 server terminated; no process/WFP residue."
+}
