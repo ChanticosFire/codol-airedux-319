@@ -730,3 +730,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 全客户端静默退出仍缺可观测原因
 
 隐藏 GbLoginClass、9 秒 exit_code=0、无 TCP；`--dismiss-dialogs` 可能把 TP 警告点掉后客户端直接退出，也可能是 TCLS 未被消费。下一步不再盲启，先用 ETW（Microsoft-Windows-Kernel-Process / Image Load / TCPIP）记录一次启动，抓退出前最后加载的模块/线程和是否有 TP 模块（TGuard/tpsvc/TASLogin）活动；再按模块定位 patch 点。
+
+## 2026-10-21 WPR/ETW 抓到全客户端启动，CSV 里出现 TP 痕迹
+
+`wpr -start GeneralProfile` 下启动全客户端后停止，ETL 359,661,568 字节（drop 22889 事件），`tracerpt` 转 CSV 1.36GB。grep 到 `%TEMP%\tenprotect_id_52.tmp`、`TGuard`/`TenProtect`/`TP` 目录、`sstpsvc.dll` 等；说明 TP 在启动阶段确实活动。下一步从 CSV 里按 `codoMP_client_shipRetail.exe` 的 PID 过滤 Image/Process 事件，取退出前最后加载的模块和 TP 模块时间线，再定位 patch 点（不再盲启）。

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 ETW 抓到 TP 痕迹（2026-10-21）**：WPR ETL 360MB/CSV 1.36GB，出现 tenprotect_id_52.tmp、TGuard/TenProtect/TP；下一步按客户端 PID 过滤 Image/Process。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 全客户端退出原因待 ETW（2026-10-21）**：隐藏登录窗、9 秒 exit0、无 TCP；下一步 ETW 抓模块/线程。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 全客户端 9 秒静默退出（2026-10-21）**：隐藏 GbLoginClass/IME，无 TCP；下一步 ETW/退出路径或 patch。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
