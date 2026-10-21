@@ -102,6 +102,7 @@ BRANCH_SOCKET = False
 BRANCH_SENDTO = False
 REMOTE_UDP_SEND = False
 INJECT_REMOTE_RESPONSE = False
+REMOTE_UDP_CONNECT = False
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -568,6 +569,122 @@ def _remote_udp_send(session) -> None:
         result["finished"] = time.time()
         output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print("[patched] remote udp:", json.dumps(result, ensure_ascii=False), flush=True)
+        k32.CloseHandle(handle)
+
+
+def _remote_udp_connect(session) -> None:
+    """在客户端进程内用固定源端口完成 getchallenge + connect，并保存两个应答。"""
+    k32 = C.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
+    k32.OpenProcess.restype = W.HANDLE
+    k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
+    k32.VirtualAllocEx.restype = C.c_void_p
+    k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.FlushInstructionCache.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t]
+    k32.CreateRemoteThread.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, C.c_void_p, C.c_void_p,
+                                       W.DWORD, C.POINTER(W.DWORD)]
+    k32.CreateRemoteThread.restype = W.HANDLE
+    k32.WaitForSingleObject.argtypes = [W.HANDLE, W.DWORD]
+    k32.GetExitCodeThread.argtypes = [W.HANDLE, C.POINTER(W.DWORD)]
+    output = session.run_dir / "remote-udp-connect.json"
+    result = {"started": time.time(), "status": "waiting"}
+    handle = k32.OpenProcess(0x0438, False, session.info.pid)
+    if not handle:
+        result.update(status="open_process_failed", error=C.get_last_error())
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return
+    try:
+        time.sleep(12)
+        local_port = 28970
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.bind(("127.0.0.1", local_port))
+        probe.settimeout(3)
+        xuid = "a731af49a6a2c7e2"
+        challenge_packet = b"\xff\xff\xff\xffgetchallenge 0 \"" + xuid.encode() + b"\""
+        probe.sendto(challenge_packet, ("127.0.0.1", 28969))
+        challenge, _ = probe.recvfrom(2048)
+        probe.close()
+        cookie = challenge.split(b"\x00")[0].decode("latin-1").split()[-1]
+        name_hex = "player".encode("utf-16-le").hex()
+        info = ("\\name\\%s\\xuid\\%s\\challenge\\%s\\natType\\1\\checksum\\0"
+                "\\2490\\1649370\\statver\\1") % (name_hex, xuid, cookie)
+        connect_packet = ("\xff\xff\xff\xffconnect %s \"%s\"" % (xuid, info)).encode("latin-1")
+        result.update(local_port=local_port, cookie=cookie,
+                      connect_request=connect_packet.decode("latin-1"))
+        cave = int(k32.VirtualAllocEx(handle, None, 0x4000, 0x3000, 0x40))
+        if not cave:
+            result.update(status="alloc_failed", error=C.get_last_error())
+            return
+        p1, p2 = cave + 0x200, cave + 0x300
+        local_addr, server_addr = cave + 0x500, cave + 0x520
+        recv1, recv2 = cave + 0x700, cave + 0x1000
+        timeout, fromaddr, fromlen, out = cave + 0x2000, cave + 0x2100, cave + 0x2120, cave + 0x2140
+        code = b"\x60"
+        code += b"\x68" + struct.pack("<I", cave + 0x2200) + b"\x68\x02\x02\x00\x00"
+        code += b"\xff\x15\x34\x85\xca\x00"                 # WSAStartup
+        code += b"\x6a\x11\x6a\x02\x6a\x02"
+        code += b"\xff\x15\x48\x85\xca\x00\x8b\xd8"           # socket; mov ebx,eax
+        code += b"\x6a\x10\x68" + struct.pack("<I", local_addr) + b"\x53"
+        code += b"\xff\x15\x54\x85\xca\x00"                 # bind
+        code += b"\x6a\x04\x68" + struct.pack("<I", timeout)
+        code += b"\x68\x06\x10\x00\x00\x68\xff\xff\x00\x00\x53"
+        code += b"\xff\x15\x58\x85\xca\x00"                 # setsockopt
+        for payload_addr, payload_len in ((p1, len(challenge_packet)), (p2, len(connect_packet))):
+            code += b"\x6a\x10\x68" + struct.pack("<I", server_addr)
+            code += b"\x6a\x00\x68" + struct.pack("<I", payload_len)
+            code += b"\x68" + struct.pack("<I", payload_addr) + b"\x53"
+            code += b"\xff\x15\x18\x85\xca\x00"             # sendto
+            code += b"\x68" + struct.pack("<I", fromlen) + b"\x68" + struct.pack("<I", fromaddr)
+            code += b"\x6a\x00"
+            if payload_addr == p1:
+                code += b"\x68\x00\x08\x00\x00\x68" + struct.pack("<I", recv1)
+            else:
+                code += b"\x68\x00\x10\x00\x00\x68" + struct.pack("<I", recv2)
+            code += b"\x53\xff\x15\x1c\x85\xca\x00"         # recvfrom
+            code += b"\xa3" + struct.pack("<I", out if payload_addr == p1 else out + 4)
+        code += b"\x61\xc3"
+        blobs = [
+            (cave, code), (p1, challenge_packet), (p2, connect_packet),
+            (local_addr, struct.pack("<HH4s8x", 2, socket.htons(local_port), b"\x7f\x00\x00\x01")),
+            (server_addr, struct.pack("<HH4s8x", 2, socket.htons(28969), b"\x7f\x00\x00\x01")),
+            (timeout, struct.pack("<I", 3000)), (fromlen, struct.pack("<I", 16)),
+        ]
+        wrote = C.c_size_t()
+        for address, blob in blobs:
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(address),
+                                           C.create_string_buffer(blob, len(blob)), len(blob),
+                                           C.byref(wrote)) or wrote.value != len(blob)):
+                result.update(status="write_failed", address=hex(address), error=C.get_last_error())
+                return
+        k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+        tid = W.DWORD()
+        thread = k32.CreateRemoteThread(handle, None, 0, C.c_void_p(cave), None, 0, C.byref(tid))
+        if not thread:
+            result.update(status="thread_failed", error=C.get_last_error())
+            return
+        k32.WaitForSingleObject(thread, 10000)
+        exit_code = W.DWORD()
+        k32.GetExitCodeThread(thread, C.byref(exit_code))
+        result["thread_id"] = tid.value
+        result["thread_exit"] = exit_code.value
+        time.sleep(2)
+        for index, (length_addr, data_addr) in enumerate(((out, recv1), (out + 4, recv2))):
+            length_buffer = C.create_string_buffer(4)
+            got = C.c_size_t()
+            if k32.ReadProcessMemory(handle, C.c_void_p(length_addr), length_buffer, 4, C.byref(got)) and got.value == 4:
+                length = struct.unpack("<i", length_buffer.raw)[0]
+                result[f"step{index}_length"] = length
+                if 0 < length <= 0x1000:
+                    data_buffer = C.create_string_buffer(length)
+                    if (k32.ReadProcessMemory(handle, C.c_void_p(data_addr), data_buffer, length,
+                                              C.byref(got)) and got.value == length):
+                        result[f"step{index}_hex"] = data_buffer.raw.hex()
+                        result[f"step{index}_ascii"] = data_buffer.raw.decode("latin-1", "replace")
+        result["status"] = "done"
+    finally:
+        result["finished"] = time.time()
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("[patched] remote udp connect:", json.dumps(result, ensure_ascii=False), flush=True)
         k32.CloseHandle(handle)
 
 
@@ -1745,6 +1862,9 @@ def patched_start(self, exe, settings_session) -> None:
     if REMOTE_UDP_SEND:
         threading.Thread(target=_remote_udp_send, args=(self,),
                          name="remote-udp", daemon=True).start()
+    if REMOTE_UDP_CONNECT:
+        threading.Thread(target=_remote_udp_connect, args=(self,),
+                         name="remote-udp-connect", daemon=True).start()
 
 
 # 社区 DEPENDENCIES 只覆盖 DLL 与 CEF；原版根目录还有一批数据/配置文件没被复制。
@@ -1850,7 +1970,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -1903,6 +2023,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="在客户端进程内新建远程线程直接 sendto getchallenge")
     parser.add_argument("--inject-remote-response", action="store_true",
                         help="把远程线程收到的应答写入 loopback 接收环")
+    parser.add_argument("--remote-udp-connect", action="store_true",
+                        help="在客户端进程内用固定源端口完成 getchallenge+connect")
     parser.add_argument("--hook-loopback", action="store_true",
                         help="在 0x6750A0 安装持久 cave hook（实验性，可能崩溃）")
     parser.add_argument("--inject-challenge", action="store_true",
@@ -1940,6 +2062,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     BRANCH_SENDTO = known.branch_sendto
     REMOTE_UDP_SEND = known.remote_udp_send
     INJECT_REMOTE_RESPONSE = known.inject_remote_response
+    REMOTE_UDP_CONNECT = known.remote_udp_connect
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 

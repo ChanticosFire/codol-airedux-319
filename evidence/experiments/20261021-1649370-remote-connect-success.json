@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "run the full 2697 admission handshake from a fixed source port inside the 1649370 client process",
+  "run": "codex-1649370-remoteconnect-20261021",
+  "setup": {
+    "local_port": 28970,
+    "server": "127.0.0.1:28969",
+    "name_encoding": "UTF-16LE hex",
+    "xuid": "a731af49a6a2c7e2"
+  },
+  "responses": {
+    "challenge": "\\xff\\xff\\xff\\xffchallengeResponse -891575079\\x00",
+    "connect": "\\xff\\xff\\xff\\xffconnectResponse \\\\mapname\\\\mp_cross_fire\\\\gametype\\\\war\\\\sv_maxclients\\\\12\\\\protocol\\\\1\\\\shortversion\\\\1.1.1.13\\x00"
+  },
+  "server_log": [
+    "SV packet 127.0.0.1:28970: getchallenge 0 \"a731af49a6a2c7e2\"",
+    "SV packet 127.0.0.1:28970: connect a731af49a6a2c7e2 \"...hex name...challenge\\-891575079...\"",
+    "Going from CS_FREE to CS_CONNECTED for ... num 0 from: 127.0.0.1:28970<=>127.0.0.1:28969"
+  ],
+  "meaning": "The complete 2697 admission handshake now runs inside the 1649370 process, from a fixed source port, and the server transitions the client slot to CS_CONNECTED. The thread then exits and the socket closes, so the server immediately reports disconnect.",
+  "next": [
+    "keep the remote thread alive with the socket open and a recv loop",
+    "send the stats/heartbeat/native traffic expected after connect",
+    "bridge server responses into the client connection state/loopback ring"
+  ],
+  "cleanup": "Client and 2697 server terminated; no WFP/process residue."
+}

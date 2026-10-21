@@ -172,3 +172,7 @@ Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add e
 ## 2026-10-21 G2 2697 完整握手工具化（本轮）
 
 `tools/probe_2697_connect.py` 完成 `getchallenge → connect`（name=UTF-16LE hex），2697 返回 `connectResponse \mapname\mp_cross_fire\gametype\war\sv_maxclients\12\protocol\1\shortversion\1.1.1.13`，证据 `ok:true`。服务端 admission 文本格式可复跑；剩余是客户端持久 socket + 应答注入。证据 `evidence/experiments/20261021-1649370-connect-probe.json`。
+
+## 2026-10-21 G2 客户端进程内完整 admission 成功（本轮）
+
+固定源端口 28970，客户端进程内完成 getchallenge/connect（UTF-16LE hex 名字），收到 `challengeResponse -891575079` 与 `connectResponse map=mp_cross_fire/gametype=war`；2697 日志 `CS_FREE → CS_CONNECTED ... 127.0.0.1:28970<=>127.0.0.1:28969`。线程退出 socket 关闭后 disconnect。协议层已打通；下一步保持线程/socket 存活，接 stats/heartbeat/native 并桥接回客户端。证据 `evidence/experiments/20261021-1649370-remote-connect-success.json`。
