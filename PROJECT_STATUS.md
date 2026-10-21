@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 0xBA32A0 是事件回调，不是发送（2026-10-21）**：它操作 conn+0x100/0x110 定时器，调用 conn+0xCC vtable，并可能调 0xBA3100；无 sendto。真正发送候选 0xBA0980 / 0xBA3100。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 0xBA4080 状态机：c8=4 走错误分支（2026-10-21）**：置 1→复制 conn+0x538→`0xBA9970`/`0xBA0760`→`0xC73900`：1→c8=2+`0xBA32A0`；-2→等；其他→错误 0x12+`0xBA3420`。实测 c8=4，发送未发生；下一步直接 `0xBA32A0` 或查 socket 返回。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 真实 conn 对象创建成功（2026-10-21）**：`0xB82070` 包装调用创建 `conn=0x245EBBF0`（vtable 0xD5A4F4，c8=4），但 `0xBA4080` 后服务端仍无 getchallenge。下一步驱动 0xB7A670/状态机或接全局 0x5C05F0。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-conn-object-created.json`。
