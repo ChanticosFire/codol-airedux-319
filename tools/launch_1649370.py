@@ -1994,6 +1994,20 @@ def _room_command_injector(session, command: str) -> None:
                               attempt=attempt + 1)
                 if os.environ.get("CODOL_ROOM_START"):
                     try:
+                        map_name = b"mp_cross_fire\x00"
+                        for address, data in (
+                            (room + 0xE360, struct.pack("<I", 0)),
+                            (room + 0x105FC, b"\x00"),
+                            (room + 0x1061C, b"\x00"),
+                            (room + 0x105D8, struct.pack("<I", 1)),
+                            (room + 0x168, struct.pack("<I", 0)),
+                            (room + 0x16C, struct.pack("<I", len(map_name) - 1)),
+                            (room + 0x170, map_name),
+                        ):
+                            wrote = C.c_size_t()
+                            k32.WriteProcessMemory(handle, C.c_void_p(address),
+                                                   C.create_string_buffer(data, len(data)),
+                                                   len(data), C.byref(wrote))
                         result["room_start"] = _main_thread_call(session, handle, 0x62F840, room)
                     except Exception as error:  # noqa: BLE001 - report, never hide
                         result["room_start"] = {"status": "exception", "error": repr(error)}
