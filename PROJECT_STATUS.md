@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 CL_MapLoading 未由 room.startgame 触发（2026-10-21）**：在 2.6.9.7 参考服务端（28969）+ 私有 loopback 守卫下注入 `room.startgame`，客户端持续黑屏，`0x5BE730`（CL_MapLoading 候选）零命中，服务端无 connection/challenge 记录，无 Com Error。结论：房间路径只发匹配请求，不调用本地地图加载。下一步在游戏主线程用代码 cave 直接调用 `0x5BE730`（保存寄存器→call→恢复→ret），返回原 EIP；不要用远程线程。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-clmaploading-probe.json`。
+
 > **1649370 G2 loopback 守卫与参考服务端就绪（2026-10-21）**：2.6.9.7 `codol_dedrun.exe` 在私有目录成功加载 `mp_cross_fire`，Bot waypoint 444 节点，监听 `127.0.0.1:28969`。私有 `client_loopback_guard.exe` 已复制到 `319/tools/ref/`，包装层新增 `--loopback-guard`，以临时 WFP 动态会话只允许目标进程 UDP `127.0.0.1:28969`（8 过滤器、job kill-on-close），ready 校验通过。随后向 1649370 注入 `connect 127.0.0.1:28969` 未产生 UDP 或服务端日志，确认 `connect` 不是注册 Cbuf 命令；当前缺 1649370 的内部连接入口（`0x604260`/`0x605920` 一带）或在线 lobby 触发路径。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部与 `evidence/experiments/20261021-1649370-loopback-server-probe.json`。
 
 > **1649370 G2 硬阻断：无 1649370 本地服务器（2026-10-21）**：1649370 镜像没有 `SV_SpawnServer`/`SV_Startup`/`codol_zoneType`/`sv_maxclients` 等服务端串，只有 `loadingnewmap` 客户端处理串；社区源码也没有 online/server 模块。工作区有完整的 2.6.9.7 `codol_dedrun.exe`（含 Bot），但协议为 `IW4OL2.6.9.7`，1649370 镜像没有 `IW4OL`/`2.6.9.7` 标记，直接配对无兼容依据。当前 G2 阻断是缺少 1649370 专用服务器/协议实现。下一步检索 1649370 服务端资料，或捕获其匹配/战斗协议后做最小适配。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-no-native-server.json`。

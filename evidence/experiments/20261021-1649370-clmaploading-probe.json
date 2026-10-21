@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "check whether the room.startgame path invokes the client CL_MapLoading candidate at 0x5BE730 and whether that produces a local 28969 connection",
+  "setup": {
+    "reference_server": "2.6.9.7 codol_dedrun.exe, mp_cross_fire, 127.0.0.1:28969",
+    "guard": "319/tools/ref/client_loopback_guard.exe, scope udp-127.0.0.1:28969, 8 dynamic WFP filters",
+    "client": "1649370 with --loopback-guard --room-command room.startgame --breakpoint 0x5BE730:CL_MapLoading",
+    "run": "codex-1649370-clmaploading2-20261021"
+  },
+  "observed": {
+    "room_command": {"status": "queued", "length_before": 0, "length_after": 16},
+    "breakpoint_0x5BE730": 0,
+    "screen": "persistent black screen after room.startgame",
+    "server_connection": "no connection/challenge entry in the 2.6.9.7 qconsole.log",
+    "com_error_or_fatal": false,
+    "guard_ready": "8 filters, scope udp-127.0.0.1:28969, dynamic + job kill-on-close",
+    "guard_cleanup": {"closed": true, "engine_close_status": 0, "error": ""}
+  },
+  "interpretation": "room.startgame reaches the service-request path but does not call the client CL_MapLoading candidate at 0x5BE730. This matches the earlier finding that the client waits for the match service and never starts a local map load. The next step is a direct main-thread call to 0x5BE730 (or its callers) with a controlled return frame; a remote-thread call is not acceptable because the earlier room.startgame cross-thread attempt was rejected by the engine.",
+  "cleanup": "The client and reference server were terminated. tools/net_rollback.ps1 reported no guard/client processes, no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}
