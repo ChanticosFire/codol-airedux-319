@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 两条路线都停在启动/房间门（2026-10-21）**：全客户端 WIN_NO_TCLS；社区客户端 0x945CEB/地图 -1。下一步单点 patch：社区客户端 start 分支直调 0x4F3890，或全客户端 hook MessageBox 抓调用者。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 找到 WIN_NO_TCLS key（2026-10-21）**：localization.txt 有该 key，exe 字符串在 VA 0xDDDF80 但无绝对引用；下一步 hook MessageBox/本地化查表定位分支。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 TCLS Client.exe 单启 exit0 无子进程（2026-10-21）**：-src=tgp 也立即退出，配置无主机；下一步反查服务发现或 patch 客户端 TCLS 检查。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
