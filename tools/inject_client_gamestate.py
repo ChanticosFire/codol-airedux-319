@@ -54,8 +54,8 @@ def main() -> int:
     time.sleep(2)
     gamestate = args.gamestate.read_bytes()
     payloads = [
-        ("challengeResponse %d" % args.cookie).encode("ascii") + b"\0",
-        (b"connectResponse \\mapname\\mp_cross_fire\\gametype\\war\\sv_maxclients\\12"
+        b"\xff\xff\xff\xffchallengeResponse " + str(args.cookie).encode("ascii") + b"\0",
+        (b"\xff\xff\xff\xffconnectResponse \\mapname\\mp_cross_fire\\gametype\\war\\sv_maxclients\\12"
          b"\\protocol\\1\\shortversion\\1.1.1.13\0"),
         gamestate,
     ]

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "read the client's local challenge string and test whether the injected challengeResponse advances the connection state",
+  "tool": "runs/_tmp_callchallenge.py (remote thread calls 0x5BF860 with a 0x100-byte buffer)",
+  "local_challenge": "a731af49a6a2c7e2",
+  "injection": {
+    "challengeResponse": "\\xff\\xff\\xff\\xffchallengeResponse 1469978033\\0",
+    "connectResponse": "\\xff\\xff\\xff\\xffconnectResponse map=mp_cross_fire/gametype=war",
+    "gamestate": "3428 bytes",
+    "read_cursor": 7,
+    "state_after": 3
+  },
+  "result": {
+    "state": 3,
+    "meaning": "the ring pump consumed the messages (read cursor advanced) but the connection state machine did not advance from state 3; the injected challengeResponse text is not the event that moves it to state 4"
+  },
+  "next": [
+    "call the challengeResponse parser 0x5C0FD0 from the main thread with a correct frame, or",
+    "patch the state machine to accept the injected challengeResponse and move to state 4"
+  ],
+  "cleanup": "Client/guard terminated; no WFP residue."
+}

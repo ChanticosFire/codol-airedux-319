@@ -264,3 +264,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 G2 原生 cross_fire 基础图仍黑屏（本轮）
 
 从完整客户端 `ff_init_mp_cross_fire_V70.ifs` 提取出原生 v461 签名的 `mp_cross_fire.ff`（37,331,221 字节，zone 75,189,466，240 assets）及 load/const，加入 `--map-probe mp_cross_fire_native`。用 `map-probe + --branch-noop + --ring-probe --ring-type 4 + --inject-gamestate` 重试：40 秒、90 秒都是纯黑屏（仅光标），进程响应、无错误。说明即使地图资产齐全，gamestate 注入仍不足以完成地图加载，客户端在等更多 loader/server 数据，或图载过程卡住。下一步检查黑屏期间是否打开 `mp_cross_fire.ff`/zone，或补齐 configstring/snapshot/loader 数据。证据 `evidence/experiments/20261021-1649370-native-crossfire-black.json`。
+
+## 2026-10-21 G2 本地 challenge 读到，环注入不推进状态（本轮）
+
+远程线程调用 `0x5BF860(buf)`，读到客户端本地 challenge 字符串 `a731af49a6a2c7e2`。在黑屏 state=3 时再次注入 `OOB challengeResponse 1469978033` + `OOB connectResponse` + gamestate，read cursor 从 4 推进到 7（泵消费了），但 state 仍是 3。说明环里的 challengeResponse 文本不是把状态机从 3 推到 4 的事件；需要主线程调用 `0x5C0FD0` 解析器（正确帧），或改状态机接受注入响应。证据 `evidence/experiments/20261021-1649370-local-challenge.json`、脚本 `runs/_tmp_callchallenge.py`。

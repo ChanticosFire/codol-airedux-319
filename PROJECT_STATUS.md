@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 本地 challenge 读到、环注入不推进状态（2026-10-21）**：`0x5BF860` 返回 `a731af49a6a2c7e2`；黑屏 state=3 时注入 OOB challenge/connect/gamestate，read cursor 4→7 但 state 仍 3。环文本不是状态机 3→4 的事件；下一步主线程调 `0x5C0FD0` 解析器或改状态机。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-local-challenge.json`。
+
 > **1649370 G2 原生 cross_fire 基础图仍黑屏（2026-10-21）**：提取原生 v461 `mp_cross_fire.ff`（37.3MB，zone 75.2MB，240 assets）并加入 map-probe；`branch-noop + ring-probe + gamestate 注入` 后 40/90 秒仍纯黑屏、进程响应、无错误。地图资产齐全也不足以完成加载，客户端在等 loader/server 数据或卡住。下一步检查文件打开或补齐 configstring/snapshot/loader。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-native-crossfire-black.json`。
 
 > **1649370 G2 合成快照流未推进（2026-10-21）**：补丁 + ring-probe 后注入 gamestate + 13 条合成 `svc_snapshot`（queued=14，cursor=14，state=3），客户端黑屏无错误但 **read cursor=0**，环泵未消费。下一步改用真实快照字节或主线程调用泵/解析。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部、`tools/feed_client_snapshots.py` 和 `evidence/experiments/20261021-1649370-feed-snapshots-black.json`。
