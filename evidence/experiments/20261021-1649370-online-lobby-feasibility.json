@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "assess the online-lobby path after the direct client-call path failed three times",
+  "server_check": {
+    "package": "319/他人文件参考/修正-发布v0.0.7-rc.1_解压/修复工作副本/服务端 copied to 319/runs/v319-server",
+    "runtime": "C:\\Python313\\python.exe (Crypto 4.1.0 + cryptography 50.0.1 present)",
+    "started": true,
+    "health": {"ok": true, "version": "0.0.7-rc.1"},
+    "listeners": [
+      {"port": 3074, "kind": "auth+lobby", "ok": true},
+      {"port": 3075, "kind": "lobby", "ok": true},
+      {"port": 17500, "kind": "account API", "ok": true},
+      {"port": 8000, "kind": "IIPS UDP", "ok": true},
+      {"port": 8080, "kind": "IIPS UDP", "ok": true}
+    ],
+    "room_or_match_reply": "not implemented; the package README states that only the lobby is served"
+  },
+  "client_path_problem": {
+    "launcher": "the v0.0.7 launcher expects a full 3.19 install with codoMP_client_shipRetail.exe and codoMP_client_shipRetailBase.dll",
+    "base_dll": "loading the original Base.dll/anti-cheat stack conflicts with the objective's no-driver boundary and with the community offline EXE's explicit exclusion of codoMP_client_shipRetailbase.dll",
+    "modifications": "the launcher rewrites dwauth.ini, iips.ini, stun.ini, IIPS file lists, TCLS dirserver.xml and cacert.pem; a private stage could absorb these, but the original Base.dll/anti-cheat path remains",
+    "decision": "do not launch the online original-client path under the current no-driver constraint"
+  },
+  "conclusion": "The v0.0.7 lobby server is runnable and healthy, but the only client that can use it is the original anti-cheat-bearing client, which conflicts with the no-driver boundary. This path is not a safe way to reach a local bot match. The remaining technical options are a 1649370-compatible dedicated server (not present) or a deeper adapter that makes the offline rebuilt client populate the server address and connect to the 2.6.9.7 server. The latter still needs the 2.6.9.7 wire protocol to be compatible, which is unproven.",
+  "next": [
+    "ask the user whether a 1649370 dedicated server binary/source is available",
+    "if not, continue the offline-client address/connect adapter and then test the 2.6.9.7 wire protocol",
+    "do not launch the original anti-cheat client under the no-driver rule"
+  ],
+  "cleanup": "The v0.0.7 server process was stopped; ports 3074/3075/17500 are free again. No client/game process or temporary WFP filter was left."
+}

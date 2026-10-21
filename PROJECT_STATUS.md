@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 在线 lobby 路径受“不加载驱动”限制（2026-10-21）**：v0.0.7 本地服务端已成功启动（health ok，3074/3075/17500/8000/8080 监听），但客户端启动器要求原版 `codoMP_client_shipRetailBase.dll`/反作弊栈，与目标“不加载驱动”冲突，且该服务端没有房间/对局应答。已停止服务端，端口释放。剩余选项：1649370 专用服务器，或继续离线客户端的地址/连接适配并验证 2.6.9.7 wire 兼容。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-online-lobby-feasibility.json`。
+
 > **1649370 G2 换向：直接调用只置连接状态（2026-10-21）**：预写 `0x76446A1` 端点表与 `0xC7AF590` 为 `localhost` 后调用 `0x5BE730`，断点命中、连接状态置 4、前端状态 5，但 `[0x84244B8]` 地址结构全 0、connection 对象地址字段全 0，28969/28960 均无 UDP 包。直接调用连续三轮无连接，按路线停止，改走在线 lobby：用 1649370 v0.0.7 服务端/启动器进大厅，捕获房间/服务器列表请求并返回本地服务器条目，让客户端自己的连接代码填地址。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-prewrite-port.json`。
 
 > **1649370 G2 cave 执行已证明，0x5BE730 早退（2026-10-21）**：`codex-1649370-maincall4-bp-20261021` 在 main_call 同时设真实断点；cave `0x10BD0000` 调用 `0x5BE730` 命中一次（TID 26132），证明主线程 cave 确实执行。但画面仍黑屏、服务端无 connection/challenge、无 Com Error。反汇编显示 `0x5BE730` 先扫描 `0x76446A1`–`0x76446C1` 的 0x20 字节条目，全空则直接返回，不会走到 `"localhost"` 连接分支。下一步审计该表并填入最小 localhost 条目，或定位真正 CL_MapLoading/CL_Connect 入口；不要再盲调。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-cave-breakpoint.json`。
