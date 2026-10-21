@@ -22,6 +22,18 @@
       ]
     },
     {
+      "term": "cppSetMemberReadyState",
+      "file_offset": "0x9dced4",
+      "string_va": "0xddced4",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x7cb573",
+          "preceding_opcode": "0x68",
+          "context_hex": "44240c6a028d4c2414515368d4cedd00bf09000000c744244c02000000884424"
+        }
+      ]
+    },
+    {
       "term": "StartMatch",
       "file_offset": "0x9dd4e4",
       "string_va": "0xddd4e4",

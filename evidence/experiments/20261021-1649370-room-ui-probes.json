@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "runs": [
+    {
+      "name": "codex-1649370-room-callback-20261021",
+      "ui_actions": ["entered custom local room", "clicked Ready", "returned to custom screen", "returned to main lobby"],
+      "observed_result": "Ready changed button state; no map loaded; room exit and main lobby return worked",
+      "events": 248,
+      "one_shot_breakpoint_hits": {"Room start game": 0, "GFx StartMatch": 0, "GFx StartMatchCountDown": 0, "GFx SetReadyState": 0, "Match command builder": 0},
+      "stop_reason": "observation_timeout",
+      "guard_cleanup_closed": true,
+      "engine_close_status": 0
+    },
+    {
+      "name": "codex-1649370-ready-callback-20261021",
+      "ui_actions": ["entered custom local room", "clicked Ready"],
+      "observed_result": "Ready changed button state; no map loaded",
+      "one_shot_breakpoint_hits": {"Ready request": 0, "Room start game": 0, "Match command builder": 0},
+      "stop_reason": "observation_timeout",
+      "guard_cleanup_closed": true,
+      "engine_close_status": 0
+    }
+  ],
+  "static_next_lead": "cppSetMemberReadyState at string VA 0xDDCED4, direct operand reference 0x7CB573; the probed instruction 0x7CB572 did not execute during Ready click",
+  "limitation": "The observed UI change alone does not establish a native ready request or room-start call. One-shot breakpoints cover only selected addresses."
+}

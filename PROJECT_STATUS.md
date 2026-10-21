@@ -11,6 +11,8 @@
 > 2026-10-21 续进：原始 IFS 中 `mp_strike_sh` 与 `mp_backlot_sh` 各三个 FF 已提取，发行签名与 zone 校验通过。`mp_strike_sh` 的启动参数探针仍进大厅；原生命令队列探针两次黑屏，但没有地图已装载的证据。三次均按时退出并清理动态 WFP 守卫。直接 `devmap` 路线暂转向自定义房间的原生开局条件，详见 `1649370-STATUS.md` 顶部。
 >
 > 房间链静态入口已定位：`room.startgame`、GFx 的 `StartMatch`/`StartMatchCountDown`/`SetReadyState` 与包含 `map %s` 的 `mmstart` 格式串。尚需在房间内观察实际回调和 vtable 目标，见 `evidence/experiments/20261021-1649370-room-start-refs.json`。
+>
+> 房间 UI 两轮探针已确认：“准备”只见按钮状态改变，所设 `room.startgame`、GFx match/ready 以及 `cppSetMemberReadyState` 引用处断点均未命中；离房及回主大厅正常。下一步追 GFx 按钮真实调用边和本地成员发布，见 `evidence/experiments/20261021-1649370-room-ui-probes.json`。
 
 
 更新：2026-10-26（Asia/Shanghai）；第 188 轮后新增顶部结论索引。

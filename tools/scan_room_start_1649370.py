@@ -11,7 +11,7 @@ import pefile
 IMAGE = Path(r"E:\GAME\COD\1649370\bin\v1649370\codol1649370-offline.exe")
 OUT = Path(__file__).resolve().parents[1] / "evidence/experiments/20261021-1649370-room-start-refs.json"
 EXPECTED = "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd"
-TERMS = ("room.startgame", "StartMatch", "StartMatchCountDown", "SetReadyState",
+TERMS = ("room.startgame", "cppSetMemberReadyState", "StartMatch", "StartMatchCountDown", "SetReadyState",
          "mmstart sv_resetServer; 2486 %d;")
 
 
