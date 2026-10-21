@@ -578,3 +578,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 主线程 cave 追加 0x4F7DA0 仍无效；room-command devmap 只入队不执行
 
 主线程 cave 在 `0x4F2DE0→0x4F3890` 后再调 `0x4F7DA0`，进程仍正常但停大厅；改用 `--room-command "devmap mp_cross_fire"`，`room-command.json` 显示 `status=queued`、`length 0→22`、room `0x245C79B0`，但房间界面不变、无地图加载。说明房间命令缓冲区 `0x33821B0` 只是入队，消费点在主线程别处。下一步：找 `0x76595A4`/`0x33821B0` 的消费者（Cbuf 执行点），在主线程 hook 后执行队列，而不是只写入。
+
+## 2026-10-21 找到命令缓冲消费者 0x4F2EC0/0x4F3080；远程执行队列崩溃
+
+`0x4F2EC0` 按行拆分 `0x76595A4` 描述符并直接 `call 0x4F3890(line)`，是真正执行 Cbuf 的函数；`0x4F3080` 是它的包装（先 `0x4F2FF0` flush，再 `0x4F2EC0(descriptor,arg)`）。在 `--room-command "devmap mp_cross_fire"` 已入队（length 22）后，用远程线程调 `0x4F3080`，客户端立即退出/窗口消失，说明 Cbuf 执行也必须在主线程。下一步：把 `0x4F3080` 调用嵌进 room-command 注入器的主线程暂停窗口（写队列后、ResumeThread 前设 EIP），再让它自己执行 devmap。
