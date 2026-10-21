@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "run": "codex-1649370-port28960-20261021",
+  "purpose": "fill the 0x76446A1 endpoint table and try both 28969 and 28960 before calling 0x5BE730",
+  "prewrites": [
+    {"address": "0x76446A1", "bytes": "6c6f63616c686f737400", "status": "ok", "meaning": "localhost\\0 into the 0x20-byte endpoint table"},
+    {"address": "0xC7AF590", "bytes": "6c6f63616c686f737400", "status": "ok", "meaning": "localhost\\0 into the server-address buffer"}
+  ],
+  "main_call": {
+    "status": "armed",
+    "target": "0x5BE730",
+    "cave": "0x10CE0000",
+    "original_eip": "0x94831B",
+    "original_esp": "0x1AFA0C"
+  },
+  "breakpoint": {
+    "address": "0x5BE730",
+    "label": "CL_MapLoading_port28960",
+    "hits": 1,
+    "note": "cave execution and function entry are proven"
+  },
+  "runtime_state_after_call": {
+    "connection_state_0x76446B0": "4",
+    "frontend_state_0xE59D20": "5",
+    "endpoint_table_0x76446A1": "6c6f63616c686f100000... (the function rewrote byte 7 to 0x10; it is a struct, not a plain string)",
+    "server_address_buffer_0xC7AF590": "localhost",
+    "server_struct_0x84244B8": "00000000... (all zero)",
+    "connection_object": "encoded 0xC027E357 -> 0x1345B348; address fields +0x0..+0x14 all zero; +0x28=0x9D, +0x30=0xC01C, +0x34=0x0C"
+  },
+  "port_tests": [
+    {"server_port": 28969, "client_connected": false},
+    {"server_port": 28960, "client_connected": false}
+  ],
+  "observed_result": "The function sets the client connection state to 4 and frontend state to 5, but no remote address is populated and no UDP packet reaches either 28969 or 28960. The screen remains black; no Com Error.",
+  "interpretation": "0x5BE730 is not sufficient as a direct 'load map now' entry. It enters a connecting state but does not resolve/populate the server address on its own, and the private endpoint-table write is not the missing link. Three direct-call rounds have now failed to produce a connection (room.startgame, plain 0x5BE730, prewrite+0x5BE730). Per the roadmap's three-round rule, stop the direct-call path and switch to the client's normal online-lobby entry.",
+  "next": [
+    "run the 1649370 v0.0.7 local server + launcher to reach the online lobby (DW=5)",
+    "capture the lobby room/server-list request and return one local server entry",
+    "let the client's own connection code populate the address and connect to the local game server",
+    "do not blindly call 0x5BE730 again"
+  ],
+  "cleanup": "Client and reference server terminated. tools/net_rollback.ps1 reported no guard/client processes, no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}

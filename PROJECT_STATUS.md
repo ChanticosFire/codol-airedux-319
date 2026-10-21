@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 换向：直接调用只置连接状态（2026-10-21）**：预写 `0x76446A1` 端点表与 `0xC7AF590` 为 `localhost` 后调用 `0x5BE730`，断点命中、连接状态置 4、前端状态 5，但 `[0x84244B8]` 地址结构全 0、connection 对象地址字段全 0，28969/28960 均无 UDP 包。直接调用连续三轮无连接，按路线停止，改走在线 lobby：用 1649370 v0.0.7 服务端/启动器进大厅，捕获房间/服务器列表请求并返回本地服务器条目，让客户端自己的连接代码填地址。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-prewrite-port.json`。
+
 > **1649370 G2 cave 执行已证明，0x5BE730 早退（2026-10-21）**：`codex-1649370-maincall4-bp-20261021` 在 main_call 同时设真实断点；cave `0x10BD0000` 调用 `0x5BE730` 命中一次（TID 26132），证明主线程 cave 确实执行。但画面仍黑屏、服务端无 connection/challenge、无 Com Error。反汇编显示 `0x5BE730` 先扫描 `0x76446A1`–`0x76446C1` 的 0x20 字节条目，全空则直接返回，不会走到 `"localhost"` 连接分支。下一步审计该表并填入最小 localhost 条目，或定位真正 CL_MapLoading/CL_Connect 入口；不要再盲调。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-cave-breakpoint.json`。
 
 > **1649370 G2 主线程 cave 调用已打通（2026-10-21）**：包装层新增 `--main-call`，在 room-command 注入后的主线程暂停窗口用 `pushad; call target; popad; ret` cave 调用无参函数；修复 rel32 无符号打包与 WOW64 上下文（`Wow64GetThreadContext`/`Wow64SetThreadContext`）。`codex-1649370-maincall3-clmap-20261021` 成功 armed（target `0x5BE730`、cave `0x117E0000`、原 EIP `0x76F4826C`），但调用后仍黑屏、服务端无 connection/challenge、无 Com Error。cave 机制可用，`0x5BE730` 未产生本地连接；下一步加真实断点验证执行，再定位正确入口。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-main-thread-call.json`。

@@ -82,7 +82,9 @@ ROOM_COMMAND = None
 ROOM_COMMAND_TIMEOUT = 180
 PREFIX_CBUF = None
 MAIN_CALL = None
+PREWRITES = []
 LOOPBACK_GUARD = False
+LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
 MAP_PROBE_DIRS = {
     "mp_strike_sh": "runs/20261021-1649370-map",
@@ -100,6 +102,11 @@ MAP_PROBE_FILES = {
         "mp_arkaden_sh_const.ff": "ec9ba6b592751490ab5b7a5a0760e8523f45856649439a1cfa51ebecefc5a3c0",
     },
 }
+
+
+def _parse_prewrite(value: str):
+    address, data = value.split("=", 1)
+    return int(address, 0), bytes.fromhex(data)
 
 
 def _build_environment(stage: Path) -> C.Array:
@@ -267,6 +274,26 @@ def _room_command_injector(session, command: str) -> None:
                     result.update(status="descriptor_changed", pointer=hex(pointer),
                                   capacity=capacity, length=length)
                     return
+                prewrite_rows = []
+                for address, data in PREWRITES:
+                    wrote = C.c_size_t()
+                    if (not k32.WriteProcessMemory(handle, C.c_void_p(address),
+                                                   C.create_string_buffer(data, len(data)),
+                                                   len(data), C.byref(wrote))
+                            or wrote.value != len(data)):
+                        result["prewrites"] = prewrite_rows + [
+                            {"address": hex(address), "bytes": data.hex(), "status": "write_failed",
+                             "error": C.get_last_error()}]
+                        result["status"] = "prewrite_failed"
+                        return
+                    if read(address, len(data)) != data:
+                        result["prewrites"] = prewrite_rows + [
+                            {"address": hex(address), "bytes": data.hex(), "status": "readback_failed"}]
+                        result["status"] = "prewrite_failed"
+                        return
+                    prewrite_rows.append({"address": hex(address), "bytes": data.hex(), "status": "ok"})
+                if prewrite_rows:
+                    result["prewrites"] = prewrite_rows
                 wrote = C.c_size_t()
                 if not k32.WriteProcessMemory(handle, C.c_void_p(pointer + length),
                                               C.create_string_buffer(payload, len(payload)),
@@ -339,7 +366,13 @@ def patched_start(self, exe, settings_session) -> None:
     check(api(K, "GetProcessTimes", W.BOOL, PTR, *[PTR] * 4)(
         self.info.process, *(C.byref(t) for t in times)))
     self.log["creation_time"] = times[0].value
-    guard_path = LOOPBACK_GUARD_PATH if LOOPBACK_GUARD else self.guard_path
+    if LOOPBACK_GUARD:
+        if LOOPBACK_PORT == 28969:
+            guard_path = LOOPBACK_GUARD_PATH
+        else:
+            guard_path = LOOPBACK_GUARD_PATH.with_name(f"client_loopback_guard_{LOOPBACK_PORT}.exe")
+    else:
+        guard_path = self.guard_path
     self.log["guard_mode"] = "loopback-udp-28969" if LOOPBACK_GUARD else "offline-deny-all"
     self.log["guard_sha256"] = hashlib.sha256(guard_path.read_bytes()).hexdigest()
     request = SHELLINFO()
@@ -375,7 +408,7 @@ def patched_start(self, exe, settings_session) -> None:
                 raise
             time.sleep(0.05)
     if LOOPBACK_GUARD:
-        if (ready.get("scope") != "udp-127.0.0.1:28969" or len(ready.get("filter_ids", [])) != 8
+        if (ready.get("scope") != f"udp-127.0.0.1:{LOOPBACK_PORT}" or len(ready.get("filter_ids", [])) != 8
                 or not ready.get("job_kill_on_close") or ready.get("max_processes") != 1
                 or ready.get("child_pid") != self.info.pid
                 or not ready.get("dynamic") or ready.get("bound_seconds") != expected_bound):
@@ -505,7 +538,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, MAIN_CALL
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, PREWRITES
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -525,15 +558,22 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="在 BeforeCbuf 断点处给已生成的命令文本补一个前缀，例如 mmstart")
     parser.add_argument("--loopback-guard", action="store_true",
                         help="使用私有 2.6.9.7 loopback guard：仅允许该进程的 UDP 127.0.0.1:28969")
+    parser.add_argument("--loopback-port", type=int, default=28969,
+                        help="loopback guard 允许的 UDP 端口；非 28969 时使用打过补丁的私有副本")
     parser.add_argument("--main-call", type=lambda value: int(value, 0),
                         help="在 room-command 注入后、主线程仍暂停时调用一个无参函数地址")
+    parser.add_argument("--prewrite", action="append", type=_parse_prewrite, default=[],
+                        metavar="ADDRESS=HEX",
+                        help="在主线程暂停窗口写入固定内存；可重复")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
     ROOM_COMMAND = known.room_command
     PREFIX_CBUF = known.prefix_cbuf
     LOOPBACK_GUARD = known.loopback_guard
+    LOOPBACK_PORT = known.loopback_port
     MAIN_CALL = known.main_call
+    PREWRITES = known.prewrite
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 
