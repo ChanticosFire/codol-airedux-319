@@ -260,3 +260,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 G2 合成快照流未推进（本轮）
 
 `tools/feed_client_snapshots.py` 在通道成功补丁 + ring-probe 后，把 gamestate 与 13 条合成 `serverId=0 + svc_snapshot` 消息排入环（queued=14，cursor=14，state=3）。客户端保持黑屏（仅光标）、无错误、进程响应，但 `read cursor` 仍为 0——环泵没有消费这些消息。说明合成快照格式/状态不对，或泵在状态 3/黑屏时不再读取。下一步改用真实捕获的快照字节（含 netchan/序列），或在主线程直接调用泵/解析函数后再观察 read cursor。证据 `evidence/experiments/20261021-1649370-feed-snapshots-black.json`。
+
+## 2026-10-21 G2 原生 cross_fire 基础图仍黑屏（本轮）
+
+从完整客户端 `ff_init_mp_cross_fire_V70.ifs` 提取出原生 v461 签名的 `mp_cross_fire.ff`（37,331,221 字节，zone 75,189,466，240 assets）及 load/const，加入 `--map-probe mp_cross_fire_native`。用 `map-probe + --branch-noop + --ring-probe --ring-type 4 + --inject-gamestate` 重试：40 秒、90 秒都是纯黑屏（仅光标），进程响应、无错误。说明即使地图资产齐全，gamestate 注入仍不足以完成地图加载，客户端在等更多 loader/server 数据，或图载过程卡住。下一步检查黑屏期间是否打开 `mp_cross_fire.ff`/zone，或补齐 configstring/snapshot/loader 数据。证据 `evidence/experiments/20261021-1649370-native-crossfire-black.json`。

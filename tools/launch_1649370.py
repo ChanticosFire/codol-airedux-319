@@ -114,6 +114,7 @@ MAP_PROBE_DIRS = {
     "mp_arkaden_sh": "runs/20261021-1649370-map-arkaden",
     "mp_cross_fire": r"E:\GAME\COD\codol-airedux\CODOL-2.6.9.7-Launcher\runtime\game\training-resources\mp_cross_fire\decoded",
     "mp_hardhat_sh": "runs/20261021-1649370-hardhat",
+    "mp_cross_fire_native": "runs/20261021-1649370-crossfire-base",
 }
 MAP_PROBE_FILES = {
     "mp_strike_sh": {
@@ -135,6 +136,11 @@ MAP_PROBE_FILES = {
         "mp_hardhat_sh.ff": "6ec34b491d348976570b03344d56ee0479eef5a1e474fa3bf7b59b8a4d2db241",
         "mp_hardhat_sh_load.ff": "29af6bd6c78f01dfd87e394e1fbc4be9feb8b1e8698cafbded6ece2929d7e6b3",
         "mp_hardhat_sh_const.ff": "9b7b13f2b56aa67a0a35875b1e99840e126cc3d24ec8eb08884a072893c389c5",
+    },
+    "mp_cross_fire_native": {
+        "mp_cross_fire.ff": "45b964b1386479d7e86ee8bcff30ed72bbbfbcbeb76dc5cb4b2b8e22b4fb9c7e",
+        "mp_cross_fire_load.ff": "dd9caec41616cf1edd6a0320fc3d4bb5887028292f45c9cad798e98c782e5be5",
+        "mp_cross_fire_const.ff": "0ca264e7480c48ac61a6a4b1a8c8880654762cdbef62dc7eb631b105f56c8673",
     },
 }
 

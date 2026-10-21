@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "extract the native 1649370 mp_cross_fire base map and retry the gamestate injection",
+  "asset": {
+    "pack": "E:\\GAME\\COD\\使命召唤OL\\IIPS\\IIPSDownload\\ff_init_mp_cross_fire_V70.ifs",
+    "member": "client_shipRetail/chinese/mp_cross_fire.ff",
+    "size": 37331221,
+    "version": 461,
+    "publisher_signature_verified": true,
+    "zone_size": 75189466,
+    "zone_assets": 240,
+    "out": "runs/20261021-1649370-crossfire-base"
+  },
+  "run": "codex-1649370-native-crossfire-20261021",
+  "setup": "map-probe mp_cross_fire_native + branch-noop + ring-probe + inject-gamestate",
+  "result": {
+    "screen": "black with cursor at 40 s and 90 s",
+    "process": "responsive",
+    "error": "none",
+    "meaning": "even with the native v461 base map staged, the client stays in the black loading state; the gamestate injection is not sufficient to complete map load"
+  },
+  "next": [
+    "check whether the client opens mp_cross_fire.ff / the zone files during the black state",
+    "or provide the remaining server/gamestate data the client waits for (config strings/snapshots/loader)"
+  ],
+  "cleanup": "Client/guard terminated; no WFP residue."
+}
