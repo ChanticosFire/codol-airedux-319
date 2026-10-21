@@ -546,3 +546,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 交叉火力对照被 UI 点击抖动挡住；lf_init_mp_nuked_V8.ifs 不是 v461 fastfile
 
 为排除 nuked 地图资产问题，尝试用 `--map-probe mp_cross_fire_native` 重新进房间做对照，但这次 `SetForegroundWindow`/`mouse_event` 点击 PVP/自定义未生效，停留在主大厅；同时 `lf_init_mp_nuked_V8.ifs` 用提取工具报 `name/magic count mismatch 101 != 0`，说明它不是同一种签名 fastfile 容器（可能是 loose/流式资源）。下一步：改用固定的房间配置/表项直接指定地图，减少 UI 点击；并给 nuked 黑屏更长等待（60–90s）确认是否只是加载慢。
+
+## 2026-10-21 UI 点击已稳定：悬停 1.2s 后再点；但点地图下拉立刻黑屏
+
+确认 `SetCursorPos` 后必须等待约 1.2 秒让游戏更新 hover，再 `mouse_event` 才能稳定点中（本轮成功点开 PVP→自定义→创建房间）。进入房间后地图是“北境中转站”，点击左上地图下拉 (370,200) 后窗口立即黑屏，CPU 88、WS 1.2GB，等待 60 秒仍未恢复，最终客户端在观察窗口结束时退出。说明换未提取地图会走同一条黑屏加载路径；下一步只选择已提取的“交叉火力”，或先补目标地图资产再换图。
