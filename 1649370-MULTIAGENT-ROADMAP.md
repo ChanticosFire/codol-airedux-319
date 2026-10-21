@@ -542,3 +542,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 补上 mp_nuked 资产后仍黑屏
 
 从 `ff_init_mp_nuked_V74.ifs` 提取出 `mp_nuked.ff`（22,946,069）、`mp_nuked_load.ff`（24,853）、`mp_nuked_const.ff`（49,429），签名/哈希校验通过；给包装层加 `--map-probe mp_nuked_native` 并重新进入“核弹小镇”自定义房间，双击“准备”后仍然黑屏（CPU 56、WS 1.2GB）。说明黑屏不只是缺 nuked 地图资产，更像客户端在等服务器 gamestate / 本地对局初始化。下一步：改用已提取的“交叉火力”地图做对照（排除地图本身），并把我们的 gamestate/服务端接到客户端连接状态机。
+
+## 2026-10-21 交叉火力对照被 UI 点击抖动挡住；lf_init_mp_nuked_V8.ifs 不是 v461 fastfile
+
+为排除 nuked 地图资产问题，尝试用 `--map-probe mp_cross_fire_native` 重新进房间做对照，但这次 `SetForegroundWindow`/`mouse_event` 点击 PVP/自定义未生效，停留在主大厅；同时 `lf_init_mp_nuked_V8.ifs` 用提取工具报 `name/magic count mismatch 101 != 0`，说明它不是同一种签名 fastfile 容器（可能是 loose/流式资源）。下一步：改用固定的房间配置/表项直接指定地图，减少 UI 点击；并给 nuked 黑屏更长等待（60–90s）确认是否只是加载慢。
