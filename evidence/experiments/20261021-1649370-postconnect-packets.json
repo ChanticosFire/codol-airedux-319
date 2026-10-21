@@ -1,0 +1,51 @@
+{
+  "challenge": "ffffffff6368616c6c656e6765526573706f6e7365202d3137343632353433303700",
+  "connect_response": "ffffffff636f6e6e656374526573706f6e7365205c6d61706e616d655c6d705f63726f73735f666972655c67616d65747970655c7761725c73765f6d6178636c69656e74735c31325c70726f746f636f6c5c315c73686f727476657273696f6e5c312e312e312e313300",
+  "packet_count": 326,
+  "nine_byte_count": 326,
+  "pattern_checksum_0x67_minus_seq": false,
+  "first": [
+    {
+      "seq": 1,
+      "zero": 0,
+      "checksum": 26
+    },
+    {
+      "seq": 2,
+      "zero": 0,
+      "checksum": 25
+    },
+    {
+      "seq": 3,
+      "zero": 0,
+      "checksum": 24
+    },
+    {
+      "seq": 4,
+      "zero": 0,
+      "checksum": 31
+    }
+  ],
+  "last": [
+    {
+      "seq": 323,
+      "zero": 0,
+      "checksum": 88
+    },
+    {
+      "seq": 324,
+      "zero": 0,
+      "checksum": 95
+    },
+    {
+      "seq": 325,
+      "zero": 0,
+      "checksum": 94
+    },
+    {
+      "seq": 326,
+      "zero": 0,
+      "checksum": 93
+    }
+  ]
+}
