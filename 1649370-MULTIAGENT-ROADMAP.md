@@ -374,3 +374,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 成功创建真实 conn 对象 0x245EBBF0（vtable 0xD5A4F4）
 
 改用 `0xB82070` 连接包装函数（内部 `0xB81EF0`，默认 flags `0x80000`），cave 传 `cfg`（netadr 127.0.0.1:28969）+ 0x88 零结构，`ecx=netobj`，调用成功。结果：`netobj+0x4F4 = 0x245EBBF0`，vtable `0xD5A4F4`，`conn+0xC8=4`，`conn+0x644=0`，`netobj+0x4F8` 仍 `0xBAADF000`。随后调 `0xBA4080(conn, netobj+0x500)`，conn 状态仍 4，服务端没有收到 UDP getchallenge。说明 conn 已创建，但发送/tick 路径还没接通。下一步：调 `0xB7A670`/`0xBA0780` 驱动状态机，或把 conn 接到全局连接对象 `0x5C05F0`/`0x5C0EF3`，再观察 28969。证据 `evidence/experiments/20261021-1649370-conn-object-created.json`、工具 `tools/start_conn.py`、`tools/conn_send.py`。
+
+## 2026-10-21 0xBA4080 状态机细节：conn 创建后卡在 c8=4
+
+`0xBA4080` 先把 `conn+0xC8` 置 1、`conn+0x5E8=0`，把 `[arg]` 的 0x88 结构复制到 `conn+0x538`，调 `0xBA9970`、`0xBA0760(conn,2,...)`，然后 `0xC73900` 分支：返回 1 → `c8=2` 并调 `0xBA32A0`；返回 -2 → 等 `conn+0x508`；其他 → 错误码 `0x12` 并调 `0xBA3420`。实测创建后 `c8=4`，说明走的是错误/其他分支，发送未发生。下一步：直接调 `0xBA32A0`（成功分支发送）或检查 `0xC73900`/socket 返回值，再观察 28969。
