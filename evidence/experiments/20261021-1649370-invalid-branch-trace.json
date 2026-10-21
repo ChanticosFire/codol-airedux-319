@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "confirm the invalid-channel branch is actually reached and capture its stack before patching",
+  "trace": {
+    "run": "codex-1649370-branchtrace2-20261021",
+    "breakpoints": ["0x622040", "0x6221D8"],
+    "hits": {"0x622040": 1, "0x6221D8": 1},
+    "invalid_branch_registers": {"eax": "0x245A7088", "ecx": "0x2458EE38", "edx": "0x30008", "ebx": "0xFFFFFFF7"},
+    "invalid_branch_stack_prefix": "0000000026000000e833a013040000007f0000017129000000000000000000009d00000010e21a00",
+    "decoded": {
+      "len": "0x26",
+      "data_candidate": "0x13A033E8",
+      "type": "4",
+      "ip": "0x0100007F",
+      "port": "0x7129"
+    },
+    "com_error": "EXE_CLIENTFAILEDTOCHALLENGE"
+  },
+  "patch_result": {
+    "run": "codex-1649370-rawbranch-20261021",
+    "patch": "0x6221D8 -> cave socket/sendto; return ebx=0; jmp 0x6221DD",
+    "result": "client unhandled_exception"
+  },
+  "interpretation": "The branch and its arguments are confirmed. The crash is inside the cave/sendto path or its interaction with the branch's local/critical-section cleanup, not a wrong branch address.",
+  "next": [
+    "first replace 0x6221D8 with a no-op cave that only pops/returns to 0x6221DD (no socket) to validate the patch mechanics",
+    "then replace the no-op with a call to the known-safe loopback writer 0x6750A0 using the captured data/len, to validate the argument mapping",
+    "only then swap in socket/sendto"
+  ],
+  "cleanup": "Client/guard terminated; no WFP/process residue."
+}
