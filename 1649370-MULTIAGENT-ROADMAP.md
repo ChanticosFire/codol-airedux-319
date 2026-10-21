@@ -276,3 +276,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 完整客户端 exe 启动尝试（用户允许全部修改后）
 
 把 `使命召唤OL` 根目录复制/联接成私有 `runs/full-client-private`（省略 ACE/TGuard/TerSafe/PolicyProbe/TenRpcs 等反作弊依赖），直接启动 `codoMP_client_shipRetail.exe +set fs_basepath`：进程存活但无窗口，只加载 WOW64 基础模块，无 ACE/TGuard。包装层 `--image` 完整 exe：报“仅运行项目固定版本基底或 workspaces 内候选”；放入 workspaces 候选后报“补丁原字节不匹配”；改用空补丁 `[]` 后退出码 `0xC0000135`（缺 Base.dll/同目录依赖）。说明完整 exe 不能直接替代社区离线镜像，需要自己的 TCLS/依赖链。证据 `evidence/experiments/20261021-1649370-full-client-launch.json`，私有副本 `runs/full-client-private`。
+
+## 2026-10-21 完整 exe 直接 +devmap 仍无窗口（本轮）
+
+用私有副本 `runs/full-client-private` 直接启动 `codoMP_client_shipRetail.exe +set fs_basepath ... +devmap mp_cross_fire`，进程存活但 20 秒后仍无窗口，只加载 WOW64 基础模块，`codoMP_client_shipRetailBase.dll` 未加载。说明完整 exe 在进入游戏前等待 TCLS/启动链/依赖，不是 `+devmap` 能绕过。包装层失败点（候选限制/补丁不匹配/空补丁缺 DLL）已记在证据里。下一步走 TCLS 启动链并监控是否加载 ACE/TGuard 驱动，或补齐 Base.dll/同目录依赖后直接启动。证据 `evidence/experiments/20261021-1649370-full-client-launch.json`。

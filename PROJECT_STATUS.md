@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 完整 exe 直接 +devmap 仍无窗口（2026-10-21）**：私有副本直接启动完整 exe + `+devmap mp_cross_fire`，进程存活但无窗口、只加载 WOW64 模块、Base.dll 未加载，说明等待 TCLS/启动链；包装层候选/补丁/依赖也失败。下一步走 TCLS 启动链并监控 ACE/TGuard 驱动，或补齐依赖后直接启动。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-full-client-launch.json`。
+
 > **1649370 完整客户端 exe 启动尝试（2026-10-21）**：私有副本 `runs/full-client-private` 直接启动完整 `codoMP_client_shipRetail.exe` 无窗口、仅 WOW64 模块；包装层 `--image` 分别报候选限制/补丁不匹配；空补丁后 `0xC0000135` 缺 Base.dll/依赖。完整 exe 不能直接替代社区离线镜像，需要 TCLS/依赖链。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-full-client-launch.json`。
 
 > **1649370 G2 强制 state4 仍黑屏（2026-10-21）**：原生地图+补丁+gamestate 后把 `0x76446B0` 3→4，20 秒后 state4、channel 0x9D、read/write cursor 1，仍纯黑屏，进程响应。直接改状态不能开图；需要真实 challenge/connect/gamestate 网络事件或兼容服务端。当前客户端在 state3/4 停滞、I/O 0。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-force-state4.json`。
