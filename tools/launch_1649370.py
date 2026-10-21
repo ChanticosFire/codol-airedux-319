@@ -96,6 +96,8 @@ CALL_CHALLENGE_BRANCH = False
 RING_TYPE = 2
 RAW_UDP_PATCH = False
 RAW_UDP_BRANCH = False
+BRANCH_NOOP = False
+BRANCH_CAPTURE = False
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -881,6 +883,67 @@ def _inject_challenge_response(session) -> None:
         k32.CloseHandle(handle)
 
 
+def _install_branch_capture(k32, handle) -> dict:
+    """把无效分支替换成只记录 [ebp+...] 参数的 cave，然后 noop 返回。"""
+    k32.VirtualProtectEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, C.POINTER(W.DWORD)]
+    k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
+    k32.VirtualAllocEx.restype = C.c_void_p
+    cave = int(k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40))
+    if not cave:
+        return {"status": "alloc_failed", "error": C.get_last_error()}
+    out = cave + 0x200
+    code = b"\x60"                              # pushad
+    for offset, slot in ((8, 0), (0xc, 4), (0x10, 8), (0x14, 0xc), (0x18, 0x10),
+                         (0x1c, 0x14), (0x20, 0x18), (0x24, 0x1c), (0x28, 0x20)):
+        code += b"\x8b\x45" + bytes([offset])    # mov eax,[ebp+offset]
+        code += b"\xa3" + struct.pack("<I", out + slot)  # mov [out+slot],eax
+    code += b"\x61\x31\xdb\xe9"
+    code += struct.pack("<I", (0x6221DD - (cave + len(code) + 4)) & 0xFFFFFFFF)
+    wrote = C.c_size_t()
+    if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                   len(code), C.byref(wrote)) or wrote.value != len(code)):
+        return {"status": "cave_write_failed", "error": C.get_last_error()}
+    k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+    old = W.DWORD()
+    if not k32.VirtualProtectEx(handle, C.c_void_p(0x6221D8), 5, 0x40, C.byref(old)):
+        return {"status": "protect_failed", "error": C.get_last_error()}
+    jump = b"\xe9" + struct.pack("<I", (cave - 0x6221DD) & 0xFFFFFFFF)
+    ok = k32.WriteProcessMemory(handle, C.c_void_p(0x6221D8), C.create_string_buffer(jump, 5), 5,
+                                C.byref(wrote))
+    k32.VirtualProtectEx(handle, C.c_void_p(0x6221D8), 5, old.value, C.byref(old))
+    k32.FlushInstructionCache(handle, C.c_void_p(0x6221D8), 5)
+    if not ok or wrote.value != 5:
+        return {"status": "patch_failed", "error": C.get_last_error()}
+    return {"status": "ok", "cave": hex(cave), "out": hex(out), "code": code.hex()}
+
+
+def _install_branch_noop(k32, handle) -> dict:
+    """把无效通道分支替换成 noop（ebx=0 后跳回），验证补丁机制。"""
+    k32.VirtualProtectEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, C.POINTER(W.DWORD)]
+    k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
+    k32.VirtualAllocEx.restype = C.c_void_p
+    cave = int(k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40))
+    if not cave:
+        return {"status": "alloc_failed", "error": C.get_last_error()}
+    code = b"\x31\xdb\xe9" + struct.pack("<I", (0x6221DD - (cave + 7)) & 0xFFFFFFFF)
+    wrote = C.c_size_t()
+    if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                   len(code), C.byref(wrote)) or wrote.value != len(code)):
+        return {"status": "cave_write_failed", "error": C.get_last_error()}
+    k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+    old = W.DWORD()
+    if not k32.VirtualProtectEx(handle, C.c_void_p(0x6221D8), 5, 0x40, C.byref(old)):
+        return {"status": "protect_failed", "error": C.get_last_error()}
+    jump = b"\xe9" + struct.pack("<I", (cave - 0x6221DD) & 0xFFFFFFFF)
+    ok = k32.WriteProcessMemory(handle, C.c_void_p(0x6221D8), C.create_string_buffer(jump, 5), 5,
+                                C.byref(wrote))
+    k32.VirtualProtectEx(handle, C.c_void_p(0x6221D8), 5, old.value, C.byref(old))
+    k32.FlushInstructionCache(handle, C.c_void_p(0x6221D8), 5)
+    if not ok or wrote.value != 5:
+        return {"status": "patch_failed", "error": C.get_last_error()}
+    return {"status": "ok", "cave": hex(cave), "code": code.hex()}
+
+
 def _install_raw_udp_branch(k32, handle) -> dict:
     """只替换 0x622040 的无效通道分支，保留原函数其它路径。"""
     k32.VirtualProtectEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, C.POINTER(W.DWORD)]
@@ -1061,6 +1124,16 @@ def _ring_probe_injector(session) -> None:
                 if result["raw_udp_branch"].get("status") != "ok":
                     result.update(status="raw_udp_branch_failed")
                     return
+            if BRANCH_NOOP:
+                result["branch_noop"] = _install_branch_noop(k32, handle)
+                if result["branch_noop"].get("status") != "ok":
+                    result.update(status="branch_noop_failed")
+                    return
+            if BRANCH_CAPTURE:
+                result["branch_capture"] = _install_branch_capture(k32, handle)
+                if result["branch_capture"].get("status") != "ok":
+                    result.update(status="branch_capture_failed")
+                    return
             adr = connection + 0x14
             adr_bytes = struct.pack("<I4sHHIII", RING_TYPE,
                                     b"\x7f\x00\x00\x01" if RING_TYPE == 4 else b"\0\0\0\0",
@@ -1115,6 +1188,10 @@ def _ring_probe_injector(session) -> None:
                 cursor = (cursor + 1) & 0xFFFFFFFF
             time.sleep(0.1)
         result["cursor_end"] = hex(u32(0x788680C) or 0)
+        capture = result.get("branch_capture") or {}
+        if capture.get("status") == "ok":
+            raw = read(int(capture["out"], 16), 0x24) or b""
+            result["branch_args"] = list(struct.unpack("<9I", raw)) if len(raw) == 0x24 else raw.hex()
         hook = result.get("hook") or {}
         if hook.get("status") == "ok":
             seq_value = u32(int(hook["seq"], 16)) or 0
@@ -1528,7 +1605,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -1569,6 +1646,10 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="把 0x622040 改成直接 sendto（绕过通道表）")
     parser.add_argument("--raw-udp-branch", action="store_true",
                         help="只替换 0x622040 的无效通道分支为 sendto")
+    parser.add_argument("--branch-noop", action="store_true",
+                        help="把 0x6221D8 无效分支替换成 noop，验证补丁机制")
+    parser.add_argument("--branch-capture", action="store_true",
+                        help="把 0x6221D8 替换成只记录 [ebp+...] 参数的 cave")
     parser.add_argument("--hook-loopback", action="store_true",
                         help="在 0x6750A0 安装持久 cave hook（实验性，可能崩溃）")
     parser.add_argument("--inject-challenge", action="store_true",
@@ -1600,6 +1681,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     RING_TYPE = known.ring_type
     RAW_UDP_PATCH = known.raw_udp_patch
     RAW_UDP_BRANCH = known.raw_udp_branch
+    BRANCH_NOOP = known.branch_noop
+    BRANCH_CAPTURE = known.branch_capture
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 

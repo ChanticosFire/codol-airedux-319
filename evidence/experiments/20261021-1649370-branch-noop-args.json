@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "validate the invalid-branch patch mechanics and capture the exact [ebp+...] arguments",
+  "noop_patch": {
+    "run": "codex-1649370-branchnoop-20261021",
+    "patch": "0x6221D8 -> xor ebx,ebx; jmp 0x6221DD",
+    "result": "client stayed responsive, ring-probe.json written, no Com Error",
+    "meaning": "the patch site, rel32 jump and return-to-0x6221DD mechanics are safe"
+  },
+  "argument_capture": {
+    "run": "codex-1649370-branchargs-20261021",
+    "patch": "0x6221D8 -> cave records [ebp+8..0x28] then noop back",
+    "branch_args": [38, 1761808, 4, 16777343, 10609, 0, 0, 157, 1761768],
+    "decoded": {
+      "len_0x26": 38,
+      "data_0x1AE210": 1761808,
+      "type": 4,
+      "ip_127_0_0_1": 16777343,
+      "port_network_0x2971": 10609,
+      "channel_0x9D": 157
+    },
+    "meaning": "the branch-only socket/sendto cave had the right data pointer and length; its crash is inside the Winsock call path or the cave's interaction with the branch cleanup, not a wrong argument offset"
+  },
+  "next": [
+    "replace the branch with a cave that only calls socket(2,2,17) and stores the result, then noop back",
+    "if that survives, add sendto with the captured data/len/port",
+    "if socket alone crashes, inspect the import thunk/ABI and use a remote CreateThread or NtCreateFile-style socket creation instead"
+  ],
+  "cleanup": "Client/guard terminated; no WFP/process residue."
+}

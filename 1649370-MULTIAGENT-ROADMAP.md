@@ -144,3 +144,7 @@ type=4 的 `0x622040` 参数：len=0x26、data=0x1AE210、type=4、127.0.0.1:289
 ## 2026-10-21 G2 无效通道分支确认（本轮）
 
 `0x622040`/`0x6221D8` 断点各命中一次；`0x6221D8` 时 `ebx=-7`、len=0x26、data 候选 `0x13A033E8`、type=4、127.0.0.1:28969，Com Error `EXE_CLIENTFAILEDTOCHALLENGE`。分支与参数正确，branch-only 补丁崩溃在 cave/socket 或清理契约。下一步 noop→`0x6750A0`→socket 逐级隔离。证据 `evidence/experiments/20261021-1649370-invalid-branch-trace.json`。
+
+## 2026-10-21 G2 noop 补丁成功、分支参数确认（本轮）
+
+`0x6221D8 -> xor ebx,ebx; jmp 0x6221DD` 后客户端保持响应、无 Com Error；参数 len=38、data=0x1AE210、type=4、127.0.0.1、port 网络序 0x2971、channel=0x9D。之前 socket/sendto cave 的数据/长度正确，崩溃在 Winsock 调用或清理交互。下一步先只调 `socket(2,2,17)` 隔离 socket 与 sendto。证据 `evidence/experiments/20261021-1649370-branch-noop-args.json`。

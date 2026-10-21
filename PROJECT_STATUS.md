@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 noop 补丁成功、分支参数确认（2026-10-21）**：`0x6221D8 -> xor ebx,ebx; jmp` 后客户端保持响应、无 Com Error；参数 len=38、data=0x1AE210、type=4、127.0.0.1、port 网络序 0x2971、channel=0x9D。之前 socket/sendto cave 的数据/长度正确，崩溃在 Winsock 调用或清理交互。下一步先只调 `socket(2,2,17)` 隔离。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-branch-noop-args.json`。
+
 > **1649370 G2 无效通道分支已确认（2026-10-21）**：`0x622040`/`0x6221D8` 断点各命中一次；`0x6221D8` 时 `ebx=-7`、len=0x26、data 候选 `0x13A033E8`、type=4、127.0.0.1:28969，Com Error `EXE_CLIENTFAILEDTOCHALLENGE`。分支与参数正确，branch-only 补丁崩溃在 cave/socket 或清理契约。下一步 noop→`0x6750A0`→socket 逐级隔离。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-invalid-branch-trace.json`。
 
 > **1649370 G2 无效分支 raw UDP 补丁仍崩（2026-10-21）**：只替换 `0x6221D8`（`mov ebx,-7`）为 socket/sendto cave，保留 `0x622040` 其它路径；客户端仍 `unhandled_exception`。参数已知（data=0x1AE210、len=0x26、127.0.0.1:28969、channel=0x9D）。下一步逐指令 trace 首个 type=4 调用，再用“先走原分支、后 sendto”的隔离 stub。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-raw-udp-branch-crash.json`。
