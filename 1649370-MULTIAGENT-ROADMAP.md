@@ -658,3 +658,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 0x33069D4 不是地图记录，而是命令字符串数组
 
 扫描房间对象和 `0x33069D4` 后，`0x33069D4[0..2]` 指向 `profile_menuDvarsSetup`/`lerp_bone` 等 Cvar 字符串，不是 map record；房间对象 0x40000 字节内也没有 `mp_` 地图名。说明之前“构造 playlist map 记录”的方向基于错误全局。下一步改走 `--inject-gamestate`/本地服务端，或重新找真正保存房间地图的字段（从 UI 地图下拉的写入点反向），不再改 `0x33069D4`。
+
+## 2026-10-21 试跑 2.6.9.7 dedrun 本地 bot 服务端，卡在 IPv4 bind
+
+按 `runs/2697-server-test/cmd.json` 启动 `codol_dedrun.exe`（mp_cross_fire、12 bots、net_ip 127.0.0.1/net_port 28969），进程存活但 `sys_error.txt` 报 `Sys_Error: Could not bind to a IPv4 network socket`，`Get-NetUDPEndpoint`/netstat 均无 28969 监听；改成 `net_ip 0.0.0.0` 仍同样失败。说明 dedrun 的 socket 初始化/绑定路径有问题，暂时不能作为 1649370 的本地 bot 服务端。下一步换端口、去掉 net_ip、或用 2.6.9.7 客户端先验证 dedrun 本身可连。
