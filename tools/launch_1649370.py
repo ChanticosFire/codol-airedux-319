@@ -80,11 +80,21 @@ MAP_PROBE = None
 MAP_COMMAND_MODE = "startup"
 ROOM_COMMAND = None
 ROOM_COMMAND_TIMEOUT = 180
+PREFIX_CBUF = None
+MAP_PROBE_DIRS = {
+    "mp_strike_sh": "runs/20261021-1649370-map",
+    "mp_arkaden_sh": "runs/20261021-1649370-map-arkaden",
+}
 MAP_PROBE_FILES = {
     "mp_strike_sh": {
         "mp_strike_sh.ff": "9025460fa95446422729d0881494c6a4a0c376c9d0650bca7dfdf55aaa7b83cb",
         "mp_strike_sh_load.ff": "0d1340d88ba65ce055d5af9c73b33a1d3179b6fa44e0ef5498ee404420613064",
         "mp_strike_sh_const.ff": "f6d077630d5451ac9594e26a6617653ba013f6b2da564ae4648fc084a003326d",
+    },
+    "mp_arkaden_sh": {
+        "mp_arkaden_sh.ff": "62c0629bc5ea8e90e0d9f7d4658a14fc54ad953626e28ae8696e56e0349d8575",
+        "mp_arkaden_sh_load.ff": "84c76824cc639c5831906022e5debc91f213daf42ed8f0472900dcd5a2083d41",
+        "mp_arkaden_sh_const.ff": "ec9ba6b592751490ab5b7a5a0760e8523f45856649439a1cfa51ebecefc5a3c0",
     },
 }
 
@@ -378,7 +388,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
         print("[patched] copied extra root files:", ",".join(copied), flush=True)
 
     if MAP_PROBE:
-        source_dir = Path(__file__).resolve().parents[1] / "runs/20261021-1649370-map"
+        source_dir = Path(__file__).resolve().parents[1] / MAP_PROBE_DIRS[MAP_PROBE]
         destination_dir = stage / "client_shipretail/chinese"
         destination_dir.mkdir(parents=True, exist_ok=True)
         staged = []
@@ -411,7 +421,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -427,10 +437,13 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     parser.add_argument("--capture-ui-movie", action="store_true")
     parser.add_argument("--room-command",
                         help="等本地房间有效后，在主线程暂停时把一条 ASCII 控制台命令写入原生命令缓冲")
+    parser.add_argument("--prefix-cbuf",
+                        help="在 BeforeCbuf 断点处给已生成的命令文本补一个前缀，例如 mmstart")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
     ROOM_COMMAND = known.room_command
+    PREFIX_CBUF = known.prefix_cbuf
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 
@@ -527,6 +540,18 @@ def main(argv=None) -> int:
                         snapshot["eax_string"] = self.process.cstring(int(eax, 0))
                     except (OSError, ValueError) as error:
                         snapshot["eax_string_error"] = str(error)
+                if PREFIX_CBUF and length and not text.startswith(PREFIX_CBUF):
+                    prefix = PREFIX_CBUF.encode("ascii")
+                    new_text = prefix + text.encode("ascii")
+                    if len(new_text) >= capacity:
+                        snapshot["prefix_error"] = "buffer capacity exceeded"
+                    else:
+                        self.process.write(pointer, new_text + b"\0")
+                        self.process.write(0x76595AC, struct.pack("<I", len(new_text)))
+                        if self.process.read(0x76595A4, 12) != struct.pack("<3I", pointer, capacity, len(new_text)):
+                            raise ValueError("Cbuf prefix readback mismatch")
+                        snapshot["prefix_applied"] = PREFIX_CBUF
+                        snapshot["prefixed_length"] = len(new_text)
                 self.record({"cbuf_snapshot": snapshot})
             except (OSError, ValueError, struct.error) as error:
                 self.record({"cbuf_snapshot_error": str(error)})
