@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "verify 2697 challenge compatibility and try to deliver challengeResponse through the client loopback receive ring",
+  "server_probe": {
+    "client_packet": "\\xff\\xff\\xff\\xffgetchallenge 0 \\\"a731af49a6a2c7e2\\\"",
+    "server": "2697 codol_dedrun.exe on 127.0.0.1:28969",
+    "response": "\\xff\\xff\\xff\\xffchallengeResponse -486178985\\x00",
+    "conclusion": "the 1649370 getchallenge text is accepted by the 2697 server and it returns a valid OOB challengeResponse"
+  },
+  "ring_injection": {
+    "slot": "0x786DBC0 + (write_cursor & 0xF) * 0x504",
+    "layout": "adr[0x18] + payload at +0x18 + length at +0x500",
+    "write_cursor": "0x7872C04",
+    "read_cursor": "0x7872C00",
+    "attempts": [
+      {"name": "codex-1649370-inject-20261021", "adr": "type=4 127.0.0.1:28969", "payload": "\\xff\\xff\\xff\\xffchallengeResponse -486178985\\x00", "state_after": 1, "read_cursor": 1, "result": "consumed but no connect"},
+      {"name": "codex-1649370-inject2-20261021", "adr": "type=4", "payload": "prefixed", "state_after": 3, "read_cursor": 1, "result": "no connect/send2"},
+      {"name": "codex-1649370-inject3-20261021", "adr": "type=2 0.0.0.0:28969 channel 0x9D", "payload": "prefixed", "state_after": 3, "read_cursor": 1, "result": "no connect/send2"},
+      {"name": "codex-1649370-inject4-20261021", "adr": "type=2", "payload": "no OOB prefix", "state_after": 3, "read_cursor": 1, "result": "no connect/send2"}
+    ],
+    "observation": "the client read cursor advances from 0 to 1, so 0x675140 consumed the slot, but the connection state remains 3 and no connect packet is produced"
+  },
+  "interpretation": "The server side is compatible at the getchallenge/OOB level. The loopback receive-ring slot is consumed by 0x675140, but its payload does not reach the challengeResponse parser or the parser rejects it. Possible causes: 0x675140 is not the OOB dispatch path, the adr/type/length fields are not what the pump expects, or the packet must be handed to 0x5C1678 directly.",
+  "next": [
+    "call the challengeResponse parser 0x5C1678 (inside 0x5C0F50) directly with a constructed msg_t/netadr",
+    "or find the real receive queue used by the network pump 0x4F8D70 and inject there",
+    "keep the 2697 server response as the known-good challenge"
+  ],
+  "cleanup": "Client and 2697 server terminated; no WFP/process residue."
+}

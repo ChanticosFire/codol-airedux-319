@@ -89,6 +89,7 @@ CONNECTION_ADR_PORT = None
 TRANSPORT_CONNECT = False
 RING_PROBE = False
 HOOK_LOOPBACK = False
+INJECT_CHALLENGE = False
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -415,6 +416,85 @@ def _install_loopback_hook(k32, handle) -> dict:
         return {"status": "patch_failed", "error": C.get_last_error()}
     return {"status": "ok", "cave": hex(cave), "copy_len": hex(copy_len),
             "seq": hex(seq), "buf": hex(buf), "code": code.hex()}
+
+
+def _inject_challenge_response(session) -> None:
+    """向客户端 loopback 接收环写一条 challengeResponse，验证接收路径。"""
+    k32 = C.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
+    k32.OpenProcess.restype = W.HANDLE
+    k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    output = session.run_dir / "challenge-inject.json"
+    payload = b"challengeResponse -486178985\x00"
+    result = {"started": time.time(), "payload": payload.hex(), "status": "waiting"}
+    handle = k32.OpenProcess(0x0438, False, session.info.pid)
+    if not handle:
+        result.update(status="open_process_failed", error=C.get_last_error())
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return
+
+    def read(va: int, count: int):
+        buffer = C.create_string_buffer(count)
+        got = C.c_size_t()
+        if not k32.ReadProcessMemory(handle, C.c_void_p(va), buffer, count, C.byref(got)) or got.value != count:
+            return None
+        return buffer.raw
+
+    def u32(va: int):
+        data = read(va, 4)
+        return struct.unpack("<I", data)[0] if data else None
+
+    try:
+        deadline = time.monotonic() + 120
+        while time.monotonic() < deadline:
+            if (u32(0xE59D20) or 0) >= 4:
+                break
+            time.sleep(0.5)
+        time.sleep(3)
+        wrote = C.c_size_t()
+        adr = struct.pack("<I4sHHIII", 2, b"\0\0\0\0", socket.htons(28969), 0, 0, 0, 0x9D)
+        for _ in range(50):
+            write_cursor = u32(0x7872C04) or 0
+            read_cursor = u32(0x7872C00) or 0
+            if write_cursor - read_cursor < 15:
+                index = write_cursor & 0xF
+                slot = 0x786DBC0 + index * 0x504
+                data = [("adr", slot, adr), ("payload", slot + 0x18, payload),
+                        ("length", slot + 0x500, struct.pack("<I", len(payload)))]
+                for name, address, blob in data:
+                    if (not k32.WriteProcessMemory(handle, C.c_void_p(address),
+                                                   C.create_string_buffer(blob, len(blob)), len(blob),
+                                                   C.byref(wrote)) or wrote.value != len(blob)):
+                        result.update(status=f"{name}_write_failed", address=hex(address),
+                                      error=C.get_last_error())
+                        return
+                if (not k32.WriteProcessMemory(handle, C.c_void_p(0x7872C04),
+                                               C.create_string_buffer(struct.pack("<I", write_cursor + 1), 4), 4,
+                                               C.byref(wrote)) or wrote.value != 4):
+                    result.update(status="cursor_write_failed", error=C.get_last_error())
+                    return
+                result.update(status="injected", slot=hex(slot), index=index,
+                              write_cursor_before=write_cursor, payload_length=len(payload))
+                break
+            time.sleep(0.2)
+        else:
+            result.update(status="ring_full")
+            return
+        time.sleep(5)
+        result["read_cursor"] = u32(0x7872C00)
+        result["write_cursor"] = u32(0x7872C04)
+        result["state_after"] = u32(0x76446B0)
+        encoded = u32(0x331C0C8) or 0
+        connection = encoded ^ 0xD362501F
+        result["connection"] = hex(connection)
+        result["channel_after"] = u32(connection + 0x28)
+        result["status"] = "done"
+    finally:
+        result["finished"] = time.time()
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("[patched] challenge inject:", json.dumps(result, ensure_ascii=False), flush=True)
+        k32.CloseHandle(handle)
 
 
 def _ring_probe_injector(session) -> None:
@@ -848,6 +928,9 @@ def patched_start(self, exe, settings_session) -> None:
     if RING_PROBE:
         threading.Thread(target=_ring_probe_injector, args=(self,),
                          name="ring-probe", daemon=True).start()
+    if INJECT_CHALLENGE:
+        threading.Thread(target=_inject_challenge_response, args=(self,),
+                         name="inject-challenge", daemon=True).start()
 
 
 # 社区 DEPENDENCIES 只覆盖 DLL 与 CEF；原版根目录还有一批数据/配置文件没被复制。
@@ -953,7 +1036,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -990,6 +1073,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="把连接设为 type=2 loopback，调用 0x5C05F0 并捕获环 A 写入")
     parser.add_argument("--hook-loopback", action="store_true",
                         help="在 0x6750A0 安装持久 cave hook（实验性，可能崩溃）")
+    parser.add_argument("--inject-challenge", action="store_true",
+                        help="向 loopback 接收环注入 challengeResponse")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
@@ -1004,6 +1089,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     TRANSPORT_CONNECT = known.transport_connect
     RING_PROBE = known.ring_probe
     HOOK_LOOPBACK = known.hook_loopback
+    INJECT_CHALLENGE = known.inject_challenge
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 

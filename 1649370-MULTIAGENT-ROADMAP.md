@@ -112,3 +112,7 @@ state 4 是 connect 分支，state 3 才是 getchallenge 分支（`0x5C0F3C` 跳
 ## 2026-10-21 G2 持久 hook 崩溃（本轮）
 
 `0x6750A0` 入口 cave hook（保存 flags/regs、复制 `[esp+8]`、重放 prologue、跳回 `0x6750A5`）两次都让客户端 `unhandled_exception`（加 `cld` 前后）。一次性断点仍可靠，已抓到 `getchallenge 0 "a731af49a6a2c7e2"`。hook 由 `--hook-loopback` 控制、默认关闭。下一步用一次性断点 + Python UDP 桥完成 challenge/connect，不继续修 hook。证据 `evidence/experiments/20261021-1649370-loopback-hook-crash.json`。
+
+## 2026-10-21 G2 2697 challengeResponse 兼容确认（本轮）
+
+1649370 的 `getchallenge 0 "a731af49a6a2c7e2"` 加 `\xff\xff\xff\xff` 前缀直接发 2697，收到 `\xff\xff\xff\xffchallengeResponse -486178985\0`，协议兼容。把应答注入 loopback 接收环（`0x786DBC0`）后读光标 0→1，但状态保持 3、无 connect；type=4/2、带/不带前缀均如此。下一步直接调用 `0x5C1678` 解析器或找网络泵真正接收队列。证据 `evidence/experiments/20261021-1649370-challenge-response-probe.json`。

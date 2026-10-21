@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 2697 确认 challengeResponse（2026-10-21）**：1649370 的 `getchallenge 0 "a731…"` 加 OOB 前缀直接发 2697，收到 `\xff\xff\xff\xffchallengeResponse -486178985\0`，协议兼容。把应答注入 loopback 接收环（`0x786DBC0`）后，读光标 0→1（被 `0x675140` 消费），但状态保持 3、无 connect；type=4/2、带/不带前缀均如此。下一步直接调用 `0x5C1678` 解析器或找网络泵真正接收队列。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-challenge-response-probe.json`。
+
 > **1649370 G2 持久 loopback hook 崩溃（2026-10-21）**：在 `0x6750A0` 入口写 cave hook，保存 flags/regs、复制 `[esp+8]` 数据、重放 prologue 后跳回 `0x6750A5`；加 `cld` 前后两次都让客户端 `unhandled_exception`。一次性断点仍可靠，已抓到 `getchallenge 0 "a731af49a6a2c7e2"`。hook 已由 `--hook-loopback` 控制、默认关闭。下一步用一次性断点 + Python UDP 桥完成 challenge/connect，不继续修 hook。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-loopback-hook-crash.json`。
 
 > **1649370 G2 getchallenge 已捕获（2026-10-21）**：状态 4 是 connect 分支，状态 3 才是 getchallenge 分支（`0x5C0F3C` 跳表）。state=3 后 `0x6750A0` 断点命中，栈上得到 `getchallenge 0 "a731af49a6a2c7e2"`（38 字节），arg1=0/ring A、arg3=2、arg5=28969、arg8=0x9D。证明文本握手可达，无需建传输通道。环 A 光标未观察到递增，下一步用代码 cave 持久 hook `0x6750A0` 捕获并桥接 2697。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-getchallenge-captured.json`。
