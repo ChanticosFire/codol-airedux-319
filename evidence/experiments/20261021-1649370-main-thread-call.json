@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "call the CL_MapLoading candidate 0x5BE730 on the game main thread and observe whether it starts a local 28969 connection",
+  "attempts": [
+    {
+      "run": "codex-1649370-maincall-clmap-20261021",
+      "result": "main_call exception: struct '<i' rel32 packing overflow",
+      "fix": "pack the rel32 displacement as unsigned '<I'"
+    },
+    {
+      "run": "codex-1649370-maincall2-clmap-20261021",
+      "result": "GetThreadContext returned EIP=0/ESP=0 (WOW64 thread read from a 64-bit host); return-address write failed with WinError 87",
+      "fix": "use Wow64GetThreadContext/Wow64SetThreadContext for the 32-bit target"
+    },
+    {
+      "run": "codex-1649370-maincall3-clmap-20261021",
+      "result": "armed",
+      "main_call": {
+        "status": "armed",
+        "target": "0x5BE730",
+        "cave": "0x117E0000",
+        "cave_code": "60e82ae7ddee61c3",
+        "original_eip": "0x76F4826C",
+        "original_esp": "0x10BEFF08",
+        "new_esp": "0x10BEFF04"
+      }
+    }
+  ],
+  "post_call_observation": {
+    "screen": "persistent black screen",
+    "process_responding": true,
+    "server_connection": "no connection/challenge entry in the 2.6.9.7 qconsole.log",
+    "com_error_or_fatal": false,
+    "guard_cleanup": {"closed": true, "engine_close_status": 0, "error": ""}
+  },
+  "interpretation": "The private main-thread cave call itself is now working: the x86 CONTEXT is read with Wow64GetThreadContext, the return address and cave are installed, and the client remains responsive. However, calling 0x5BE730 at this point does not start a local connection or load a map. 0x5BE730 may not be the CL_MapLoading entry, or it requires a different client state/arguments. The next step is to set a real breakpoint at 0x5BE730 (and at the 0x5BE7xx function entry) while the cave call runs, so a zero-hit can distinguish 'cave never executed' from 'function executed but did nothing'. Do not keep repeating the blind call without that breakpoint proof.",
+  "cleanup": "The client and reference server were terminated. tools/net_rollback.ps1 reported no guard/client processes, no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}

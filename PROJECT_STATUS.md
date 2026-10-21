@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 主线程 cave 调用已打通（2026-10-21）**：包装层新增 `--main-call`，在 room-command 注入后的主线程暂停窗口用 `pushad; call target; popad; ret` cave 调用无参函数；修复 rel32 无符号打包与 WOW64 上下文（`Wow64GetThreadContext`/`Wow64SetThreadContext`）。`codex-1649370-maincall3-clmap-20261021` 成功 armed（target `0x5BE730`、cave `0x117E0000`、原 EIP `0x76F4826C`），但调用后仍黑屏、服务端无 connection/challenge、无 Com Error。cave 机制可用，`0x5BE730` 未产生本地连接；下一步加真实断点验证执行，再定位正确入口。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-main-thread-call.json`。
+
 > **1649370 G2 CL_MapLoading 未由 room.startgame 触发（2026-10-21）**：在 2.6.9.7 参考服务端（28969）+ 私有 loopback 守卫下注入 `room.startgame`，客户端持续黑屏，`0x5BE730`（CL_MapLoading 候选）零命中，服务端无 connection/challenge 记录，无 Com Error。结论：房间路径只发匹配请求，不调用本地地图加载。下一步在游戏主线程用代码 cave 直接调用 `0x5BE730`（保存寄存器→call→恢复→ret），返回原 EIP；不要用远程线程。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-clmaploading-probe.json`。
 
 > **1649370 G2 loopback 守卫与参考服务端就绪（2026-10-21）**：2.6.9.7 `codol_dedrun.exe` 在私有目录成功加载 `mp_cross_fire`，Bot waypoint 444 节点，监听 `127.0.0.1:28969`。私有 `client_loopback_guard.exe` 已复制到 `319/tools/ref/`，包装层新增 `--loopback-guard`，以临时 WFP 动态会话只允许目标进程 UDP `127.0.0.1:28969`（8 过滤器、job kill-on-close），ready 校验通过。随后向 1649370 注入 `connect 127.0.0.1:28969` 未产生 UDP 或服务端日志，确认 `connect` 不是注册 Cbuf 命令；当前缺 1649370 的内部连接入口（`0x604260`/`0x605920` 一带）或在线 lobby 触发路径。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部与 `evidence/experiments/20261021-1649370-loopback-server-probe.json`。

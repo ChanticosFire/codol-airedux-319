@@ -81,6 +81,7 @@ MAP_COMMAND_MODE = "startup"
 ROOM_COMMAND = None
 ROOM_COMMAND_TIMEOUT = 180
 PREFIX_CBUF = None
+MAIN_CALL = None
 LOOPBACK_GUARD = False
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
 MAP_PROBE_DIRS = {
@@ -114,6 +115,70 @@ def _build_environment(stage: Path) -> C.Array:
     })
     joined = "\x00".join(f"{k}={v}" for k, v in sorted(env.items())) + "\x00\x00"
     return C.create_unicode_buffer(joined, len(joined))
+
+
+def _main_thread_call(session, handle, target: int) -> dict:
+    """在已暂停的游戏主线程上调用一个无参函数。
+
+    在主线程栈上压入原 EIP 作为返回地址，把 EIP 指向分配好的代码 cave：
+    pushad; call target; popad; ret。函数返回后 cave 恢复寄存器并 ret 回原
+    EIP，主线程继续原流程；调用发生在主线程，不使用远程线程。
+    """
+    k32 = C.WinDLL("kernel32", use_last_error=True)
+    k32.GetThreadContext.argtypes = [W.HANDLE, C.c_void_p]
+    k32.GetThreadContext.restype = W.BOOL
+    k32.SetThreadContext.argtypes = [W.HANDLE, C.c_void_p]
+    k32.SetThreadContext.restype = W.BOOL
+    # The target is 32-bit and the host Python is 64-bit; only the Wow64
+    # accessors return the x86 CONTEXT for this thread.
+    wow64_get = getattr(k32, "Wow64GetThreadContext", None)
+    wow64_set = getattr(k32, "Wow64SetThreadContext", None)
+    if wow64_get and wow64_set:
+        wow64_get.argtypes = [W.HANDLE, C.c_void_p]
+        wow64_get.restype = W.BOOL
+        wow64_set.argtypes = [W.HANDLE, C.c_void_p]
+        wow64_set.restype = W.BOOL
+        get_context, set_context = wow64_get, wow64_set
+    else:
+        get_context, set_context = k32.GetThreadContext, k32.SetThreadContext
+    k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
+    k32.VirtualAllocEx.restype = C.c_void_p
+    k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.FlushInstructionCache.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t]
+    k32.FlushInstructionCache.restype = W.BOOL
+    context_size, eip_offset, esp_offset = 716, 184, 196
+    storage = C.create_string_buffer(context_size + 16)
+    aligned = (C.addressof(storage) + 15) & ~15
+    C.memset(aligned, 0, context_size)
+    C.c_uint32.from_address(aligned).value = 0x00010001  # CONTEXT_i386 | CONTEXT_CONTROL
+    if not get_context(session.info.thread, C.c_void_p(aligned)):
+        return {"status": "get_context_failed", "error": C.get_last_error()}
+    original_eip = C.c_uint32.from_address(aligned + eip_offset).value
+    original_esp = C.c_uint32.from_address(aligned + esp_offset).value
+    cave = k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40)  # COMMIT|RESERVE, RWX
+    if not cave:
+        return {"status": "alloc_failed", "error": C.get_last_error()}
+    cave = int(cave)
+    call_next = cave + 6
+    code = b"\x60\xe8" + struct.pack("<I", (target - call_next) & 0xFFFFFFFF) + b"\x61\xc3"
+    wrote = C.c_size_t()
+    if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                   len(code), C.byref(wrote)) or wrote.value != len(code)):
+        return {"status": "cave_write_failed", "cave": hex(cave), "error": C.get_last_error()}
+    k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+    if (not k32.WriteProcessMemory(handle, C.c_void_p(original_esp - 4),
+                                   C.create_string_buffer(struct.pack("<I", original_eip), 4),
+                                   4, C.byref(wrote)) or wrote.value != 4):
+        return {"status": "return_address_write_failed", "cave": hex(cave),
+                "original_eip": hex(original_eip), "original_esp": hex(original_esp),
+                "error": C.get_last_error()}
+    C.c_uint32.from_address(aligned + esp_offset).value = original_esp - 4
+    C.c_uint32.from_address(aligned + eip_offset).value = cave
+    if not set_context(session.info.thread, C.c_void_p(aligned)):
+        return {"status": "set_context_failed", "cave": hex(cave), "error": C.get_last_error()}
+    return {"status": "armed", "target": hex(target), "cave": hex(cave),
+            "cave_code": code.hex(), "original_eip": hex(original_eip),
+            "original_esp": hex(original_esp), "new_esp": hex(original_esp - 4)}
 
 
 def _room_command_injector(session, command: str) -> None:
@@ -221,6 +286,11 @@ def _room_command_injector(session, command: str) -> None:
                 result.update(status="queued", length_before=length, length_after=new_length,
                               pointer=hex(pointer), payload_address=hex(pointer + length),
                               attempt=attempt + 1)
+                if MAIN_CALL:
+                    try:
+                        result["main_call"] = _main_thread_call(session, handle, MAIN_CALL)
+                    except Exception as error:  # noqa: BLE001 - report, never hide
+                        result["main_call"] = {"status": "exception", "error": repr(error)}
                 return
             finally:
                 k32.ResumeThread(session.info.thread)
@@ -435,7 +505,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, MAIN_CALL
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -455,12 +525,15 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="在 BeforeCbuf 断点处给已生成的命令文本补一个前缀，例如 mmstart")
     parser.add_argument("--loopback-guard", action="store_true",
                         help="使用私有 2.6.9.7 loopback guard：仅允许该进程的 UDP 127.0.0.1:28969")
+    parser.add_argument("--main-call", type=lambda value: int(value, 0),
+                        help="在 room-command 注入后、主线程仍暂停时调用一个无参函数地址")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
     ROOM_COMMAND = known.room_command
     PREFIX_CBUF = known.prefix_cbuf
     LOOPBACK_GUARD = known.loopback_guard
+    MAIN_CALL = known.main_call
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 
