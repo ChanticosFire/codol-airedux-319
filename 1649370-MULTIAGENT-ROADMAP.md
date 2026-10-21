@@ -590,3 +590,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 0x4F30C0 是真正的命令执行器，主线程执行 devmap 已触发地图加载
 
 主线程 cave 执行 `push 0; push 0; mov eax,"devmap mp_cross_fire"; call 0x4F30C0; add esp,8`，`room-command.json` 的 `exec_cmd.status=armed`，客户端不再崩溃，而是进入黑屏地图加载态（CPU 52→61、WS 1.2GB、进程 Responding），持续 50 秒仍黑屏。说明命令注入到 devmap 的路径已经打通；黑屏是地图加载/等待 gamestate，不再是命令或崩溃问题。下一步：等更久，或在 devmap 后再执行 map_restart/sv_ 初始化，确认地图能否真正进入并可加 bot。
+
+## 2026-10-21 devmap;map_restart 仍黑屏，线程全部 Wait/UserRequest
+
+命令执行器 `0x4F30C0` 执行 `devmap mp_cross_fire;map_restart`（`exec_cmd.status=armed`），客户端不再崩溃，黑屏、CPU 44、WS 1.2GB；`Get-Process Threads` 显示主/渲染线程均 `Wait:UserRequest`，没有异常退出。说明地图加载阶段在等某个用户态事件/服务器状态，而不是崩溃或命令失败。下一步：用转储/ETW/线程栈确认等待对象，或补本地 gamestate/`sv_` 初始化让加载完成。

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 devmap+map_restart 仍黑屏、线程 Wait（2026-10-21）**：命令通、进程活、CPU44/WS1.2GB，线程均 Wait:UserRequest；地图加载等用户态事件/服务器状态。下一步 dump/ETW/线程栈或补 gamestate。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 命令执行器 0x4F30C0 打通（2026-10-21）**：主线程执行 devmap 后黑屏加载、CPU61/WS1.2GB、无崩溃；命令注入路径成立。下一步等更久或 map_restart/gamestate。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 Cbuf 执行已打通、命令解析崩溃（2026-10-21）**：修正 eax=索引0 与 call 偏移后，devmap 进入解析，在 0xA3942A 崩溃；下一步换 map/补 sv_cheats。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
