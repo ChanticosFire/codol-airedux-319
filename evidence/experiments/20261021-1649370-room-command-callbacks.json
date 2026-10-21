@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "method": "decode the two verified command registration writes",
+  "commands": [
+    {
+      "command": "room.leave",
+      "name_load_va": "0x63a10d",
+      "name_code_hex": "be8c6bdc00",
+      "string_va": "0xdc6b8c",
+      "callback_store_va": "0x63a12c",
+      "callback_store_hex": "c70594679c0e90986300",
+      "node_callback_field": "0xe9c6794",
+      "callback_va": "0x639890",
+      "callback_entry_hex": "8b0dfc132e088b018b5038ffe2cccccc",
+      "name_matches": true
+    },
+    {
+      "command": "room.startgame",
+      "name_load_va": "0x63a13c",
+      "name_code_hex": "be986bdc00",
+      "string_va": "0xdc6b98",
+      "callback_store_va": "0x63a15b",
+      "callback_store_hex": "c70588679c0ea0986300",
+      "node_callback_field": "0xe9c6788",
+      "callback_va": "0x6398a0",
+      "callback_entry_hex": "8b0d106930038b048d94693003c6051c",
+      "name_matches": true
+    }
+  ],
+  "correction": "room.startgame -> 0x6398A0; room.leave -> 0x639890. 0x639890 is a leave dispatch through the room vtable +0x38, not the startgame handler. The startgame callback selects parameters from global index [0x3306910] and calls the current room vtable +0x3C."
+}

@@ -98,6 +98,8 @@ def main() -> int:
     parser.add_argument("--delay", type=float, default=1.5)
     parser.add_argument("--method", choices=["sendinput", "wmchar"], default="wmchar",
                         help="wmchar posts WM_CHAR (works for Scaleform); sendinput is best-effort")
+    parser.add_argument("--backspaces", type=int, default=0,
+                        help="send N backspaces (WM_CHAR 0x08) after clicking, before typing")
     args = parser.parse_args()
 
     hwnd = user32.FindWindowW(args.window, None)
@@ -130,6 +132,12 @@ def main() -> int:
         print(f"clicking screen ({point.x}, {point.y})")
         click_screen(point.x, point.y)
         time.sleep(0.6)
+
+    if args.backspaces:
+        print(f"sending {args.backspaces} backspaces")
+        for _ in range(args.backspaces):
+            post_char(hwnd, "\b")
+            time.sleep(0.03)
 
     if args.text:
         method = args.method

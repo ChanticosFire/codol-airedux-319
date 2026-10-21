@@ -49,8 +49,8 @@ def main() -> None:
               "method": "exact ASCII strings and direct 32-bit VA operand references",
               "matches": rows,
               "interpretation": {
-                  "room_start_handler": "0x639890 reads room pointer [0x82e13fc] and jumps through vtable slot +0x38; runtime target unknown",
-                  "room_start_register_candidate": "0x63a13c uses room.startgame pointer before call 0x4f37a0",
+                  "room_start_handler": "room.startgame callback is 0x6398A0; 0x639890 is room.leave and jumps through room vtable +0x38",
+                  "room_start_register_candidate": "0x63A15B stores 0x6398A0 for the room.startgame node; 0x63A12C stores 0x639890 for room.leave",
                   "map_command_builder": "0x632462 references mmstart/sv_resetServer/.../map %s format string",
                   "limitation": "Static references do not establish runtime execution or a playable match"
               }}

@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "G1 ready-button native-boundary test and correction of the room command callbacks",
+  "runs": [
+    {
+      "name": "codex-1649370-ready-hit-20261021",
+      "purpose": "verify that the corrected GFx dispatch breakpoints execute and that the old scanner operand addresses were mid-instruction",
+      "breakpoints": [
+        {"address": "0x7D0A42", "label": "GFx_SetReadyState_dispatch", "hits": 1},
+        {"address": "0x7D08C2", "label": "GFx_StartMatch_dispatch", "hits": 1},
+        {"address": "0x7CB572", "label": "cppSetMemberReadyState_message", "hits": 0},
+        {"address": "0x639890", "label": "room_startgame_handler (old label)", "hits": 0},
+        {"address": "0x632462", "label": "mmstart_builder", "hits": 0}
+      ],
+      "observation": "Both corrected GFx dispatch sites hit once during UI page initialization, before any room action. The previous probes had armed 0x7D0A43/0x7D08C3, which are immediate operand bytes, so their zero-hit results did not cover these dispatches.",
+      "ui_actions": ["entered custom page", "created local room (manually)", "clicked Ready (manually)"],
+      "stop_reason": "observation_timeout",
+      "guard_cleanup_closed": true,
+      "engine_close_status": 0
+    },
+    {
+      "name": "codex-1649370-ready-native2-20261021",
+      "purpose": "check whether a human click on Ready reaches the native ready-message or room-start entries",
+      "breakpoints": [
+        {"address": "0x7CB572", "label": "cppSetMemberReadyState_message", "hits": 0},
+        {"address": "0x639890", "label": "room_leave_dispatch (old startgame label)", "hits": 0},
+        {"address": "0x632462", "label": "mmstart_builder", "hits": 0}
+      ],
+      "ui_actions": [
+        "human entered the local room through the custom-game UI",
+        "human clicked the visible Ready button at the bottom-right; the human confirmed the click was on the correct control"
+      ],
+      "observed_result": "The Ready button did not change text or colour. None of the three native breakpoints hit.",
+      "interpretation": "The Ready control is inert in the offline local room: the click did not reach the native ready-message builder or the room-start command. This is consistent with the earlier ABC finding that CFunctionContainer.SetReadyState is an empty stub in the shipped movie; it does not prove every possible native binding is absent, but it removes the 'our synthetic click missed the button' explanation.",
+      "screenshot": "319/runs/codex-1649370-ready-native2-20261021/manual-ready.png",
+      "stop_reason": "unhandled_exception",
+      "stop_cause": "an explicit out-of-process experiment called room.startgame (0x6398A0) from a newly created thread; the engine rejected the non-main-thread call with Com Error and the probe recorded an access violation at 0x773752",
+      "guard_cleanup_closed": true,
+      "engine_close_status": 0
+    }
+  ],
+  "static_corrections": {
+    "gfx_breakpoints": {
+      "correct_instruction_starts": ["0x7D0A42", "0x7D08C2"],
+      "previous_operand_addresses": ["0x7D0A43", "0x7D08C3"],
+      "evidence": "319/evidence/experiments/20261021-1649370-breakpoint-address-correction.json"
+    },
+    "room_commands": {
+      "room.startgame": "0x6398A0",
+      "room.leave": "0x639890",
+      "previous_error": "0x639890 had been labelled the room.startgame handler; it is the room.leave dispatch",
+      "evidence": "319/evidence/experiments/20261021-1649370-room-command-callbacks.json"
+    },
+    "runtime_room_dispatch": {
+      "global_room_pointer": "0x82E13FC",
+      "room_object_sample": "0x245979b0",
+      "vtable_sample": "0xdc7274",
+      "vtable_plus_0x38": "0x62F640 (leave cleanup, matching the room.leave callback)",
+      "vtable_plus_0x3c": "0x62F840 (room start request)",
+      "global_index": "0x3306910 = 0xffffffff in the offline room",
+      "indexed_slot": "0x3306990 = 0 (value read for index -1)"
+    }
+  },
+  "conclusion": "G1 is now narrowed to an inert Ready control in the offline room. A human click produces no UI state change and no hit at the native ready-message builder or the start command. The next experiment must bypass the Ready control on the game's main thread, not synthesize another click. 0x6398A0 is the real room.startgame callback; 0x639890 is room.leave. A non-main-thread call is invalid and produced the expected engine rejection, so the next wrapper must inject a command or call on the main thread only."
+}

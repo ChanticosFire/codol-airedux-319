@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "run": "codex-1649370-mainthread-start-20261021",
+  "purpose": "bypass the inert Ready control by injecting room.startgame into the original command buffer on the game main thread",
+  "method": {
+    "wrapper_option": "--room-command room.startgame",
+    "mechanism": "wait for [0x82E13FC] to point to a room with [room+0x278]&0xFF==1, suspend the game main thread, validate the Cbuf descriptor at 0x76595A4 (pointer 0x33821B0, capacity 0x20000) and the command critical section, append an ASCII command plus NUL, read back the length, resume the main thread",
+    "does_not": "call game functions, fabricate map load, or modify community source files"
+  },
+  "injection": {
+    "file": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\codex-1649370-mainthread-start-20261021\\room-command.json",
+    "status": "queued",
+    "room": "0x23d87898",
+    "vtable": "0xdc7274",
+    "length_before": 0,
+    "length_after": 16,
+    "payload_address": "0x33821b0",
+    "attempt": 1
+  },
+  "breakpoint_hits": {
+    "0x6398A0": {
+      "label": "room_startgame_callback",
+      "hits": 1,
+      "tid": 14156,
+      "note": "the command was consumed by the original Cbuf consumer and entered the real room.startgame callback"
+    },
+    "0x62F840": {
+      "label": "room_start_request",
+      "hits": 1,
+      "ecx": "0x23d87898",
+      "edx": "0xdc7274",
+      "note": "room vtable +0x3C; stack showed argument triple (0, -1, 0)"
+    },
+    "0x632462": {
+      "label": "mmstart_builder",
+      "hits": 0,
+      "note": "the start request did not reach this mmstart format site"
+    }
+  },
+  "observed_result": {
+    "screen": "persistent black screen after the command; process stayed responsive",
+    "screenshots": [
+      "319/runs/codex-1649370-mainthread-start-20261021/after-inject.png",
+      "319/runs/codex-1649370-mainthread-start-20261021/after-inject-2.png",
+      "319/runs/codex-1649370-mainthread-start-20261021/after-inject-30s.png"
+    ],
+    "com_error_or_fatal": false,
+    "cbuf_after": {"pointer": "0x33821b0", "capacity": 131072, "length": 0},
+    "room_fields": {
+      "0x278": "0x01",
+      "0x279": "0x01",
+      "0x280": "0x00",
+      "0x289": "0x01",
+      "0x330": "0x00000000",
+      "0x7230": "0x00000001",
+      "0x105d8": "0x00000001 (members)",
+      "0x105fe": "0x0c (limit)",
+      "0x10758": "0x00000000",
+      "0x1075c": "0x00000000",
+      "0x38528": "0x00000001",
+      "0x38710": "0x00"
+    },
+    "global_0x849b61c": "0x00",
+    "local_view_state": {
+      "viewer_draw_enabled": 0,
+      "weapon_definition_count": 0,
+      "viewer_initialized": 1,
+      "viewer_scene_ready": 1
+    }
+  },
+  "cleanup": {
+    "stop_reason": "observation_timeout",
+    "child_terminated": true,
+    "guard_cleanup": {
+      "closed": true,
+      "engine_close_status": 0,
+      "owned_identity_verified": true,
+      "child_terminated": true,
+      "error": ""
+    }
+  },
+  "conclusion": "The main-thread injection chain works and reaches the native room.startgame callback and the room start request. The request then stops before the mmstart format site and leaves a black screen with the renderer disabled, most likely waiting for a match service or party/member state. The next experiment should break at 0x631E90 (mmstart constructor) and 0x62FA3E (before the command consumer) to dump the actual command string, then test devmap/map with map resources as the direct G2 path.",
+  "next": [
+    "run with --breakpoint 0x631E90:mmstart_constructor and 0x62FA3E:BeforeCbuf to capture eax string and Cbuf text",
+    "run with --map-probe mp_strike_sh and --room-command 'devmap mp_strike_sh' to test direct map load",
+    "do not re-use 0x639890 as startgame; it is room.leave"
+  ]
+}

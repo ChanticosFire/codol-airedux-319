@@ -15,6 +15,8 @@ build_plan() 里补上 --image / --patches / --overlay / --queue-main-menu，
 用法：
     C:\\Python314\\python.exe -B -X utf8 tools\\launch_1649370.py --seconds 120
     C:\\Python314\\python.exe -B -X utf8 tools\\launch_1649370.py --full --seconds 120
+    C:\\Python314\\python.exe -B -X utf8 tools\\launch_1649370.py --full --local-profile \\
+        --room-command room.startgame --breakpoint 0x6398A0:room_startgame_callback
 其余社区参数（--prepare-only / --local-profile / --until-close 等）原样透传。
 """
 from __future__ import annotations
@@ -25,8 +27,10 @@ import hashlib
 import json
 import os
 import shutil
+import struct
 import subprocess
 import sys
+import threading
 import time
 import zlib
 from ctypes import wintypes as W
@@ -74,6 +78,8 @@ SETTINGS_DB = PRIVATE_DATA / "game-settings.sqlite3"
 OriginalSettingsStore = game_settings_mod.SettingsStore
 MAP_PROBE = None
 MAP_COMMAND_MODE = "startup"
+ROOM_COMMAND = None
+ROOM_COMMAND_TIMEOUT = 180
 MAP_PROBE_FILES = {
     "mp_strike_sh": {
         "mp_strike_sh.ff": "9025460fa95446422729d0881494c6a4a0c376c9d0650bca7dfdf55aaa7b83cb",
@@ -96,6 +102,122 @@ def _build_environment(stage: Path) -> C.Array:
     })
     joined = "\x00".join(f"{k}={v}" for k, v in sorted(env.items())) + "\x00\x00"
     return C.create_unicode_buffer(joined, len(joined))
+
+
+def _room_command_injector(session, command: str) -> None:
+    """在主线程暂停的瞬间把一条控制台命令写入原生命令缓冲。
+
+    房间内的“准备”控件在当前离线版本中是惰性的，因此包装层必须在游戏主线程
+    上补一条命令。这里不调用游戏函数、不伪造地图结果，只复用原生 Cbuf 缓冲：
+    先等全局房间对象有效，再暂停主线程，校验 descriptor/临界区，追加文本并
+    回读长度，随后恢复主线程让原消费者执行。
+    """
+    k32 = C.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
+    k32.OpenProcess.restype = W.HANDLE
+    k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.SuspendThread.argtypes = [W.HANDLE]
+    k32.SuspendThread.restype = W.DWORD
+    k32.ResumeThread.argtypes = [W.HANDLE]
+    k32.ResumeThread.restype = W.DWORD
+    k32.CloseHandle.argtypes = [W.HANDLE]
+    output = session.run_dir / "room-command.json"
+    result = {"command": command, "started": time.time(), "status": "waiting"}
+    handle = k32.OpenProcess(0x0438, False, session.info.pid)
+    if not handle:
+        result.update(status="open_process_failed", error=C.get_last_error())
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return
+
+    def read(va: int, count: int):
+        buffer = C.create_string_buffer(count)
+        got = C.c_size_t()
+        if not k32.ReadProcessMemory(handle, C.c_void_p(va), buffer, count, C.byref(got)) or got.value != count:
+            return None
+        return buffer.raw
+
+    def u32(va: int):
+        data = read(va, 4)
+        return struct.unpack("<I", data)[0] if data else None
+
+    try:
+        deadline = time.monotonic() + ROOM_COMMAND_TIMEOUT
+        room = None
+        while time.monotonic() < deadline:
+            candidate = u32(0x82E13FC)
+            if candidate and 0x10000 <= candidate < 0x7FFF0000:
+                marker = u32(candidate + 0x278)
+                session_ptr = u32(candidate + 0x1C)
+                if marker is not None and marker & 0xFF == 1 and session_ptr:
+                    room = candidate
+                    break
+            time.sleep(0.4)
+        if not room:
+            result.update(status="room_not_ready")
+            return
+        result.update(room=hex(room), vtable=hex(u32(room) or 0))
+        payload_text = "\n" + command + "\n"
+        payload = payload_text.encode("ascii") + b"\0"
+        for attempt in range(20):
+            descriptor = read(0x76595A4, 12)
+            if not descriptor:
+                result.update(status="descriptor_unreadable")
+                return
+            pointer, capacity, length = struct.unpack("<3I", descriptor)
+            if pointer != 0x33821B0 or capacity != 0x20000 or length >= capacity:
+                result.update(status="descriptor_mismatch", pointer=hex(pointer),
+                              capacity=capacity, length=length)
+                return
+            if length + len(payload) > capacity:
+                result.update(status="buffer_full", length=length)
+                return
+            lock = read(0x81A55A0, 16)
+            if not lock:
+                result.update(status="lock_unreadable")
+                return
+            recursion, owner = struct.unpack("<4I", lock)[2:]
+            if recursion:
+                time.sleep(0.2)
+                continue
+            if k32.SuspendThread(session.info.thread) == 0xFFFFFFFF:
+                result.update(status="suspend_failed", error=C.get_last_error())
+                return
+            try:
+                descriptor = read(0x76595A4, 12)
+                pointer, capacity, length = struct.unpack("<3I", descriptor)
+                if pointer != 0x33821B0 or capacity != 0x20000 or length + len(payload) > capacity:
+                    result.update(status="descriptor_changed", pointer=hex(pointer),
+                                  capacity=capacity, length=length)
+                    return
+                wrote = C.c_size_t()
+                if not k32.WriteProcessMemory(handle, C.c_void_p(pointer + length),
+                                              C.create_string_buffer(payload, len(payload)),
+                                              len(payload), C.byref(wrote)) or wrote.value != len(payload):
+                    result.update(status="payload_write_failed", error=C.get_last_error())
+                    return
+                new_length = length + len(payload_text)
+                length_bytes = struct.pack("<I", new_length)
+                if not k32.WriteProcessMemory(handle, C.c_void_p(0x76595AC),
+                                              C.create_string_buffer(length_bytes, 4),
+                                              4, C.byref(wrote)) or wrote.value != 4:
+                    result.update(status="length_write_failed", error=C.get_last_error())
+                    return
+                if read(0x76595A4, 12) != struct.pack("<3I", pointer, capacity, new_length):
+                    result.update(status="readback_failed")
+                    return
+                result.update(status="queued", length_before=length, length_after=new_length,
+                              pointer=hex(pointer), payload_address=hex(pointer + length),
+                              attempt=attempt + 1)
+                return
+            finally:
+                k32.ResumeThread(session.info.thread)
+        result.update(status="command_lock_busy")
+    finally:
+        result["finished"] = time.time()
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("[patched] room command:", json.dumps(result, ensure_ascii=False), flush=True)
+        k32.CloseHandle(handle)
 
 
 def patched_start(self, exe, settings_session) -> None:
@@ -181,6 +303,9 @@ def patched_start(self, exe, settings_session) -> None:
     self.resumed = True
     self.log["resumed"] = True
     self.log["lifetime"] = "until_client_exit" if self.args.until_close else "bounded_observation"
+    if ROOM_COMMAND:
+        threading.Thread(target=_room_command_injector, args=(self, ROOM_COMMAND),
+                         name="room-command", daemon=True).start()
 
 
 # 社区 DEPENDENCIES 只覆盖 DLL 与 CEF；原版根目录还有一批数据/配置文件没被复制。
@@ -286,7 +411,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -300,9 +425,12 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     parser.add_argument("--map-command-mode", choices=("startup", "queue"), default="startup")
     parser.add_argument("--audit-breakpoints", action="store_true")
     parser.add_argument("--capture-ui-movie", action="store_true")
+    parser.add_argument("--room-command",
+                        help="等本地房间有效后，在主线程暂停时把一条 ASCII 控制台命令写入原生命令缓冲")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
+    ROOM_COMMAND = known.room_command
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 
@@ -381,27 +509,45 @@ def main(argv=None) -> int:
             return plan
 
         ui_movie_mod.find_resource_patch = captured_find_resource_patch
-    if audit_breakpoints:
-        original_breakpoint = bridge_mod.GameSessionBridge.breakpoint
+    original_breakpoint = bridge_mod.GameSessionBridge.breakpoint
 
-        def audited_breakpoint(self, event, address, original, label, row, thread, ctx):
-            original_breakpoint(self, event, address, original, label, row, thread, ctx)
-            if label not in ("CRT entry", "Local navigation resource", "Switch to main menu"):
-                return
-            points = []
-            for value in self.args.breakpoint:
-                point, name = value.split(":", 1)
-                target = int(point, 0)
-                armed = self.debug.breaks.get(target)
-                actual = self.process.read(target, 1).hex()
-                points.append({"address": hex(target), "label": name,
-                               "registered": armed is not None,
-                               "armed_byte": actual == "cc",
-                               "actual_byte": actual,
-                               "saved_original": armed[0].hex() if armed else None})
-            self.record({"breakpoint_audit": {"phase": label, "points": points}})
+    def observed_breakpoint(self, event, address, original, label, row, thread, ctx):
+        original_breakpoint(self, event, address, original, label, row, thread, ctx)
+        if label == "BeforeCbuf":
+            try:
+                pointer, capacity, length = struct.unpack("<3I", self.process.read(0x76595A4, 12))
+                text = self.process.read(pointer, length).decode("ascii", "replace") if length else ""
+                snapshot = {"address": hex(address), "label": label,
+                            "pointer": hex(pointer), "capacity": capacity,
+                            "length": length, "text": text}
+                eax = row.get("registers", {}).get("eax")
+                if eax:
+                    try:
+                        snapshot["eax"] = eax
+                        snapshot["eax_string"] = self.process.cstring(int(eax, 0))
+                    except (OSError, ValueError) as error:
+                        snapshot["eax_string_error"] = str(error)
+                self.record({"cbuf_snapshot": snapshot})
+            except (OSError, ValueError, struct.error) as error:
+                self.record({"cbuf_snapshot_error": str(error)})
+        if not audit_breakpoints:
+            return
+        if label not in ("CRT entry", "Local navigation resource", "Switch to main menu"):
+            return
+        points = []
+        for value in self.args.breakpoint:
+            point, name = value.split(":", 1)
+            target = int(point, 0)
+            armed = self.debug.breaks.get(target)
+            actual = self.process.read(target, 1).hex()
+            points.append({"address": hex(target), "label": name,
+                           "registered": armed is not None,
+                           "armed_byte": actual == "cc",
+                           "actual_byte": actual,
+                           "saved_original": armed[0].hex() if armed else None})
+        self.record({"breakpoint_audit": {"phase": label, "points": points}})
 
-        bridge_mod.GameSessionBridge.breakpoint = audited_breakpoint
+    bridge_mod.GameSessionBridge.breakpoint = observed_breakpoint
     if MAP_PROBE and MAP_COMMAND_MODE == "queue":
         menu_queue_mod.COMMAND = ("\nswitchtomainmenu\ndevmap " + MAP_PROBE + "\n").encode("ascii")
         print("[patched] map probe queued after main-menu transition:", MAP_PROBE, flush=True)

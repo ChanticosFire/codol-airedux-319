@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "method": "Capstone disassembly at the string immediate and at operand-1",
+  "sites": [
+    {
+      "name": "GFx SetReadyState dispatch",
+      "instruction_start": "0x7d0a42",
+      "bad_operand_address": "0x7d0a43",
+      "string_va": "0xddd504",
+      "string": "SetReadyState",
+      "instruction_start_bytes": "6804d5dd00",
+      "instruction_start_text": "push 0xddd504",
+      "expected_bytes": "6804d5dd00",
+      "start_is_push_of_string": true,
+      "operand_address_bytes": "04d5",
+      "operand_address_text": "add al, 0xd5",
+      "operand_address_is_instruction_start": false
+    },
+    {
+      "name": "GFx StartMatch dispatch",
+      "instruction_start": "0x7d08c2",
+      "bad_operand_address": "0x7d08c3",
+      "string_va": "0xddd4e4",
+      "string": "StartMatch",
+      "instruction_start_bytes": "68e4d4dd00",
+      "instruction_start_text": "push 0xddd4e4",
+      "expected_bytes": "68e4d4dd00",
+      "start_is_push_of_string": true,
+      "operand_address_bytes": "e4d4",
+      "operand_address_text": "in al, 0xd4",
+      "operand_address_is_instruction_start": false
+    }
+  ],
+  "conclusion": "0x7D0A43 and 0x7D08C3 are immediate operand bytes, not instruction starts. The prior room probes armed those bytes, so their zero hits cannot rule out the SetReadyState/StartMatch dispatches. Breakpoints must use 0x7D0A42 and 0x7D08C2. The cppSetMemberReadyState site at 0x7CB572 was already a correct instruction start and its zero hit still stands."
+}

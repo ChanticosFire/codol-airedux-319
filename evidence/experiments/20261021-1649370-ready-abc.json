@@ -1,0 +1,372 @@
+{
+  "schema": 1,
+  "movie_sha256": "314c4abd6936b02955e2f31f781b20ac119ea9878f83698d1a1d6f106558c31c",
+  "doabc_tag_offset": "0x4d45df",
+  "doabc_name": "codo/controllers/LobbyController",
+  "doabc_flags": 1,
+  "abc_version": {
+    "minor": 16,
+    "major": 46
+  },
+  "abc_counts": {
+    "strings": 1002,
+    "multinames": 658,
+    "methods": 106,
+    "bodies": 106
+  },
+  "focus_methods": [
+    {
+      "method_index": 29,
+      "name": "codo.controllers:LobbyController/cppSetMemberReadyState",
+      "method": {
+        "name": 400,
+        "flags": 128,
+        "return_type": 119,
+        "params": [
+          139,
+          137
+        ]
+      },
+      "body": {
+        "code_offset": 30666,
+        "max_stack": 6,
+        "local_count": 7,
+        "init_scope": 6,
+        "max_scope": 7,
+        "exceptions": [],
+        "traits": [],
+        "code_hex": "f103f08f05d03024006306ef01b702008f05ef01f902018f05ef01e202029305ef01fa0203ab05ef01970104ac05f09305d0d146180180f701d7f09405d37612060100f09605d3d2619e02f098055d9f025d0a660a66a002d35601469f02027612c10000f09a05d0d268a102f09b05d0660266a202d2619e02f09c05d0660266a20266a30212630000f09e05d0660266a202d296762a76120c000029d0660266a20266a402967661a502f09f05d0660266a202d296762a76120c000029d0660266a20266a602967661a702f0a005d0660266a202d296762a76120c000029d0660266a20266a802967661a902f0a205d0660266a20266aa02120e0000f0a405d0660266a202d29661ab02f0a605d02768f101f0a7055def015d33663366ac02d246ef010229f0a9055def015d33663366ad022ccb02d36683022cfe02d0660266a202550246ef010229f0ab0526766304f0ac052400736305104f000009f0ae05d066036205667f66ae029612330000f0b005d0660266a20266af022661b002f0b1055def015d33663366b102d0660246ef010229f0b20527766304f0b30510150000f0ac056205c07363056205d0660366840115a5fffff0b6056204127d0000ef018d0305ba05f0b805d046460029f0ba052400736306f0bb052400736305102d000009f0bd05d066036205667f66b2025d840266840266850213090000f0bf056206c0736306f0bb056205c07363056205d0660366840115c7fffff0c3056206d0660266b3020f120000f0c5055def015d33663366b40246ef010129f0c90547",
+        "code_sha256": "d6af2522845c4a186fcc1801c83372c990caf304b2209917903179cbcc94a968"
+      }
+    },
+    {
+      "method_index": 37,
+      "name": "codo.controllers:LobbyController/private:onChangeReadyStateHandle",
+      "method": {
+        "name": 427,
+        "flags": 128,
+        "return_type": 119,
+        "params": [
+          238
+        ]
+      },
+      "body": {
+        "code_offset": 31731,
+        "max_stack": 6,
+        "local_count": 3,
+        "init_scope": 6,
+        "max_scope": 7,
+        "exceptions": [],
+        "traits": [],
+        "code_hex": "f103f08c06d030ef019d02008c06ef01a603019506f08e06d046c202009612040000f08f0647f09106d066f10112040000f0920647f09306d02668f101f09506d0460c009676d6f09606d212770000f09806d0460e00121e0000f09a06d0660266a202d0660266c30296762a761204000029d2967661ab02f09c06d0660266a2022761a502f09d06d0660266a2022761a702f09e06d0660266a2022761a902f09f065def015d33663366ad022ccb02d066c4026683022cfe02d0660266a202550246ef010229f0a1065dbe0266be02d246c5020129f0a20647",
+        "code_sha256": "eac7a06b73c4b5fc4de53f0c2b5ec62bfa4902bef13587f720a4497367e83f5a"
+      },
+      "decoded_code": {
+        "instruction_count": 95,
+        "decoded_bytes": 217,
+        "calls": [
+          {
+            "pc": "0x19",
+            "opcode": "0x46",
+            "multiname_index": 322,
+            "name": "isRoomInfoReady",
+            "argument_count": 0
+          },
+          {
+            "pc": "0x41",
+            "opcode": "0x46",
+            "multiname_index": 12,
+            "name": "isReady",
+            "argument_count": 0
+          },
+          {
+            "pc": "0x53",
+            "opcode": "0x46",
+            "multiname_index": 14,
+            "name": "isRoomHost",
+            "argument_count": 0
+          },
+          {
+            "pc": "0xc1",
+            "opcode": "0x46",
+            "multiname_index": 239,
+            "name": "broadcast",
+            "argument_count": 2
+          },
+          {
+            "pc": "0xd0",
+            "opcode": "0x46",
+            "multiname_index": 325,
+            "name": "SetReadyState",
+            "argument_count": 1
+          }
+        ],
+        "properties": [
+          {
+            "pc": "0x2a",
+            "opcode": "0x66",
+            "multiname_index": 241,
+            "name": "_requestChangeReadyState"
+          },
+          {
+            "pc": "0x3a",
+            "opcode": "0x68",
+            "multiname_index": 241,
+            "name": "_requestChangeReadyState"
+          },
+          {
+            "pc": "0x5e",
+            "opcode": "0x66",
+            "multiname_index": 2,
+            "name": "_roomObj"
+          },
+          {
+            "pc": "0x60",
+            "opcode": "0x66",
+            "multiname_index": 290,
+            "name": "forces"
+          },
+          {
+            "pc": "0x64",
+            "opcode": "0x66",
+            "multiname_index": 2,
+            "name": "_roomObj"
+          },
+          {
+            "pc": "0x66",
+            "opcode": "0x66",
+            "multiname_index": 323,
+            "name": "isPlayList"
+          },
+          {
+            "pc": "0x75",
+            "opcode": "0x61",
+            "multiname_index": 299,
+            "name": "enableChangeMapBtn"
+          },
+          {
+            "pc": "0x7c",
+            "opcode": "0x66",
+            "multiname_index": 2,
+            "name": "_roomObj"
+          },
+          {
+            "pc": "0x7e",
+            "opcode": "0x66",
+            "multiname_index": 290,
+            "name": "forces"
+          },
+          {
+            "pc": "0x82",
+            "opcode": "0x61",
+            "multiname_index": 293,
+            "name": "enableChangeForce0"
+          },
+          {
+            "pc": "0x89",
+            "opcode": "0x66",
+            "multiname_index": 2,
+            "name": "_roomObj"
+          },
+          {
+            "pc": "0x8b",
+            "opcode": "0x66",
+            "multiname_index": 290,
+            "name": "forces"
+          },
+          {
+            "pc": "0x8f",
+            "opcode": "0x61",
+            "multiname_index": 295,
+            "name": "enableChangeForce1"
+          },
+          {
+            "pc": "0x96",
+            "opcode": "0x66",
+            "multiname_index": 2,
+            "name": "_roomObj"
+          },
+          {
+            "pc": "0x98",
+            "opcode": "0x66",
+            "multiname_index": 290,
+            "name": "forces"
+          },
+          {
+            "pc": "0x9c",
+            "opcode": "0x61",
+            "multiname_index": 297,
+            "name": "enableChangeForce2"
+          },
+          {
+            "pc": "0xa2",
+            "opcode": "0x5d",
+            "multiname_index": 239,
+            "name": "broadcast"
+          },
+          {
+            "pc": "0xa5",
+            "opcode": "0x5d",
+            "multiname_index": 51,
+            "name": "BCEvent"
+          },
+          {
+            "pc": "0xa7",
+            "opcode": "0x66",
+            "multiname_index": 51,
+            "name": "BCEvent"
+          },
+          {
+            "pc": "0xa9",
+            "opcode": "0x66",
+            "multiname_index": 301,
+            "name": "ROOM_STATE_CHANGED"
+          },
+          {
+            "pc": "0xb0",
+            "opcode": "0x66",
+            "multiname_index": 324,
+            "name": "me"
+          },
+          {
+            "pc": "0xb3",
+            "opcode": "0x66",
+            "multiname_index": 259,
+            "name": "team"
+          },
+          {
+            "pc": "0xba",
+            "opcode": "0x66",
+            "multiname_index": 2,
+            "name": "_roomObj"
+          },
+          {
+            "pc": "0xbc",
+            "opcode": "0x66",
+            "multiname_index": 290,
+            "name": "forces"
+          },
+          {
+            "pc": "0xc9",
+            "opcode": "0x5d",
+            "multiname_index": 318,
+            "name": "CFunctionContainer"
+          },
+          {
+            "pc": "0xcc",
+            "opcode": "0x66",
+            "multiname_index": 318,
+            "name": "CFunctionContainer"
+          }
+        ]
+      }
+    },
+    {
+      "method_index": 38,
+      "name": "codo.controllers:LobbyController/private:isReady",
+      "method": {
+        "name": 429,
+        "flags": 0,
+        "return_type": 137,
+        "params": []
+      },
+      "body": {
+        "code_offset": 31957,
+        "max_stack": 2,
+        "local_count": 1,
+        "init_scope": 6,
+        "max_scope": 7,
+        "exceptions": [],
+        "traits": [],
+        "code_hex": "f103f0a406d030f0a6065d89015dbe0266be0246c602004689010148",
+        "code_sha256": "c796145cc22f4e80a1731d54d8473bfa67640ccb092a642e882555db58fffa83"
+      }
+    }
+  ],
+  "named_multinames": {
+    "325": {
+      "kind": 7,
+      "namespace": 6,
+      "name": 426,
+      "string": "SetReadyState"
+    },
+    "648": {
+      "kind": 7,
+      "namespace": 6,
+      "name": 914,
+      "string": "cppSetMemberReadyState"
+    }
+  },
+  "function_container": {
+    "doabc_tag_offset": "0x32b7b6",
+    "doabc_name": "codo/common/CFunctionContainer",
+    "matching_traits": [
+      {
+        "name": 188,
+        "kind": 0,
+        "slot_id": 193,
+        "type_name": 488,
+        "value_index": 0,
+        "metadata": [
+          192
+        ],
+        "string": "StartMatch",
+        "scope": "class",
+        "type_string": "Function"
+      },
+      {
+        "name": 189,
+        "kind": 0,
+        "slot_id": 194,
+        "type_name": 488,
+        "value_index": 0,
+        "metadata": [
+          193
+        ],
+        "string": "StartMatchCountDown",
+        "scope": "class",
+        "type_string": "Function"
+      },
+      {
+        "name": 190,
+        "kind": 0,
+        "slot_id": 195,
+        "type_name": 488,
+        "value_index": 0,
+        "metadata": [
+          194
+        ],
+        "string": "SetReadyState",
+        "scope": "class",
+        "type_string": "Function"
+      },
+      {
+        "name": 191,
+        "kind": 0,
+        "slot_id": 196,
+        "type_name": 488,
+        "value_index": 0,
+        "metadata": [
+          195
+        ],
+        "string": "GetReadyState",
+        "scope": "class",
+        "type_string": "Function"
+      }
+    ],
+    "ready_assignment": {
+      "class_init_method": 0,
+      "class_init_bytes_decoded": 6624,
+      "assignment_count": 446,
+      "pc": "0x9be",
+      "property_index": 190,
+      "method_index": 190,
+      "function_body": {
+        "code_hex": "ef01b404009502f1c803f0950247",
+        "code_sha256": "84c40072d2306c931d40cfc10ee6da264dad3e3d6f92687e0ccfd676f5075351",
+        "code_length": 14
+      }
+    }
+  },
+  "limit": "Ready handler instruction boundaries and callproperty operands decoded statically; event dispatch and native execution remain unverified."
+}
