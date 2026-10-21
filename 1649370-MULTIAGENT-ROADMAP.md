@@ -168,3 +168,7 @@ Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add e
 ## 2026-10-21 G2 2697 完整 admission 握手打通（本轮）
 
 裸 UDP 先 `getchallenge` 得 `challengeResponse 575562493`；`connect` 的 `name` 必须是 UTF-16LE hex（`player`→`50006c006100790065007200`），2697 返回 `connectResponse \mapname\mp_cross_fire\gametype\war\sv_maxclients\12\protocol\1\shortversion\1.1.1.13`。服务端 admission 文本格式已还原。下一步在客户端持久 socket 跑完整握手并喂给客户端。证据 `evidence/experiments/20261021-1649370-connect-response.json`。
+
+## 2026-10-21 G2 2697 完整握手工具化（本轮）
+
+`tools/probe_2697_connect.py` 完成 `getchallenge → connect`（name=UTF-16LE hex），2697 返回 `connectResponse \mapname\mp_cross_fire\gametype\war\sv_maxclients\12\protocol\1\shortversion\1.1.1.13`，证据 `ok:true`。服务端 admission 文本格式可复跑；剩余是客户端持久 socket + 应答注入。证据 `evidence/experiments/20261021-1649370-connect-probe.json`。
