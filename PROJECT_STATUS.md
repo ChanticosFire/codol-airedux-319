@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 gamestate 注入后进入 challenge（2026-10-21）**：环注入 3428 字节 gamestate（state 1→3，channel 0x9D，cursor 1）后约 20 秒客户端弹 `EXE_CLIENTFAILEDTOCHALLENGE`，证明它已消费 gamestate 并推进到 challenge；该次无服务端。下一步带 2697 服务端 + loopback guard 注入，观察 challenge 与 `mp_cross_fire` 加载。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-gamestate-injected.json`。
+
 > **1649370 G2 gamestate 已捕获并解码（2026-10-21）**：stats 后发 `seq=1 + clc_move + cmdCount=1 + 零`，服务端 `SV_SendClientGameState()`，`CS_CONNECTED→CS_PRIMED`；收到 3 个分片（seq 7，3428 字节），解码出 `00 00 00 00 03 00 00 00 00 mp_cross_fire ... \g_gametype\war\mapname\mp_cross_fire\2485\12\`。工具 `tools/reassemble_2697_gamestate.py`。下一步把 gamestate/快照喂进客户端环/解析器。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-gamestate-captured.json`。
 
 > **1649370 G2 stats 后首包未触发 gamestate（2026-10-21）**：stats 完成后发 `seq=1 + clc_clientCommand(2) + userinfo...`，服务端保持 `CS_CONNECTED`，无 `CS_PRIMED`/gamestate，仍回 statResponse + 9 字节快照。下一步改试 `clc_move`/usercmd 首包或 OOB userinfo，并检查 SV_PacketEvent 状态门槛。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-stats-first-command.json`。

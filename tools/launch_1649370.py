@@ -91,6 +91,7 @@ TRANSPORT_CONNECT = False
 RING_PROBE = False
 HOOK_LOOPBACK = False
 INJECT_CHALLENGE = False
+GAMESTATE_PATH = None
 CALL_CHALLENGE_PARSER = False
 INIT_TRANSPORT = False
 CALL_CHALLENGE_BRANCH = False
@@ -1154,7 +1155,7 @@ def _inject_challenge_response(session) -> None:
     k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
     k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
     output = session.run_dir / "challenge-inject.json"
-    payload = b"challengeResponse -486178985\x00"
+    payload = Path(GAMESTATE_PATH).read_bytes() if GAMESTATE_PATH else b"challengeResponse -486178985\x00"
     result = {"started": time.time(), "payload": payload.hex(), "status": "waiting"}
     handle = k32.OpenProcess(0x0438, False, session.info.pid)
     if not handle:
@@ -2023,7 +2024,7 @@ def patched_start(self, exe, settings_session) -> None:
     if RING_PROBE:
         threading.Thread(target=_ring_probe_injector, args=(self,),
                          name="ring-probe", daemon=True).start()
-    if INJECT_CHALLENGE:
+    if INJECT_CHALLENGE or GAMESTATE_PATH:
         threading.Thread(target=_inject_challenge_response, args=(self,),
                          name="inject-challenge", daemon=True).start()
     if CALL_CHALLENGE_PARSER:
@@ -2149,7 +2150,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -2212,6 +2213,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="在 0x6750A0 安装持久 cave hook（实验性，可能崩溃）")
     parser.add_argument("--inject-challenge", action="store_true",
                         help="向 loopback 接收环注入 challengeResponse")
+    parser.add_argument("--inject-gamestate",
+                        help="把解码后的 gamestate 二进制注入 loopback 接收环")
     parser.add_argument("--call-challenge-parser", action="store_true",
                         help="主线程直接调用 0x5C0FD0 解析 challengeResponse")
     parser.add_argument("--init-transport", action="store_true",
@@ -2234,6 +2237,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     RING_PROBE = known.ring_probe
     HOOK_LOOPBACK = known.hook_loopback
     INJECT_CHALLENGE = known.inject_challenge
+    GAMESTATE_PATH = known.inject_gamestate
     CALL_CHALLENGE_PARSER = known.call_challenge_parser
     INIT_TRANSPORT = known.init_transport
     CALL_CHALLENGE_BRANCH = known.call_challenge_branch

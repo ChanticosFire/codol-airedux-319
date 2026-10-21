@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "feed the captured 2697 gamestate into the client loopback ring and observe the client reaction",
+  "run": "codex-1649370-gamestate-ring-20261021",
+  "injection": {
+    "tool": "tools/launch_1649370.py --ring-probe --ring-type 4 --inject-gamestate runs/2697-gamestate-packets/gamestate-final.bin",
+    "payload_length": 3428,
+    "slot": "0x786dbc0",
+    "state_before": 1,
+    "state_after": 3,
+    "channel_after": "0x9D",
+    "read_cursor": 1,
+    "write_cursor": 1
+  },
+  "client_reaction": {
+    "screen": "black for ~20 s",
+    "dialog": "EXE_CLIENTFAILEDTOCHALLENGE",
+    "meaning": "the client consumed the injected gamestate and advanced far enough to attempt a challenge/connection; the challenge failed because no 2697 server was running for this run"
+  },
+  "next": [
+    "run the same injection with the 2697 server + loopback guard active",
+    "capture whether the challenge succeeds and the client loads mp_cross_fire",
+    "if the client sends its own getchallenge, answer it from the 2697 server or the ring bridge"
+  ],
+  "cleanup": "Client/guard terminated; no WFP residue."
+}
