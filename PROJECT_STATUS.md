@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 0xC73900 带 0x88 结构、0xBA4080 调用栈不匹配（2026-10-21）**：`0xC73900` 读 [ebp+8] 0x88 结构并 ret 0x88，但 `0xBA4080` 调用处无参数，静态栈不平衡。下一步运行期读 `0xBA4080` 返回值和实际栈参数。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 客户端有 UDP socket，conn 仍 c8=4（2026-10-21）**：loopback 放行启动后客户端绑定 0.0.0.0:58843/22011；conn 创建成功但 0xBA4080/0xBA0980/0xBA3100 后 c8 仍 4，服务端无 getchallenge。失败在状态机/地址校验。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-conn-udp-sockets.json`。
 
 > **1649370 0xBA32A0 是事件回调，不是发送（2026-10-21）**：它操作 conn+0x100/0x110 定时器，调用 conn+0xCC vtable，并可能调 0xBA3100；无 sendto。真正发送候选 0xBA0980 / 0xBA3100。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

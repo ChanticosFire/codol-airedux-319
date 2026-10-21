@@ -386,3 +386,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 客户端确实有 UDP socket，conn 仍卡 c8=4
 
 用 `--loopback-guard --loopback-port 28969` 启动后，`Get-NetUDPEndpoint -OwningProcess` 显示客户端绑定了 `0.0.0.0:58843` 和 `0.0.0.0:22011`，证明网络栈存在。`0xB82070` 创建的 conn（`0x2462BB98`，vtable `0xD5A4F4`）调 `0xBA4080`/`0xBA0980`/`0xBA3100` 后 `c8` 仍为 4，服务端没收到 getchallenge。说明失败在 conn 状态机/地址校验内部，不是“没有 socket”。下一步：读 `0xBA4080`/`0xC73900` 的返回值/错误码，或直接走 `0xBA3420`/`0xBA32A0` 分支，或用客户端现有 socket 发原始 getchallenge 单独验证服务端路径。
+
+## 2026-10-21 0xC73900 是带 0x88 结构的查询函数，0xBA4080 调它时栈不匹配
+
+反汇编 `0xC73900` 显示它读 `[ebp+8]` 的 0x88 结构、调 `0xC76920`、`ret 0x88`；但 `0xBA4080` 在 `0xBA4114` 只 `lea ecx,[ebx+0xC4]; call 0xC73900`，没有压 0x88 参数，静态反汇编看起来栈不平衡。可能是不同重载/中间跳板，或反汇编起点落在函数中部。下一步必须在运行期用 cave 调 `0xBA4080` 并读返回值（al）与 `0xC73900` 的实际栈参数，别再只靠静态推测。
