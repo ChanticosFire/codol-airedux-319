@@ -60,7 +60,7 @@ def main() -> int:
     code = bytearray()
     code += b"\x68" + struct.pack("<I", frm)     # from
     code += b"\x6a\x00"                          # flags
-    code += b"\x68" + struct.pack("<I", n)       # context
+    code += b"\x68" + struct.pack("<I", c)       # context = conn
     code += b"\xb9" + struct.pack("<I", obj)
     call_pos = len(code)
     code += b"\xe8\x00\x00\x00\x00"

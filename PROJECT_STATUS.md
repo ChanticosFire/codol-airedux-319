@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 0xC73FC0 只是收包/记录来源（2026-10-21）**：0xB753A0 仅写 context+0x84，不解析；调用不推进状态。需找 0x5C0FD0 的正常调用者/接收循环。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 找到收包+分发 0xC73FC0（2026-10-21）**：0xBB15E0 唯一调用者；用 fake transport+netobj context 收包成功但 c8 仍 1、无 connect。下一步试 context=conn/from=0/真实 transport。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 找到 recvfrom 包装 0xBB15E0（2026-10-21）**：IAT 0xCA851C，调用点 0xBB163C；只管收包不做解析。下一步找正常接收分发/parser 调用点。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
