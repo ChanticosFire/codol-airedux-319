@@ -466,3 +466,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 找到真正的 server-message parser 0x5C13A0
 
 `0x5C0FD0` 其实是错误处理器——`0x5C1AEC` 传给它的是静态串 `0xdbce80="EXE_SERVER_DISCONNECTED"`，所以冷调 `challengeResponse` 会触发断线/重置。真正的 parser 在 `0x5C13A0`：它构造消息、调 `0x768DC0`/`0x768EC0`，在 `0x5C1684` 比较 `0xDBFEE8="challengeResponse"`，命中后调 `0x5C1300` 解析。下一步：用正确的 netadr/消息参数调用 `0x5C13A0`（或它的正常调用者），而不是 `0x5C0FD0`。
+
+## 2026-10-21 冷调真正 parser 0x5C13A0 同样把 netobj/conn 清零
+
+用 `challengeResponse 6ad8d973` + 6 dword netadr + length 调 `0x5C13A0`，调用后 `[0x8269774]` 和 `conn` 又变 0，服务端无 connect。说明这个 parser 需要更完整的调用上下文/消息对象（`0x768DC0` 前置、正确的 length/netadr/字符串指针），不能靠猜栈参数冷调。下一步：找 `0x5C13A0` 的正常调用者（接收循环）并复刻其完整上下文，而不是继续冷调。

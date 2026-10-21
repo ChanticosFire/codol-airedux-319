@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 冷调真正 parser 0x5C13A0 也清零 netobj/conn（2026-10-21）**：challengeResponse+netadr+length 调用后网络对象归零，无 connect；需正常调用者/完整上下文。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 真正 server-message parser 0x5C13A0（2026-10-21）**：0x5C0FD0 是错误处理器（EXE_SERVER_DISCONNECTED），冷调 challengeResponse 触发断线；实际 parser 在 0x5C13A0，0x5C1684 比较 challengeResponse 后调 0x5C1300。下一步用正确参数调它。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 0xC73FC0 只是收包/记录来源（2026-10-21）**：0xB753A0 仅写 context+0x84，不解析；调用不推进状态。需找 0x5C0FD0 的正常调用者/接收循环。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
