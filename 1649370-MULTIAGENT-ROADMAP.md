@@ -486,3 +486,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 dispatcher arg0=netobj 仍不解析
 
 `0x5C1EE0(arg0=netobj, arg1=fake buffer obj, netadr)` 调用后 `netobj/conn` 未清零，但 `c8` 仍 1、服务端无 connect。结合 `arg0=0` 也无效，说明 `0x5C1EE0` 不是正确的消息入口，或 buffer 对象字段/前置 `0x66EFD0` 流对象仍缺。UDP 收发已通，但 challengeResponse 无法进入真实 parser；冷调 `0x5C13A0` 会清零网络，`0x5C1EE0` 不解析。下一步只能：完整复刻 `0x4F36C0`/`0x66EFD0` 的队列/流对象，或抓一次真实接收循环的 `ebx`/栈上下文。
+
+## 2026-10-21 逆向 0x66EFD0/0x4F36C0：确认是消息流/队列操作
+
+`0x66EFD0` 是 `MSG_ReadString`（从 `edi+0x1C` 起按字节读，遇到 `%`/`\n` 终止，最多 0x400，写到 eax），所以它要求 `edi` 是 `msg_t` 流对象（`+8/+0xC` buffer、`+0x14` 起始、`+0x18` 长度、`+0x1C` 读索引）。`0x4F36C0` 是队列 push（`esi` 队列计数器、`edi` 队列对象、参数 8/0xC）。`0x5C1EE0` 先 `MSG_ReadString` 得到首 token，再与 `0xDBFFA0`（`"R"`/命令头）比较：不等走 `0x5C20C8` 分支；两条分支都会调 `0x5C13A0`。说明构造 `msg_t` 对象本身是对的，但首 token/消息头（`R` 或 OOB 头）还没对上；下一步用真实 `R`/`\xff\xff\xff\xff` 头 + challengeResponse 构造流，再调 `0x5C1EE0`，并读两条分支的返回值。
