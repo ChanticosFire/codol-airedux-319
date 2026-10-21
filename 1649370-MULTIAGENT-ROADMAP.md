@@ -96,3 +96,7 @@
 | 5 | 集成 G1，再按 G2→G3→G4 顺序推进；每门槛通过后回归 G0 和网络守卫 | 协调 agent+E | 逐门槛证据、文档更新和本地提交 |
 
 路线的当前完成点是 **G0 已验证、G1 正在定位、G2–G4 未通过**。任何 agent 不得以静态线索或 UI 外观提前改变此状态。
+
+## 2026-10-21 G2 传输建链实测（本轮）
+
+实现 `--transport-connect`：主线程 cave 调 `0x621E50(adr,buf,len)` 建通道，再 `0x5C05F0` 发 getchallenge。实测 `0x621E50` 返回 -7，`[biz+0x18]=0`（`vt+0x20=0x8834A0` 读该字段），通道仍 0x9D，2697 服务端无包。`0xBB4E60` 清 0，`0xBB2C40` 在 `0xBB2D20` 置 1 但需先完成 `0xBB6FB0` 等子初始化；直接 poke 闸门会让客户端 `unhandled_exception`。下一步：用 `0xBAD810` 的参数调用 `0xBB2C40`，或走进程内 loopback 环桥（`0x6750A0` 写、`0x674F30`/`0x675140` 读）。证据 `evidence/experiments/20261021-1649370-transport-gate-crash.json`。

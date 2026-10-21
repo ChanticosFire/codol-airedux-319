@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "create a real transport channel for the connection path and test whether 0x621E50 makes the client send getchallenge",
+  "runs": [
+    {
+      "name": "codex-1649370-transport-20261021",
+      "status": "done",
+      "connection": "0x130C0104",
+      "adr": "0x130C0118",
+      "adr_before": "04000000 7f000001 7129 0000 00000000 00000000 9d000000",
+      "cave": "0x3F180000",
+      "result_eax": "0xFFFFFFF7",
+      "channel_after": "0x9D",
+      "state_after": 4,
+      "server_connection": "none",
+      "meaning": "0x621E50 returned -7 because the transport gate [biz+0x18] was 0; no channel was created"
+    },
+    {
+      "name": "codex-1649370-transport2-20261021",
+      "status": "injector_exception",
+      "host": "0x23DADC10",
+      "biz": "0x23DC6FE0",
+      "gate_before": 0,
+      "error": "UnboundLocalError: wrote used before assignment (tool bug, fixed)"
+    },
+    {
+      "name": "codex-1649370-transport3-20261021",
+      "status": "client_unhandled_exception",
+      "observation": "the injector wrote [biz+0x18]=1 and called 0x621E50; the client terminated before writing transport-connect.json, stop_reason=unhandled_exception",
+      "meaning": "poking the gate alone is not sufficient; the channel creation path depends on the rest of the 0xBB2C40 initialization and crashed"
+    }
+  ],
+  "runtime_layout": {
+    "host": "[0xE85C68], size 0x4D78, ctor 0xBAD1A0",
+    "biz": "[host+0x1F0], size 0x280, vtable 0xD5AFA4",
+    "biz_gate": "[biz+0x18], read by vt+0x20 = 0x8834A0",
+    "gate_zero_means": "transport not initialized; 0x621E50 returns -7 before creating a channel",
+    "gate_setter": "0xBB2C40 (biz vtable slot3) writes [biz+0x18]=1 at 0xBB2D20, but only after 0xBB6FB0 and the earlier sub-inits succeed"
+  },
+  "static_findings": {
+    "biz_ctor_0xBB4E60": "explicitly writes [biz+0x18]=0 at 0xBB4EB7",
+    "lobby_init_slot3_0xBB2C40": "checks +0x18==0, requires args [ebp+8] and [ebp+0xC], runs 0x7F5E40/0xC74510/0xBBD130/0xBB6FB0, then sets +0x18=1 and calls 0xBB2830",
+    "conclusion": "the gate is the real initialization switch, not a standalone boolean; poking it bypasses the objects that 0xBB5260/vt+0x2C uses"
+  },
+  "next": [
+    "call 0xBB2C40 with the same args 0xBAD810 uses (arg1=[host+0xC], arg2=the session/endpoint object) so it completes the real initialization before 0x621E50",
+    "or use the in-process loopback ring bridge (writer 0x6750A0, readers 0x674F30/0x675140) to forward getchallenge/connect to the real 2697 UDP server without creating a channel",
+    "do not poke [biz+0x18]=1 again; it crashes the client"
+  ],
+  "reference_3333": {
+    "runtime": "codol-offline-runtime.zip is a complete 3.3.3.3 local bot server/launcher with 11 bots, but its client hash is e3823fd6... (3.3.3.3), not the 1649370 hash 36997674...; it cannot be used directly",
+    "docs": "codol3333服务端开发文档 provides the full 3.3.3.3 P-224 handshake, DATA encryption, stats, heartbeat, native channel, gamestate and bot-room implementation as a protocol reference for a future 1649370 server"
+  },
+  "cleanup": "Client and 2.6.9.7 server terminated. tools/net_rollback.ps1 reported no guard/client processes, no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}

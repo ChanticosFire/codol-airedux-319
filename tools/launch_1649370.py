@@ -86,6 +86,7 @@ MAIN_CALL = None
 MAIN_CALL_ECX = None
 PREWRITES = []
 CONNECTION_ADR_PORT = None
+TRANSPORT_CONNECT = False
 LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
@@ -204,6 +205,165 @@ def _main_thread_call(session, handle, target: int, ecx_value=None) -> dict:
             "cave_code": code.hex(), "original_eip": hex(original_eip),
             "original_esp": hex(original_esp), "new_esp": hex(original_esp - 4),
             "ecx": hex(ecx) if ecx is not None else None}
+
+
+def _transport_connect_injector(session) -> None:
+    """主线程：先让 0x621E50 建传输通道，再调用 0x5C05F0 发 getchallenge。
+
+    这是 1649370 的离线连接缺口：StringToAdr("localhost") 把 adr+0x14 留成
+    0x9D（进程内 loopback 标记），连接路径从不经过 0x621E50 建真实通道，
+    于是 0x622040 查表越界返回 -7。这里在主线程暂停窗口直接调用通道创建器，
+    让它回填 adr+0x14=N，再让连接状态机用该通道发送。
+    """
+    k32 = C.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
+    k32.OpenProcess.restype = W.HANDLE
+    k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+    k32.SuspendThread.argtypes = [W.HANDLE]
+    k32.SuspendThread.restype = W.DWORD
+    k32.ResumeThread.argtypes = [W.HANDLE]
+    k32.ResumeThread.restype = W.DWORD
+    k32.VirtualAllocEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, W.DWORD]
+    k32.VirtualAllocEx.restype = C.c_void_p
+    k32.FlushInstructionCache.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t]
+    k32.FlushInstructionCache.restype = W.BOOL
+    k32.GetThreadContext.argtypes = [W.HANDLE, C.c_void_p]
+    k32.SetThreadContext.argtypes = [W.HANDLE, C.c_void_p]
+    wow64_get = getattr(k32, "Wow64GetThreadContext", k32.GetThreadContext)
+    wow64_set = getattr(k32, "Wow64SetThreadContext", k32.SetThreadContext)
+    wow64_get.argtypes = [W.HANDLE, C.c_void_p]
+    wow64_set.argtypes = [W.HANDLE, C.c_void_p]
+    output = session.run_dir / "transport-connect.json"
+    result = {"started": time.time(), "status": "waiting", "port": LOOPBACK_PORT}
+    handle = k32.OpenProcess(0x0438, False, session.info.pid)
+    if not handle:
+        result.update(status="open_process_failed", error=C.get_last_error())
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return
+
+    def read(va: int, count: int):
+        buffer = C.create_string_buffer(count)
+        got = C.c_size_t()
+        if not k32.ReadProcessMemory(handle, C.c_void_p(va), buffer, count, C.byref(got)) or got.value != count:
+            return None
+        return buffer.raw
+
+    def u32(va: int):
+        data = read(va, 4)
+        return struct.unpack("<I", data)[0] if data else None
+
+    def call_rel(target: int, at: int) -> bytes:
+        return b"\xe8" + struct.pack("<I", (target - (at + 5)) & 0xFFFFFFFF)
+
+    connection = 0
+    try:
+        deadline = time.monotonic() + 180
+        while time.monotonic() < deadline:
+            stage = u32(0xE59D20) or 0
+            encoded = u32(0x331C0C8) or 0
+            candidate = encoded ^ 0xD362501F
+            if stage >= 4 and 0x10000 <= candidate < 0x7FFF0000:
+                connection = candidate
+                break
+            time.sleep(0.5)
+        if not connection:
+            result.update(status="connection_not_ready")
+            return
+        if k32.SuspendThread(session.info.thread) == 0xFFFFFFFF:
+            result.update(status="suspend_failed", error=C.get_last_error())
+            return
+        try:
+            context_size, eip_offset, esp_offset, ecx_offset = 716, 184, 196, 172
+            storage = C.create_string_buffer(context_size + 16)
+            aligned = (C.addressof(storage) + 15) & ~15
+            C.memset(aligned, 0, context_size)
+            C.c_uint32.from_address(aligned).value = 0x00010001
+            if not wow64_get(session.info.thread, C.c_void_p(aligned)):
+                result.update(status="get_context_failed", error=C.get_last_error())
+                return
+            original_eip = C.c_uint32.from_address(aligned + eip_offset).value
+            original_esp = C.c_uint32.from_address(aligned + esp_offset).value
+            cave = int(k32.VirtualAllocEx(handle, None, 0x2000, 0x3000, 0x40))
+            if not cave:
+                result.update(status="alloc_failed", error=C.get_last_error())
+                return
+            adr = connection + 0x14
+            buf = cave + 0x100
+            result_slot = cave + 0x200
+            host = u32(0xE85C68) or 0
+            biz = (u32(host + 0x1F0) or 0) if host else 0
+            gate = (u32(biz + 0x18) or 0) if biz else 0
+            result["host"] = hex(host)
+            result["biz"] = hex(biz)
+            result["gate_before"] = gate
+            wrote = C.c_size_t()
+            if biz and gate != 1:
+                one = struct.pack("<I", 1)
+                if (not k32.WriteProcessMemory(handle, C.c_void_p(biz + 0x18),
+                                               C.create_string_buffer(one, 4), 4,
+                                               C.byref(wrote)) or wrote.value != 4):
+                    result.update(status="gate_write_failed", error=C.get_last_error())
+                    return
+                result["gate_after"] = u32(biz + 0x18)
+            adr_bytes = struct.pack("<I4sHHIII", 4, b"\x7f\x00\x00\x01",
+                                    socket.htons(LOOPBACK_PORT), 0, 0, 0, 0x9D)
+            wrote = C.c_size_t()
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(adr), C.create_string_buffer(adr_bytes, len(adr_bytes)),
+                                           len(adr_bytes), C.byref(wrote)) or wrote.value != len(adr_bytes)):
+                result.update(status="adr_write_failed", error=C.get_last_error())
+                return
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(buf), C.create_string_buffer(b"xx\0", 3), 3, C.byref(wrote))
+                    or wrote.value != 3):
+                result.update(status="buf_write_failed", error=C.get_last_error())
+                return
+            state = struct.pack("<I", 4)
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(0x76446B0), C.create_string_buffer(state, 4), 4,
+                                           C.byref(wrote)) or wrote.value != 4):
+                result.update(status="state_write_failed", error=C.get_last_error())
+                return
+            code = b"\x60\x6a\x02"
+            code += b"\x68" + struct.pack("<I", buf)
+            code += b"\x68" + struct.pack("<I", adr)
+            code += call_rel(0x621E50, cave + len(code))
+            code += b"\x83\xc4\x0c"
+            code += b"\xa3" + struct.pack("<I", result_slot)
+            code += b"\xb9" + struct.pack("<I", connection)
+            code += call_rel(0x5C05F0, cave + len(code))
+            code += b"\x61\xc3"
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                           len(code), C.byref(wrote)) or wrote.value != len(code)):
+                result.update(status="cave_write_failed", error=C.get_last_error())
+                return
+            k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+            if (not k32.WriteProcessMemory(handle, C.c_void_p(original_esp - 4),
+                                           C.create_string_buffer(struct.pack("<I", original_eip), 4), 4,
+                                           C.byref(wrote)) or wrote.value != 4):
+                result.update(status="return_write_failed", error=C.get_last_error())
+                return
+            C.c_uint32.from_address(aligned + esp_offset).value = original_esp - 4
+            C.c_uint32.from_address(aligned + eip_offset).value = cave
+            C.c_uint32.from_address(aligned + ecx_offset).value = connection
+            if not wow64_set(session.info.thread, C.c_void_p(aligned)):
+                result.update(status="set_context_failed", error=C.get_last_error())
+                return
+            result.update(status="armed", connection=hex(connection), adr=hex(adr),
+                          cave=hex(cave), code=code.hex(), original_eip=hex(original_eip),
+                          original_esp=hex(original_esp), adr_bytes=adr_bytes.hex())
+        finally:
+            k32.ResumeThread(session.info.thread)
+        time.sleep(8)
+        result["result_eax"] = hex(u32(result_slot) or 0)
+        result["channel_after"] = hex(u32(connection + 0x28) or 0)
+        result["state_after"] = u32(0x76446B0)
+        after = read(adr, 0x18)
+        result["adr_after"] = after.hex() if after else None
+        result["status"] = "done"
+    finally:
+        result["finished"] = time.time()
+        output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("[patched] transport connect:", json.dumps(result, ensure_ascii=False), flush=True)
+        k32.CloseHandle(handle)
 
 
 def _room_command_injector(session, command: str) -> None:
@@ -481,6 +641,9 @@ def patched_start(self, exe, settings_session) -> None:
     if ROOM_COMMAND:
         threading.Thread(target=_room_command_injector, args=(self, ROOM_COMMAND),
                          name="room-command", daemon=True).start()
+    if TRANSPORT_CONNECT:
+        threading.Thread(target=_transport_connect_injector, args=(self,),
+                         name="transport-connect", daemon=True).start()
 
 
 # 社区 DEPENDENCIES 只覆盖 DLL 与 CEF；原版根目录还有一批数据/配置文件没被复制。
@@ -586,7 +749,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -617,6 +780,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="在主线程暂停窗口写入固定内存；可重复")
     parser.add_argument("--connection-adr-port", type=int,
                         help="把解码后的 connection 对象 netadr_t 写成 127.0.0.1:<port>")
+    parser.add_argument("--transport-connect", action="store_true",
+                        help="主线程调用 0x621E50 建传输通道，再调用 0x5C05F0 发 getchallenge")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
@@ -628,6 +793,7 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     MAIN_CALL_ECX = known.main_call_ecx
     PREWRITES = known.prewrite
     CONNECTION_ADR_PORT = known.connection_adr_port
+    TRANSPORT_CONNECT = known.transport_connect
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 
