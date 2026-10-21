@@ -426,3 +426,7 @@ conn 创建后写 `c8=2`，依次调 `0xBA3100(conn)`、`0xBA0980(conn)`，两�
 ## 2026-10-21 客户端进程内 socket+0xBB1420 发送尝试导致客户端崩溃
 
 `tools/client_udp_send.py` 计划在目标进程内调 `ws2_32!socket(2,2,0)` 建 socket，再用 `0xBB1420` 发 getchallenge；但第一次远程 `socket` cave 执行后客户端直接退出，第二次 `VirtualAllocEx` 返回 NULL，未产生任何 UDP 包。说明远程线程里调 `socket` 的方式/地址/调用约定不对（或 WSA 上下文/线程安全），不是服务端问题。下一步改用 conn 已持有的 socket 字段（避免新建），或先定位 `ws2_32!socket` 在目标里的正确地址/调用方式。
+
+## 2026-10-21 找到 conn 的 socket 字段 conn+0xC4 并成功创建 0xCCC
+
+`0xC738D0` 只把 `[conn+0xC4]` 初始化为 `-1`；`0xC738E0` 是 socket 创建包装（`socket(AF_INET)` 后写回 `conn+0xC4`）。调用 `0xC738E0(conn+0xC4, 2)` 后 `conn+0xC4=0xCCC`（有效 SOCKET），`conn+0xC8` 仍 1/2。用该 socket 调 `0xBB1420` 发 getchallenge（host/network 序端口都试过）仍未在 28969 抓到包，说明 `0xBB1420` 的参数结构/返回值还有问题。下一步：捕获 `0xBB1420` 的 eax 和 `WSAGetLastError`，或直接调 `ws2_32!sendto` 用 socket 0xCCC 验证。

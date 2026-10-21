@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 conn socket 字段 0xC4 创建为 0xCCC（2026-10-21）**：0xC738E0 建 socket 并写回；用 0xBB1420 发 getchallenge 仍未到 28969，需捕获返回值/WSA 错误或直接 sendto。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 客户端进程内 socket+0xBB1420 尝试崩溃（2026-10-21）**：远程 socket cave 后客户端退出，未发 UDP 包；远程调 socket 方式/地址/调用约定不对。下一步用 conn 已持有 socket 字段。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 找到 sendto 包装 0xBB1420（2026-10-21）**：IAT 0xCA8518，调用点 0xBB1492；签名 socket/ip/port/buf/len。下一步用客户端 socket 调它发 getchallenge。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
