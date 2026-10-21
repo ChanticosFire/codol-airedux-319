@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 找到 WIN_NO_TCLS key（2026-10-21）**：localization.txt 有该 key，exe 字符串在 VA 0xDDDF80 但无绝对引用；下一步 hook MessageBox/本地化查表定位分支。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 TCLS Client.exe 单启 exit0 无子进程（2026-10-21）**：-src=tgp 也立即退出，配置无主机；下一步反查服务发现或 patch 客户端 TCLS 检查。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 全客户端退出根因是 TCLS 启动器检查（2026-10-21）**：对话框文本“请使用腾讯游戏登录器(TCLS文件夹内的Client.exe)启动游戏。”；真实 Client.exe 单启即退。下一步抓 Client.exe 参数/日志或 patch 检查。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
