@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "inspect the TCLS launcher requirement of the full 1649370 client",
+  "tcls": {
+    "client": "TCLS\\Client.exe",
+    "config": "TCLS\\config\\dirserver.xml",
+    "servers": ["tcls.qq.com", "123.151.176.103", "119.84.150.46", "183.61.224.121", "101.91.63.192"],
+    "ports": [8080, 5223, 10009],
+    "meaning": "TCLS is the Tencent login/launcher service; the full client waits for its pipe/handshake before creating a window"
+  },
+  "full_exe": {
+    "threads": 15,
+    "wait_reasons": ["EventPairLow", "ExecutionDelay"],
+    "windows": 0,
+    "meaning": "the full exe is blocked in the TCLS/launcher handshake before the game window exists"
+  },
+  "constraint_note": "Running the original TCLS/TGuard chain would likely load Tencent anti-cheat services/drivers, which the objective forbids; no offline TCLS token/config is present in the provided client.",
+  "next": [
+    "provide an offline TCLS token/launcher bypass, or",
+    "use the community offline exe with a compatible server/network object"
+  ],
+  "cleanup": "No TCLS/codoMP process remains; net_rollback passed."
+}

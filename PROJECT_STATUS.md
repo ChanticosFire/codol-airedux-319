@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 完整 exe 需要 TCLS 登录链（2026-10-21）**：`TCLS\config\dirserver.xml` 指向 tcls.qq.com 等腾讯登录服（8080/5223/10009）；完整 exe 15 线程停在 EventPairLow/ExecutionDelay、0 窗口，必须先拿 TCLS/launcher 握手。原始 TCLS/TGuard 链会加载反作弊服务/驱动，违反不加载驱动；当前离线副本无 token。需要离线 TCLS/launcher 绕过，或回社区 exe+兼容服务端。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-full-client-tcls.json`。
+
 > **1649370 完整 exe 卡 TCLS/启动握手、无窗口（2026-10-21）**：直接启动完整 exe 后 15 线程等待 `EventPairLow/ExecutionDelay`，枚举 PID 窗口（含隐藏）为 0，只显示 WOW64 基础模块；说明停在 TCLS/launcher/反作弊握手，非 `devmap`/地图问题。下一步走 TCLS 或模拟握手，并监控 ACE/TGuard 驱动。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-full-client-launch.json`。
 
 > **1649370 完整 exe 直接 +devmap 仍无窗口（2026-10-21）**：私有副本直接启动完整 exe + `+devmap mp_cross_fire`，进程存活但无窗口、只加载 WOW64 模块、Base.dll 未加载，说明等待 TCLS/启动链；包装层候选/补丁/依赖也失败。下一步走 TCLS 启动链并监控 ACE/TGuard 驱动，或补齐依赖后直接启动。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-full-client-launch.json`。

@@ -284,3 +284,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 完整 exe 卡在 TCLS/启动握手，无任何窗口（本轮）
 
 直接启动私有副本的 `codoMP_client_shipRetail.exe` 后，进程有 15 个线程，等待原因包含 `EventPairLow` 与 `ExecutionDelay`；枚举该 PID 的所有窗口（含隐藏）结果为 0 个窗口；`tasklist /M` 只显示 64 位/WOW64 基础模块。说明它停在创建窗口/加载 32 位游戏模块之前的 TCLS/launcher/反作弊握手，而不是 `+devmap` 或地图问题。下一步必须走 `TCLS\Client.exe` 或模拟 TCLS 管道/握手，并监控是否加载 ACE/TGuard 驱动。证据 `evidence/experiments/20261021-1649370-full-client-launch.json`。
+
+## 2026-10-21 完整 exe 需要 TCLS 登录链，当前离线副本无 token（本轮）
+
+`TCLS\config\dirserver.xml` 指向 `tcls.qq.com`、`123.151.176.103`、`119.84.150.46`、`183.61.224.121`、`101.91.63.192` 的 8080/5223/10009 端口；完整 `codoMP_client_shipRetail.exe` 的 15 个线程停在 `EventPairLow`/`ExecutionDelay`，0 个窗口，说明它必须先拿到 TCLS/launcher 的管道/握手才会创建游戏窗口。原始 TCLS/TGuard 链会加载腾讯反作弊服务/驱动，违反“不加载驱动”；当前离线客户端里没有 TCLS token/离线配置。下一步需要离线 TCLS/launcher 绕过，或回到社区离线 exe + 兼容服务端/网络对象。证据 `evidence/experiments/20261021-1649370-full-client-tcls.json`。
