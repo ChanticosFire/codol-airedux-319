@@ -70,6 +70,8 @@ def main() -> int:
     parser.add_argument("--session", help="offline run name used to recover the main-thread id")
     parser.add_argument("--pid", type=int, default=0)
     parser.add_argument("--timeout", type=float, default=60.0)
+    parser.add_argument("--no-room-wait", action="store_true",
+                        help="inject without waiting for a valid room (for example connect in the lobby)")
     args = parser.parse_args()
 
     pid = args.pid or find_pid()
@@ -101,15 +103,18 @@ def main() -> int:
     payload = payload_text.encode("ascii") + b"\0"
     deadline = time.monotonic() + args.timeout
     try:
-        while time.monotonic() < deadline:
+        if args.no_room_wait:
             room = u32(ROOM_POINTER)
-            if room and u32(room + 0x278) is not None and u32(room + 0x278) & 0xFF == 1:
-                break
-            time.sleep(0.2)
         else:
-            result["status"] = "room_not_ready"
-            print(json.dumps(result, ensure_ascii=False))
-            return 2
+            while time.monotonic() < deadline:
+                room = u32(ROOM_POINTER)
+                if room and u32(room + 0x278) is not None and u32(room + 0x278) & 0xFF == 1:
+                    break
+                time.sleep(0.2)
+            else:
+                result["status"] = "room_not_ready"
+                print(json.dumps(result, ensure_ascii=False))
+                return 2
         if k32.SuspendThread(thread) == 0xFFFFFFFF:
             result.update(status="suspend_failed", error=C.get_last_error())
             print(json.dumps(result, ensure_ascii=False))

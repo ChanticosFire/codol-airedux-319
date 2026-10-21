@@ -81,6 +81,8 @@ MAP_COMMAND_MODE = "startup"
 ROOM_COMMAND = None
 ROOM_COMMAND_TIMEOUT = 180
 PREFIX_CBUF = None
+LOOPBACK_GUARD = False
+LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
 MAP_PROBE_DIRS = {
     "mp_strike_sh": "runs/20261021-1649370-map",
     "mp_arkaden_sh": "runs/20261021-1649370-map-arkaden",
@@ -267,7 +269,8 @@ def patched_start(self, exe, settings_session) -> None:
     check(api(K, "GetProcessTimes", W.BOOL, PTR, *[PTR] * 4)(
         self.info.process, *(C.byref(t) for t in times)))
     self.log["creation_time"] = times[0].value
-    guard_path = self.guard_path
+    guard_path = LOOPBACK_GUARD_PATH if LOOPBACK_GUARD else self.guard_path
+    self.log["guard_mode"] = "loopback-udp-28969" if LOOPBACK_GUARD else "offline-deny-all"
     self.log["guard_sha256"] = hashlib.sha256(guard_path.read_bytes()).hexdigest()
     request = SHELLINFO()
     request.size = C.sizeof(request)
@@ -275,9 +278,14 @@ def patched_start(self, exe, settings_session) -> None:
     request.verb = "runas"
     request.file = str(guard_path)
     expected_bound = 0 if self.args.until_close else max(120, self.args.seconds + 60)
-    request.parameters = subprocess.list2cmdline([
-        str(self.run_dir), str(self.info.pid), str(exe),
-        str(times[0].value), str(expected_bound)])
+    guard_arguments = [str(self.run_dir), str(self.info.pid), str(exe)]
+    if LOOPBACK_GUARD:
+        # The 2.6.9.7 loopback guard takes run/pid/exe/[bound] and checks the
+        # exact image path itself; it permits only UDP 127.0.0.1:28969.
+        guard_arguments.append(str(expected_bound))
+    else:
+        guard_arguments.extend([str(times[0].value), str(expected_bound)])
+    request.parameters = subprocess.list2cmdline(guard_arguments)
     request.show = 0
     check(api(C.WinDLL("shell32", use_last_error=True), "ShellExecuteExW",
               W.BOOL, C.POINTER(SHELLINFO))(C.byref(request)))
@@ -296,7 +304,13 @@ def patched_start(self, exe, settings_session) -> None:
             if time.monotonic() >= deadline:
                 raise
             time.sleep(0.05)
-    if (ready.get("scope") != "offline-deny-all" or len(ready.get("filter_ids", [])) != 4
+    if LOOPBACK_GUARD:
+        if (ready.get("scope") != "udp-127.0.0.1:28969" or len(ready.get("filter_ids", [])) != 8
+                or not ready.get("job_kill_on_close") or ready.get("max_processes") != 1
+                or ready.get("child_pid") != self.info.pid
+                or not ready.get("dynamic") or ready.get("bound_seconds") != expected_bound):
+            raise ValueError("loopback WFP 守卫状态不符；客户端保持挂起")
+    elif (ready.get("scope") != "offline-deny-all" or len(ready.get("filter_ids", [])) != 4
             or not ready.get("job_kill_on_close") or ready.get("max_processes") != 1
             or ready.get("child_pid") != self.info.pid
             or int(ready.get("creation_filetime", -1)) != times[0].value
@@ -421,7 +435,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -439,11 +453,14 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="等本地房间有效后，在主线程暂停时把一条 ASCII 控制台命令写入原生命令缓冲")
     parser.add_argument("--prefix-cbuf",
                         help="在 BeforeCbuf 断点处给已生成的命令文本补一个前缀，例如 mmstart")
+    parser.add_argument("--loopback-guard", action="store_true",
+                        help="使用私有 2.6.9.7 loopback guard：仅允许该进程的 UDP 127.0.0.1:28969")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
     MAP_COMMAND_MODE = known.map_command_mode
     ROOM_COMMAND = known.room_command
     PREFIX_CBUF = known.prefix_cbuf
+    LOOPBACK_GUARD = known.loopback_guard
     if MAP_COMMAND_MODE != "startup" and not MAP_PROBE:
         parser.error("--map-command-mode queue requires --map-probe")
 

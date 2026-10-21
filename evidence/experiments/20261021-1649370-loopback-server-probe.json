@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "test a cross-version local match: 2.6.9.7 dedicated server plus the 1649370 client under a loopback-only WFP guard",
+  "reference_server": {
+    "image": "CODOL-2.6.9.7-Launcher/runtime/game/server2697/native/bin2697/codol_dedrun.exe",
+    "sha256": "1736926655100b53499ae75ea5bddd0741983c12c89cdb51d49aef8a0be03243",
+    "method": "private copy under 319/runs/2697-server-test, started with +set net_ip 127.0.0.1 +set net_port 28969 +map mp_cross_fire +wait",
+    "ready_evidence": [
+      "qconsole.log: Calculate referenced files checksums...",
+      "CoDOL 2697 publication rows=62 ... actual_client_crc=1",
+      "CoDOL bot: waypoint graph waypoints/mp_cross_fire_wp.csv loaded, 444 nodes",
+      "Get-NetUDPEndpoint: 127.0.0.1:28969 owned by codol_dedrun.exe"
+    ],
+    "map": "mp_cross_fire",
+    "bot_waypoints": 444
+  },
+  "loopback_guard": {
+    "private_copy": "319/tools/ref/client_loopback_guard.exe",
+    "sha256": "2d9f99da2195af30823999ad07e5740007dcd771fb8118eaca32366a7652505c",
+    "source": "CODOL-2.6.9.7-Launcher/runtime/game/server2697/client_loopback_guard.exe",
+    "scope": "udp-127.0.0.1:28969",
+    "filters": 8,
+    "dynamic": true,
+    "job_kill_on_close": true,
+    "max_processes": 1,
+    "wrapper_option": "--loopback-guard",
+    "ready_validation": "passed; the wrapper accepted the 8-filter dynamic session and resumed the client"
+  },
+  "client": {
+    "build": 1649370,
+    "run": "codex-1649370-loopback-connect-20261021",
+    "command_injected": "connect 127.0.0.1:28969",
+    "injection": {"status": "queued", "length_before": 0, "length_after": 25},
+    "observed_result": "The client stayed in the lobby. No UDP endpoint toward 127.0.0.1:28969 appeared. The 2.6.9.7 qconsole.log had no connection/challenge entry. No Com Error or fatal dialog appeared.",
+    "interpretation": "The loopback guard was no longer the blocker, but 'connect' is not a registered Cbuf command in the 1649370 client. The client's internal connect path (0x604260/0x605920 area) needs a direct main-thread call or an online-lobby/room trigger before any wire-level compatibility can be measured."
+  },
+  "conclusion": "A working 2.6.9.7 dedicated server with Bot waypoints and a loopback-only dynamic WFP guard are both available. The remaining blocker for the cross-version test is the 1649370 connect entry point, not the network guard. Next: reverse the internal connect function or drive the client through the online lobby path; do not inject the unregistered 'connect' command again.",
+  "cleanup": "The 1649370 client and the reference server were terminated. tools/net_rollback.ps1 reported no guard/client processes, no CODOL WFP filters, a firewall baseline match, and working DNS/loopback/ports."
+}
