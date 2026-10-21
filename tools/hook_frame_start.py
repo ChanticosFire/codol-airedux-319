@@ -68,6 +68,7 @@ def main() -> int:
     code += b"\x68" + struct.pack("<I", mapstr)      # push map
     call = len(code); code += b"\xe8\x00\x00\x00\x00"
     code += b"\x83\xc4\x0c"                          # add esp,0xc
+    code += b"\xa3" + struct.pack("<I", cave + 0x904)  # mov [result],eax
     skip = len(code)
     code[jne + 1] = skip - (jne + 2)
     struct.pack_into("<i", code, call + 1, 0x4F3890 - (cave + call + 5))
