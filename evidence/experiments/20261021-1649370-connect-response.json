@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "complete the 2697 getchallenge + connect admission handshake from a raw UDP client",
+  "challenge": {
+    "request": "\\xff\\xff\\xff\\xffgetchallenge 0 \"a731af49a6a2c7e2\"",
+    "response": "\\xff\\xff\\xff\\xffchallengeResponse 575562493\\x00"
+  },
+  "name_encoding": {
+    "field": "info key name",
+    "accepted": "50006c006100790065007200",
+    "meaning": "UTF-16LE hex of 'player'",
+    "rejected": ["player", "TestPlayer", "506c61796572", "%50%6c%61%79%65%72", "empty", "xor"]
+  },
+  "connect": {
+    "packet": "\\xff\\xff\\xff\\xffconnect a731af49a6a2c7e2 \"\\\\name\\\\50006c006100790065007200\\\\xuid\\\\a731af49a6a2c7e2\\\\challenge\\\\<cookie>\\\\natType\\\\1\\\\checksum\\\\0\\\\2490\\\\1649370\\\\statver\\\\1\"",
+    "response": "\\xff\\xff\\xff\\xffconnectResponse \\\\mapname\\\\mp_cross_fire\\\\gametype\\\\war\\\\sv_maxclients\\\\12\\\\protocol\\\\1\\\\shortversion\\\\1.1.1.13\\x00"
+  },
+  "meaning": "The 2697 server accepts the connect packet once the player name is hex-UTF-16LE encoded. The full admission response is now known, including map and gametype.",
+  "next": [
+    "run getchallenge + connect from a persistent socket inside the 1649370 client process",
+    "store both responses and feed them to the client connection state/ring",
+    "then continue with stats/heartbeat/native channel if the client enters the game"
+  ],
+  "cleanup": "2697 server terminated; no process/WFP residue."
+}

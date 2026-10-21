@@ -164,3 +164,7 @@ Winsock 是 `__stdcall`；去掉 cave 在 WSAStartup/socket/sendto 后的 `add e
 ## 2026-10-21 G2 客户端进程内真实 UDP 收发成功（本轮）
 
 远程线程 `WSAStartup+socket+sendto+recvfrom` 从客户端进程发 getchallenge（sendto=37），收 `challengeResponse 1179435301`（recv=33），来源 127.0.0.1:28969，源端口 53648；2697 日志确认。真实 Winsock 双向通道可用。环注入那次未写出 JSON，尚未证明。下一步持久 socket/同源端口 + 按真实 from-adr 注入。证据 `evidence/experiments/20261021-1649370-remote-udp-recv.json`。
+
+## 2026-10-21 G2 2697 完整 admission 握手打通（本轮）
+
+裸 UDP 先 `getchallenge` 得 `challengeResponse 575562493`；`connect` 的 `name` 必须是 UTF-16LE hex（`player`→`50006c006100790065007200`），2697 返回 `connectResponse \mapname\mp_cross_fire\gametype\war\sv_maxclients\12\protocol\1\shortversion\1.1.1.13`。服务端 admission 文本格式已还原。下一步在客户端持久 socket 跑完整握手并喂给客户端。证据 `evidence/experiments/20261021-1649370-connect-response.json`。

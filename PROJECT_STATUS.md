@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 2697 完整 admission 握手打通（2026-10-21）**：`getchallenge` 得 `challengeResponse 575562493`；`connect` 的 `name` 用 UTF-16LE hex（`player`→`50006c006100790065007200`）后，2697 返回 `connectResponse \mapname\mp_cross_fire\gametype\war\sv_maxclients\12\protocol\1\shortversion\1.1.1.13`。服务端 admission 文本格式已还原。下一步在客户端持久 socket 跑完整握手并喂给客户端。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-connect-response.json`。
+
 > **1649370 G2 客户端进程内真实 UDP 收发成功（2026-10-21）**：远程线程发 getchallenge（sendto=37），收 `challengeResponse 1179435301`（recv=33），来源 127.0.0.1:28969；2697 日志确认。真实 Winsock 双向通道可用；环注入那次未写出 JSON，尚未证明。下一步持久 socket/同源端口 + 按真实 from-adr 注入。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-remote-udp-recv.json`。
 
 > **1649370 G2 客户端进程内真实 UDP 发送成功（2026-10-21）**：`CreateRemoteThread` + `WSAStartup/socket/sendto` 从客户端进程发出 `getchallenge 0 "a731…"`，`sendto_return=37`，2697 日志出现 `SV packet 127.0.0.1:63053: getchallenge...`。证明真实 Winsock 通道可用；剩余是接收 challengeResponse 并注入客户端、保持同一 socket/源端口用于 connect。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-remote-udp-success.json`。
