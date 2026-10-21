@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "record the TP warning/URL raised after the synthetic TCLS hand-off",
+  "window": {
+    "class": "#32770",
+    "title": "警告码(3, 1045, 19002)",
+    "button": "确定"
+  },
+  "browser": {
+    "url": "https://gamesafe.qq.com/game_tips.shtml?a=3&b=1045&c=19002&game_id=52&reason_id=3",
+    "page": "腾讯游戏安全中心 / 安全学院 / 特殊弹窗",
+    "message": "查杀病毒和木马，重启机器后再试",
+    "error_code": 230
+  },
+  "meaning": "The synthetic TCLS mapping gets past the TCLS launch gate, but TP (game_id=52, reason_id=3) detects the environment and raises its own warning, then opens the gamesafe page in the browser. This is a TP anti-cheat block, not a TCLS/login failure.",
+  "decision": "Do not pursue a TP runtime bypass as the primary route. Reuse the community offline exe (which already excludes TP/TCLS) and continue the client network/map-load path.",
+  "cleanup": "The synthetic-TCLS launcher terminated its owned process; no codoMP/TCLS/TGuard process remains."
+}

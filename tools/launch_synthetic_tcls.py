@@ -353,17 +353,22 @@ def main() -> int:
     parser.add_argument("--extra-args", default="")
     parser.add_argument("--dismiss-dialogs", action="store_true",
                         help="click the first button of new #32770 dialogs (records the event)")
+    parser.add_argument("--allow-any", action="store_true",
+                        help="skip the owned-staged-copy and Build-anchor checks (private full-client experiments)")
     args = parser.parse_args()
 
     root = args.client_dir.resolve(strict=True)
-    staged = (REPO_ROOT / "runtime" / "client-1649370").resolve()
-    if root != staged:
-        print("refusing: client dir is not the owned staged copy", file=sys.stderr)
-        return 2
-    checks = verify_client(root)
-    if not all(check.ok for check in checks):
-        print("refusing: Build anchor mismatch " + json.dumps([c.__dict__ for c in checks]), file=sys.stderr)
-        return 2
+    if args.allow_any:
+        checks = []
+    else:
+        staged = (REPO_ROOT / "runtime" / "client-1649370").resolve()
+        if root != staged:
+            print("refusing: client dir is not the owned staged copy", file=sys.stderr)
+            return 2
+        checks = verify_client(root)
+        if not all(check.ok for check in checks):
+            print("refusing: Build anchor mismatch " + json.dumps([c.__dict__ for c in checks]), file=sys.stderr)
+            return 2
     evidence = args.evidence.resolve()
     evidence.parent.mkdir(parents=True, exist_ok=True)
 

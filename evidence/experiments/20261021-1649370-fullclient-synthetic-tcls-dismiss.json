@@ -1,0 +1,329 @@
+{
+  "build": 1649370,
+  "mode": "tgp-sign",
+  "root": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\full-client-private",
+  "command_line": "\"E:\\GAME\\COD\\codol-airedux\\319\\runs\\full-client-private\\codoMP_client_shipRetail.exe\" -src=tgp +set fs_basepath \"E:\\GAME\\COD\\codol-airedux\\319\\runs\\full-client-private\" +set fs_homepath \"E:\\GAME\\COD\\codol-airedux\\319\\runs\\full-client-private\"",
+  "anchors": [],
+  "started_utc": "2026-10-21T14:21:13Z",
+  "seconds": 20,
+  "mapping": {
+    "name": "TCLS_SHAREDMEMEMORY38760",
+    "view_size": 200,
+    "created": true,
+    "record_offset_field": 16,
+    "record_offset": 20,
+    "marker_offset": 24,
+    "marker_length": 30,
+    "marker_sha256": "11b7a0aaeeaca8362a08c6d8975b4b990f745d8ea98c3ffd307ecdb2051b4268",
+    "marker_hex": "434f444f4c3331394c41422d48414e444f46462d4d41524b45522d333042",
+    "layout_source": "1604220 reference; unverified on Build 1649370"
+  },
+  "events": [
+    {
+      "event": "created_suspended",
+      "pid": 38760,
+      "utc": "2026-10-21T14:21:13Z"
+    },
+    {
+      "event": "mapping_written",
+      "name": "TCLS_SHAREDMEMEMORY38760",
+      "view_size": 200,
+      "created": true,
+      "record_offset_field": 16,
+      "record_offset": 20,
+      "marker_offset": 24,
+      "marker_length": 30,
+      "marker_sha256": "11b7a0aaeeaca8362a08c6d8975b4b990f745d8ea98c3ffd307ecdb2051b4268",
+      "marker_hex": "434f444f4c3331394c41422d48414e444f46462d4d41524b45522d333042",
+      "layout_source": "1604220 reference; unverified on Build 1649370"
+    },
+    {
+      "event": "resumed",
+      "pid": 38760
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 1042,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 2052,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "dismissed_dialog",
+      "hwnd": 6492992,
+      "button": 8390912,
+      "title_hex": "beafb8e6c2eb28332c20313034352c20313930303229",
+      "pid": 38760
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 3067,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [
+        {
+          "pid": 38760,
+          "hwnd": 6492992,
+          "visible": false,
+          "children": [
+            {
+              "hwnd": 8390912,
+              "title_w": "确",
+              "title_a_hex": "c8b7b6a8",
+              "class": "Button",
+              "text_a_hex": "c8b7b6a8",
+              "visible": false
+            },
+            {
+              "hwnd": 15599668,
+              "title_w": "",
+              "title_a_hex": "",
+              "class": "Static",
+              "text_a_hex": "",
+              "visible": false
+            }
+          ],
+          "title_w": "警",
+          "title_a_hex": "beafb8e6c2eb28332c20313034352c20313930303229",
+          "class": "#32770"
+        },
+        {
+          "pid": 38760,
+          "hwnd": 11080678,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        },
+        {
+          "pid": 38760,
+          "hwnd": 5772260,
+          "visible": false,
+          "children": [],
+          "title_w": "M",
+          "title_a_hex": "4d53435446494d45205549",
+          "class": "MSCTFIME UI"
+        }
+      ],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 4083,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 5097,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 6108,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 7119,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 8133,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 9144,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 10156,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 11167,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 12178,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 13189,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 14201,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 15213,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 16223,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 17234,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 18244,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 19255,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 20265,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        38760
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "terminated_owned",
+      "pid": 38760
+    },
+    {
+      "event": "final",
+      "remaining_owned": [
+        38760
+      ],
+      "utc": "2026-10-21T14:21:33Z"
+    }
+  ],
+  "ended_utc": "2026-10-21T14:21:33Z"
+}

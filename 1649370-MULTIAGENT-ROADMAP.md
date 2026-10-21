@@ -288,3 +288,9 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 完整 exe 需要 TCLS 登录链，当前离线副本无 token（本轮）
 
 `TCLS\config\dirserver.xml` 指向 `tcls.qq.com`、`123.151.176.103`、`119.84.150.46`、`183.61.224.121`、`101.91.63.192` 的 8080/5223/10009 端口；完整 `codoMP_client_shipRetail.exe` 的 15 个线程停在 `EventPairLow`/`ExecutionDelay`，0 个窗口，说明它必须先拿到 TCLS/launcher 的管道/握手才会创建游戏窗口。原始 TCLS/TGuard 链会加载腾讯反作弊服务/驱动，违反“不加载驱动”；当前离线客户端里没有 TCLS token/离线配置。下一步需要离线 TCLS/launcher 绕过，或回到社区离线 exe + 兼容服务端/网络对象。证据 `evidence/experiments/20261021-1649370-full-client-tcls.json`。
+
+## 2026-10-21 TP 弹浏览器确认：合成 TCLS 只过启动门槛，TP 仍拦截
+
+合成 TCLS 后窗口 `警告码(3, 1045, 19002)` 的“确定”直接打开腾讯游戏安全中心：
+`https://gamesafe.qq.com/game_tips.shtml?a=3&b=1045&c=19002&game_id=52&reason_id=3`
+页面为“特殊弹窗：查杀病毒和木马，重启机器后再试”（错误码 230）。这证明 `a=3/b=1045/c=19002/game_id=52/reason_id=3` 是 TP 反作弊自己的告警，不是 TCLS 登录错误。TP 会检测环境并 shell-execute 浏览器，之后不创建游戏主窗口。决定：不把 TP 运行时绕过作为主路线；复用社区离线 exe（本身排除 TP/TCLS）继续做客户端网络/地图路径。证据 `evidence/experiments/20261021-1649370-tp-browser-warning.json`、`...fullclient-synthetic-tcls*.json`。
