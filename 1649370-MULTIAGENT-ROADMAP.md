@@ -454,3 +454,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 找到 recvfrom 包装 0xBB15E0
 
 `recvfrom` IAT 是 `0xCA851C`，调用点 `0xBB163C`；包装签名约 `[ebp+8]=socket, [ebp+0xC]=buf, [ebp+0x10]=len, [ebp+0x14]=flags, [ebp+0x18]=from`，返回读取字节数。它只做接收，不做协议解析。冷调 `0x5C0FD0` 已证明会清零 netobj/conn，所以下一步必须：用 `0xBB15E0` 收包后，找到真实接收分发/parser 调用点（谁在正常路径调用它并传上下文），而不是冷调 parser。
+
+## 2026-10-21 找到正常“收包+分发”函数 0xC73FC0
+
+`0xBB15E0`（recvfrom 包装）的唯一调用者是 `0xC7401E`，所在函数 `0xC73FC0` 先建 0x88 结构、用 `[this+4]` 作为 socket 收包，再 `0xB753A0(context, from, size)` 分发。用 fake transport（`[this+4]=socket`）+ `context=netobj` 调它：客户端成功收到 getchallenge 响应（服务端已回 cookie），但 `conn+0xC8` 仍 1，未发 connect。说明 `context`/`from`/`this` 的取值还不对。下一步：尝试 `context=conn`、`from=0` 或真实 transport 对象 `conn+0xCC`，并读 `0xC73FC0`/`0xB753A0` 返回值。
