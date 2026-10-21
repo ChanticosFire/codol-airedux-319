@@ -722,3 +722,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 全客户端重检：进程到 12 秒仍活，出现隐藏的 GbLoginClass 登录窗 + TCP 36.131.222.111:443，随后退出
 
 `launch_synthetic_tcls.py --mode tgp-sign --allow-any` 的 evidence 显示 `windows=[{class:"GbLoginClass", visible:false}, {class:"IME"}]`，无 CODO 游戏窗；sample 12.2s 后 `alive:false, exit_code:0`，owned pids 被终止。说明全客户端不是完全没窗口，而是停在登录/TP 前置窗（隐藏），之后退出。下一步把 `GbLoginClass` 显示出来并定位退出原因（TP 1045/19002 或登录），再决定 patch 点。
+
+## 2026-10-21 全客户端约 9 秒内静默退出，只有隐藏 GbLoginClass/IME，无 TCP
+
+第二次 TCLS 重检 evidence 的 sample 在 `elapsed_ms=9153` 时 `alive:false, exit_code:0`，窗口仍是隐藏的 GbLoginClass + IME，`tcp=[]`，没有 CODO 游戏窗。说明这次客户端在登录/TP 前置阶段就退出，没进入网络。下一步用 ETW/进程审计抓退出前的最后模块/线程，或从 GbLoginClass 的 WndProc/TP 初始化处 patch 退出分支；不再重复同参数启动。
