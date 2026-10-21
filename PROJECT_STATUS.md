@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 强置 c8=2 后调 0xBA32A0 仍回 c8=4（2026-10-21）**：conn+0xC8 写 2，调 0xBA32A0(1)，c8 变回 4、无 getchallenge。0xBA32A0 内部会重新判定/重置。下一步调 0xBA3100/0xBA0980 或跟踪 c8 写入者。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 NOP 0xBA4122 后 conn 仍 c8=4（2026-10-21）**：原 `75 27` jne 改成 `90 90`，conn 创建但 c8=4、无 getchallenge。0xBA4080 可能未走到该分支或更早返回。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/c73900-success-patch.json`。
 
 > **1649370 VEH guard 0xC73900 被拒 error 5（2026-10-21）**：VEH 注入成功，但代码页 `PAGE_GUARD` 设置 access denied，日志全 0。改用 DRx 执行断点或不破坏栈的 naked hook。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/c73900-veh.json`。

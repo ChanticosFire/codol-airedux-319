@@ -406,3 +406,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 NOP 掉 0xBA4122 的 jne 后 conn 仍 c8=4
 
 原字节是 `75 27`（jne 0xBA414B），patch 成 `90 90` 后重新创建 conn：`conn=0x2460C338`，vtable `0xD5A4F4`，但 `conn+0xC8` 仍为 4，服务端仍无 getchallenge。说明 `0xBA4122` 不是 `0xBA4080` 实际走到的分支，或 `0xBA4080` 在更早的 `0xBA9970`/`0xBA0760` 就返回/异常。下一步：在 `0xBA4080` 入口和 `0xBA4122` 上计数/断点，确认是否执行到；或 patch `0xBA4080` 内部直接置 `c8=2` 并 call `0xBA32A0`。
+
+## 2026-10-21 强置 c8=2 并调 0xBA32A0(1) 仍回到 c8=4
+
+conn 创建后手工写 `conn+0xC8=2`，再调成功分支 `0xBA32A0(conn, 1)`；调用后 `c8` 又变回 4，`conn+0x644=0`，服务端仍无 getchallenge。说明 `0xBA32A0` 内部会重新判定并走失败/重置路径，或它依赖 `conn+0xCC`/定时器状态。下一步：调 `0xBA3100`/`0xBA0980` 或对 `0xBA32A0`/`0xBA3420` 内部做状态跟踪，找真正把 c8 置 4 的指令。
