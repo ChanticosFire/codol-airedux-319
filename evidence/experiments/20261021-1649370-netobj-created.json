@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "create the offline client network object on demand and inspect it",
+  "method": "remote thread at 0x803830 (netobj getter/creator) while the community offline client is in the lobby",
+  "result": {
+    "netobj": "0x23E1A030 (non-null after the call)",
+    "fields": {
+      "vtable": "0x00D599DC",
+      "conn_0x4F4": "0",
+      "state_0x4F8": "0xBAADF000 (uninitialized)",
+      "field_0x1F0": "4",
+      "field_0x644": "0xBAADF00D (uninitialized)"
+    }
+  },
+  "meaning": "0x803830 is the missing netobj allocator: the community offline exe can create its network object when this function is called. It does not yet create a connection/socket; conn at +0x4F4 is still null, so the network/lobby initialization path is the next target.",
+  "next": [
+    "call 0x803780 (netobj lobby tick) and 0xB838A0/0xB7A670 with ecx=netobj",
+    "or set the connection fields and drive 0xB769A0 (lobby address parser) / 0xB83A52",
+    "then check for UDP sockets/getchallenge"
+  ],
+  "cleanup": "Client process was terminated after the probe; no service/driver changes."
+}

@@ -338,3 +338,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 最小服务端补齐 stats + gamestate 分片（本轮）
 
 `tools/mini_1649370_server.py` 现在对每个 `stats` 包回 `\xff\xff\xff\xffstatResponse`，并在收到 usermove 类包（首字节 1）后依次发送捕获的 2697 gamestate 分片 `[1172, 1172, 1114]`。`tools/probe_mini_gamestate.py` 实测：connectResponse 正常、3 个 statResponse、3 个分片长度正确。注意：这是服务端原型，分片仍是 2697 捕获帧；1649370 客户端还没有网络对象可接。证据 `evidence/experiments/20261021-1649370-mini-server-gamestate.json`。
+
+## 2026-10-21 找到并成功调用社区 exe 的 netobj 分配器 0x803830（本轮）
+
+静态分析发现 `0x803830` 先检查 `[0x8269774]`，为空则 `new(0x1618)` + 构造 + 写回；在社区离线客户端大厅用远程线程调用它，`[0x8269774]` 从 0 变为 `0x23E1A030`（非空），vtable `0x00D599DC`。但 `+0x4F4`（conn）仍为 0，`+0x4F8=0xBAADF000`（未初始化），说明只创建了对象，还没建立连接/套接字。下一步调用 `0x803780`/`0xB838A0`/`0xB7A670`（ecx=netobj）或填 `netobj+0x50/0x54` 后驱动 `0xB769A0`，目标是创建 conn/socket 并发 getchallenge。证据 `evidence/experiments/20261021-1649370-netobj-created.json`。
