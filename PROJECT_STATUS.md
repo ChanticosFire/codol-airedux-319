@@ -1,6 +1,7 @@
 # 阶段状态与证据
 
-> **1649370 G2 阻断结论：缺地图资产/房间后端（2026-10-21）**：Cbuf 注入 `devmap`/`map mp_strike_sh` 均执行，但黑屏后回大厅或留大厅；1649370 树无原生 `mp_*` fastfile，3.3.3.3 地图不被接受；离线客户端也无网络/房间对象。没有兼容地图或房间后端就无法开本地 bot 局。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-map-load-failure.json`。
+> **1649370 自检纠正：完整客户端在 `使命召唤OL`（2026-10-21）**：此前只搜了 `1649370` 和 `Original Client`，漏掉 `E:\GAME\COD\使命召唤OL`。该目录有 `IIPS\IIPSDownload\*.ifs` 地图包；已提取原生 v461 签名的 `mp_hardhat_sh.ff`（35.5MB，zone 76.5MB）并加入 `--map-probe mp_hardhat_sh`。Cbuf `devmap`/`map` 注入成功，但社区 exe 黑屏后回大厅，未进地图。下一步确认社区 exe 是否缺 listen-server/map-load，或改用完整客户端 exe。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-full-client-maps.json`。
+
 
 > **1649370 G2 主菜单 Cbuf 注入成功、地图加载失败（2026-10-21）**：`--cbuf-command` 在 stage 5 注入 `devmap mp_strike_sh`（0→22 字节），画面黑屏数秒后回大厅；进程响应。Cbuf 注入可用，但客户端不接受 3.3.3.3 地图，缺 1649370 原生 `mp_*` fastfile。下一步需 1649370 地图资产或兼容房间后端。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-cbuf-devmap.json`。
 

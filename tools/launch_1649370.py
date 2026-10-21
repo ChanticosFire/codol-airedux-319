@@ -111,6 +111,8 @@ LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_lo
 MAP_PROBE_DIRS = {
     "mp_strike_sh": "runs/20261021-1649370-map",
     "mp_arkaden_sh": "runs/20261021-1649370-map-arkaden",
+    "mp_cross_fire": r"E:\GAME\COD\codol-airedux\CODOL-2.6.9.7-Launcher\runtime\game\training-resources\mp_cross_fire\decoded",
+    "mp_hardhat_sh": "runs/20261021-1649370-hardhat",
 }
 MAP_PROBE_FILES = {
     "mp_strike_sh": {
@@ -122,6 +124,16 @@ MAP_PROBE_FILES = {
         "mp_arkaden_sh.ff": "62c0629bc5ea8e90e0d9f7d4658a14fc54ad953626e28ae8696e56e0349d8575",
         "mp_arkaden_sh_load.ff": "84c76824cc639c5831906022e5debc91f213daf42ed8f0472900dcd5a2083d41",
         "mp_arkaden_sh_const.ff": "ec9ba6b592751490ab5b7a5a0760e8523f45856649439a1cfa51ebecefc5a3c0",
+    },
+    "mp_cross_fire": {
+        "mp_cross_fire.ff": "19f5b16fff93c03d5530610b2b5cd8d9bd80832c9fa46218382c3cc8cbcc8807",
+        "mp_cross_fire_load.ff": "761b6573021fa4676d1e99fbaab1125856b1cf61e44844377347f50b82c813a4",
+        "mp_cross_fire_const.ff": "582ed03131f50af71b17b95fd4e9ef1219022719bff73a60a12ea7978b3eec24",
+    },
+    "mp_hardhat_sh": {
+        "mp_hardhat_sh.ff": "6ec34b491d348976570b03344d56ee0479eef5a1e474fa3bf7b59b8a4d2db241",
+        "mp_hardhat_sh_load.ff": "29af6bd6c78f01dfd87e394e1fbc4be9feb8b1e8698cafbded6ece2929d7e6b3",
+        "mp_hardhat_sh_const.ff": "9b7b13f2b56aa67a0a35875b1e99840e126cc3d24ec8eb08884a072893c389c5",
     },
 }
 

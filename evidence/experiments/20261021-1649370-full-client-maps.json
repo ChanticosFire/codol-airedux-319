@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "correct the earlier asset search: the full 1649370 client is present at E:\\GAME\\COD\\使命召唤OL",
+  "self_check": {
+    "missed_path": "E:\\GAME\\COD\\使命召唤OL",
+    "previous_search": "only E:\\GAME\\COD\\1649370 and E:\\GAME\\COD\\Original Client were searched",
+    "correction": "the full client contains IIPS\\\\IIPSDownload\\*.ifs map packs, not loose mp_*.ff files"
+  },
+  "full_client": {
+    "path": "E:\\GAME\\COD\\使命召唤OL",
+    "has_client_exe": true,
+    "map_pack_example": "IIPS\\IIPSDownload\\ff_dlc18_mp_hardhat_sh_V37.ifs"
+  },
+  "extraction": {
+    "pack": "ff_dlc18_mp_hardhat_sh_V37.ifs",
+    "tool": "tools/extract_signed_ifs_fastfiles_1649370.py",
+    "members": [
+      "client_shipRetail/chinese/mp_hardhat_sh.ff (35,578,133 bytes, version 461, publisher signature verified, zone 76,543,761 bytes, 382 assets)",
+      "client_shipRetail/chinese/mp_hardhat_sh_load.ff (24,853 bytes)",
+      "client_shipRetail/chinese/mp_hardhat_sh_const.ff (49,429 bytes)"
+    ],
+    "out": "runs/20261021-1649370-hardhat"
+  },
+  "load_test": {
+    "commands": ["devmap mp_hardhat_sh", "map mp_hardhat_sh"],
+    "injection": "Cbuf stage 5, old_length 0 -> new_length 23/20, ok",
+    "result": "black screen for several seconds, then the lobby/inventory UI; the community codol1649370-offline.exe did not enter the map"
+  },
+  "conclusion": "The full 1649370 client assets are available and a native v461 signed map can be extracted, but the community offline executable still does not enter the map via map/devmap. The next step is to determine whether the community executable lacks the listen-server/map-load path and whether the full codoMP_client_shipRetail.exe can be used instead.",
+  "cleanup": "Client/guard terminated; no WFP residue."
+}

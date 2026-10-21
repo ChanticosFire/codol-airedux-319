@@ -220,3 +220,7 @@ vtable `0xC7AF2C`，对象布局 `+4 sockaddr_in`、`+0x14 SOCKET`、`+0x18 辅�
 ## 2026-10-21 G2 阻断结论：缺 1649370 地图资产/房间后端（本轮）
 
 `--cbuf-command` 已能在 stage 5 注入 `devmap mp_strike_sh`（0→22）和 `map mp_strike_sh`（0→19）；两者都被客户端接受执行，但画面要么黑屏数秒后回大厅，要么直接留在大厅，进程始终响应。全盘搜索确认 1649370 资源树只有 common/ui/post-gfx fastfile 和 `mp_playlists.ff`，没有 1649370 原生 `mp_*` 地图 fastfile；3.3.3.3 的 `mp_strike_sh`/`mp_arkaden_sh` 不被接受。同时离线客户端没有网络/房间对象。结论：没有兼容地图或能提供地图加载路径的房间/lobby 后端，无法进入任何本地 bot 地图。证据 `evidence/experiments/20261021-1649370-map-load-failure.json`。
+
+## 2026-10-21 自检纠正：完整客户端在使命召唤OL（本轮）
+
+此前只搜了 `E:\GAME\COD\1649370` 与 `Original Client`，漏掉 `E:\GAME\COD\使命召唤OL`。该目录有 `IIPS\IIPSDownload\*.ifs` 地图包；用 `extract_signed_ifs_fastfiles_1649370.py` 从 `ff_dlc18_mp_hardhat_sh_V37.ifs` 提取出原生 v461、发布者签名验证通过的 `mp_hardhat_sh.ff`（35.5MB，zone 76.5MB，382 assets）及 load/const，并加入 `--map-probe mp_hardhat_sh`。Cbuf `devmap`/`map mp_hardhat_sh` 注入成功（0→23/20），但社区 exe 黑屏数秒后回大厅/仓库，未进地图。下一步确认社区 exe 是否缺 listen-server/map-load 路径，或改用完整客户端 `codoMP_client_shipRetail.exe`。证据 `evidence/experiments/20261021-1649370-full-client-maps.json`。
