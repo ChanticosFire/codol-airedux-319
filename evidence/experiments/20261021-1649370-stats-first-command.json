@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "send the first client command after stats complete to trigger the server gamestate",
+  "packet": "u32 sequence=1 + clc_clientCommand(0x02) + 'userinfo \\name\\player\\xuid\\a731af49a6a2c7e2\\rate\\25000\\0'",
+  "result": {
+    "stats": "CoDOL 2697 stats complete client=0 compressed=0",
+    "client_state": "CS_CONNECTED; no CS_PRIMED / gamestate log",
+    "responses": "statResponse sequence and the 9-byte snapshot stream continued",
+    "meaning": "the server accepted the sequenced packet but did not enter world/send gamestate from this client-command packet"
+  },
+  "next": [
+    "try a clc_move/usercmd first packet instead of clc_clientCommand",
+    "or send userinfo as an OOB command and inspect SV_PacketEvent's state requirement",
+    "then capture the gamestate size/fragment sequence"
+  ],
+  "cleanup": "2697 server terminated; no WFP residue."
+}

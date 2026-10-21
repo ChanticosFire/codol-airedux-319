@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 stats 后首包未触发 gamestate（2026-10-21）**：stats 完成后发 `seq=1 + clc_clientCommand(2) + userinfo...`，服务端保持 `CS_CONNECTED`，无 `CS_PRIMED`/gamestate，仍回 statResponse + 9 字节快照。下一步改试 `clc_move`/usercmd 首包或 OOB userinfo，并检查 SV_PacketEvent 状态门槛。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-stats-first-command.json`。
+
 > **1649370 G2 stats 上传完成（2026-10-21）**：裸 UDP 完成 connect + 27 个 stats 包（profile 32768，头部 crc32），服务端日志 `CoDOL 2697 stats complete client=0 compressed=0`，返回 `statResponse 0` 并持续发 9 字节快照，连接保持。connect 包必须 latin-1 编码。下一步在 1649370 进程远程线程复现，并确认 gamestate/userinfo/usercmd。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-stats-complete.json`。
 
 > **1649370 原生 hardhat 三目录均不进图（2026-10-21）**：v461 签名 `mp_hardhat_sh.ff` 放入 `client_shipretail/chinese`、`main`、`zone` 后，Cbuf `devmap`/`map` 注入成功但仍黑屏/回大厅；`devmap`/`map` 不是该客户端注册命令，社区 exe 无 listen server/本地开图入口，地图只能由服务端 gamestate 驱动。完整客户端地图资产可用于 2697 服务端，剩余是客户端网络对象/连接路径。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-hardhat-paths.json`。

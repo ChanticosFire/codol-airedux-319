@@ -232,3 +232,7 @@ vtable `0xC7AF2C`，对象布局 `+4 sockaddr_in`、`+0x14 SOCKET`、`+0x18 辅�
 ## 2026-10-21 G2 stats 上传完成，服务端保持连接（本轮）
 
 裸 UDP 依次完成 `getchallenge` → `connect`（connect 包必须 latin-1 编码，UTF-8 会把 `\xff` 变成 `c3bf` 而被 disconnect）→ 27 个 stats 包（`\xff\xff\xff\xffstats\0 + index:u8 + compressed:u16=0 + 1238 字节`，profile 32768 字节，头部为 `crc32(profile[4:])`）。服务端日志出现 `CoDOL 2697 stats complete client=0 compressed=0`，返回 `statResponse 0` 并持续发送 9 字节快照，连接不再断开。这解除了 stats 上传阻断。下一步把同一 stats 上传放进 1649370 进程远程线程，并确认服务端随后是否发 gamestate/需要 userinfo、usercmd。证据 `evidence/experiments/20261021-1649370-stats-complete.json`。
+
+## 2026-10-21 G2 stats 后首包未触发 gamestate（本轮）
+
+stats 完成后发送 `u32 sequence=1 + clc_clientCommand(0x02) + "userinfo \name\player\xuid\...\rate\25000\0"`，服务端保持 `CS_CONNECTED`，日志无 `CS_PRIMED`/gamestate，仍只回 `statResponse` 和 9 字节快照。说明首个 clientCommand 不是进入世界的触发包；下一步改试 `clc_move`/usercmd 首包，或把 userinfo 走 OOB，并检查 `SV_PacketEvent` 的状态门槛。证据 `evidence/experiments/20261021-1649370-stats-first-command.json`。
