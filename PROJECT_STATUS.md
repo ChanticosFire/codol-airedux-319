@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 netobj 驱动仍未建 conn（2026-10-21）**：`0x803830` 创建 netobj（`0x23E39FE0`），但 `0x803780`/`0xB838A0`/`0xB7A670` 调用后 conn `+0x4F4` 仍 0；手写 netadr+state=1 也不建 conn。下一步走 `0xB769A0`/`0xB83A52` tag 0x0A 或 conn 构造函数。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-netobj-drive.json`。
+
 > **1649370 社区 exe netobj 分配器 0x803830 调用成功（2026-10-21）**：远程线程调用后 `[0x8269774]=0x23E1A030`（vtable 0x00D599DC），但 conn `+0x4F4` 仍 0、`+0x4F8=0xBAADF000`。下一步驱动 0x803780/0xB838A0/0xB7A670 建 conn/socket。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-netobj-created.json`。
 
 > **1649370 最小服务端 stats+gamestate 分片通过（2026-10-21）**：每个 stats 包回 statResponse；usermove 后发 2697 捕获分片 `[1172,1172,1114]`，探针实测通过。仍是服务端原型/2697 帧，1649370 客户端尚无网络对象。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-mini-server-gamestate.json`。

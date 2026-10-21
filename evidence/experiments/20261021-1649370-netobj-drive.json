@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "after creating the netobj, drive the lobby/connect functions and inspect conn",
+  "netobj": "0x23E39FE0",
+  "calls": [
+    {"label": "create_netobj", "target": "0x803830", "result": "netobj non-null"},
+    {"label": "lobby_tick_803780", "result": "conn=0, state=0xBAADF000"},
+    {"label": "lobby_connect_B838A0(ecx=netobj)", "result": "conn=0, state=0xBAADF000"},
+    {"label": "state_B7A670(ecx=netobj)", "result": "conn=0, state=0xBAADF000"},
+    {"label": "manual netadr + B838A0", "wrote": "type=4, 127.0.0.1, port=28969, state=1", "result": "conn=0, state=1"}
+  ],
+  "meaning": "Creating the netobj is not enough. 0xB838A0 / 0xB7A670 do not allocate conn on their own; the lobby packet parser path (0xB769A0 / 0xB83A52, tag 0x0A) or a different connection constructor is still required.",
+  "next": [
+    "disassemble 0xB83A52 -> 0xB769A0 (tag 0x0A) and call it with a synthetic lobby packet",
+    "or locate the conn constructor and call it with the netobj/address",
+    "then verify UDP socket/getchallenge"
+  ],
+  "cleanup": "Client terminated; net_rollback passed."
+}

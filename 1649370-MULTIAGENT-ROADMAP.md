@@ -342,3 +342,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 找到并成功调用社区 exe 的 netobj 分配器 0x803830（本轮）
 
 静态分析发现 `0x803830` 先检查 `[0x8269774]`，为空则 `new(0x1618)` + 构造 + 写回；在社区离线客户端大厅用远程线程调用它，`[0x8269774]` 从 0 变为 `0x23E1A030`（非空），vtable `0x00D599DC`。但 `+0x4F4`（conn）仍为 0，`+0x4F8=0xBAADF000`（未初始化），说明只创建了对象，还没建立连接/套接字。下一步调用 `0x803780`/`0xB838A0`/`0xB7A670`（ecx=netobj）或填 `netobj+0x50/0x54` 后驱动 `0xB769A0`，目标是创建 conn/socket 并发 getchallenge。证据 `evidence/experiments/20261021-1649370-netobj-created.json`。
+
+## 2026-10-21 驱动 netobj 仍未建出 conn（本轮）
+
+`tools/drive_client_netobj.py` 正确用 cave 调用 `0x803830`（创建 netobj）、`0x803780`、`0xB838A0(ecx=netobj)`、`0xB7A670(ecx=netobj)`；netobj 为 `0x23E39FE0`，但 `+0x4F4`（conn）始终 0，`+0x4F8` 仍 `0xBAADF000`。手工写 netadr（type=4/127.0.0.1/28969）并置 `+0x4F8=1` 后再调 `0xB838A0`，conn 仍 0（state 变 1）。说明 `0xB838A0`/`0xB7A670` 本身不创建 conn；必须走 lobby 包解析 `0xB769A0`/`0xB83A52`（tag 0x0A）或找 conn 构造函数。证据 `evidence/experiments/20261021-1649370-netobj-drive.json`。
