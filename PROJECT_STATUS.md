@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 直接进图尝试（2026-10-21）**：`map`/`devmap` Cbuf 无效；直调 0x4F3890 崩溃。下一步反汇编 0x4F8B20/0x4F2DE0 确认 devmap 真正入口与参数。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 全地图池仍不开始，确认非地图问题（2026-10-21）**：106 个 ff 全 staged，房间“准备”/Enter 不触发开局、无黑屏无包；0x6398A0 是快速匹配/party start，不是本地 ready。下一步反向 ready/party 状态机。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 房间地图随机池（2026-10-21）**：提取 overgrown/afghan 后新房间地图变成夜色泥沼，单张 map-probe 对不上。下一步批量 stage 全部 `ff_init_mp_*` 或固定房间地图字段。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

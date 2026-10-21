@@ -562,3 +562,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 全地图池 106 个 ff 已 staged，房间仍不开始——确认不是地图问题
 
 批量提取 37 个 `ff_init_mp_*` 包，得到 106 个 `.ff`（含 load/const），用 `CODOL_MAP_DIR` 全部铺进运行时；进自定义房间（地图公寓楼）后，单击/双击“准备”和 Enter 都没有触发开局，房间保持 1/12、无黑屏、无 28969 包。结论：地图资产不是阻断点，阻断在房间 ready/start 的状态机。反汇编 `0x6398A0` 确认它是按 `[0x3306910]` 当前 playlist 走快速匹配/party start 的入口（`vtable+0x3c`），不是本地房间 ready；下一步从底层找 ready 按钮真正调用的 party/lobby 命令与房间状态字段，而不是继续换图/重试 UI。
+
+## 2026-10-21 按“绕过房间直接进图”尝试：map/devmap Cbuf 无效，原生 0x4F3890 直调崩溃
+
+按用户提示不走房间接口，先用 `--cbuf-command "map mp_cross_fire"`，再用 `"devmap mp_cross_fire"`（`--map-command-mode none`）注入，客户端都停在大厅，没进图；随后按 `0x4F8B20` 命令处理里的调用形态，直调 `0x4F3890(map,0,0)`（经 `0x4F2DE0`），进程立即退出/窗口消失，说明该调用还需要命令上下文或正确的 this/ret 约定。下一步：反汇编 `0x4F8B20`/`0x4F2DE0` 确认 `devmap` 命令真正调用的入口与参数，再用正确约定调用；不再盲调。
