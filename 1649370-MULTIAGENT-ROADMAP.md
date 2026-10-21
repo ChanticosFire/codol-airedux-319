@@ -294,3 +294,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 合成 TCLS 后窗口 `警告码(3, 1045, 19002)` 的“确定”直接打开腾讯游戏安全中心：
 `https://gamesafe.qq.com/game_tips.shtml?a=3&b=1045&c=19002&game_id=52&reason_id=3`
 页面为“特殊弹窗：查杀病毒和木马，重启机器后再试”（错误码 230）。这证明 `a=3/b=1045/c=19002/game_id=52/reason_id=3` 是 TP 反作弊自己的告警，不是 TCLS 登录错误。TP 会检测环境并 shell-execute 浏览器，之后不创建游戏主窗口。决定：不把 TP 运行时绕过作为主路线；复用社区离线 exe（本身排除 TP/TCLS）继续做客户端网络/地图路径。证据 `evidence/experiments/20261021-1649370-tp-browser-warning.json`、`...fullclient-synthetic-tcls*.json`。
+
+## 2026-10-21 给社区 exe 补完整 Base.dll 仍无网络对象（本轮）
+
+尝试三种方式把完整客户端 `codoMP_client_shipRetailBase.dll` 给社区离线 exe：私有 overlay 被拒（必须在固定资源目录/workspaces）；workspaces overlay 带 DLL 被拒（overlay 不可携带执行组件）；启动后 1 秒内复制 Base.dll 到 runtime 成功，但扫描 vtable `0xC7AF2C` 仍 0 个网络对象，客户端保持大厅。说明社区 exe 的离线构建不是“缺 Base.dll”，而是网络对象/连接路径本身未初始化；加 Base.dll 不能复活。证据 `evidence/experiments/20261021-1649370-base-overlay-no-netobj.json`。

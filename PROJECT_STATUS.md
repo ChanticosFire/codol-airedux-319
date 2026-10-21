@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 社区 exe 补 Base.dll 仍无网络对象（2026-10-21）**：overlay 带 DLL 被拒；启动后复制完整 `codoMP_client_shipRetailBase.dll` 到 runtime 成功，但 vtable `0xC7AF2C` 扫描仍 0 对象、客户端保持大厅。社区离线构建不是缺 Base.dll，而是网络对象/连接路径未初始化。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-base-overlay-no-netobj.json`。
+
 > **1649370 TP 弹浏览器确认（2026-10-21）**：合成 TCLS 后 `警告码(3,1045,19002)` 打开 `gamesafe.qq.com/game_tips.shtml?a=3&b=1045&c=19002&game_id=52&reason_id=3`，页面“特殊弹窗：查杀病毒和木马，重启机器后再试”（230）。这是 TP 反作弊告警，不是 TCLS 错误；TP 会检测环境并开浏览器，之后无游戏窗口。决定不把 TP 绕过当主路线，复用社区离线 exe（无 TP/TCLS）继续网络/地图路径。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-tp-browser-warning.json`。
 
 > **1649370 完整 exe 需要 TCLS 登录链（2026-10-21）**：`TCLS\config\dirserver.xml` 指向 tcls.qq.com 等腾讯登录服（8080/5223/10009）；完整 exe 15 线程停在 EventPairLow/ExecutionDelay、0 窗口，必须先拿 TCLS/launcher 握手。原始 TCLS/TGuard 链会加载反作弊服务/驱动，违反不加载驱动；当前离线副本无 token。需要离线 TCLS/launcher 绕过，或回社区 exe+兼容服务端。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-full-client-tcls.json`。

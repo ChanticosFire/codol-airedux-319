@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "try to give the community offline exe the full client Base.dll and see whether a network object appears",
+  "attempts": [
+    {
+      "method": "private overlay with codoMP_client_shipRetailBase.dll",
+      "result": "host rejected: overlay 必须位于项目固定资源目录或 workspaces"
+    },
+    {
+      "method": "overlay under workspaces with Base.dll",
+      "result": "host rejected: 资源overlay不可携带执行组件"
+    },
+    {
+      "method": "start community exe, copy Base.dll into runtime within 1 s",
+      "result": "copy succeeded; client stayed responsive; scan for vtable 0xC7AF2C still returned 0 objects"
+    }
+  ],
+  "meaning": "The community offline exe does not construct a network object even when the full client Base.dll is present in its runtime; the offline build's network path is not revived by adding Base.dll.",
+  "next": [
+    "a prebuilt 1649370 client build that includes the network object/listen path, or",
+    "a source-level reconstruction of the client network object (out of scope for wrapper-only changes)"
+  ],
+  "cleanup": "Client/guard terminated; no WFP residue."
+}
