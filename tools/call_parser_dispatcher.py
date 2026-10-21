@@ -60,13 +60,12 @@ def main() -> int:
     code = bytearray()
     for value in (0, 28969, 0x0100007F, 4, 0, 0):
         code += b"\x68" + struct.pack("<I", value)
-    code += b"\x68" + struct.pack("<I", obj)  # [ebp+0xC]
-    code += b"\x68" + struct.pack("<I", u32(h, 0x8269774))    # [ebp+8] = netobj
+    code += b"\x68" + struct.pack("<I", len(text))   # [ebp+8] length
+    code += b"\xb9" + struct.pack("<I", obj)          # ecx = msg_t
     call_pos = len(code)
     code += b"\xe8\x00\x00\x00\x00"
-    code += b"\x81\xc4\x20\x00\x00\x00"
     code += b"\xc3"
-    struct.pack_into("<i", code, call_pos + 1, 0x5C1EE0 - (cave + call_pos + 5))
+    struct.pack_into("<i", code, call_pos + 1, 0x5C13A0 - (cave + call_pos + 5))
     w(h, cave, bytes(code))
     tid = W.DWORD()
     th = k32.CreateRemoteThread(h, None, 0, C.c_void_p(cave), None, 0, C.byref(tid))

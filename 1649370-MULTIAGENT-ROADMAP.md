@@ -494,3 +494,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 R\nchallengeResponse 头仍未解析
 
 把 `msg_t` buffer 改成 `R\nchallengeResponse 6ad8d973`（让 `MSG_ReadString` 先读到 `R`），再调 `0x5C1EE0`；结果 `netobj/conn` 未清零，但 `c8` 仍 1、服务端无 connect。说明首 token `R` 对上了，但后续 parser 仍未把 challengeResponse 送进 `0x5C13A0`，或 `msg_t` 的 `+0x14/+0x18` 长度/索引语义还不对。下一步直接以 `ecx=msg_t` 调 `0x5C13A0`（带 length+netadr），绕过 dispatcher 的首 token 分支。
+
+## 2026-10-21 直接 ecx=msg_t 调 0x5C13A0 仍清零网络
+
+用 `R\nchallengeResponse` 的 `msg_t` 作 `ecx`、`length+netadr` 作栈参数调 parser，调用后 `netobj/conn` 再次变 0，服务端无 connect。说明 `0x5C13A0` 需要的不只是 `msg_t`，还需要它调用者 `0x5C1EE0` 建立的队列/流状态（`0x4F36C0`/`0x66EFD0`）以及 `0xB753A0` 的 from 记录。冷调 parser 路线到此为止；下一步转让客户端自己走真实连接/接收循环：填充服务器浏览器表 `0x76446A1` 触发原生连接，或 hook `0x5C2040`/`0x5C2112` 的正常入口。
