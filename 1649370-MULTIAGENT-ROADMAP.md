@@ -346,3 +346,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 驱动 netobj 仍未建出 conn（本轮）
 
 `tools/drive_client_netobj.py` 正确用 cave 调用 `0x803830`（创建 netobj）、`0x803780`、`0xB838A0(ecx=netobj)`、`0xB7A670(ecx=netobj)`；netobj 为 `0x23E39FE0`，但 `+0x4F4`（conn）始终 0，`+0x4F8` 仍 `0xBAADF000`。手工写 netadr（type=4/127.0.0.1/28969）并置 `+0x4F8=1` 后再调 `0xB838A0`，conn 仍 0（state 变 1）。说明 `0xB838A0`/`0xB7A670` 本身不创建 conn；必须走 lobby 包解析 `0xB769A0`/`0xB83A52`（tag 0x0A）或找 conn 构造函数。证据 `evidence/experiments/20261021-1649370-netobj-drive.json`。
+
+## 2026-10-21 反汇编确认 0xB838A0 不是 conn 创建点
+
+它先检查 `[netobj+0x4F4]`（conn）；为 0 时跳到 `0xB83AA7`，只处理 `[netobj+4]`（lobby 对象），不会分配 conn。`0xB769A0` 只是 tag 0x0A 的 8 字节读取器；`0xB83A52` 把地址写到 `[lobby+0x50/0x54]` 并置 `[netobj+0x4F8]=1`，也不是 conn 分配。conn 必须由独立构造函数/连接入口创建（下一步沿 `0x5C05F0`/`0x5C0EF3` 连接路径或 `0xB7A240` 附近找）。
