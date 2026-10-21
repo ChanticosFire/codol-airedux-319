@@ -770,3 +770,7 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 ## 2026-10-21 start hook 确认 0x62F840 被调用一次
 
 `hook_start_callsite.py` 在 `0x62F840` 入口记录 `count=1`、`ecx=0x13C87910`（room）、`ret=0x117B000C`（我们的 `_main_thread_call` cave）。说明 start 方法确实执行；返回地址是我们自己的 cave，所以还没拿到游戏内自然调用者。`room-command.json` 的 `room_start.status=armed`。下一步用自然 ready/start（不经过我们的 cave）触发，hook 才能记录游戏内调用者并定位它依赖的容器。
+
+## 2026-10-21 自然点击“准备”不会调用 0x62F840
+
+在房间内装 start hook 后点击“准备”，`count=0`、`ecx/ret=0`，说明 `0x62F840` 不是 ready 按钮的直接处理函数，而是 host/backend 触发的 start 事件。这也解释了之前为什么点“准备”没反应：离线房间没有主机/后端去调用 start。下一步找真正的 ready 按钮处理（UI 事件/room 命令），而不是继续调 0x62F840。

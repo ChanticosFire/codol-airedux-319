@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 自然准备不调用 0x62F840（2026-10-21）**：准备点击后 hook count=0；说明 0x62F840 是 host/backend start 事件，不是 ready 处理。下一步找真正 ready 处理。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 start hook 确认 0x62F840 被调用一次（2026-10-21）**：count=1、ecx=room、ret=我们的 cave；下一步自然 ready/start 抓游戏内调用者。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 容器 lookup hook 未命中（2026-10-21）**：install 成功但客户端退出，保存值为 0；下一步在 0x62F840 入口记录 ecx/ret。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
