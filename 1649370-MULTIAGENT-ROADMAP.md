@@ -462,3 +462,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 0xC73FC0 只是收包/记录来源，不是协议分发
 
 反汇编 `0xB753A0` 只把 `[ebp+8]` 指针和 16 位 from 写入 `context+0x84`，没有解析。`0xC73FC0` 用 `[this+4]` 收包、构造 0x88 结构、再调这个 setter；所以调用它不会推进 challenge/connect 状态。真正的 challengeResponse 解析仍在别处（`0x5C0FD0` 冷调会重置，需要它的正常调用者/上下文）。下一步：找 `0x5C0FD0` 的调用者/接收循环，而不是继续调 `0xC73FC0`。
+
+## 2026-10-21 找到真正的 server-message parser 0x5C13A0
+
+`0x5C0FD0` 其实是错误处理器——`0x5C1AEC` 传给它的是静态串 `0xdbce80="EXE_SERVER_DISCONNECTED"`，所以冷调 `challengeResponse` 会触发断线/重置。真正的 parser 在 `0x5C13A0`：它构造消息、调 `0x768DC0`/`0x768EC0`，在 `0x5C1684` 比较 `0xDBFEE8="challengeResponse"`，命中后调 `0x5C1300` 解析。下一步：用正确的 netadr/消息参数调用 `0x5C13A0`（或它的正常调用者），而不是 `0x5C0FD0`。
