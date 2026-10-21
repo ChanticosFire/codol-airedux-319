@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 冷调 0x5C0FD0 解析 challengeResponse 会清零 netobj/conn（2026-10-21）**：eax=buf 调 parser 后 netobj/conn 变 0，服务端无 connect。不能冷调 parser；需 hook recvfrom 或完整接收分发。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 客户端收到 challengeResponse（2026-10-21）**：UDP socket 0xCCC sendto + recvfrom 均成功，服务端回 `challengeResponse 6ad8d973`。下一步喂 parser/connect。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-client-challenge-response.json`。
 
 > **1649370 客户端首个 UDP getchallenge 成功（2026-10-21）**：`ws2_32!socket(2,2,0)` 写回 conn+0xC4=0xCD4，`sendto` 返回 37/WSA 0；私有服务端收到 `\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`。下一步接收/处理 challengeResponse。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-client-getchallenge-success.json`。

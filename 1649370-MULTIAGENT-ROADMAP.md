@@ -446,3 +446,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 在 `conn+0xC4` 写入真实 UDP socket `0xCCC` 后，用 `ws2_32!sendto` 发 getchallenge（peer 61019），私有服务端回 `challengeResponse 6ad8d973`；再用 `ws2_32!recvfrom` 在客户端进程内读到：
 `\xff\xff\xff\xffchallengeResponse 6ad8d973`
 这说明客户端 UDP 发送 + 接收两条链路都已打通。下一步：把 challengeResponse 喂给客户端 parser/连接路径，发 connect、收 connectResponse，再推进 gamestate/地图。证据 `evidence/experiments/20261021-1649370-client-challenge-response.json`。
+
+## 2026-10-21 冷调 0x5C0FD0 解析 challengeResponse 会把 netobj/conn 清零
+
+在 conn/socket 就绪后，把 `challengeResponse 6ad8d973` 放到目标内存，cave `eax=buf; call 0x5C0FD0`；调用后 `[0x8269774]` 和 `netobj+0x4F4` 都变成 0，服务端也没有 connect。说明 `0x5C0FD0` 不是可直接冷调的纯解析器，或它需要完整 OOB 帧/已注册的接收上下文，否则触发网络重置。下一步：不要冷调 parser；改为 hook/替换 `recvfrom` 让真实接收路径拿到 challengeResponse，或调用带完整帧/上下文的接收分发函数。
