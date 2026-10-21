@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "image": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+  "sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "method": "exact ASCII NUL string and 32-bit VA operand search; candidate refs, not registration proof",
+  "matches": [
+    {
+      "term": "devmap",
+      "string_va": "0xdbd24c",
+      "section": ".rdata",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x4f8bae",
+          "preceding_opcode": "0xba",
+          "context_hex": "0485c0741756b806000000ba4cd2db00e829ba270083c40485c07531e80dffff"
+        }
+      ]
+    },
+    {
+      "term": "map_restart",
+      "string_va": "0xdbf98c",
+      "section": ".rdata",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x5aa42d",
+          "preceding_opcode": "0xb9",
+          "context_hex": "700c803e000f841d010000b98cf9db008bc68a103a11751a84d274128a50013a"
+        }
+      ]
+    },
+    {
+      "term": "botsAddAll",
+      "string_va": "0xdc2104",
+      "section": ".rdata",
+      "executable_operand_refs": [
+        {
+          "operand_va": "0x5cfca1",
+          "preceding_opcode": "0x68",
+          "context_hex": "8b550c528d55c0528b55f0680421dc0052ffd084c07408668b4dd066894f608b"
+        },
+        {
+          "operand_va": "0x7c9fdc",
+          "preceding_opcode": "0x68",
+          "context_hex": "2424050000008b118b5214680421dc0050ffd28b44241cc1e806a80174158b44"
+        }
+      ]
+    }
+  ]
+}

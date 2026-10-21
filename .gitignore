@@ -1,6 +1,7 @@
 # Local client copies and runtime evidence stay on this machine.
 /runtime/
 /runs/
+/data/v1649370/*.sqlite3
 
 # Third-party material has its own provenance and repository.
 /codol-ember/

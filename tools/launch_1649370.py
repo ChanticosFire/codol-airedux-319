@@ -41,6 +41,8 @@ sys.path.insert(0, str(COMMUNITY_SRC))
 
 from codol_rebuild.platform.win32 import K, PTR, SI, PI, SHELLINFO, api, check, wait  # noqa: E402
 from codol_rebuild.runtime import session as session_mod  # noqa: E402
+from codol_rebuild.adapters.persistence.sqlite_accounts import AccountRepository as OriginalAccountRepository  # noqa: E402
+from codol_rebuild.adapters.persistence import game_settings as game_settings_mod  # noqa: E402
 from codol_rebuild.adapters.game.v1649370.observation_points import BREAKPOINTS  # noqa: E402
 import codol_rebuild.bootstrap.launch as launch_mod  # noqa: E402
 
@@ -62,6 +64,10 @@ OVERLAY = COMMUNITY_ROOT / "resources" / "v1649370" / "offline-resources"
 CLIENT = COMMUNITY_ROOT.parent / "Original Client"
 IMAGE_LIBRARY = COMMUNITY_ROOT / "resources" / "v1649370" / "offline-image-library"
 LOOSE_LIBRARY = COMMUNITY_ROOT / "resources" / "v1649370" / "offline-loose-library"
+PRIVATE_DATA = Path(__file__).resolve().parents[1] / "data" / "v1649370"
+ACCOUNT_DB = PRIVATE_DATA / "local.sqlite3"
+SETTINGS_DB = PRIVATE_DATA / "game-settings.sqlite3"
+OriginalSettingsStore = game_settings_mod.SettingsStore
 
 
 def _build_environment(stage: Path) -> C.Array:
@@ -312,11 +318,16 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
 
 
 def main(argv=None) -> int:
+    for database in (ACCOUNT_DB, SETTINGS_DB):
+        if not database.is_file():
+            raise SystemExit(f"缺少 319 私有档案 {database}；先运行 tools/prepare_1649370_profile.py")
     user = list(sys.argv[1:] if argv is None else argv)
     host_args = build_host_arguments(user)
     print("[patched] host arguments:", " ".join(host_args), flush=True)
     session_mod.ProcessSession.start = patched_start
     launch_mod.prepare = patched_prepare
+    launch_mod.AccountRepository = lambda _community_path: OriginalAccountRepository(ACCOUNT_DB)
+    game_settings_mod.SettingsStore = lambda _community_path: OriginalSettingsStore(SETTINGS_DB)
     return launch_mod.main(host_args)
 
 
