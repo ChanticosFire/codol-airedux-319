@@ -2099,6 +2099,7 @@ FS_CHECK_CANDIDATES = (
 #   newline-> 单个换行      probe   -> 用 0x4F5120 打开的那个名字当占位
 _FS_CHECK_MODE = os.environ.get("CODOL_FSCHECK_BYTES", "comment").lower()
 _FF_DIR = OVERLAY / "client_shipretail" / "chinese"
+_MAP_DIR = os.environ.get("CODOL_MAP_DIR")
 
 
 def _ff_names() -> list[str]:
@@ -2153,6 +2154,18 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
             shutil.copyfile(source, destination)
             staged.append({"name": name, "sha256": expected, "size": destination.stat().st_size})
         log["map_probe_resources"] = staged
+
+    if _MAP_DIR:
+        source_dir = Path(_MAP_DIR)
+        destination_dir = stage / "client_shipretail/chinese"
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        staged_all = []
+        for source in sorted(source_dir.glob("*.ff")):
+            destination = destination_dir / source.name
+            shutil.copyfile(source, destination)
+            staged_all.append({"name": source.name, "size": destination.stat().st_size})
+        log["map_dir_resources"] = staged_all
+        print("[patched] staged map dir:", source_dir, len(staged_all), "files", flush=True)
 
     # 0x4F5120 打开 fileSysCheck.cfg，返回 -7 即 Com_Error("WIN_FILE_NOT_FOUND", NULL)。
     # 这个名字暗示它本应是「文件系统检查清单」，社区写的 77 字节注释版可能被拒。
