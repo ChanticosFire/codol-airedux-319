@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "complete the 2697 stats upload so the server marks the client fully connected",
+  "run": "runs/_tmp_stats_probe.py",
+  "protocol": {
+    "profile": "32768 bytes; profile[0:4] = crc32(profile[4:]) little-endian; remaining bytes zero",
+    "chunks": "27 chunks of 1238 bytes (last chunk shorter)",
+    "packet": "\\xff\\xff\\xff\\xffstats\\x00 + index:u8 + compressed:u16(0) + chunk bytes",
+    "connect_encoding": "the connect packet must be encoded latin-1; UTF-8 turned \\xff into c3bf and caused a disconnect"
+  },
+  "result": {
+    "connect": "connectResponse \\mapname\\mp_cross_fire\\gametype\\war\\sv_maxclients\\12\\protocol\\1\\shortversion\\1.1.1.13",
+    "server_log": [
+      "Going from CS_FREE to CS_CONNECTED ... 127.0.0.1:60027<=>127.0.0.1:28969",
+      "CoDOL 2697 stats complete client=0 compressed=0"
+    ],
+    "responses": [
+      "statResponse 134217726 ... 0",
+      "9-byte snapshot stream (sequence + 0 + byte)"
+    ]
+  },
+  "meaning": "A raw UDP client can now perform getchallenge, connect, upload a valid zero profile, and reach stats complete. The server keeps the client connected and streams snapshots. This removes the stats-upload blocker.",
+  "next": [
+    "run the same stats upload from the 1649370 process remote thread",
+    "identify whether the server then sends gamestate or requires a client userinfo/usercmd",
+    "bridge the resulting packets into the client ring/parser"
+  ],
+  "cleanup": "2697 server terminated; no process/WFP residue."
+}

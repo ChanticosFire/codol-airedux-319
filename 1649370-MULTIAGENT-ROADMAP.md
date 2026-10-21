@@ -228,3 +228,7 @@ vtable `0xC7AF2C`，对象布局 `+4 sockaddr_in`、`+0x14 SOCKET`、`+0x18 辅�
 ## 2026-10-21 原生 hardhat 三目录均不进图（本轮）
 
 把从完整客户端 `ff_dlc18_mp_hardhat_sh_V37.ifs` 提取的 v461 签名 `mp_hardhat_sh.ff` 分别放到 `runtime\client_shipretail\chinese`、`runtime\main`、`runtime\zone`，Cbuf `devmap`/`map` 都注入成功（0→23/20），但社区 `codol1649370-offline.exe` 仍黑屏/回大厅，无 Com Error。结合路线图既有结论：`devmap`/`map` 在此客户端不是注册命令，社区 exe 是 client-only，没有 listen server/本地开图入口；地图只能由服务端 gamestate 驱动。完整客户端地图资产已可用（可喂 2697 服务端），剩余是客户端网络对象/连接路径。证据 `evidence/experiments/20261021-1649370-hardhat-paths.json`。
+
+## 2026-10-21 G2 stats 上传完成，服务端保持连接（本轮）
+
+裸 UDP 依次完成 `getchallenge` → `connect`（connect 包必须 latin-1 编码，UTF-8 会把 `\xff` 变成 `c3bf` 而被 disconnect）→ 27 个 stats 包（`\xff\xff\xff\xffstats\0 + index:u8 + compressed:u16=0 + 1238 字节`，profile 32768 字节，头部为 `crc32(profile[4:])`）。服务端日志出现 `CoDOL 2697 stats complete client=0 compressed=0`，返回 `statResponse 0` 并持续发送 9 字节快照，连接不再断开。这解除了 stats 上传阻断。下一步把同一 stats 上传放进 1649370 进程远程线程，并确认服务端随后是否发 gamestate/需要 userinfo、usercmd。证据 `evidence/experiments/20261021-1649370-stats-complete.json`。
