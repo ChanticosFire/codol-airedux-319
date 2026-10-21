@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 客户端进程内 socket+0xBB1420 尝试崩溃（2026-10-21）**：远程 socket cave 后客户端退出，未发 UDP 包；远程调 socket 方式/地址/调用约定不对。下一步用 conn 已持有 socket 字段。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 找到 sendto 包装 0xBB1420（2026-10-21）**：IAT 0xCA8518，调用点 0xBB1492；签名 socket/ip/port/buf/len。下一步用客户端 socket 调它发 getchallenge。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 禁用 0xBA3420 后 c8 稳定为 2（2026-10-21）**：patch 0xBA3420 首字节为 C3，conn 创建后 c8=1，调 0xBA3100/0xBA0980/0xBA32A0(1) 后稳定 c8=2，但仍无 getchallenge。已越过错误重置；下一步找 c8=2 下真正发包调用。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。

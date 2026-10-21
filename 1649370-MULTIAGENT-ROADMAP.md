@@ -422,3 +422,7 @@ conn 创建后写 `c8=2`，依次调 `0xBA3100(conn)`、`0xBA0980(conn)`，两�
 ## 2026-10-21 找到真正的 sendto 包装 0xBB1420
 
 `sendto` IAT 是 `0xCA8518`，调用点在 `0xBB1492`；所在函数 `0xBB1420` 构造 `sockaddr_in` 并调用 `sendto`。签名（stdcall）：`[ebp+8]=socket`、`[ebp+0xC]=ip`、`[ebp+0x90]=port`、`[ebp+0x94]=buf`、`[ebp+0x98]=len`。这是客户端真正的 UDP 发送入口。下一步：用客户端现有 socket（或 `ws2_32!socket` 远程创建）调 `0xBB1420` 发 getchallenge，验证 28969；再把它接回 conn 状态机。
+
+## 2026-10-21 客户端进程内 socket+0xBB1420 发送尝试导致客户端崩溃
+
+`tools/client_udp_send.py` 计划在目标进程内调 `ws2_32!socket(2,2,0)` 建 socket，再用 `0xBB1420` 发 getchallenge；但第一次远程 `socket` cave 执行后客户端直接退出，第二次 `VirtualAllocEx` 返回 NULL，未产生任何 UDP 包。说明远程线程里调 `socket` 的方式/地址/调用约定不对（或 WSA 上下文/线程安全），不是服务端问题。下一步改用 conn 已持有的 socket 字段（避免新建），或先定位 `ws2_32!socket` 在目标里的正确地址/调用方式。
