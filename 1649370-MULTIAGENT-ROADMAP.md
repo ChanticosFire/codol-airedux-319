@@ -622,3 +622,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 修正 CONTEXT 标志后房间 ready 真正执行，崩溃点从空 ECX 移到堆地址
 
 `_main_thread_call` 原来 `ContextFlags=0x10001` 只带 CONTROL，`ECX` 没被写入；改成 `0x10003`（CONTROL|INTEGER）后，`CODOL_ROOM_READY` 调 `0x62F840(ecx=room)` 不再在 `0x62F85A`（`[ebx+0x278]`，ebx=0）崩，而是在 `0x21A0A000` 堆地址访问冲突。说明 ready 方法已进入真实逻辑（读房间/发消息），下一步反汇编 `0x62F840` 的堆访问/发送路径，补有效房间字段或 stub 掉离线失败分支。
+
+## 2026-10-21 0x62F840(1,0,0) 主线程执行成功，进入黑屏开局等待
+
+修正 CONTEXT_INTEGER 后，用 cave `push 1; push 0; push 0; call 0x62F840`（ECX=room）调用房间开始方法，不再崩溃；客户端黑屏、CPU 52、WS 1.2GB，地图索引仍 -1，`roomstart139-server` 无 UDP。说明 ready/start 方法已真正执行到“开始对局”路径，黑屏是等服务器 gamestate/加载完成。下一步：给本地连接注入 gamestate，或 patch 掉等待服务器的加载门槛。

@@ -239,7 +239,15 @@ def _main_thread_call(session, handle, target: int, ecx_value=None) -> dict:
     cave = int(cave)
     main_map = os.environ.get("CODOL_MAIN_MAP")
     exec_cmd = os.environ.get("CODOL_EXEC_CMD")
-    if os.environ.get("CODOL_MAP_CALL"):
+    if os.environ.get("CODOL_ROOM_START"):
+        code = (b"\x60" + b"\x6a\x01" + b"\x6a\x00" + b"\x6a\x00" +
+                b"\xe8" + struct.pack("<i", target - (cave + 12)) + b"\x61\xc3")
+        wrote = C.c_size_t()
+        if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                       len(code), C.byref(wrote)) or wrote.value != len(code)):
+            return {"status": "cave_write_failed", "cave": hex(cave), "error": C.get_last_error()}
+        k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+    elif os.environ.get("CODOL_MAP_CALL"):
         string_address = cave + 0x800
         name = (os.environ.get("CODOL_MAP_CALL") or "mp_cross_fire").encode("ascii") + b"\x00"
         code = (b"\x60" + b"\x68" + struct.pack("<I", string_address) +
@@ -1984,7 +1992,12 @@ def _room_command_injector(session, command: str) -> None:
                 result.update(status="queued", length_before=length, length_after=new_length,
                               pointer=hex(pointer), payload_address=hex(pointer + length),
                               attempt=attempt + 1)
-                if os.environ.get("CODOL_ROOM_READY"):
+                if os.environ.get("CODOL_ROOM_START"):
+                    try:
+                        result["room_start"] = _main_thread_call(session, handle, 0x62F840, room)
+                    except Exception as error:  # noqa: BLE001 - report, never hide
+                        result["room_start"] = {"status": "exception", "error": repr(error)}
+                elif os.environ.get("CODOL_ROOM_READY"):
                     try:
                         result["room_ready"] = _main_thread_call(session, handle, 0x62F840, room)
                     except Exception as error:  # noqa: BLE001 - report, never hide
