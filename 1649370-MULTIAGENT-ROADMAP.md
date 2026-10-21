@@ -120,3 +120,7 @@ state 4 是 connect 分支，state 3 才是 getchallenge 分支（`0x5C0F3C` 跳
 ## 2026-10-21 G2 直接 OOB 解析器 fatal（本轮）
 
 主线程调 `0x5C0FD0`（eax="challengeResponse -486178985"，栈 netadr，arg0=0）→ 客户端 `fatal_dialog`，无 JSON。环注入（`0x786DBC0`）读光标 0→1 但状态仍 3、无 connect。目前无已验证的 challengeResponse 回送方法；2697 文本应答已确认可用。下一步 hook 真实 `0x5C0FD0` 调用路径，或回到 `0xBB2C40` 完整初始化。证据 `evidence/experiments/20261021-1649370-parser-fatal.json`。
+
+## 2026-10-21 G2 缺口裁决（本轮）
+
+2697 对 1649370 的 getchallenge 已回 `challengeResponse -486178985`；客户端回送路径全部未打通（环注入被消费但状态仍 3、冷调 `0x5C0FD0` 直接 fatal、poke 闸门崩）。详见 `1649370-G2-GAP.md`。下一步优先“真实传输通道”：还原 `0xBAD810 → 0xBB2C40` 参数，让 `[biz+0x18]` 自然置 1；其次服务端侧补齐。不再重复冷调解析器/poke 闸门/裸环注入。
