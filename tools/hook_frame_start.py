@@ -61,6 +61,7 @@ def main() -> int:
     code += b"\x80\x3d" + struct.pack("<I", flag) + b"\x00"  # cmp byte [flag],0
     jne = len(code); code += b"\x75\x00"
     code += b"\xc6\x05" + struct.pack("<I", flag) + b"\x01"  # mov byte [flag],1
+    code += b"\xc7\x05" + struct.pack("<I", 0x3306994) + struct.pack("<I", 1)
     mapstr = cave + 0x900
     code += b"\x68" + struct.pack("<I", mapstr)      # push map
     code += b"\x6a\x00"                              # push 0

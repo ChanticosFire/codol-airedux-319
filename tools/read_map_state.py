@@ -13,7 +13,7 @@ k32.OpenProcess.restype = W.HANDLE
 k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
 
 ADDRS = [0x35053DC, 0x766A20C, 0x7886BBC, 0x3306910, 0x337EAC0, 0x337EAC8,
-         0x33E9990, 0x76661A8, 0x76661AC, 0x76595A4, 0x76595A8, 0x76595AC]
+         0x33E9990, 0x3306994, 0x76661A8, 0x76661AC, 0x76595A4, 0x76595A8, 0x76595AC]
 
 
 def pid() -> int:
@@ -54,3 +54,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
