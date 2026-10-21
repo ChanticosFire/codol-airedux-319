@@ -45,7 +45,7 @@ def w(h, a, data):
 def main() -> int:
     p = pid()
     h = k32.OpenProcess(0x1F0FFF, False, p)
-    text = b"challengeResponse 6ad8d973"
+    text = b"R\nchallengeResponse 6ad8d973"
     buf = int(k32.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x04))
     w(h, buf, text + b"\x00")
     obj = int(k32.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x04))

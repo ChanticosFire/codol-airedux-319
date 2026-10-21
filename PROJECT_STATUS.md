@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 R 头仍未解析（2026-10-21）**：`R\nchallengeResponse` + msg_t 调 0x5C1EE0 后 c8 仍 1、无 connect，但网络对象未清零。下一步直接 ecx=msg_t 调 0x5C13A0。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
+
 > **1649370 逆向 MSG_ReadString/队列（2026-10-21）**：0x66EFD0 是 msg_t 的 MSG_ReadString（+8/+0xC buffer、+0x14 start、+0x18 len、+0x1C index）；0x4F36C0 是队列 push。0x5C1EE0 先读首 token 并与 0xDBFFA0（"R"/命令头）比较；两条分支都调 0x5C13A0。下一步用 R/OOB 头 + challengeResponse 构造 msg_t。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
 
 > **1649370 dispatcher arg0=netobj 仍不解析（2026-10-21）**：0x5C1EE0 两个 arg0 组合都只保持 c8=1、无 connect；0x5C13A0 冷调清零网络。UDP 收发已通但 parser 上下文仍缺。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部。
