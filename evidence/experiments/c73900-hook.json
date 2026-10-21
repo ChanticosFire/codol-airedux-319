@@ -1,0 +1,7 @@
+{
+  "pid": 41932,
+  "cave": "0x41920000",
+  "site": "0xba411a",
+  "original_call": "e8e1f70c00",
+  "patch": "e8e1bed740"
+}

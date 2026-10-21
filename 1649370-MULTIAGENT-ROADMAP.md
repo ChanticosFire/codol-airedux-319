@@ -394,3 +394,7 @@ TP URL 格式串 `?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d` 出现在 `ClientBase
 ## 2026-10-21 0xC73900 对零结构和 conn+8 都返回 -1
 
 创建 conn 后，`conn+0x538` 的 netadr 是 `type=4, 127.0.0.1, port=0x2971 (28969)`，有效；但直接调 `0xC73900`（ecx=conn+0xC4）分别传零 0x88 结构和 `conn+8` 的 0x88 副本，两次都返回 -1，`c8` 仍 4。说明 `0xC73900` 不是简单的地址解析，期望的输入/状态还没找对；`c8=4` 就是这条失败路径。下一步在 `0xBA4114` 真实调用点抓实际栈/结构内容和 `0xC73900` 返回值，或从它调用的 `0xC76920` 反查语义。证据 `evidence/experiments/20261021-1649370-c73900-probe.json`、工具 `tools/probe_c73900.py`。
+
+## 2026-10-21 0xC73900 真正 call 点是 0xBA411A，但 hook 后 conn 创建失败
+
+`0xBA4114` 是 `lea ecx,[ebx+0xC4]`，`0xBA411A` 才是 `call 0xC73900`（原始字节 `e8 e1 f7 0c 00`）。把 `0xBA411A` 改到 cave 后，`0xB82070` 连接调用返回 `conn=0`，cave 日志全 0，说明 hook 的栈/返回约定破坏了调用（或 cave 未执行）。下一步：修正 cave 的 `ret 0x88` 栈平衡/调用约定，或在 `0xC73900` 入口用更简单的 VEH/断点只记录不替换调用。
