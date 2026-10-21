@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "purpose": "trigger and capture the 2697 gamestate from a raw UDP client",
+  "trigger": {
+    "packet": "u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 zero bytes",
+    "server_log": [
+      "CoDOL: ... on stale serverId 0 (server 1) state 2 ack 1 gamestate -1 out 7 sent 0",
+      "SV_SendClientGameState() for ...",
+      "Going from CS_CONNECTED to CS_PRIMED for ..."
+    ]
+  },
+  "capture": {
+    "sequence": 7,
+    "fragments": [
+      "033-1172.bin index=0 count=3 stride=1162 chunk=1162",
+      "034-1172.bin index=1 count=3 stride=1162 chunk=1162",
+      "035-1114.bin index=2 count=3 stride=1162 chunk=1104"
+    ],
+    "reassembled_size": 3428,
+    "decode": "first 4 data bytes are the plaintext serverId; the remaining fragment bytes are XORed with cookie ^ sequence (0xB6 here)",
+    "plaintext_head": "00 00 00 00 03 00 00 00 00 'mp_cross_fire' 00 'mp' 00 ... \\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\",
+    "output": "runs/2697-gamestate-packets/gamestate-final.bin"
+  },
+  "tool": "tools/reassemble_2697_gamestate.py runs/2697-gamestate-packets --cookie <cookie>",
+  "meaning": "A raw client can now obtain the complete gamestate, including the map name and configuration strings. The remaining step is to feed this gamestate (and subsequent snapshots) into the client's loopback/parser path.",
+  "cleanup": "2697 server terminated; no WFP residue."
+}

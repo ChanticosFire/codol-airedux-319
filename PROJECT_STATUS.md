@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 G2 gamestate 已捕获并解码（2026-10-21）**：stats 后发 `seq=1 + clc_move + cmdCount=1 + 零`，服务端 `SV_SendClientGameState()`，`CS_CONNECTED→CS_PRIMED`；收到 3 个分片（seq 7，3428 字节），解码出 `00 00 00 00 03 00 00 00 00 mp_cross_fire ... \g_gametype\war\mapname\mp_cross_fire\2485\12\`。工具 `tools/reassemble_2697_gamestate.py`。下一步把 gamestate/快照喂进客户端环/解析器。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-gamestate-captured.json`。
+
 > **1649370 G2 stats 后首包未触发 gamestate（2026-10-21）**：stats 完成后发 `seq=1 + clc_clientCommand(2) + userinfo...`，服务端保持 `CS_CONNECTED`，无 `CS_PRIMED`/gamestate，仍回 statResponse + 9 字节快照。下一步改试 `clc_move`/usercmd 首包或 OOB userinfo，并检查 SV_PacketEvent 状态门槛。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-stats-first-command.json`。
 
 > **1649370 G2 stats 上传完成（2026-10-21）**：裸 UDP 完成 connect + 27 个 stats 包（profile 32768，头部 crc32），服务端日志 `CoDOL 2697 stats complete client=0 compressed=0`，返回 `statResponse 0` 并持续发 9 字节快照，连接保持。connect 包必须 latin-1 编码。下一步在 1649370 进程远程线程复现，并确认 gamestate/userinfo/usercmd。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-stats-complete.json`。
