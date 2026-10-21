@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **1649370 完整客户端 exe 启动尝试（2026-10-21）**：私有副本 `runs/full-client-private` 直接启动完整 `codoMP_client_shipRetail.exe` 无窗口、仅 WOW64 模块；包装层 `--image` 分别报候选限制/补丁不匹配；空补丁后 `0xC0000135` 缺 Base.dll/依赖。完整 exe 不能直接替代社区离线镜像，需要 TCLS/依赖链。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-full-client-launch.json`。
+
 > **1649370 G2 强制 state4 仍黑屏（2026-10-21）**：原生地图+补丁+gamestate 后把 `0x76446B0` 3→4，20 秒后 state4、channel 0x9D、read/write cursor 1，仍纯黑屏，进程响应。直接改状态不能开图；需要真实 challenge/connect/gamestate 网络事件或兼容服务端。当前客户端在 state3/4 停滞、I/O 0。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-force-state4.json`。
 
 > **1649370 G2 本地 challenge 读到、环注入不推进状态（2026-10-21）**：`0x5BF860` 返回 `a731af49a6a2c7e2`；黑屏 state=3 时注入 OOB challenge/connect/gamestate，read cursor 4→7 但 state 仍 3。环文本不是状态机 3→4 的事件；下一步主线程调 `0x5C0FD0` 解析器或改状态机。详见 [1649370-STATUS.md](1649370-STATUS.md) 顶部和 `evidence/experiments/20261021-1649370-local-challenge.json`。

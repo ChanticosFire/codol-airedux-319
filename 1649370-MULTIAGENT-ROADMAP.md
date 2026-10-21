@@ -272,3 +272,7 @@ stats 完成后发送 `u32 sequence=1 + clc_move(0x00) + cmdCount=1 + 200 个零
 ## 2026-10-21 G2 强制 state4 仍黑屏（本轮）
 
 在原生 `mp_cross_fire` + 通道成功补丁 + gamestate 注入的黑屏基础上，把 `0x76446B0` 从 3 强制写成 4；20 秒后 state 仍为 4、channel 0x9D、read/write cursor 1，画面仍是纯黑屏（仅光标），进程响应。说明直接改状态值不能启动地图加载，客户端需要真实的 challenge/connect/gamestate 网络事件，而不是只改 state。当前阻断：没有能让 1649370 客户端完成这组事件的兼容服务端/网络对象；地图资产已就绪但客户端在 state 3/4 停滞、I/O 为 0。证据 `evidence/experiments/20261021-1649370-force-state4.json`。
+
+## 2026-10-21 完整客户端 exe 启动尝试（用户允许全部修改后）
+
+把 `使命召唤OL` 根目录复制/联接成私有 `runs/full-client-private`（省略 ACE/TGuard/TerSafe/PolicyProbe/TenRpcs 等反作弊依赖），直接启动 `codoMP_client_shipRetail.exe +set fs_basepath`：进程存活但无窗口，只加载 WOW64 基础模块，无 ACE/TGuard。包装层 `--image` 完整 exe：报“仅运行项目固定版本基底或 workspaces 内候选”；放入 workspaces 候选后报“补丁原字节不匹配”；改用空补丁 `[]` 后退出码 `0xC0000135`（缺 Base.dll/同目录依赖）。说明完整 exe 不能直接替代社区离线镜像，需要自己的 TCLS/依赖链。证据 `evidence/experiments/20261021-1649370-full-client-launch.json`，私有副本 `runs/full-client-private`。
