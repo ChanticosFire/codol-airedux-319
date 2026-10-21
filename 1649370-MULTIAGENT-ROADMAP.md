@@ -586,3 +586,7 @@ ASCII：`\xff\xff\xff\xffgetchallenge 0 "a731af49a6a2c7e2"`，peer `127.0.0.1:49
 ## 2026-10-21 Cbuf 执行终于进入命令处理，但在 0xA3942A 崩溃
 
 修正两个错误后——`0x4F2EC0` 的 `[ebp+8]` 是缓冲区索引（eax=0，不是 `0x76595A4`），以及 cave 里 `call` 相对偏移（`call_next=cave+10`）——主线程 cave 执行 `push 0; xor eax,eax; call 0x4F3080`，`devmap mp_cross_fire` 不再停在队列，而是进入命令解析后在 `0xA3942A`（`mov ebx,[eax+0x40]`，eax 指向损坏字符串）访问冲突。说明 Cbuf 执行已经打通，剩下是命令字符串/参数或 `devmap` 上下文。下一步改 `map mp_cross_fire`、补 `sv_cheats 1`，或修正注入文本的前导换行。
+
+## 2026-10-21 0x4F30C0 是真正的命令执行器，主线程执行 devmap 已触发地图加载
+
+主线程 cave 执行 `push 0; push 0; mov eax,"devmap mp_cross_fire"; call 0x4F30C0; add esp,8`，`room-command.json` 的 `exec_cmd.status=armed`，客户端不再崩溃，而是进入黑屏地图加载态（CPU 52→61、WS 1.2GB、进程 Responding），持续 50 秒仍黑屏。说明命令注入到 devmap 的路径已经打通；黑屏是地图加载/等待 gamestate，不再是命令或崩溃问题。下一步：等更久，或在 devmap 后再执行 map_restart/sv_ 初始化，确认地图能否真正进入并可加 bot。

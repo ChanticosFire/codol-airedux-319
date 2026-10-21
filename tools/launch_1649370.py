@@ -238,7 +238,24 @@ def _main_thread_call(session, handle, target: int, ecx_value=None) -> dict:
         return {"status": "alloc_failed", "error": C.get_last_error()}
     cave = int(cave)
     main_map = os.environ.get("CODOL_MAIN_MAP")
-    if os.environ.get("CODOL_CBUF_EXEC"):
+    exec_cmd = os.environ.get("CODOL_EXEC_CMD")
+    if exec_cmd:
+        string_address = cave + 0x800
+        name = exec_cmd.encode("ascii") + b"\x00"
+        code = (b"\x60" + b"\x6a\x00" + b"\x6a\x00" +
+                b"\xb8" + struct.pack("<I", string_address) +
+                b"\xe8" + struct.pack("<i", target - (cave + 15)) +
+                b"\x83\xc4\x08" + b"\x61\xc3")
+        wrote = C.c_size_t()
+        if (not k32.WriteProcessMemory(handle, C.c_void_p(cave), C.create_string_buffer(code, len(code)),
+                                       len(code), C.byref(wrote)) or wrote.value != len(code)):
+            return {"status": "cave_write_failed", "cave": hex(cave), "error": C.get_last_error()}
+        if (not k32.WriteProcessMemory(handle, C.c_void_p(string_address),
+                                       C.create_string_buffer(name, len(name)),
+                                       len(name), C.byref(wrote)) or wrote.value != len(name)):
+            return {"status": "string_write_failed", "cave": hex(cave), "error": C.get_last_error()}
+        k32.FlushInstructionCache(handle, C.c_void_p(cave), len(code))
+    elif os.environ.get("CODOL_CBUF_EXEC"):
         call_next = cave + 10
         code = (b"\x60" + b"\x6a\x00" + b"\x31\xc0" +
                 b"\xe8" + struct.pack("<i", target - call_next) + b"\x61\xc3")
@@ -1948,7 +1965,12 @@ def _room_command_injector(session, command: str) -> None:
                 result.update(status="queued", length_before=length, length_after=new_length,
                               pointer=hex(pointer), payload_address=hex(pointer + length),
                               attempt=attempt + 1)
-                if os.environ.get("CODOL_CBUF_EXEC"):
+                if os.environ.get("CODOL_EXEC_CMD"):
+                    try:
+                        result["exec_cmd"] = _main_thread_call(session, handle, 0x4F30C0, None)
+                    except Exception as error:  # noqa: BLE001 - report, never hide
+                        result["exec_cmd"] = {"status": "exception", "error": repr(error)}
+                elif os.environ.get("CODOL_CBUF_EXEC"):
                     try:
                         result["cbuf_exec"] = _main_thread_call(session, handle, 0x4F3080, None)
                     except Exception as error:  # noqa: BLE001 - report, never hide
