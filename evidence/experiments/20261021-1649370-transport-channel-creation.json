@@ -1,0 +1,322 @@
+{
+ "schema": 1,
+ "exe_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+ "findings": {
+  "send_wrapper": {
+   "address": "0x622040",
+   "index_source": "mov esi, dword ptr [ebp + 0x24]  # adr+0x14 = 第6个dword",
+   "range_guard": "cmp esi, 0x9d  # idx>=0x9D 越界",
+   "table_base": "0xe3f4db0",
+   "entry_size": "0x18",
+   "entries": "157 (idx 0..0x9C)",
+   "return_code_bad_index": "-7 (0xFFFFFFF7)",
+   "entry_layout": {
+    "+0x00": "channel 对象指针（refcount 智能指针，对象+0x14 携带自身索引）",
+    "+0x04": "递增序号（全局计数器 0x84ABA88）",
+    "+0x08": "in_use 标志",
+    "+0x10": "最后成功发送时间戳（发送成功后写入）"
+   },
+   "actual_send": "channel 对象虚表 +0x24 校验类型==2，+0x28 执行发送（socket 在对象内）"
+  },
+  "string_to_adr": {
+   "address": "0x675390",
+   "localhost_marker": "'' @ 0xdbe518",
+   "localhost_result": {
+    "type": "2 (NA_LOOPBACK)",
+    "ip": "0.0.0.0",
+    "port": "htons(端口参数) 或默认 htons(30001)（0x7531）",
+    "channel+0x14": "0x9d  # mov dword ptr [esi + 0x14], 0x9d"
+   },
+   "ip_result": {
+    "type": "4 (NA_IP) 经 127.x 本机地址重写分支",
+    "channel+0x14": "从不写入（残留调用方内存）——连接路径必须另行建通道"
+   }
+  },
+  "no_send_guard": {
+   "address": "0x7f5dd0",
+   "semantic": "adr.channel==0x9D => 无需发送（loopback 语义），直接返回 true",
+   "insn": "cmp esi, 0x9d",
+   "sends_via": "0x622040（buf 0x18 字节、'<3' 串 0xDA16C0、type 2 参数）"
+  },
+  "table_management": {
+   "destroy_one": "0x7f5060",
+   "teardown_all": "0x7f50e0",
+   "insert_lru": "0x7f5330",
+   "lookup_smartptr": "0x7f54a0",
+   "smartptr_assign": "0x7f5e40",
+   "insert_semantics": "0x7F5330(对象智能指针, out 索引, out 成功bool)：扫 157 项找空槽；无空槽则选 +0x14 时间戳最旧且 in_use 的 LRU 项用 0x7F5060 逐出；写入 [项+4]=++0x84ABA88 序号、[项+0x14]=0xA，回填索引",
+   "entry157_addr": "0xe3f5c68",
+   "entry157_refs": "表尾紧邻块被 7 处引用（0x68D318/0x68D566/0x7F910A/0x7F917A/0x7F91F7/0xC958A1/0xC95923/0xCA6D6A），属于 0x18 对齐的后续全局区，非发送通道"
+  },
+  "channel_creator": {
+   "address": "0x621e50",
+   "callers": [
+    "0x4f8f25",
+    "0x4f9075"
+   ],
+   "caller_context": "0x4F8D70 / 0x4F8FB0：网络泵循环（状态机 [0x84ABA50]<=5 跳表 0x4F9158）",
+   "signature": "int 0x621E50(adr /*inout 0x18 字节*/, buf, len)",
+   "flow": [
+    "manager = 0xbac600(0x643300())  # [0xE85C68] 单例, [mgr+0x1F0]",
+    "if (manager->vt+0x20() != 1) return -7;   # 传输未就绪，返回码与 EXE_HOSTUNREACH 同源",
+    "rc = manager->vt+0x2c(&channel_sp, buf, len);   # 创建/取回 peer 通道",
+    "if (rc==4 && buf[2..3]=='<''3') return 0;      # 心跳包：不入表不发送",
+    "ok = 0x7f5330(channel_sp, &idx, &flag);   # 入路由表得 idx",
+    "加密/格式化后发送；成功回填 adr：[adr+0]=4(NA_IP)、[adr+8]=端口、[adr+0x14]=idx"
+   ],
+   "conclusion": "连接路径（getchallenge/connect OOB）从不经过此函数，因此通道表对连接地址永远为空"
+  },
+  "loopback_rings": {
+   "writer": "0x6750a0",
+   "readers": [
+    "0x674f30",
+    "0x675140"
+   ],
+   "ring_A": {
+    "base": "0x7872C08",
+    "stride": "0x4F0",
+    "slots": 64,
+    "cursors": [
+     "[0x7886808] read",
+     "[0x788680C] write"
+    ]
+   },
+   "ring_B": {
+    "base": "0x7867768",
+    "stride": "0x62C8",
+    "slots": 16,
+    "cursors": [
+     "[0x7872C00] read",
+     "[0x7872C04] write"
+    ],
+    "note": "数据区 0x786dbc0，0x675140 唯一消费者，被网络泵 0x4F8D70 调用"
+   },
+   "packet_layout": "adr(0x18) + len(4) + data(<=0x4E6)",
+   "bridge_note": "包装层可从环读包转发到真实 UDP 服务端并把应答写回环（不动 EXE 的备选路线）"
+  },
+  "oob_wire_strings": {
+   "client_getchallenge": [
+    "",
+    "0xdbfd04"
+   ],
+   "client_connect": [
+    "",
+    "0xdbfe28"
+   ],
+   "client_parses": {
+    "challengeResponse": "0xdbfee8",
+    "connectResponse": "0xdbff0c",
+    "connectReject": "0xdbfefc"
+   },
+   "userinfo_keys": [
+    "challenge",
+    "checksum",
+    "clantag",
+    "xuid",
+    "natType",
+    "2490",
+    "statver",
+    "session",
+    "partyid",
+    "qport(via %i %u)"
+   ],
+   "challenge_response_parse": "0x5C1678：匹配 challengeResponse 后 push 3; call 0x5C1300（连接状态->3），把应答方 adr 6 dwords 存入新连接对象 +0x14..+0x28 并 call 0x5BE030；未发现对 challenge 数值的二次校验，2697 只回一个 int 兼容",
+   "server_2697": {
+    "getchallenge": "忽略参数，回 \\xff\\xff\\xff\\xffchallengeResponse <NET_CookieHash(from)>",
+    "connect": "argv1 必须 16 位 hex xuid；argv2 必须 \\ 开头 info 串、含匹配 xuid 键；challenge 取 userinfo[challenge] 并校验；随后 lobby admission 可拒绝（EXE_ERR_NOT_AUTHORIZED）；connectResponse 含 \\protocol\\1\\shortversion\\1.1.1.13",
+    "source_ref": "319/runs/2697-native-src/src/sv_client.c SV_GetChallenge/SV_DirectConnect, src/codol/net/codol_connect.c"
+   },
+   "open_questions": [
+    "connect 第一个 %s 的确切内容（xuid 还是 challenge）需运行时捕获确认",
+    "2697 的 lobby admission 是否可经配置关闭"
+   ]
+  },
+  "table_imm32_refs": [
+   {
+    "va": "0x621312",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x6220c8",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x6221b8",
+    "target": "0xe3f4dc0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x68d318",
+    "target": "0xe3f5c68",
+    "entry": "0x9d"
+   },
+   {
+    "va": "0x68d566",
+    "target": "0xe3f5c68",
+    "entry": "0x9d"
+   },
+   {
+    "va": "0x7bfe2c",
+    "target": "0xe3f4db8",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7c0c79",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f4f73",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f4fbb",
+    "target": "0xe3f4dc4",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f5098",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f50a0",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f50bf",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f50fc",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f51b1",
+    "target": "0xe3f4dc4",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f537d",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f5390",
+    "target": "0xe3f4db8",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f539d",
+    "target": "0xe3f4db4",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f53a6",
+    "target": "0xe3f4db4",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f5401",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f54c7",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f55d5",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f56f6",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f58a7",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f5ae2",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0x7f910a",
+    "target": "0xe3f5c68",
+    "entry": "0x9d"
+   },
+   {
+    "va": "0x7f917a",
+    "target": "0xe3f5c68",
+    "entry": "0x9d"
+   },
+   {
+    "va": "0x7f91f7",
+    "target": "0xe3f5c68",
+    "entry": "0x9d"
+   },
+   {
+    "va": "0xc958a1",
+    "target": "0xe3f4db0",
+    "entry": "0x0"
+   },
+   {
+    "va": "0xc95923",
+    "target": "0xe3f5c68",
+    "entry": "0x9d"
+   },
+   {
+    "va": "0xca6d6a",
+    "target": "0xe3f5c68",
+    "entry": "0x9d"
+   }
+  ],
+  "callers": {
+   "send_wrapper": [
+    "0x77fbb0",
+    "0x7f5e1a"
+   ],
+   "transport_resolve_send": [
+    "0x4f8f25",
+    "0x4f9075"
+   ],
+   "table_insert": [
+    "0x621f4e",
+    "0x7f5cbd"
+   ],
+   "no_send_guard": [
+    "0x7f526b"
+   ],
+   "string_to_adr": [
+    "0x5beabe"
+   ],
+   "send_dispatch": [
+    "0x47b028",
+    "0x47b591",
+    "0x6743a7",
+    "0x67468b",
+    "0x674b25",
+    "0x674bd0",
+    "0x6752eb",
+    "0x675372"
+   ]
+  }
+ },
+ "asserts": {
+  "string_to_adr_writes_9d": true,
+  "guard_cmps_9d": true,
+  "wrapper_cmps_9d": true
+ }
+}

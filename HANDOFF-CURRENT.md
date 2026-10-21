@@ -5,6 +5,20 @@
 > **当前主线：Build 1649370，目标 bot 对战。**
 > 先读 [1649370-STATUS.md](1649370-STATUS.md)。
 >
+> **1649370 最新（2026-10-21，G2 根因闭环）**：纯静态审计查明 `EXE_HOSTUNREACH` 完整根因——
+> 本版本 netadr_t 为 0x18 字节（`+0x0` type、`+0x4` ip、`+0x8` 端口、`+0x14` 通道索引）；
+> StringToAdr `0x675390` 对 "localhost" 写 `{type=2, +0x14=0x9D}`（0x9D 是"进程内 loopback
+> 无需发送"标记，见 `0x7F5DD0`），非 localhost 分支不写通道字段；连接路径把 type/ip/port
+> 改成 4/127.0.0.1/28960 后通道字段残留 0x9D → 发送包装器 `0x622040` 查表 `0xE3F4DB0`
+> 越界返回 -7。通道由 `0x621E50`（manager `0x643300`→`0xbac600`，vtable+0x2c 建通道、
+> `0x7F5330` 入表、回填 adr+0x14=索引）创建，但连接路径从不经过它——**离线客户端有网络栈，
+> 只是没人替连接路径先建通道**。与 2697 服务端握手文本协议大体同构（客户端
+> `getchallenge 0 "%s"`/`connect %s "%s"`；服务端要求 argv1=16 位 hex xuid、argv2=info 串）。
+> **下一步**：包装层主线程 cave 调 `0x621E50` 建通道得索引 N → 写 connection+0x28=N →
+> 触发连接；备选为进程内 loopback 环（`0x7872C08`/`0x786DBC0` 两环）UDP 桥。
+> 可复跑 `tools/audit_transport_channels_1649370.py`，证据
+> `evidence/experiments/20261021-1649370-transport-channel-creation.json`。
+>
 > **1604220 的交接内容原样保留**（本文件 §14 起与 §16 系列），
 > 提炼索引见 [ARCHIVE-1604220.md](ARCHIVE-1604220.md)。
 > 两个版本的共同前提（TLS 自签、Auth 七字段、LSG 派生）在任何版本上都适用。
