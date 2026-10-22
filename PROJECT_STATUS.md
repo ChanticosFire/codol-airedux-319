@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【写 `clc.state=8` 安全但不足以恢复收包】** `cl=0x13C9CC74`，写入单字节 `0x08` 后读回、跨 tick 保持、客户端存活——证明**在 `cl+0` 写是安全的**，此前写 `cl+0x109260` 的崩溃与 `cl` 无关。但 `eax` 仍 0、阶段 8——netadr 字段仍零。下一步：同一运行内先写状态再写 netadr，分步写入以定位致命步骤。证据 [20261022-codex-clcstate-write.json](evidence/experiments/20261022-codex-clcstate-write.json)。
+
 > **2026-10-22【`CL_Init` 四分支全会执行，但只分配不填充】** 跳转表 `0x5C8A3C`：0→`0x5C85AD`（分配 `0x12A700`）、1→`0x5C85C9`（分配 `0xAA10`）、2→`0x5C89B6`（`call 0x44B310`）、3→`0x5C89BB`（打标记）。`0x5C8560` 循环递减计数、`jg` 反复，四分支**全部执行**，顺序由随机字节数组决定（混淆的顺次派发）。函数体内无任何写 `clc.state`/netadr 的代码——所以 `cl` 分配后仍全 0。下一步：定位 `CL_Connect`/`CA_CONNECTED` 写入点，确认它是否根本没被调用。证据 [20261022-codex-clinit.json](evidence/experiments/20261022-codex-clinit.json)。
 
 > **2026-10-22【`CL_Init = 0x5C83D0`：gamestate 时被调用，但 `push 1` 走“只分配不填充”分支】** 调用者 `0x47039D`（gamestate：`push 0; call 0x81DF20; push 1; call 0x5C83D0` 后立刻读 `cl`）、`0x4FE77B`、`0x5C8163`、`0x813D25`。序言 `mov esi,[ebp+8]; and esi,2; jne 0x5C841A`——`push 1` 的 bit1 为 0 走正常路径；`0x12A700` 分配位于跳转表分支 `0x5C85A6 jmp [ebx*4+0x5C8A3C]`（`ebx` 来自 0..3 循环），该分支只建空对象、不填 `clc.state`/netadr。下一步：映射 `0x5C8A3C` 四个目标（分配 vs 填充），找出能选中“填充”入口的参数值。证据 [20261022-codex-clinit.json](evidence/experiments/20261022-codex-clinit.json)。

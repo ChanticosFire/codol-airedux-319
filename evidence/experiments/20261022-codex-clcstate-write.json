@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T15:40:00+00:00",
+  "scope": "write clc.state = 8 at runtime and observe",
+  "patch": {
+    "target": "[cl+0] where cl = ([0x331c0c8] ^ 0xD362501F) = 0x13C9CC74",
+    "before": "00 00 00 00 ...",
+    "write": "08 (one byte)",
+    "after": "08 00 00 00 00 ... (read back, and still 08 after a tick)"
+  },
+  "result": {
+    "client": "alive -- a one-byte write at cl+0 is safe",
+    "return_value": "eax = 0 on all four samples",
+    "phase": 8
+  },
+  "meaning": [
+    "writing clc.state alone does not make NET_CompareAdr succeed -- the netadr field is still zero",
+    "the earlier crashes when writing [cl+0x109260] were about that offset (or the bytes written there), not about touching cl at all",
+    "next: write the loopback netadr into [cl+0x109260] with clc.state already 8, then re-check eax"
+  ],
+  "next": [
+    "in one run: write byte 8 at cl+0, write type/ip/port at cl+0x109260, then hook and read eax",
+    "watch for a crash right after the address write; if it happens, try writing only the type dword first, then ip, then port, to isolate which write is fatal"
+  ],
+  "artifacts": []
+}
