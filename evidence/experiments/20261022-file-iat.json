@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:23:48.695893+00:00",
+  "claim": "找到文件 API 的 IAT 槽位，可用 hook_send.py 框架改造出 CreateFileW 记录器",
+  "iat": {
+    "CreateFileW": "0xCA8284",
+    "CreateFileA": "0xCA8208",
+    "ReadFile": "0xCA8254"
+  },
+  "plan": {
+    "tool": "tools/hook_createfile.py（复制 hook_send.py 的 build_cave）",
+    "changes": [
+      "SEND_IAT → 0xCA8284",
+      "记录 [esp+0x24]（lpFileName）",
+      "ring 记录文件名指针"
+    ],
+    "note": "CreateFileW 返回句柄需判 -1；先记录全部再过滤"
+  },
+  "next": [
+    "写 hook_createfile.py",
+    "install → state3 → read，收集文件名列表",
+    "对照缺失项补齐资源"
+  ]
+}
