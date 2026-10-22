@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T04:25:00+00:00",
+  "scope": "why the crash is asynchronous",
+  "observation": "call_main_thread reported process_alive_after=true at its 2-3s settle point in both the 0xA8F0 run and earlier runs, yet the client died afterwards. That means 0x5B2C10 RETURNED normally and the fault happened later.",
+  "deduction": "after we push the phase to 8 and clear the flag, the game's frame tick calls 0x4746E2's path every frame; that path calls 0x5B2C10 repeatedly. So our single manual call only primes things -- the crash comes from a subsequent automatic invocation, probably once some cl fields have been partially filled by the first run.",
+  "implication": "hooking 0x5B2C10's return is unnecessary; instead we should catch the automatic invocation. A breakpoint on 0x5B2C10 (one-shot) would only prove the first hit, but a counter stub at 0x5B2C10 would count how many times it runs before the crash.",
+  "next": [
+    "put a counter stub at 0x5B2C10 (pushad/inc [scratch]/popad/original) and read the counter over time to confirm repeated automatic calls",
+    "then narrow the crash: hook 0xB02BCC94's module instead -- identify which DLL owns it",
+    "0xB02BCC94 lies in a high module; matching it against the loaded module bases (the same enumeration that gave 7 modules earlier) may fail, so instead search the running process's module list for a base near 0xB02B0000"
+  ],
+  "artifacts": []
+}
