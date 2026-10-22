@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:40:24.905405+00:00",
+  "claim": "定位 room.startgame 命令处理链：命令表 → 0x639900 → 房间 vtable+0x4C (0x62FCC0)，该函数在 [0x849B88C]+0xC==0 时直接返回，这是无效果的根因",
+  "command_table": {
+    "name": "脚本命令链表，头 0x33303B0，节点 {+0 next, +4 name, +8 handler}",
+    "entries": [
+      {
+        "name": "room.create",
+        "handler": "0x6397C0",
+        "node": "0xE9C67A4"
+      },
+      {
+        "name": "room.list",
+        "handler": "0x639830",
+        "node": "0xE9C6798"
+      },
+      {
+        "name": "room.join",
+        "handler": "0x6398?0",
+        "node": "0xE9C678C"
+      },
+      {
+        "name": "room.leave",
+        "handler": "0x6398A0",
+        "node": "0xE9C6780"
+      },
+      {
+        "name": "room.startgame",
+        "handler": "0x639900",
+        "node": "0xE9C6774"
+      },
+      {
+        "name": "room.say",
+        "handler": "0x639950",
+        "node": "0xE9C6768"
+      },
+      {
+        "name": "room.members",
+        "handler": "0x6399A0",
+        "node": "0xE9C675C"
+      }
+    ]
+  },
+  "startgame_handler": "0x639900: 取 [0x82E13FC] 的 vtable → 调用 vtable+0x4C 并把命令行参数文本作参数",
+  "vtable_4c": "0x62FCC0: 若 [0x849B88C]+0xC == 0 则直接返回（无任何动作）",
+  "implication": "离线大厅里 [0x849B88C]+0xC 大概率为 0（无服务器会话对象），所以 room.startgame 是空操作",
+  "next": [
+    "进房间后读 [0x849B88C] 与 +0xC，确认是否为 0",
+    "若为 0，找谁写它（服务器会话建立点），或直接伪造一个非零会话对象",
+    "同时保留 +devmap 路线：0x4F8AD0 循环依赖 0x7F25B0 返回值"
+  ]
+}

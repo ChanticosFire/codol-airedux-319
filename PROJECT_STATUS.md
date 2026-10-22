@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【进图】room.startgame 根因：`[0x849B88C]+0xC==0` 时空操作**：房间脚本命令链表（头 0x33303B0）中 `room.startgame→0x639900`，其调用房间 vtable+0x4C=`0x62FCC0`，而该函数在 `[0x849B88C]+0xC==0` 时立即返回 → 命令被消费但无动作。下步进房间读该值并找写入点。证据 [`20261022-startgame-handler.json`](evidence/experiments/20261022-startgame-handler.json)。
+
 > **2026-10-22【进图】社区版“准备”惰性；主线程补 `room.startgame` 是正路**：launcher 注释已写明离线版准备控件惰性。实测 A：`--room-command room.startgame` → 注入成功（room=0x245777a8，0→16）→ 变暗后黑屏 >60s，进程存活、ui_state 仍 5；B：真实房间内注入（0→17）→ Cbuf 回 0 但无变化、无请求、无连接。下步分析黑屏加载状态与命令注册。证据 [`20261022-room-startgame-finding.json`](evidence/experiments/20261022-room-startgame-finding.json)。
 
 > **2026-10-22【进图】房间输入分裂：Tab 能改地图，HUD 按钮鼠标无效**：Tab×5 让地图 绿洲→雷达站（键盘被处理），但准备/返回大厅/方向键+回车/先点中心再点准备全部无效，ui_state 恒 5。下一步 hook 鼠标消息或找准备按钮焦点路径。证据 [`20261022-room-input-split.json`](evidence/experiments/20261022-room-input-split.json)。
