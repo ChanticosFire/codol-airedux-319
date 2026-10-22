@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:11:40.099393+00:00",
+  "claim": "闪退太快，hook 读取时进程已退出；需要更早/更频繁地轮询",
+  "attempt": {
+    "hook": "0x77C930 dump=0x11791000",
+    "result": "读时进程已退出（community client not running）"
+  },
+  "timing": "从 state=3 到闪退约 10-15 秒",
+  "next": [
+    "在 state=3 后立即以 50ms 间隔轮询 hook dump",
+    "或改用共享内存/文件输出（进程死后仍可读）",
+    "或延长闪退前的观察窗口（如暂时 patch 掉退出路径）"
+  ]
+}
