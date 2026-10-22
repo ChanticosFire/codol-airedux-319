@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:51:32.030908+00:00",
+  "claim": "本轮 fatal 未抓到：launch_1649370.py 前台阻塞 150 秒，导致后续 hook/读内存时进程已结束",
+  "issue": "在单条 pwsh 命令里前台调用 launch_1649370.py（带 --seconds 150）会阻塞到会话结束",
+  "fix": "launch 必须用 run_in_background=true 或 Start-Job，另起一条命令做 hook/read",
+  "next": [
+    "后台启动会话",
+    "进程出现后立刻 install 0x77C930 hook",
+    "50ms 轮询读 fatal 文本"
+  ]
+}
