@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T01:20:00+00:00",
+  "scope": "does 0x66F170 use ecx?",
+  "disassembly": {
+    "0x66F170": "push ebp; mov ebp,esp; sub esp,0x24; cookie; push ebx; push 0x2C; push 0; push esi; call 0xC42DE0 (memset-like)",
+    "0x66F191": "mov ax,[edi+0x3F8]; mov [esi+0x14],ax",
+    "0x66F19F": "mov cx,[edi+0x3FC]; mov [esi+0x16],cx",
+    "0x66F1AA": "mov dx,[edi+0x3E4]; mov [esi+0x18],dx",
+    "0x66F1B8": "lea ecx,[esi+8] ..."
+  },
+  "finding": "0x66F170 does NOT read ecx as an incoming 'this' pointer -- its parameters are esi and edi, and ecx is only set later (0x66F1B8). So the crash's mov eax,[ecx+0x218] is not inside this function's prologue.",
+  "crash_address": "0x5D1CF4C5 is far outside the exe image (0x400000..0xE00000) -- it belongs to a system DLL. ecx=0x840112CA is garbage passed into that DLL call.",
+  "frames": ["0x5B2C8A (return into 0x5B2C10)", "0x10BD0006 (cave)", "0x766FE772 (system)", "0x67CBAE (inside the exe)"],
+  "next": [
+    "the frame walk through the cave is unreliable (pushad/popad disturbs it), so treat the last two frames with caution",
+    "the practical question is which call inside 0x5B2C10 passes a garbage pointer into the system DLL -- probably a free/realloc of a structure whose field was never set",
+    "disassembling the code between 0x5B2C8A and 0x5B2D20 will show the calls made right after the memset-like one"
+  ],
+  "artifacts": []
+}
