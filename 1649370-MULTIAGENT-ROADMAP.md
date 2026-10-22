@@ -1336,3 +1336,8 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 
 - arg1 指向 WIN_FILE_NOT_FOUND 本身。
 - 文件名在 arg2；下轮读 dump+0x84。
+
+## 2026-10-22 arg2 片段（本轮）
+
+- arg2="FILE"、ret="_NOT" → dump 布局错位。
+- 下轮：dump 更深栈。
