@@ -825,6 +825,12 @@ def main() -> int:
     p = sub.add_parser("start-challenge")
     p.set_defaults(func=lambda client, args: client.start_challenge())
 
+    p = sub.add_parser("set-state")
+    p.add_argument("value", type=lambda value: int(value, 0))
+    p.set_defaults(func=lambda client, args: {"status": "state_written",
+                                              "value": client.w32(STATE, args.value),
+                                              "state": client.u32(STATE)})
+
     p = sub.add_parser("ring-a-drain")
     p.add_argument("state", choices=("block", "restore"))
     p.set_defaults(func=lambda client, args: client.set_ring_a_drain(args.state == "block"))
