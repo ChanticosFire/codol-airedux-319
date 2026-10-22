@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T16:40:00+00:00",
+  "scope": "remote SV_ClientEnterWorld attempt and the inline patch design",
+  "client_pointer": {
+    "name_address": "0x5692908",
+    "name_offset_in_client": "0x2B8 (SV_ClientEnterWorld logs client+0x2B8)",
+    "client_pointer": "0x5692650",
+    "state_at_call": 3,
+    "verification": "state 3 = CS_PRIMED, matching the server log; svs.clients base 0x50E2650 is stale/misleading (all slots read 0), the live array starts at 0x5692650"
+  },
+  "remote_call": {
+    "tool": "tools/enter_world_dedrun.py",
+    "shellcode": "push 0; push client; mov eax,0x4705F4; call eax; add esp,8; ret",
+    "method": "VirtualAllocEx + WriteProcessMemory + CreateRemoteThread",
+    "result": "dedrun terminated immediately; the server log ends at CS_PRIMED, no CS_ACTIVE",
+    "cause": "SV_ClientEnterWorld runs SV_GentityNum + ClientBegin which needs the server main thread / game context; a foreign thread crashes the process"
+  },
+  "inline_patch_design": {
+    "location": "SV_SendClientMessages, 0x48AAA9..0x48AAC1",
+    "current": "cmp eax,4 / je 0x48AAF1 / mov eax,[ebx] / cmp eax,4 / je 0x48AABA / cmp eax,1 / jne 0x48AA63 / mov eax,ebx / call 0x489081",
+    "plan": [
+      "patch 0x48AAB5 '83 f8 01' (cmp eax,1) to '83 f8 03' (cmp eax,3) so CS_PRIMED enters the same block",
+      "patch 0x48AABC 'call 0x489081' to call 0x4705F4 (SV_ClientEnterWorld)",
+      "clear edx (cmd = NULL) before the call; SV_ClientEnterWorld reads its arguments from the stack at [ebp+8]/[ebp+0xc], so the calling convention must be re-checked first",
+      "after the first frame the state becomes CS_ACTIVE and the normal snapshot path runs"
+    ],
+    "risk": "calling convention mismatch would corrupt the stack; verify SV_BuildClientSnapshot's convention before redirecting the call"
+  },
+  "next": [
+    "determine how 0x489081 receives its client argument (eax vs stack) and whether 0x4705F4 uses the same convention",
+    "if they differ, patch SV_SendClientMessages at a point where a stack push can be inserted, or use an unused code cave with a stub",
+    "then verify CS_ACTIVE, real snapshots and the client leaving phase 8"
+  ],
+  "artifacts": ["runs/20261022-ring-2697o/main/qconsole.log"]
+}
