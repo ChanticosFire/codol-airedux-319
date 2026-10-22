@@ -456,6 +456,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="0x83 wire marker; 00 preserves the observed local baseline")
     parser.add_argument("--session-key-hex", default=None,
                         help="24-byte session key for an explicit diagnostic connection")
+    parser.add_argument("--allow-auth-tls", action="store_true",
+                        help="also serve TLS /auth/ on this loopback port")
     parser.add_argument("--observed71-empty", action="store_true",
                         help="diagnostic candidate: empty success for observed svc71 tasks 3/7/9")
     args = parser.parse_args(argv)
@@ -480,6 +482,7 @@ def main(argv: list[str] | None = None) -> int:
                                   AuthEvidence(args.log),
                                   token_marker=int(args.token_marker, 16),
                                   observed71_empty=args.observed71_empty,
+                                  allow_auth_tls=args.allow_auth_tls,
                                   **({"session_key": session_key} if session_key is not None else {}))
     server.start()
     print(f"LSG {'legacy probe' if args.legacy_probe else 'derived'} listening "

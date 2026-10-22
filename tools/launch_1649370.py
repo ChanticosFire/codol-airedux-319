@@ -122,6 +122,7 @@ REMOTE_UDP_CONNECT = False
 REMOTE_NETOBJ = False
 LOOPBACK_GUARD = False
 TCP_LOOPBACK_GUARD = False
+LOCAL_AUTH_LSG = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
 TCP_LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "runs/guard-build/client_loopback_tcp_guard-fixed.exe"
@@ -2278,6 +2279,22 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
         log["extra_root_files"] = copied
         print("[patched] copied extra root files:", ",".join(copied), flush=True)
 
+    if LOCAL_AUTH_LSG:
+        config = b"127.0.0.1 28969\r\n127.0.0.1 28969\r\n03EA\r\n"
+        (stage / "dwauth.ini").write_bytes(config)
+        ca_path = Path(__file__).resolve().parents[1] / "runs/20261020-live-derived01/tls/ca.crt"
+        ca = ca_path.read_bytes()
+        bundle = stage / "cacert.pem"
+        original = bundle.read_bytes() if bundle.is_file() else b""
+        bundle.write_bytes(original + b"\n" + ca)
+        log["local_auth_lsg"] = {
+            "dwauth_sha256": hashlib.sha256(config).hexdigest(),
+            "ca_sha256": hashlib.sha256(ca).hexdigest(),
+            "runtime_only": True,
+            "port": 28969,
+        }
+        print("[patched] staged private Auth/LSG config on 127.0.0.1:28969", flush=True)
+
     if MAP_PROBE:
         source_dir = Path(__file__).resolve().parents[1] / MAP_PROBE_DIRS[MAP_PROBE]
         destination_dir = stage / "client_shipretail/chinese"
@@ -2324,7 +2341,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, TCP_LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, TCP_LOOPBACK_GUARD, LOCAL_AUTH_LSG, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -2348,6 +2365,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="使用私有 2.6.9.7 loopback guard：仅允许该进程的 UDP 127.0.0.1:28969")
     parser.add_argument("--loopback-tcp-guard", action="store_true",
                         help="使用私有动态 WFP guard：仅允许该进程访问 127.0.0.1:28969（TCP/UDP）")
+    parser.add_argument("--local-auth-lsg", action="store_true",
+                        help="仅在私有运行副本中配置本地 Auth/LSG 同端口与实验 CA")
     parser.add_argument("--loopback-port", type=int, default=28969,
                         help="loopback guard 允许的 UDP 端口；非 28969 时使用打过补丁的私有副本")
     parser.add_argument("--main-call", type=lambda value: int(value, 0),
@@ -2405,11 +2424,14 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     PREFIX_CBUF = known.prefix_cbuf
     LOOPBACK_GUARD = known.loopback_guard
     TCP_LOOPBACK_GUARD = known.loopback_tcp_guard
+    LOCAL_AUTH_LSG = known.local_auth_lsg
     LOOPBACK_PORT = known.loopback_port
     if LOOPBACK_GUARD and TCP_LOOPBACK_GUARD:
         parser.error("two loopback guards cannot be selected together")
     if TCP_LOOPBACK_GUARD and LOOPBACK_PORT != 28969:
         parser.error("TCP loopback guard is built for port 28969")
+    if LOCAL_AUTH_LSG and not TCP_LOOPBACK_GUARD:
+        parser.error("--local-auth-lsg requires --loopback-tcp-guard")
     if TCP_LOOPBACK_GUARD and not TCP_LOOPBACK_GUARD_PATH.is_file():
         parser.error(f"missing TCP loopback guard: {TCP_LOOPBACK_GUARD_PATH}")
     MAIN_CALL = known.main_call

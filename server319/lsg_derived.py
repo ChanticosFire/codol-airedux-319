@@ -119,7 +119,8 @@ def terminal_unavailable_reply(transaction_id: int) -> bytes:
 class DerivedLsgServer(AuthServer):
     def __init__(self, *args, token_marker: int = 0x00,
                  observed71_empty: bool = False, profile_store=None,
-                 session_key: bytes = SESSION_KEY, **kwargs):
+                 session_key: bytes = SESSION_KEY, allow_auth_tls: bool = False,
+                 **kwargs):
         super().__init__(*args, **kwargs)
         if token_marker not in (0x00, 0xAB):
             raise ValueError("token_marker")
@@ -128,6 +129,7 @@ class DerivedLsgServer(AuthServer):
         if len(session_key) != 24:
             raise ValueError("session_key must be 24 bytes")
         self.session_key = session_key
+        self.allow_auth_tls = allow_auth_tls
         self.profile_store = profile_store or default_store()
         self.user_id = os.environ.get("LSG_USER_ID", "1")
         self.profile_store.get_or_create(self.user_id)
@@ -138,6 +140,9 @@ class DerivedLsgServer(AuthServer):
             conn.settimeout(10)
             head = conn.recv(16, socket.MSG_PEEK)
             if head and head[0] in (0x16, 0x80):
+                if self.allow_auth_tls:
+                    AuthServer._handle(self, conn)
+                    return
                 self.evidence.write("unsupported_tls_lsg", session)
                 return
             hello = _read_exact(conn, 28)
