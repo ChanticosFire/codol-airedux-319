@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T19:05:00+00:00",
+  "scope": "getPlayerData definition-mismatch error path",
+  "builtin": {
+    "function": "0x5223C6 (getPlayerData / getSecurePlayerData)",
+    "arg_name": "0x7E5F81 'getPlayerData', 0x7E5F6D 'getSecurePlayerData'",
+    "definition_match": "0x522455 call 0x521F32; non-zero -> 0x5225A3 (success path), zero -> 0x522462",
+    "success_path": "0x5225A3..0x5225EE reads [ebp-0x4030], calls 0x521CBD / 0x5219E3, then returns",
+    "error_branches": {
+      "0x5225F3": "mov [esp], 0x7E5FB4 'getPlayerData: persistent data path is too long' -> call 0x58EECF",
+      "0x52267D": "0x7E5D81 '%s: %s in %s' -> call 0x58EECF",
+      "0x5226C7": "same 0x7E5D81 branch"
+    },
+    "definition_message": "%s: this player's %s does not match any definition in %s @ 0x7E5F35",
+    "xref_status": "no direct dword reference found for 0x7E5F35/0x7E5F39 in the image; the formatter probably receives it from a table or an upper frame"
+  },
+  "why_not_patched_yet": [
+    "the definition message is not the path-too-long branch; patching 0x5225F3 would not silence it",
+    "the matching function 0x521F32 returns 0 on mismatch and the caller takes the second path, so the throw site is inside 0x521F32 or the formatter it calls",
+    "blindly forcing 0x521F32 to 1 would push uninitialised [ebp-0x4030] data into the success path"
+  ],
+  "next": [
+    "set a breakpoint on 0x58EECF (script error formatter) while the client enters the world and capture the caller return address: that pinpoints the exact throw site",
+    "then patch that branch to return a default (jmp 0x522428) instead of raising"
+  ],
+  "artifacts": []
+}
