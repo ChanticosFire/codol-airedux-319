@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T11:45:00+00:00",
+  "scope": "find who re-creates the cl object",
+  "search": {
+    "refs_to_0x331C0C8": 203,
+    "writes_found": ["0x5C85C0 (a3 c8 c0 31 03 = mov [0x331C0C8],eax)", "0x5C8AC1 (same pattern)"]
+  },
+  "finding": "there are exactly two stores to the encoded client-pointer global, both inside CL_Init (0x5C83D0..0x5C8AC1 region). So the object is only ever re-created by CL_Init -- which matches the earlier observation that calling CL_Init tears the client down.",
+  "puzzle": "0x5B2C10 does NOT contain a call to 0x5C83D0; its 14 call targets were enumerated earlier and none is CL_Init. So something else ran CL_Init during our window -- most likely the frame tick, or the launcher's own maintenance.",
+  "next": [
+    "put a one-shot launcher breakpoint at 0x5C85C0 to see whether it fires during our 0x5B2C10 call; if it does, CL_Init is being invoked behind our back",
+    "if it is the frame tick, find the condition that makes it re-init (probably phase changing back and forth)",
+    "the practical consequence is the same: keep cl stable by preventing the re-init, or re-apply our writes immediately before each step"
+  ],
+  "artifacts": []
+}
