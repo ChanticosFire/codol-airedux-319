@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:20:02.351245+00:00",
+  "claim": "发现 2.6.9.7 房间增强补丁已实现进图；研究记录证明自建房+准备可进地图并支持加 BOT",
+  "artifact": "E:/GAME/COD/codol-airedux/CODOL-2.6.9.7-Launcher/client_room2697_enhanced.dll (117248 B)",
+  "exports": [
+    "LocalFindMapAsset2697",
+    "LocalMapTable2697",
+    "LocalMatchBegin",
+    "LocalRoomPump",
+    "RoomBridgeSelfTest2697",
+    "RoomInspect"
+  ],
+  "key_strings": [
+    "room_ready sequence=%u map=%s",
+    "room_match_begin result=%d map=%s",
+    "native_world_ready scale=%g interpolation=%g realtime=%u",
+    "room_hooks_installed current_version=2697 endpoint=127.0.0.1:28969",
+    "mp_cqbtraining",
+    "mp_trainingground",
+    "war;cha;dm;dom;conf;sd;dd;koth;sab;ctf;infect;train;kpin;hostage;nsg",
+    "native_match_disconnected restoring_frontend=1"
+  ],
+  "research_log_quotes": [
+    "2026-10-08 01:33:13 终于能进添加BOT的TDM了",
+    "2026-10-08 13:03:17 可以稳定在创建房间进入地图了",
+    "现在只能选择2.6.9.7的安装目录之后启动客户端点多人竞技-战术团队竞技-创建房间-点准备等待3到5s进地图游戏。"
+  ],
+  "implication": "能进图+加BOT的是 2.6.9.7 + room2697_enhanced.dll；1649370 离线基底明确不含开始战斗（见 20261022-community-boundary）",
+  "next": [
+    "确认 2.6.9.7 安装目录与启动器可用性",
+    "评估把 2.6.9.7 的进图逻辑移植到 1649370 的可行性（版本地址不同）"
+  ]
+}

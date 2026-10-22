@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【路线级发现】能进图+加BOT的是 2.6.9.7 + room2697_enhanced.dll**：该 DLL(117KB) 导出 `LocalMatchBegin`/`LocalRoomPump`/`LocalMapTable2697` 等，字符串含 `room_ready`/`room_match_begin`/`native_world_ready`/`mp_trainingground`/`mp_cqbtraining`，并把 endpoint 指向 127.0.0.1:28969。研究记录原文：「终于能进添加BOT的TDM了」「可以稳定在创建房间进入地图了」「创建房间-点准备等待3到5s进地图」。证据 [`20261022-room2697-finding.json`](evidence/experiments/20261022-room2697-finding.json)。
+
 > **2026-10-22【结论级证据】社区文档：离线版本不提供“开始战斗”**：`docs/client-issue-resolution-log.md:144`「当前不提供多人同步或开始战斗」；`docs/client-code-architecture.md:235`「房间成员/队伍/准备/地图/模式 | 服务端；客户端只保存展示快照」。这解释准备惰性、room.startgame 空操作、+devmap 降级、地图命令全无效。另 PVE 剧情任务“开始匹配”同样无反应、无请求。下步：检查 CODOL-2.6.9.7-Launcher 或服务端实现开始战斗协议。证据 [`20261022-community-boundary.json`](evidence/experiments/20261022-community-boundary.json)。
 
 > **2026-10-22【进图】connect 与写 ui_state 都无效**：`connect 127.0.0.1:8466` injected 但仍在在大厅；写 [0x84ABA50]=3（读回 3）画面不变、stage 仍 5；`map_restart`(0xDBF98C) 引用点 0x5AA42D 只是启动参数比较。→ ui_state 不是场景切换唯一开关，需引擎级加载或服务器驱动。证据 [`20261022-connect-uistate.json`](evidence/experiments/20261022-connect-uistate.json)。
