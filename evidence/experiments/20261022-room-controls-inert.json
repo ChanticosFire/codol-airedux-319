@@ -23,6 +23,14 @@
     {
       "action": "点 (370,282)（+72 偏移假设）",
       "result": "下拉未打开"
+    },
+    {
+      "action": "cbuf loadzone mp_strike_sh",
+      "result": "injected 0→24，无视觉变化（zone 加载是后台路径）"
+    },
+    {
+      "action": "cbuf quit（上一轮）",
+      "result": "进程立即退出（链路已证实）"
     }
   ],
   "implication": "房间 UI 层似乎处于不可交互/等待同步状态；或者控件命中区与渲染差异不是固定 72px",
