@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:11:51.143139+00:00",
+  "claim": "客户端 bdService 消息带 16 字节 HMAC 字段；缺失时整条业务回执被拒绝",
+  "evidence_code": {
+    "parser": {
+      "va": "0xBA3710",
+      "note": "0x85 帧内层业务消息解析器（state=3 分发表在 0xBA46A2）"
+    },
+    "checks": [
+      {
+        "va": "0xBA3844",
+        "string_va": "0xD5A520",
+        "string": "Bad recv counter",
+        "note": "收到序号与 [conn+0x5EC] 比较；不等则拒绝"
+      }
+    ],
+    "strings": {
+      "0xD5A4FC": "HMAC mismatch",
+      "0xD5A50C": "HMAC calculation",
+      "0xD5A520": "Bad recv counter",
+      "0xD5A534": "Bad frame/payload size"
+    },
+    "hmac_compare": {
+      "va": "0xBA398D..0xBA39E2",
+      "note": "把消息中读取的 16 字节与本地计算值逐字节 XOR/OR 比较，不等则置 0xD5A4FC"
+    },
+    "blob_reader": {
+      "va": "0xC737A0",
+      "note": "读取 tag19 blob，最大 0x14=20 字节"
+    },
+    "xrefs": {
+      "0xD5A4FC": [
+        "0xBA39DE"
+      ],
+      "0xD5A50C": [
+        "0xBA396F"
+      ],
+      "0xD5A520": [
+        "0xBA3863"
+      ]
+    }
+  },
+  "observations": [
+    "自然登录会话中 [conn+0x5EC] 随服务端应答递增（0 → 2），说明帧被接收、序号检查被走过",
+    "对客户端全部已提交内存（约 958 MB）扫描 “AI-Room” ASCII/UTF-16 均无命中，说明房间记录从未被解码",
+    "按 SERVICE_INITIALIZATION.md 约束改成“每个请求都按序回执”（含 svc28/task4 error=4）后仍无命中",
+    "把事务号/帧计数改成从 0 起始会让客户端在第一条应答后直接断开（peer_closed），证明原 1 起始是对的"
+  ],
+  "conclusion": "所有业务回执都被 0xBA3710 的内层 HMAC 校验拒绝。需要确定消息中 16 字节 HMAC 的位置、覆盖范围与密钥（候选：LSG 派生 server_mac 20 字节、resp_hmac_key、或连接对象 +0x638 的 8 字节安全材料）。",
+  "next": [
+    "在客户端 0xBA3710 入口/比较点下断点，抓一次真实服务端消息（或自造消息）的字段位置与期望 HMAC",
+    "用客户端自己的请求消息反推格式：客户端 0x85 帧的内层 kind=0x86 消息是否也带该 HMAC",
+    "实现 HMAC 后再验证 21/13 房间列表、svc71/task4 是否被消费"
+  ],
+  "session_logs": [
+    "evidence/experiments/20261022-room-inorder.jsonl",
+    "evidence/experiments/20261022-room-seqfix.jsonl",
+    "evidence/experiments/20261022-room-scan.jsonl"
+  ],
+  "memory_scans": [
+    "evidence/experiments/20261022-room-name-scan.json",
+    "evidence/experiments/20261022-room-name-scan2.json",
+    "evidence/experiments/20261022-room-name-scan3.json"
+  ]
+}

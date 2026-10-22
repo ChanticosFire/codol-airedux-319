@@ -299,9 +299,16 @@ def candidate_svc71_task9_reply(transaction_id: int = 1,
             + _typed_u32(1) + _typed_u32(1) + entry)
 
 
-def terminal_unavailable_reply(transaction_id: int) -> bytes:
-    """14-byte bdService error candidate; no fabricated result object."""
-    return _typed_u64(transaction_id) + _typed_u32(14)
+def terminal_unavailable_reply(transaction_id: int, error: int = 4) -> bytes:
+    """bdService failure envelope; no result object.
+
+    SERVICE_INITIALIZATION.md: the client pops the head task for every kind=0x86
+    response, so *every* request must receive exactly one reply and replies must
+    follow request order.  Error 4 is what the target itself uses for
+    "unsupported / deserialize failed"; skipping a request desynchronises every
+    later reply (which is why the earlier room-list replies were ignored).
+    """
+    return _typed_u64(transaction_id) + _typed_u32(error)
 
 
 class DerivedLsgServer(AuthServer):
@@ -573,10 +580,18 @@ class DerivedLsgServer(AuthServer):
                                                % os.environ.get("FINDSESS_PORT", "8466"))
                     counter += 1
                 elif (service, task) == (28, 4):
-                    # Presence service: PROGRESS.md is explicit that svc28 must
-                    # stay silent - answering it disrupts the session.
-                    self.evidence.write("svc28_silent", session,
-                                        reason="svc28/task4 observed and deliberately unanswered")
+                    # Presence query.  It used to be left unanswered, but the
+                    # client pops one pending task per received kind=0x86
+                    # message, so silence here made every later reply land on
+                    # the wrong task.  Reply with a terminal failure instead.
+                    reply = build_server_frame85(
+                        keys, terminal_unavailable_reply(counter),
+                        counter=received_counter, iv=os.urandom(16))
+                    conn.sendall(reply)
+                    self.evidence.write("terminal_task_reply", session,
+                                        reason=f"service={service} task={task} error=4 "
+                                               "in-order failure (presence not implemented)")
+                    counter += 1
                 elif (service, task) in ((11, 13), (71, 3), (71, 7), (102, 5)):
                     # LSG_UNIMPL_MODE picks the reply for services we do not
                     # implement. The M3 run that reached the lobby answered these
@@ -611,7 +626,7 @@ class DerivedLsgServer(AuthServer):
                         counter=received_counter, iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("terminal_task_reply", session,
-                                        reason=f"service={service} task={task} error=14; "
+                                        reason=f"service={service} task={task} error=4; "
                                                "candidate contract, consumption unverified")
                     counter += 1
         except (LsgProtocolError, EOFError, OSError, TimeoutError) as exc:
