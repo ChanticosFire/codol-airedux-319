@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T07:45:00+00:00",
+  "scope": "inside 0x66F170: the indirect call that faults",
+  "disassembly": {
+    "0x66F1FA": "lea eax,[edi+0x10] -- edi = cl+0xC, so eax = cl+0x1C",
+    "0x66F1FD": "lea edx,[eax+0x10] -- edx = cl+0x2C",
+    "0x66F200": "xor edx,[eax+0x14] -- xor with [cl+0x30]",
+    "0x66F203": "lea ecx,[ebp-0x18]",
+    "0x66F206": "xor edx,[0xE60B78]",
+    "0x66F20C": "push ecx; push eax",
+    "0x66F20E": "call edx -- INDIRECT CALL through the decoded pointer"
+  },
+  "arithmetic": "edx = (cl+0x2C) ^ [cl+0x30] ^ [0xE60B78]. With cl zeroed this reduces to edx = [0xE60B78]. So the crash address 0x2AF590A7 should equal the runtime value of [0xE60B78].",
+  "meaning": "0x66F170 ends by CALLING a decoded function pointer rather than returning normally. If that pointer is uninitialised/garbage, the process dies with an exception at whatever address the garbage points to -- which matches the observed 'different crash address every run' pattern.",
+  "next": [
+    "read [0xE60B78] at runtime and compare it with the crash address of the same run; if they match, this is conclusive",
+    "then find who is supposed to write [0xE60B78] (likely CL_Init's another branch) and reproduce that step"
+  ],
+  "artifacts": []
+}
