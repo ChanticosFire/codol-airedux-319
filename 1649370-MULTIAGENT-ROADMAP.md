@@ -1166,3 +1166,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - zone 要放 runtime 副本（launcher 不复制 Original Client 的 ff）。
 - 双 hook 未捕获 fatal（待查 patch 生效）。
 - 下轮：会话启动后复制 ff 到 runtime 再注入。
+
+## 2026-10-22 overlay zone（本轮）
+
+- 真正 overlay 目录找到（8 个 ff，缺 common_gametype_mp.ff）。
+- 补 2.6.9.7 的 ff 后仍 fatal（版本不兼容）。
+- 下轮：找 1649370 版本的同名 zone。

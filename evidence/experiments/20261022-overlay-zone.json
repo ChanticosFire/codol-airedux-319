@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:06:12.293995+00:00",
+  "claim": "找到 1649370 真正的 overlay 资源目录，并补入 common_gametype_mp.ff",
+  "overlay_dir": "1649370/resources/v1649370/offline-resources/client_shipretail/chinese/",
+  "existing_ffs": [
+    "code_post_gfx_default_mp.ff",
+    "code_post_gfx_mp.ff",
+    "code_pre_gfx_mp.ff",
+    "common_loadscreen.ff",
+    "common_marketplace_lite.ff",
+    "common_marketplace_lite1.ff",
+    "common_mp_reload.ff",
+    "common_mp.ff(77MB)"
+  ],
+  "added": "common_gametype_mp.ff (20594965B, from 2.6.9.7 decoded-resources)",
+  "result": "会话 dg 启动后注入 preloadmap，进程仍退出（需看 stop_reason）",
+  "note": "1649370 的 ff 集合（code_*/common_mp 等）是它自己的版本；common_gametype_mp.ff 来自 2.6.9.7，可能版本不兼容"
+}
