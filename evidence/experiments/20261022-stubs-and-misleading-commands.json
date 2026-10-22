@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:06:05.482126+00:00",
+  "claim": "三个打桩/误导点解释了为何命令都不进图：0x7FB310 是空函数、+devmap 丢失地图名、room.startgame 实际发 chat.room UI 事件",
+  "findings": {
+    "stub_function": "0x7FB310 = 'xor al,al; ret'（永远返回 0）→ +devmap 分支 0x4F8BC3 的成功检查永远失败，走降级路径",
+    "devmap_arg_loss": "0x4F8BEF 用 argv[ebx]（当前参数，仍是 'devmap'）格式化 \"%s\\n\" → 只执行 devmap，地图名参数丢失",
+    "room_startgame_real": "0x62FCC0 里 push 0xDC6738 = \"chat.room\" → 它是发 Scaleform UI 事件，不是启动比赛",
+    "cvar_check": "0x62B870 读 \"g_gametype\"(0xDAFAD4) 并与 \"spy\"(0xDC0A5C) 比较"
+  },
+  "tests": [
+    "cbuf devmap（无参）",
+    "map_restart",
+    "fast_restart",
+    "map_rotate",
+    "room.startgame 1/0",
+    "room.create"
+  ],
+  "result": "全部 injected，ui_state 恒 5，画面无变化",
+  "next": [
+    "找真正的地图加载入口（SV_SpawnServer / Com_LoadMap 类），需先设 g_gametype",
+    "或找到 'chat.room' 之外的房间开始 UI 事件名（命令表里 room.test/room.members 之外的项）",
+    "或让服务器端推送让客户端进入“真实房间”的消息"
+  ]
+}

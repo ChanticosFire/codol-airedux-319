@@ -1039,3 +1039,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - 游戏有 sendto/recvfrom；新建 hook_sendto.py。
 - 点准备 sendto 0 条、send 0 条 → 控件惰性确认。
 - 下轮：绕过房间 UI 找真正开始入口。
+
+## 2026-10-22 打桩/误导命令（本轮）
+
+- 0x7FB310 空函数；+devmap 丢地图名；room.startgame 发 "chat.room" 事件。
+- 六条命令全部无效果。
+- 下轮：直找地图加载入口（SV_SpawnServer/Com_LoadMap）。
