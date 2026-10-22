@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:55:00+00:00",
+  "scope": "why the read path runs once",
+  "chain": {
+    "0x4FEA90": "call 0x4FE220 (unconditional in the frame driver; only 0x49DF20 is conditionally skipped before it)",
+    "0x4FE220": "frame work, contains 0x4FE312 call 0x4F9240",
+    "0x4F9240": "read-packet function, 0x4F9428 call 0x4F8D70",
+    "0x4F8D70": "ring-B pop loop 0x4F8ED8 -> call 0x5C2260 -> 0x4F8EEA call 0x675140",
+    "0x5C2260": "0x5C2380 call 0x674EB0 (receive helper) -> ... -> 0x5C2434 call 0x473A50 (parse)"
+  },
+  "finding": "the call from 0x4FEA90 to 0x4FE220 has no condition guarding it, so the read path runs whenever the frame driver runs. Since the read-packet breakpoint fires only once, the frame driver itself runs only once (or only one of its callers fires once).",
+  "next": [
+    "breakpoint 0x5C22B5 and 0x5C22FC/0x5C2315 to see which early exit is taken every frame",
+    "or read the live client's msg object ([esi+0x14] = cursize) to see what length the game-side message has"
+  ],
+  "artifacts": [],
+  "top_loop": {
+    "0x77FA04..0x77FA6E": "top-level frame loop; 0x77FA64 call 0x4FEA20 (frame driver), 0x77FA69 call 0x759890, 0x77FA6E jmp 0x77FA04",
+    "note": "the call to the frame driver is unconditional in the loop body; the only jumps into 0x77FA64 come from 0x77FA2A and 0x77FA33, which skip earlier bookkeeping, not the driver call itself"
+  },
+  "breakpoint_caveat": "the launcher's breakpoints may be one-shot (removed after the first hit). If so, '1 hit' only proves 'called at least once' and the real evidence is that recv_helper had ZERO hits, which is reliable.",
+  "refined_conclusion": "the frame driver runs every frame, and 0x5C2260 is reached every frame, but 0x674EB0 is never called -- so 0x5C2260 must return early before 0x5C2380. Its early exits are: [0x84abb08]/[0x84abb14] setup, 0x5C22B5 (msg length < 4), 0x5C22FC (phase < 7), 0x5C2315 (msg length < 4 again)."
+}

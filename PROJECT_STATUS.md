@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【调用链闭环：0x5C2260 每帧调用但提前返回】** 帧驱动 `0x4FEA20`（唯一调用者 `0x77FA64`，位于顶层主循环）每帧无条件调用 `0x4FE220`→`0x4F9240`→`0x4F8D70`→`0x5C2260`。launcher 断点可能一次性，故“1 次”只证明至少一次；但 `0x674EB0` **0 命中**可靠，说明 `0x5C2260` 每帧在 `0x5C2380` 前提前返回（候选：`0x5C22B5`/`0x5C22FC`/`0x5C2315`）。下一步：断点这三处或读活客户端 msg `cursize`。证据 [20261022-codex-frame-driver-once.json](evidence/experiments/20261022-codex-frame-driver-once.json)。
+
 > **2026-10-22【帧循环只调用读包一次】** 断点 `0x4F9428`（调读包）与 `0x4F8ED8`（调解析）各命中 1 次——帧循环没有持续调用读包路径。`0x4F9428` 所在函数入口 `0x4F9240`，调用者 `0x4FE312`/`0x4FE658`。下一步：反汇编调用点找 gamestate 后不再走读包分支的条件（总闸）。证据 [20261022-codex-loop-once.json](evidence/experiments/20261022-codex-loop-once.json)。
 
 > **2026-10-22【环 B 消费者 = 0x675140】** 环常量交叉引用集中在 `0x675140`（取包），它在 `0x4F8D70` 的循环里 `0x4F8EEA` 被调用；循环还调 `0x5C2260`（`0x4F8ED8`）。但 `0x674EB0` 断点 0 命中，说明帧循环未走到或 `0x5C2260` 提前返回。下一步：断点 `0x4F8ED8`/`0x4F9428` 区分。证据 [20261022-codex-ring-consumer.json](evidence/experiments/20261022-codex-ring-consumer.json)。
