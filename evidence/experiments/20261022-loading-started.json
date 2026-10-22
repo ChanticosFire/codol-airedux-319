@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:19:27.364822+00:00",
+  "claim": "删除 ver365 zone + patch zone 失败分支后：preloadmap 不再 Com_Error，进程存活 >20s，画面进入黑屏加载",
+  "steps": [
+    "删除 4 处复制的 ver365 common_gametype_mp.ff",
+    "patch 0x49EEA3 => E9（绕过 zone 加载失败 fatal）",
+    "hook 0x4F82E0（未再捕获 Com_Error）",
+    "注入 preloadmap mp_cross_fire 1"
+  ],
+  "observation": {
+    "process": "存活 >20s（Responding=True, CPU 31s）",
+    "com_error": "未捕获（修复前是 code=2）",
+    "window": "CODO 类窗口存在且可见，标题 使命召唤online",
+    "screen": "截图 10617 字节 = 全黑（加载过渡）"
+  },
+  "version_check_found": {
+    "code": "0x483E3B cmp eax,0x1CD; je ok; 否则 Com_Error(2)",
+    "strings": [
+      "283 %s %d %d",
+      "284 %s %d %d"
+    ],
+    "meaning": "fastfile 版本校验：必须 461"
+  },
+  "next": [
+    "等待/延长观察加载是否完成（可能需更多时间或下一个缺失资源）",
+    "继续用 hook 抓后续错误",
+    "记录黑屏持续时长与最终状态"
+  ]
+}
