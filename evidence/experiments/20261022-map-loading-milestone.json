@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:58:11.501315+00:00",
+  "claim": "【里程碑】patch 0x6751F0 伪造 challenge 发送成功后，客户端进入地图加载界面（交叉火力）",
+  "setup": [
+    "patch 0x49EEA3 => E9（zone 失败绕过）",
+    "patch 0x6751F0 => B0 01 C3（伪造 challenge 发送成功）",
+    "preloadmap mp_cross_fire 1",
+    "connection+0x14 = netadr(127.0.0.1:28969)",
+    "state=3"
+  ],
+  "screen": {
+    "title": "1 交叉火力",
+    "bg": "棋盘格（纹理未加载）",
+    "hints": [
+      "在【实战训练】中，你可以毫无压力地熟悉地图和玩法。",
+      "游戏中寻求帮助请按 F1"
+    ],
+    "logo": "CALL OF DUTY 使命召唤 ONLINE",
+    "progress": "底部加载进度条可见"
+  },
+  "significance": "62 轮以来第一次进入地图加载界面（此前都是错误框或黑屏）",
+  "next": [
+    "等待/推动加载完成（可能需要更多资源或时间）",
+    "观察加载进度是否推进",
+    "若卡住，用 hook 检查缺失资源"
+  ]
+}
