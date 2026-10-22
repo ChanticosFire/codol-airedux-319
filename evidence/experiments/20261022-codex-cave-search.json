@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T17:00:00+00:00",
+  "scope": "inline world-entry patch feasibility",
+  "call_convention": {
+    "SV_BuildClientSnapshot_candidate": "0x489081 starts with 'test eax,eax; je ret' and is called via 'mov eax,ebx; call' -> regparm eax=client",
+    "SV_ClientEnterWorld": "0x4705F4 starts with 'push ebp; mov ebp,esp; ...; mov ebx,[ebp+8]' -> cdecl, client at [ebp+8], cmd at [ebp+0xc]",
+    "conflict": "redirecting the 0x48AABC call to 0x4705F4 would not pass client on the stack"
+  },
+  "patch_space": {
+    "site": "0x48AABA 'mov eax,ebx' + 0x48AABC 'call 0x489081' = 7 bytes",
+    "needed_stub": "push ebx; push 0; call 0x4705F4; add esp,8; jmp back = 15+ bytes",
+    "code_caves": "no run of >=24 0xCC bytes anywhere in .text; the neighbour range 0x48A000..0x48C000 has none either",
+    "conclusion": "a direct redirect or a CC cave stub is not available in .text as shipped"
+  },
+  "alternatives": [
+    "scan for 0x00 or 0x90 padding runs (some compilers align with NOPs or zeros) and use one as a stub cave",
+    "extend the .text section and append a stub at its end, then jmp from 0x48AABA (needs PE section edit and relocations are not an issue for absolute calls)",
+    "patch SV_ExecuteClientMessage's CS_PRIMED branch so any client packet triggers SV_ClientEnterWorld (the client would need to send at least one netchan packet)",
+    "patch SV_ClientEnterWorld's prologue to accept regparm eax=client (rewrite the first bytes to store eax into the future [ebp+8] slot before the prologue)",
+    "all of these are server-side; the clean alternative remains making the 1649370 client emit clc_move at phase 8"
+  ],
+  "next": "search 0x00/0x90 caves and, if none, append a stub section to the dedrun copy and patch 0x48AABA to jmp into it"
+}
