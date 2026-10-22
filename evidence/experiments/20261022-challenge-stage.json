@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:39:08.351425+00:00",
+  "claim": "写 connection+0x14 的 netadr(127.0.0.1:28969) 后，错误从“无法连接主机”变成 EXE_CLIENTFAILEDTOCHALLENGE —— 客户端开始真正发起连接",
+  "sequence": [
+    "patch 0x49EEA3 + preloadmap mp_cross_fire 1（资源就绪）",
+    "写 connection+0x14 = netadr(type=4, 127.0.0.1, port 28969, 0x9D)",
+    "写 state=3",
+    "12 秒后截图：EXE_CLIENTFAILEDTOCHALLENGE"
+  ],
+  "before": "state=3 但不写 netadr → 『无法连接主机』（从未尝试连接）",
+  "after": "写了 netadr → 进入 challenge 阶段但无人应答 → EXE_CLIENTFAILEDTOCHALLENGE",
+  "meaning": "连接链路已打通到 challenge 步骤，只差一个 UDP challenge 应答器",
+  "next": [
+    "确认 challenge 请求的端口/格式（抓包或看 udp_challenge 输出）",
+    "让应答器返回正确的 challengeResponse",
+    "若连接成功则进入真正的地图加载/游戏"
+  ]
+}

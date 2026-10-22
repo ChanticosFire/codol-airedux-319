@@ -1232,3 +1232,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 
 - 进场景后不发包，错误框后空闲等待。
 - 下轮：初始化 netadr 或 patch 判定。
+
+## 2026-10-22【突破】challenge 阶段（本轮）
+
+- 写 netadr → 错误变 EXE_CLIENTFAILEDTOCHALLENGE。
+- 只差 UDP challenge 应答。
+- 下轮：抓请求格式并应答。
