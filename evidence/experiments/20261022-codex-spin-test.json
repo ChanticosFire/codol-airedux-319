@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:25:00+00:00",
+  "scope": "spin-test: is 0x674EB0 ever entered?",
+  "experiment": {
+    "live_patch": "runtime write of EB FE (jmp $) at 0x674EB0",
+    "observe": "phase stayed 8 for 5 samples; ring B kept being consumed (read 4130/write 4146); the client did not hang or crash"
+  },
+  "conclusion": "0x674EB0 is definitively never entered while the client is in phase 8 and consuming ring B. If it were entered the client would freeze in the self-loop. So 0x5C2260 returns before 0x5C2380 every frame.",
+  "early_exits_before_0x5C2380": [
+    "0x5C2271 test [0x84abb08]; jne 0x5C227F (does not return)",
+    "0x5C22B5 cmp eax,4 / 0x5C22B8 jl 0x5C22FC (msg length < 4)",
+    "0x5C22FC cmp [0x76446B0],7 / jl 0x5C2413 (phase < 7 -> return; phase is 8 so not taken)",
+    "0x5C2309..0x5C2324 setup, 0x5C2315 cmp eax,4 / 0x5C2318 jl 0x5C24BC (msg length < 4 again)",
+    "0x5C231E..0x5C237D stack copies, then 0x5C2380 call 0x674EB0"
+  ],
+  "next": [
+    "disassemble 0x5C24BC to see whether that branch returns immediately (it is the second msg-length<4 exit)",
+    "then read the live msg cursize: the caller builds the msg at [ebp-0x200e8] before calling 0x5C2260, so breakpointing 0x4F8ED8 or 0x5C22AF and dumping esi would show the actual length",
+    "if the game's message object is always <4 bytes, the game is not receiving the bridge packets at all (the ring consumer is a side path)"
+  ],
+  "artifacts": []
+}
