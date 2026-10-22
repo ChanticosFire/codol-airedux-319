@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T21:35:00+00:00",
+  "scope": "module enumeration for [0xCA8168]",
+  "result": {
+    "modules_enumerated": 7,
+    "owner_of_0x74E0E9B0": "none -- the address falls outside every enumerated module",
+    "client_sha": "55F067AC...(unchanged)",
+    "cleanup": "client stopped, no leftover processes"
+  },
+  "interpretation": [
+    "7 modules is far too few for a running game client (expect 20+), so the enumeration itself is suspect",
+    "likely cause: this is a 32-bit process enumerated from 64-bit Python; psapi.EnumProcessModules can return a partial/filtered list in that configuration",
+    "alternatively 0x74E0E9B0 is a Wow64-side address and does not belong to any 32-bit module",
+    "either way the module-owner lookup is not a reliable path forward"
+  ],
+  "recommendation": "drop the module lookup as a means to identify the validator. The behavioural evidence (fn(handle,0), only 0 accepted) is already strong enough to proceed with the priming experiment: inject a packet so the socket has data, then invoke CL_Connect and observe whether 0x5BE700 passes and cl gets filled."
+}

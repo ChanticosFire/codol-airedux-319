@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【模块枚举只返回 7 个、目标不在任一模块内——放弃该识别路线】** 修正签名后重试：7 个模块，`0x74E0E9B0` 不在任何区间。7 个模块对运行中的客户端明显偏少，枚举本身可疑（很可能是 64 位 Python 枚举 32 位进程时列表不完整），或该地址属于 Wow64 侧。行为证据已足够（`fn(handle,0)`、只接受 0），直接进入预热实验：**先注入一个包 → 调用 `CL_Connect` → 观察 `0x5BE700` 是否放行、`cl` 是否被填充**。证据 [20261022-codex-modcheck.json](evidence/experiments/20261022-codex-modcheck.json)。
+
 > **2026-10-22【模块查询脚本报错，本轮无新数据】** 用 `psapi` 映射 `0x74E0E9B0` 的两次尝试都因 ctypes 签名失败（`GetModuleFileNameExW`/`GetModuleInformation` 在 psapi 而非 kernel32；`HMODULE` 需按 `c_void_p` 传）。客户端启动登录后已清理，全程未 patch/poke。下一步：重写查询，或直接用 `GetModuleHandleW('kernel32')` 比对基址范围确认它是否为 `WaitForSingleObject`，再做“先注入包→调用 CL_Connect”的预热实验。证据 [20261022-codex-module-lookup.json](evidence/experiments/20261022-codex-module-lookup.json)。
 
 > **2026-10-22【校验语义 ≈ `WaitForSingleObject(h,0)`：要求句柄已信号】** `[0xCA8168]=0x74E0E9B0`（系统 DLL 映像地址），调用形态 `fn(handle,0)`、判定 `test eax,eax; jne 失败`（只接受 0）——与 `WaitForSingleObject(h,0)` 吻合（`WAIT_OBJECT_0=0`）。即要求两个句柄**已信号**；我们流程里网络事件未触发 → 超时 → `0x5BE700` 返回 0 → `CL_Connect` 退出。实践：**先让 socket 可读（先注入一个包）再调用 `CL_Connect`**。下一步：枚举模块确认归属，然后实测“先注入包→调用 CL_Connect”。证据 [20261022-codex-validator-guess.json](evidence/experiments/20261022-codex-validator-guess.json)。
