@@ -1381,3 +1381,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 
 - CreateFileW hook 无记录，可能用别的 API。
 - 下轮：CreateFileA/ReadFile 或 wpr 过滤。
+
+## 2026-10-22 游戏用 CreateFileA（本轮）
+
+- hook 0xCA8208 记录 506 次。
+- 解码需改 ANSI。
+- 下轮：修复后读取文件名。
