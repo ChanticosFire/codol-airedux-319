@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T01:00:00+00:00",
+  "scope": "two corrections after calling CL_Init",
+  "measurements_before_init": {
+    "[0x331c0c8]": "0xC0485EB7 (non-zero)",
+    "[0x76638F4]": "0x7BE38B07 (non-zero)",
+    "decoded": "0x7BE38B07 ^ 0x6891D1C7 = 0x13725AC0 -- a valid address, NOT garbage"
+  },
+  "correction_1": "0x76638F4 is already allocated, so the earlier 'CL_Init never allocated it' conclusion was wrong. The globals exist.",
+  "correction_2": "the crash register ecx=0x840112CA is not 0x13725AC0, so the fault is not at the 0x5B2C70 decode. The stack frame 0x5B2C8A is the RETURN address of call 0x66F170 (0x5B2C85), so the crash is INSIDE 0x66F170, which uses ecx without it being set by the caller.",
+  "cl_init_call": "call_main_thread --target 0x5C83D0 --args 1 reported process_alive_after true, but the client exited immediately afterwards -- calling CL_Init on a live client tears down state it cannot rebuild, so that route is out.",
+  "next": [
+    "disassemble 0x66F170 to see what it does with ecx and whether the caller is expected to pass it",
+    "if so, set ecx before the call (0x5B2C85) -- that means crafting a small stub that sets ecx then jumps to 0x5B2C85, or patching the call site",
+    "do NOT call CL_Init on a live client again"
+  ],
+  "artifacts": ["runs/codex-clinit-call-1-init.json"]
+}
