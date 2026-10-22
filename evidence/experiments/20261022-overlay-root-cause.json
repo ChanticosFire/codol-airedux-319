@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:48:44.712947+00:00",
+  "claim": "overlay 冲突根因：文件不在 manifest 期望清单里(多余的意外文件)",
+  "evidence": {
+    "file": "main/models/projectile_cbu97_clusterbomb_lod010",
+    "in_manifest": 0,
+    "actual_exists": true,
+    "actual_size": 23712,
+    "actual_sha": "2a2b77ad08a12f3e"
+  },
+  "manifest": {
+    "path": "offline-loose-library/manifest.json",
+    "resources": 18154,
+    "fields": [
+      "game_path",
+      "size",
+      "sha256",
+      "archive"
+    ],
+    "sample": {
+      "game_path": "main/filesyscheck.cfg",
+      "size": 77,
+      "archive": "lf_init_common_gfx_V63.ifs"
+    }
+  },
+  "meaning": "manifest 是 overlay 的权威文件清单；overlay 里多出的文件会触发“overlay数据冲突”",
+  "next": [
+    "写脚本对比 overlay 与 manifest：找多余/缺失/哈希不符",
+    "删除多余文件，补齐缺失文件",
+    "重建后启动验证"
+  ]
+}
