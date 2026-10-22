@@ -722,7 +722,7 @@ def cmd_forward(client: Client, args) -> dict:
                     dump_handle.write(json.dumps({"length": len(data), "state": state_now,
                                                   "hex": data.hex()}) + "\n")
                     dump_handle.flush()
-                result = client.inject_oob_raw(data, args.adr_type, args.port)
+                result = client.inject_oob_raw(data, args.adr_type, args.port, _adr_ip_bytes(args))
                 events.append({"t": round(time.monotonic(), 3), "dir": "in",
                                "length": len(data), "source": f"{source[0]}:{source[1]}",
                                "inject": result["status"], "state": state_now,
@@ -754,8 +754,17 @@ def cmd_forward(client: Client, args) -> dict:
             "events": events[-args.max_events:], "status_after": client.status()}
 
 
-def _inject_raw(self, data: bytes, adr_type: int = 2, port: int = 0) -> dict:
-    adr = struct.pack("<I4sHHIII", adr_type, b"\0\0\0\0", socket.htons(port), 0, 0, 0, 0x9D)
+def _adr_ip_bytes(args) -> bytes:
+    text = getattr(args, "adr_ip", None) or "127.0.0.1"
+    try:
+        return socket.inet_aton(text)
+    except OSError:
+        return b"\0\0\0\0"
+
+
+def _inject_raw(self, data: bytes, adr_type: int = 2, port: int = 0,
+                ip: bytes = b"\0\0\0\0") -> dict:
+    adr = struct.pack("<I4sHHIII", adr_type, ip, socket.htons(port), 0, 0, 0, 0x9D)
     for _ in range(60):
         write = self.u32(RING_B_WRITE)
         read = self.u32(RING_B_READ)
@@ -795,6 +804,7 @@ def main() -> int:
     p = sub.add_parser("inject-oob")
     p.add_argument("--text", required=True)
     p.add_argument("--adr-type", type=int, default=2)
+    p.add_argument("--adr-ip", default="127.0.0.1", help="source IP written into the injected netadr (default 127.0.0.1)")
     p.add_argument("--port", type=int, default=0)
     p.add_argument("--no-pump", action="store_true")
     p.add_argument("--settle", type=float, default=1.0)

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T11:15:00+00:00",
+  "scope": "the receive helper still returns 0 after the port fix -- the netadr TYPE is wrong",
+  "hook": {
+    "stub": "call 0x674EB0; mov [scratch],eax; add esp,0x30; jmp 0x5C2388",
+    "result": "eax = 0 on every sample; client stayed alive (the corrected jump target fixed the earlier crash)"
+  },
+  "analysis": {
+    "0x674EB0_normalisation": "neg eax; sbb eax,eax; inc eax -> NET_CompareAdr result 0 becomes 1 (success), non-zero becomes 0 (failure)",
+    "0x674EA8": "type==2 branch: xor eax,eax; ret -- so LOOPBACK vs LOOPBACK compares equal",
+    "observed": "eax = 0 means NET_CompareAdr returned non-zero",
+    "inference": "the two netadr types differ. The bridge stamps type=2 (LOOPBACK), while the client's stored remote address for a connection to 127.0.0.1 is NA_IP (type=0). The type comparison fails before any port check."
+  },
+  "fix": "inject with --adr-type 0 (NA_IP) and the IP 127.0.0.1; the bridge currently hardcodes the ip bytes to 0 and only takes a type/port, so it needs an ip parameter as well",
+  "next": [
+    "add --adr-ip to the bridge (default 127.0.0.1) and write those bytes into the injected netadr",
+    "run forward --adr-type 0 --adr-ip 127.0.0.1 --port 28970 and re-hook 0x5C2380 to see whether eax becomes 1",
+    "if it does, the parser path finally executes and the snapshot body becomes the next observable layer"
+  ],
+  "artifacts": []
+}
