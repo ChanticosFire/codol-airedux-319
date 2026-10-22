@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:31:26.268408+00:00",
+  "claim": "回执其实已到达服务层：解码记录挂在 params+0x1C，缺的只是成功完成任务",
+  "slot_layout": {
+    "+0x00": "action 0x26",
+    "+0x08": "tid 0xa292",
+    "+0x14": "timeout 25000",
+    "+0x24": "slot index 7",
+    "+0x28": "params 0x500bdb88",
+    "+0x2c": "0x7fadc0",
+    "+0x30": "callback 0x7f4330",
+    "+0x34": "error 0x8435d0",
+    "+0x40": "handler 0x6376f0",
+    "+0x44": "context 5"
+  },
+  "params_layout": {
+    "+0x00": "vtable 0xd59a08",
+    "+0x08": "0x8a5286ee",
+    "+0x1c": "decoded record 0x24557ba8",
+    "+0x28": "pageSize 30",
+    "+0x30": "9"
+  },
+  "findings": [
+    "回执处理后 params+0x1C = 解码记录指针（说明响应确实被服务层解析并挂载）",
+    "任务槽仍 action=0x26，说明没有调用完成函数",
+    "0x7FAF50 是单槽完成函数：进入时 EAX=槽指针，栈参数 [ebp+8]=成功标志，内部 push flag, push slot, call [slot+0x30]",
+    "0x7FB240 是“按 action 批量完成”，硬编码成功标志 0（失败/无结果分支）",
+    "从远程线程直接调用 0x7F4330(params,1) 会让客户端崩溃（UI 线程亲和）"
+  ],
+  "next": [
+    "扩展 call_main_thread 支持设置 EAX，然后在窗口线程调用 0x7FAF50(EAX=slot, arg=1)",
+    "或找到响应解析器里调用 0x7FAF50/等价函数的位置并 hook",
+    "成功后 21/13 结果应进入 UI 列表"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-record-refs.json",
+    "evidence/experiments/20261022-room-name-scan19.json"
+  ]
+}

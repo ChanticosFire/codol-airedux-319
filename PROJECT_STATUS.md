@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【再进一步】回执已到达服务层，只差“成功完成”调用**：任务槽 `+0x40` handler=`0x6376F0`、`+0x44` context=5；params 对象（vtable `0xD59A08`）`+0x1C` 已写入解码记录指针（`0x24557BA8`）。完成函数：`0x7FAF50`（单槽，EAX=槽指针，栈参数=成功标志）与 `0x7FB240`（批量，标志硬编码 0）。远程线程直接调 `0x7F4330(params,1)` 会崩溃（UI 线程亲和）。下一轮在窗口线程调用 `0x7FAF50(EAX=slot, arg=1)`。证据 [`20261022-completion-path-found.json`](evidence/experiments/20261022-completion-path-found.json)。
+
 > **2026-10-22【突破】`0x7FB240(action)` 会完成该 action 的所有任务并调用回调**：遍历 `0xE56FFE0` 表，`[slot]==action` 时调用 `slot+0x30` 回调（push 0, push slot）并复位。实测远程调用 `0x7FB240(0x26)` 后回调立即命中（params=0xE570210、handler=0x6376F0、ctx=5）——完成机制正常；UI 仍空是因为强制路径不带结果。另发现监听器链表 `0xE5713EC`（通知码 5）与响应分发候选 `0x7FDFE0`/`0x8000B0`。证据 [`20261022-task-completion-breakthrough.json`](evidence/experiments/20261022-task-completion-breakthrough.json)。
 
 > **2026-10-22【定位到 pending 任务表】`0xE56FFE0`（步长 0x50，40 槽）**：`+0x00` action（房间查询=0x26）、`+0x08` 客户端 transaction id、`+0x28` 请求参数、`+0x30` 完成回调（=0x7F4330）、`+0x34` 错误处理。点击 `查找房间` 后新增 index 7 的槽；回执到达后该槽逐字节不变（action 仍 0x26）→ 任务从未完成。闭环实验：读槽内真实 tid 让延迟服务端回执（40896）仍 0 命中；action 字节 0x26 + 真实 tid（37253）也 0 命中。结论：响应没有进入“匹配任务槽”的路径。证据 [`20261022-task-table-found.json`](evidence/experiments/20261022-task-table-found.json)。
