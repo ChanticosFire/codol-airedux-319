@@ -1,0 +1,3 @@
+{"body_hex": "c8000000c8000000d2000000dc00000000000800b5fa407617037cdf", "body_len": 28, "body_sha256": "4c46d2c6b43317120d3fe7812dced4eb59c7b1b6a922fdc3df06dfd48b60c566", "connection_id": 1, "event": "plaintext_frame", "requests": 0, "utc": "2026-10-22T01:28:16Z"}
+{"connection_id": 1, "event": "gate_reply", "reply_hex": "160000000181dc0000008877665544332211c2b96f6b810cbfc9", "requests": 0, "utc": "2026-10-22T01:28:16Z"}
+{"connection_id": 1, "event": "raw_session_end", "reason": "TimeoutError:timed out", "requests": 0, "utc": "2026-10-22T01:28:26Z"}

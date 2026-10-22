@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "date": "2026-10-22T01:23:54.725499+00:00",
+  "purpose": "raw TCP from client process to 127.0.0.1:28969",
+  "pid": 18472,
+  "thread_wait": 0,
+  "socket": "0xca8",
+  "connect_return": 0,
+  "wsa_error": 0,
+  "accepted": {
+    "peer": [
+      "127.0.0.1",
+      12835
+    ]
+  }
+}

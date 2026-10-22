@@ -1,0 +1,582 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T01:28:12.904958+00:00",
+  "exe": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+  "exe_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "listener": "127.0.0.1:28969",
+  "patches": [],
+  "pid": 4896,
+  "init_netobj": {
+    "cave": "0x417b0000",
+    "thread_id": 32024,
+    "wait": 0,
+    "return": "0x24639fb8"
+  },
+  "netobj": "0x24639fb8",
+  "config": {
+    "remote": "0x417c0000",
+    "ip_hex": "7f000001",
+    "port_offset": "0x84",
+    "port_host_order": 28969,
+    "port_bytes_hex": "2971",
+    "tcp_address_remote": "0x417d0000",
+    "tcp_address_ip_hex": "7f000001"
+  },
+  "native_connect": {
+    "cave": "0x417e0000",
+    "thread_id": 28372,
+    "wait": 0,
+    "return": "0x24638f01"
+  },
+  "conn": "0x2463bbc0",
+  "conn_state": {
+    "socket": "0xca8",
+    "c8": 1,
+    "constructor_type": 16777343,
+    "constructor_ip_hex": "00000000",
+    "constructor_port_bytes_hex": "2971",
+    "copied_port_bytes_hex": "2971"
+  },
+  "tick": {
+    "cave": "0x417f0000",
+    "thread_id": 37896,
+    "wait": 0,
+    "return": "0x1"
+  },
+  "conn_state_after_tick": {
+    "socket": "0xca8",
+    "c8": 2,
+    "644": 0
+  },
+  "pump_samples": [
+    {
+      "elapsed_ms": 254,
+      "tick": {
+        "cave": "0x41800000",
+        "thread_id": 6936,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 506,
+      "tick": {
+        "cave": "0x41810000",
+        "thread_id": 7760,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 756,
+      "tick": {
+        "cave": "0x41820000",
+        "thread_id": 23388,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 1008,
+      "tick": {
+        "cave": "0x41830000",
+        "thread_id": 37024,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 1259,
+      "tick": {
+        "cave": "0x41840000",
+        "thread_id": 26520,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 1511,
+      "tick": {
+        "cave": "0x41850000",
+        "thread_id": 16188,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 1762,
+      "tick": {
+        "cave": "0x418f0000",
+        "thread_id": 31752,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 2013,
+      "tick": {
+        "cave": "0x41900000",
+        "thread_id": 19660,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 2268,
+      "tick": {
+        "cave": "0x41910000",
+        "thread_id": 23892,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 2519,
+      "tick": {
+        "cave": "0x41920000",
+        "thread_id": 38216,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 2770,
+      "tick": {
+        "cave": "0x43ff0000",
+        "thread_id": 36504,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 3022,
+      "tick": {
+        "cave": "0x44000000",
+        "thread_id": 8940,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 3273,
+      "tick": {
+        "cave": "0x44010000",
+        "thread_id": 33908,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 3524,
+      "tick": {
+        "cave": "0x44020000",
+        "thread_id": 24380,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 3775,
+      "tick": {
+        "cave": "0x44030000",
+        "thread_id": 2452,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 4026,
+      "tick": {
+        "cave": "0x44040000",
+        "thread_id": 20684,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 4281,
+      "tick": {
+        "cave": "0x48cb0000",
+        "thread_id": 33024,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 4532,
+      "tick": {
+        "cave": "0x48cc0000",
+        "thread_id": 7312,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 4783,
+      "tick": {
+        "cave": "0x48cd0000",
+        "thread_id": 29924,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 5035,
+      "tick": {
+        "cave": "0x48ce0000",
+        "thread_id": 7160,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 5286,
+      "tick": {
+        "cave": "0x48cf0000",
+        "thread_id": 32752,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 5537,
+      "tick": {
+        "cave": "0x48d00000",
+        "thread_id": 34188,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 5788,
+      "tick": {
+        "cave": "0x48d10000",
+        "thread_id": 39492,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 6039,
+      "tick": {
+        "cave": "0x49cf0000",
+        "thread_id": 39088,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 6294,
+      "tick": {
+        "cave": "0x49d00000",
+        "thread_id": 28600,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 6545,
+      "tick": {
+        "cave": "0x49d10000",
+        "thread_id": 37616,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 6796,
+      "tick": {
+        "cave": "0x49d20000",
+        "thread_id": 34664,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 7048,
+      "tick": {
+        "cave": "0x49f30000",
+        "thread_id": 20916,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 7301,
+      "tick": {
+        "cave": "0x49f40000",
+        "thread_id": 39648,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 7552,
+      "tick": {
+        "cave": "0x49f50000",
+        "thread_id": 41744,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 7802,
+      "tick": {
+        "cave": "0x49f60000",
+        "thread_id": 40048,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 8053,
+      "tick": {
+        "cave": "0x49f70000",
+        "thread_id": 34928,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 8308,
+      "tick": {
+        "cave": "0x49f80000",
+        "thread_id": 40732,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 8559,
+      "tick": {
+        "cave": "0x49f90000",
+        "thread_id": 19400,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 8810,
+      "tick": {
+        "cave": "0x4bb70000",
+        "thread_id": 40024,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 9061,
+      "tick": {
+        "cave": "0x4cb50000",
+        "thread_id": 22536,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 9312,
+      "tick": {
+        "cave": "0x4db30000",
+        "thread_id": 34288,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 9563,
+      "tick": {
+        "cave": "0x4db40000",
+        "thread_id": 28836,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 9814,
+      "tick": {
+        "cave": "0x4eb20000",
+        "thread_id": 2992,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 10065,
+      "tick": {
+        "cave": "0x4ebb0000",
+        "thread_id": 15680,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 10321,
+      "tick": {
+        "cave": "0x4ebc0000",
+        "thread_id": 10560,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 10572,
+      "tick": {
+        "cave": "0x4ebd0000",
+        "thread_id": 30880,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 10823,
+      "tick": {
+        "cave": "0x4ebe0000",
+        "thread_id": 38792,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 11074,
+      "tick": {
+        "cave": "0x4ebf0000",
+        "thread_id": 8612,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 11328,
+      "tick": {
+        "cave": "0x4ec00000",
+        "thread_id": 10072,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 11578,
+      "tick": {
+        "cave": "0x4ec10000",
+        "thread_id": 27568,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 11831,
+      "tick": {
+        "cave": "0x4fc00000",
+        "thread_id": 452,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    },
+    {
+      "elapsed_ms": 12000,
+      "tick": {
+        "cave": "0x4fbf0000",
+        "thread_id": 13292,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "c8": 2,
+      "644": 0
+    }
+  ]
+}

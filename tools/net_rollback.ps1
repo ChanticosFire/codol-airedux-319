@@ -64,6 +64,10 @@ Write-Host ("  快照目录  : {0}" -f $(if ($SnapshotDir) { $SnapshotDir } else
 # ---------------------------------------------------------------- 1. 结束 guard
 Write-Section '1. 结束 offline_guard 进程（这一步即撤销动态 WFP 会话）'
 $guards = Get-Process -Name 'offline_guard','offline_guard64','offline_guard_x64' -ErrorAction SilentlyContinue
+$customGuardPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'runs\guard-build\client_loopback_tcp_guard-fixed.exe'
+$customGuards = Get-Process -Name 'client_loopback_tcp_guard-fixed' -ErrorAction SilentlyContinue |
+    Where-Object { $_.Path -and ([IO.Path]::GetFullPath($_.Path) -ieq [IO.Path]::GetFullPath($customGuardPath)) }
+$guards = @($guards | Where-Object { $_ }) + @($customGuards | Where-Object { $_ })
 if (-not $guards) {
     Write-Ok '没有残留的 guard 进程'
 } else {
@@ -100,6 +104,9 @@ if (-not $games) {
 Write-Section '3. 等待内核回收动态会话'
 Start-Sleep -Seconds 2
 $stillGuard = Get-Process -Name 'offline_guard','offline_guard64','offline_guard_x64' -ErrorAction SilentlyContinue
+$stillCustom = Get-Process -Name 'client_loopback_tcp_guard-fixed' -ErrorAction SilentlyContinue |
+    Where-Object { $_.Path -and ([IO.Path]::GetFullPath($_.Path) -ieq [IO.Path]::GetFullPath($customGuardPath)) }
+$stillGuard = @($stillGuard | Where-Object { $_ }) + @($stillCustom | Where-Object { $_ })
 if ($stillGuard) {
     Write-Bad ("仍有 guard 存活: {0}" -f (($stillGuard | ForEach-Object { $_.Id }) -join ', '))
 } else {

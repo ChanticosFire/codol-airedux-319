@@ -33,6 +33,7 @@ import subprocess
 import sys
 import threading
 import time
+import types
 import zlib
 from ctypes import wintypes as W
 from pathlib import Path
@@ -44,6 +45,19 @@ if not COMMUNITY_SRC.is_dir():
 if not COMMUNITY_ROOT.is_dir():
     raise SystemExit(f"找不到社区项目目录: {COMMUNITY_ROOT}")
 sys.path.insert(0, str(COMMUNITY_SRC))
+
+# The community source currently annotates GameEvents.bind_debugger with
+# DebugControl before defining that protocol. Defer annotation evaluation in
+# our in-memory copy; leave the community file unchanged.
+contracts_name = "codol_rebuild.runtime.contracts"
+if contracts_name not in sys.modules:
+    contracts_path = COMMUNITY_SRC / "codol_rebuild" / "runtime" / "contracts.py"
+    contracts_source = contracts_path.read_text(encoding="utf-8")
+    contracts_module = types.ModuleType(contracts_name)
+    contracts_module.__file__ = str(contracts_path)
+    exec(compile("from __future__ import annotations\n" + contracts_source,
+                 str(contracts_path), "exec"), contracts_module.__dict__)
+    sys.modules[contracts_name] = contracts_module
 
 from codol_rebuild.platform.win32 import K, PTR, SI, PI, SHELLINFO, api, check, wait  # noqa: E402
 from codol_rebuild.runtime import session as session_mod  # noqa: E402
@@ -107,8 +121,10 @@ INJECT_REMOTE_RESPONSE = False
 REMOTE_UDP_CONNECT = False
 REMOTE_NETOBJ = False
 LOOPBACK_GUARD = False
+TCP_LOOPBACK_GUARD = False
 LOOPBACK_PORT = 28969
 LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "tools/ref/client_loopback_guard.exe"
+TCP_LOOPBACK_GUARD_PATH = Path(__file__).resolve().parents[1] / "runs/guard-build/client_loopback_tcp_guard-fixed.exe"
 MAP_PROBE_DIRS = {
     "mp_strike_sh": "runs/20261021-1649370-map",
     "mp_arkaden_sh": "runs/20261021-1649370-map-arkaden",
@@ -2087,14 +2103,17 @@ def patched_start(self, exe, settings_session) -> None:
     check(api(K, "GetProcessTimes", W.BOOL, PTR, *[PTR] * 4)(
         self.info.process, *(C.byref(t) for t in times)))
     self.log["creation_time"] = times[0].value
-    if LOOPBACK_GUARD:
+    if TCP_LOOPBACK_GUARD:
+        guard_path = TCP_LOOPBACK_GUARD_PATH
+    elif LOOPBACK_GUARD:
         if LOOPBACK_PORT == 28969:
             guard_path = LOOPBACK_GUARD_PATH
         else:
             guard_path = LOOPBACK_GUARD_PATH.with_name(f"client_loopback_guard_{LOOPBACK_PORT}.exe")
     else:
         guard_path = self.guard_path
-    self.log["guard_mode"] = "loopback-udp-28969" if LOOPBACK_GUARD else "offline-deny-all"
+    self.log["guard_mode"] = ("loopback-tcp-udp-28969" if TCP_LOOPBACK_GUARD else
+                              "loopback-udp-28969" if LOOPBACK_GUARD else "offline-deny-all")
     self.log["guard_sha256"] = hashlib.sha256(guard_path.read_bytes()).hexdigest()
     request = SHELLINFO()
     request.size = C.sizeof(request)
@@ -2103,7 +2122,7 @@ def patched_start(self, exe, settings_session) -> None:
     request.file = str(guard_path)
     expected_bound = 0 if self.args.until_close else max(120, self.args.seconds + 60)
     guard_arguments = [str(self.run_dir), str(self.info.pid), str(exe)]
-    if LOOPBACK_GUARD:
+    if LOOPBACK_GUARD or TCP_LOOPBACK_GUARD:
         # The 2.6.9.7 loopback guard takes run/pid/exe/[bound] and checks the
         # exact image path itself; it permits only UDP 127.0.0.1:28969.
         guard_arguments.append(str(expected_bound))
@@ -2128,8 +2147,11 @@ def patched_start(self, exe, settings_session) -> None:
             if time.monotonic() >= deadline:
                 raise
             time.sleep(0.05)
-    if LOOPBACK_GUARD:
-        if (ready.get("scope") != f"udp-127.0.0.1:{LOOPBACK_PORT}" or len(ready.get("filter_ids", [])) != 8
+    if LOOPBACK_GUARD or TCP_LOOPBACK_GUARD:
+        expected_scope = (f"loopback-127.0.0.1:{LOOPBACK_PORT}" if TCP_LOOPBACK_GUARD else
+                          f"udp-127.0.0.1:{LOOPBACK_PORT}")
+        expected_filters = 6 if TCP_LOOPBACK_GUARD else 8
+        if (ready.get("scope") != expected_scope or len(ready.get("filter_ids", [])) != expected_filters
                 or not ready.get("job_kill_on_close") or ready.get("max_processes") != 1
                 or ready.get("child_pid") != self.info.pid
                 or not ready.get("dynamic") or ready.get("bound_seconds") != expected_bound):
@@ -2302,7 +2324,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
+    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, TCP_LOOPBACK_GUARD, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -2324,6 +2346,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="在 BeforeCbuf 断点处给已生成的命令文本补一个前缀，例如 mmstart")
     parser.add_argument("--loopback-guard", action="store_true",
                         help="使用私有 2.6.9.7 loopback guard：仅允许该进程的 UDP 127.0.0.1:28969")
+    parser.add_argument("--loopback-tcp-guard", action="store_true",
+                        help="使用私有动态 WFP guard：仅允许该进程访问 127.0.0.1:28969（TCP/UDP）")
     parser.add_argument("--loopback-port", type=int, default=28969,
                         help="loopback guard 允许的 UDP 端口；非 28969 时使用打过补丁的私有副本")
     parser.add_argument("--main-call", type=lambda value: int(value, 0),
@@ -2380,7 +2404,14 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     CBUF_COMMAND = known.cbuf_command
     PREFIX_CBUF = known.prefix_cbuf
     LOOPBACK_GUARD = known.loopback_guard
+    TCP_LOOPBACK_GUARD = known.loopback_tcp_guard
     LOOPBACK_PORT = known.loopback_port
+    if LOOPBACK_GUARD and TCP_LOOPBACK_GUARD:
+        parser.error("two loopback guards cannot be selected together")
+    if TCP_LOOPBACK_GUARD and LOOPBACK_PORT != 28969:
+        parser.error("TCP loopback guard is built for port 28969")
+    if TCP_LOOPBACK_GUARD and not TCP_LOOPBACK_GUARD_PATH.is_file():
+        parser.error(f"missing TCP loopback guard: {TCP_LOOPBACK_GUARD_PATH}")
     MAIN_CALL = known.main_call
     MAIN_CALL_ECX = known.main_call_ecx
     PREWRITES = known.prewrite
