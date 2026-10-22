@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【阶段 3 停留 4 秒，`cl` 仍完全没被写——`0x5C05F0` 未运行】** 100ms 采样：`start-challenge` 返回 `challenge_armed`/`connection=0x136DB1F8`/`state=3`；阶段稳定 3 达 4 秒，`cl` 不变，`[cl+0x100260]`、`[cl+0x109260]` 每个采样都是 0。**只置 `[0x76446B0]=3` 不驱动 `CL_Connect`**——桥注释与实测不符，存在未满足的开关。下一步：在 `0x5C05F0` 下断点确认是否进入，并找出帧 tick 在阶段 3..6 的实际调用与缺失条件。证据 [20261022-codex-phase3-cl.json](evidence/experiments/20261022-codex-phase3-cl.json)。
+
 > **2026-10-22【`CL_Connect = 0x5C05F0`，只在阶段 3/4/5/6 运行】** 从 `getchallenge` 引用 `0x5C071E` 回溯到最近的 `55 8B EC` 得入口 `0x5C05F0`（栈帧 `0x11BC`）：`0x5C0607 mov eax,[0x76446B0]`（阶段）→ `0x5C0617 mov ebx,ecx; xor ebx,key`（`ebx=cl`）→ `0x5C0635..0x5C0647 cmp eax,3/4/6/5; jne 0x5C0F1B`（**只在 3/4/5/6 运行**）→ `0x5C064D` 测非空并 `cmp [ebx+0x100260],1; je` 提前返回 → `0x5C0662` 按 `[ebx+0x28]` 查跳转表分发。**悖论**：帧 tick 本应在阶段 3..6 调用它，但阶段 8 时 `cl` 仍全 0——要么提前返回一直命中，要么阶段被直接写 `[0x76446B0]` 推上去而没走 `0x5C05F0`。下一步：**在阶段 3..6 采样 `cl`**，并找出谁把 `[0x76446B0]` 直接置 8。证据 [20261022-codex-clconnect-entry.json](evidence/experiments/20261022-codex-clconnect-entry.json)。
 
 > **2026-10-22【锁定 `CL_Connect` 发包点 `0x5C071E`】** 字符串 `getchallenge`（`0xDBFD04`）只有一处 `push` 引用 `0x5C071E`：`push 0xDBFD04` → `lea ecx,[ebp-0x70]; push 0x40; push ecx; call 0x774900` → 压入 `[ebx+0x14]`..`[ebx+0x28]` 六个 dword（服务器 netadr）→ `push edi; lea edx,[ebp-0x70]; call 0x675260`（`NET_OutOfBandPrint`）→ `test al,al; jne 0x5C0F1B`。**下一步**：从该点回溯到函数序言，找写 `clc.state`/拷贝地址的指令及其调用者（UI“加入游戏”动作），让离线流程走进去。证据 [20261022-codex-clconnect-site.json](evidence/experiments/20261022-codex-clconnect-site.json)。

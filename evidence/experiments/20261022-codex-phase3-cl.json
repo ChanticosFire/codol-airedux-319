@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T17:30:00+00:00",
+  "scope": "sample cl during the phase transition",
+  "observations": {
+    "before_challenge": "phase=0, cl=0x136DB1F8? no -- before: phase=0, cl=325956088 (0x136DB1F8 appears after)",
+    "after_challenge": "start-challenge returned {'status':'challenge_armed','connection':'0x136DB1F8','state':3}",
+    "phase": "stayed 3 for the whole 4 s sample at 100 ms intervals",
+    "cl": "0x136DB1F8 throughout",
+    "[cl+0x100260]": "0x0 on every sample",
+    "[cl+0x109260]": "0x0 on every sample"
+  },
+  "meaning": [
+    "the phase really sits at 3 (the CL_Connect window) yet nothing writes cl",
+    "CL_Connect (0x5C05F0) therefore does not run during our phase-3 dwell, even though the bridge comment claims the frame tick calls it for phases 3..6",
+    "so the phase value alone is not what drives CL_Connect -- something else (a different global or a branch) must gate the call"
+  ],
+  "next": [
+    "put a breakpoint at 0x5C05F0 and confirm whether the game ever enters it during a normal handshake",
+    "if it never enters, find what the frame tick actually calls for phases 3..6 and what condition is missing",
+    "the bridge's challenge_armed path already reports the cl pointer, so the same code could also report whether CL_Connect ran"
+  ],
+  "artifacts": []
+}
