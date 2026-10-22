@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:55:43.383148+00:00",
+  "claim": "+map/+devmap 的处理链逆出：参数解析 → Cmd_ExecuteBuffer(0x4F2DE0) → 每段回调 0x4F3890",
+  "stage_selector": {
+    "0x7F25B0": "[0x849BA3D]!=0 → 返回4；否则按 [0x84ABA50] 查跳转表：0→4, 1..4→1, 5→3",
+    "table": "0x7F25DC"
+  },
+  "devmap_path": {
+    "0x4F8B80": "遍历 argv（计数 [0x33E9990]，数组 [0x337EAC8]）",
+    "0x4F8B96": "与 \"map\"(0xDBD248,len3) 比较；0x4F8BAD 与 \"devmap\"(0xDBD24C,len6) 比较",
+    "0x4F8BBE": "call 0x4F8AD0（等待 UI 阶段）+ 0x7FB310(1) + 0x7F25B0 检查",
+    "0x4F8BEF": "_snprintf(\"%s\\n\", argv[ebx]) 到栈缓冲",
+    "0x4F8C1D": "call 0x4F2DE0(ecx=0x4F3890, text, 0, 0)"
+  },
+  "exec_core": {
+    "0x4F2DE0": "按引号/分号/换行拆分文本，对每段调用 [ebp-0x1008] 回调后 inc [0x7659F7C]",
+    "0x4F2EB0": "包装：ecx=0x4F3890; jmp 0x4F2DE0",
+    "0x4F3890": "回调：写 [0x3306910] 计数与 [0x3306914]/[0x3306994] 数组（命令行参数表）"
+  },
+  "implication": "+devmap 实际把地图名格式成 \"%s\\n\" 交给命令缓冲执行；这条路径依赖前端阶段与 0x7FB310 的返回。下轮在 0x4F3890 下 hook 记录收到的文本，确认实际执行的命令串"
+}

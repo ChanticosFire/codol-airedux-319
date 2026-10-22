@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【进图】ui_state→stage 映射与 +devmap 处理链逆出**：`0x7F25B0` 跳转表 `0x7F25DC`：ui_state 0→4、1..4→1、**5→3**。`+map/+devmap`：0x4F8B80 遍历 argv → 比较 "map"/"devmap" → 0x4F8BBE 调 0x4F8AD0+0x7FB310(1)+0x7F25B0 → 0x4F8BEF `"%s\n"` 格式化 argv[ebx] → 0x4F2DE0 命令执行包装 → 逐段回调 0x4F3890（写 0x3306910/0x3306914 参数表）。下步 hook 0x4F3890 记录实际命令串。证据 [`20261022-devmap-path.json`](evidence/experiments/20261022-devmap-path.json)。
+
 > **2026-10-22【进图】房间 vtable 全表；0x62F840 前置条件满足但无画面变化**：vtable 0xDC7274 共 50 项，开局入口 +0x3C=0x62F840（ret 0xC），可开始检查 +0xBC=0x6311C0，房间构建 +0xC0=0x6312E0。实测 room=0x245B7840、[+0x278]=1、[0x76446B0]=0、[+0x105D8]=1、[+0x105FE]=12 全部满足；调用后进程存活、房间 UI 仍在、地图变核弹小镇。下步试参数与 vtable+0xC0。证据 [`20261022-room-vtable-analysis.json`](evidence/experiments/20261022-room-vtable-analysis.json)。
 
 > **2026-10-22【进图】训练回执不被采用：靶场阶段无游戏端口连接**：新增 `QUERY1_TYPE` 开关（默认 3）；type=3 与 type=1 两次实验客户端都只连 28969，不连 8466，画面停在“正在搜寻服务器”。下步试 0/2/4、超时对照、或从 0xB79B50 反推 body。证据 [`20261022-query1-type-probe.json`](evidence/experiments/20261022-query1-type-probe.json)。
