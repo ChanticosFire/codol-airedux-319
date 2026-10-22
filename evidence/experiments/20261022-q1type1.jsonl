@@ -48,3 +48,5 @@
 {"body_hex": "15030508010000000800000000080a00000007abad92d66b08040000000100000000000000", "connection_id": 3, "event": "task_request", "reason": "service=21 task=5 bytes=37 args=u32(1),u32(0),u32(10),tag(0x07)", "requests": 0, "utc": "2026-10-22T05:50:32Z"}
 {"connection_id": 3, "event": "game_alloc_reply", "reason": "svc21/task5 query1 -> 127.0.0.1:8466 entry=114B", "requests": 0, "utc": "2026-10-22T05:50:32Z"}
 {"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T05:50:33Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T05:51:02Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T05:51:03Z"}
