@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:39:44.044921+00:00",
+  "claim": "克隆协作仓库 codol_server 成功，含 protocol-1604220/codol/iw4/core 等 crate 与 GAME_SESSION_TARGETS/FEATURE_PROGRESS 等文档，是重要参考来源",
+  "repo": {
+    "url": "https://gitea.codolai.win:2096/codol-dev/codol_server.git",
+    "clone": "E:/GAME/COD/codol-airedux/codol_server (depth 1)"
+  },
+  "structure": {
+    "docs": [
+      "ARCHITECTURE.md",
+      "FEATURE_PROGRESS.md",
+      "GAME_SESSION_TARGETS.md",
+      "GAME_WINDOW_CONTROL.md",
+      "CLIENT_COMPATIBILITY_API.md",
+      "CLIENT_TEST_INTERFACE.md",
+      "BUILD1604220_IMPLEMENTATION_PLAN.md",
+      "DATABASES.md"
+    ],
+    "crates": [
+      "protocol-1604220",
+      "protocol-codol",
+      "protocol-core",
+      "protocol-dw",
+      "protocol-iw4",
+      "worker-runtime",
+      "worker-manager",
+      "api-contract",
+      "domain",
+      "platform-core",
+      "storage-postgres",
+      "storage-sqlite",
+      "capture-replay"
+    ]
+  },
+  "significance": "protocol-1604220 与目标 build 1649370 同代；GAME_SESSION_TARGETS/FEATURE_PROGRESS 可能直接列出进局链路与缺口",
+  "next": [
+    "读 GAME_SESSION_TARGETS.md 与 FEATURE_PROGRESS.md 找进局链路",
+    "看 crates/protocol-1604220 的协议实现",
+    "对照我们卡住的 challenge/连接与地图加载"
+  ]
+}
