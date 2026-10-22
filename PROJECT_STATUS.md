@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【native frame 就绪；客户端仍超时】** `CODOL_ClientNativeFrame=0x4B4240`，`enterworld8` 忽略其 `frame->sequence` 比较。运行时（基址 0xFE0000）验证 `native_ready[0]=1`、`native_frames[0]=0x1799F020`、`snapshot_ready=1`、`ready_seq=0x22B`——服务端快照管线已就绪。客户端仍约 40 秒回 0、黑屏、`out` 每包 121/122 字节（可能是合法压缩快照）。下一步：解码实际投递的快照与可靠命令序列，确认客户端缺什么。证据 [20261022-codex-native-frame-ready.json](evidence/experiments/20261022-codex-native-frame-ready.json)。
+
 > **2026-10-22【builder 序列闸门放宽无效】** `enterworld7.exe` 把 `SV_BeginClientSnapshot` 的序列 `jne`（`0x486E06`）nop 后，快照仍空且无 `frame rejected` 日志——说明 `SV_WriteSnapshotToClient` 的 `CODOL_ClientNativeFrame` 自身还有序列检查，返回 NULL 导致空包。下一步：放宽该检查或在写入前同步 `codol_snapshot_sequence`。证据 [20261022-codex-builder-sequence-gate.json](evidence/experiments/20261022-codex-builder-sequence-gate.json)。
 
 > **2026-10-22【重要修正：dedrun ASLR 基址 0x140000】** `EnumProcessModules` 确认 dedrun 实际加载基址为 `0x140000`（文件 VA `0x48AAB0` → 进程 VA `0x1CAAB0`）。按正确基址复查：补丁/stub 均在、`sv.state=2`、人类 `codol_snapshot_ready=1`、`ready_seq=1677`。此前所有基于 0x400000 的运行时读/写（远程 enter world、sv.state 写入、桥 patch-bytes 等）都命中了错误地址，需要重做。剩余问题：`outgoingSequence=1693` 与 `ready_seq=1677` 差 16 帧，`CODOL_ClientNativeFrame` 不匹配仍发空包。下一步：工具加模块基址换算，重做验证并解决 builder 序列滞后。证据 [20261022-codex-dedrun-aslr-base.json](evidence/experiments/20261022-codex-dedrun-aslr-base.json)。
