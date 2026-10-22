@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T01:40:00+00:00",
+  "scope": "what 0x5B2C10 does right after the memset",
+  "disassembly": {
+    "0x5B2C8A": "push 0x30; lea ecx,[ebp-0x874]; mov eax,esi; push 0; push ecx; store; call 0xC42DE0 (memset)",
+    "0x5B2CA5": "lea edx,[ebp-0x808]; push 0x800; push edx; lea esi,[ebp-0x874]; call 0x66E720 -- fills a 0x800-byte buffer",
+    "0x5B2CBC": "eax=[ebp-0x860]; edx=[ebp-0x864]; edi=[ebp-0x86C]; cmp eax,edx; jge skip",
+    "0x5B2CD5": "mov cl,[ebx+0x3BE8] (ebx = cl); mov [edi+eax],cl; inc eax -- appends one byte",
+    "0x5B2CF1": "esi=[ebp-0x83C]; edx=[esi+0x80148] (cl+0x80148); mov [edi+eax],edx -- appends a dword read from cl",
+    "0x5B2D21": "same pattern continues"
+  },
+  "note": "all of these accesses are within the 0x12A700-byte cl object (0x3BE8 and 0x80148 are inside it) and cl is zero, so they read zeros and write into edi (a stack buffer from the 0x66E720 call). Nothing here should fault on its own.",
+  "next": [
+    "continue disassembling 0x5B2D21..0x5B2E20 to find the first call that passes a pointer into a system DLL",
+    "the crash's ecx=0x840112CA looks like a partially-decoded pointer, so watch for code that decodes a global and passes it on without a null check"
+  ],
+  "artifacts": [],
+  "0x66E720": {
+    "disassembly": "push ebp; mov ebp,esp; push edi; xor edi,edi; cmp [0x7858F3C],edi; jne skip; [0x7858F3C]=1; push 0x30; push edi; push esi; call 0xC42DE0 (memset); eax=[ebp+8]; ecx=[ebp+0xC]; [esi+4]=[esi+0xC]=[esi+0x18]=[esi+0x2C]=0; [esi+8]=eax; [esi+0x10]=ecx; ret",
+    "assessment": "a tiny no-API initialiser that zeroes 0x30 bytes at esi and stores its two arguments. It cannot produce the system-DLL crash."
+  }
+}
