@@ -1172,3 +1172,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - 真正 overlay 目录找到（8 个 ff，缺 common_gametype_mp.ff）。
 - 补 2.6.9.7 的 ff 后仍 fatal（版本不兼容）。
 - 下轮：找 1649370 版本的同名 zone。
+
+## 2026-10-22 fastfile 版本铁证（本轮）
+
+- 1649370 ff = ver 461；2.6.9.7 ff = ver 365 → 不兼容。
+- preloadmap 第二参数 0 让进程多活 ~10s，但仍 fatal。
+- 下轮：找 ver461 的 gametype zone 或跳过加载。
