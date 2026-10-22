@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:20:14.409004+00:00",
+  "claim": "本机有 wpr.exe（ETW 录制）与 tracerpt，可用于抓 CreateFile 失败路径；无 procmon/xperf",
+  "tools": {
+    "wpr": "C:/Windows/system32/wpr.exe",
+    "tracerpt": "Windows 自带",
+    "procmon": "未安装",
+    "xperf": "未安装"
+  },
+  "plan": [
+    "wpr -start FileIO -filemode",
+    "跑游戏+完整配方触发闪退",
+    "wpr -stop trace.etl",
+    "tracerpt trace.etl -o trace.csv",
+    "在 csv 里找 NAME NOT FOUND / PATH NOT FOUND 的文件"
+  ],
+  "next": [
+    "执行 wpr 录制 + 游戏触发 + tracerpt 解析"
+  ]
+}
