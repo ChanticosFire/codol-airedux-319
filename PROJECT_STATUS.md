@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【二分收官：`0x5B2C85` 命中，崩溃锁定在 `0x66F170` 调用内】** `--breakpoint 0x5B2C85:bisect6` + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`bisect6_hits: 1`**，客户端调用中退出，崩溃 `0xC0000005 @ 0x2AF590A7`，`ecx=0x11A7F5C8`（栈）/`esi=0x11A7F644`（栈）/`edi=0x133EB2D4`（有效堆址）。**二分链**：`0x5B2F43`/`0x5B2EAB`/`0x5B2D6D`/`0x5B2CB7`/`0x5B2C9D` 全部未命中，**`0x5B2C85` 命中**——故障在 `0x66F170` 内，序言/memset/其后代码全部排除。寄存器全是合法地址 → **这是越界访问（坏长度）而非野指针**。下一步：从 `0x66F1B8` 往后反汇编 `0x66F170`，找参数来自栈结构的系统 DLL 调用。证据 [20261022-codex-bisect-final.json](evidence/experiments/20261022-codex-bisect-final.json)。
+
 > **2026-10-23【二分第五步：`0x5B2C9D` 未命中，窗口只剩序言 + `0x66F170`】** `--breakpoint 0x5B2C9D:bisect5` + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`bisect5_hits: 0`**，客户端调用中退出。**窗口 `0x5B2C10..0x5B2C9D`，只剩两样**：序言/守卫（阶段、标志、`cl` 指针检查，`0x5B2C10..0x5B2C84`）与 `0x66F170` 调用（`0x5B2C85`）。下一步：**最后一次对半 `--breakpoint 0x5B2C85:bisect6`**——命中则故障在 `0x66F170` 内，未命中则故障在序言守卫链本身。证据 [20261022-codex-bp-bisect5.json](evidence/experiments/20261022-codex-bp-bisect5.json)。
 
 > **2026-10-23【二分第四步：`0x5B2CB7` 未命中，窗口只剩序言 + `0x66F170` + memset】** `--breakpoint 0x5B2CB7:bisect4` + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`bisect4_hits: 0`**，客户端调用中退出。**窗口 `0x5B2C10..0x5B2CB7`，只剩三样**：`0x5B2C10..0x5B2C84` 的阶段/标志/指针守卫、`0x66F170` 调用（`0x5B2C85`）、memset（`0x5B2C9D`）。下一步：测 `0x5B2C9D`；未命中再测 `0x5B2C85` 或深入序言守卫链。证据 [20261022-codex-bp-bisect4.json](evidence/experiments/20261022-codex-bp-bisect4.json)。

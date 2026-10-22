@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T07:25:00+00:00",
+  "scope": "final bisect step -- isolated the faulting call",
+  "setup": {
+    "breakpoint": "launcher --breakpoint 0x5B2C85:bisect6 (the 0x66F170 call)",
+    "phase": 8,
+    "cl+0xA8F0": "repaired (alloc 0x180 @ 0x11210000 ^ key)",
+    "call": "call_main_thread --target 0x5B2C10 --settle 0.5"
+  },
+  "result": {
+    "bisect6_hits": 1,
+    "client": "exited during the call",
+    "crash": "0xC0000005 at 0x2AF590A7",
+    "registers": {"ecx": "0x11A7F5C8 (stack)", "esi": "0x11A7F644 (stack)", "edi": "0x133EB2D4 (valid)"}
+  },
+  "bisect_summary": {
+    "0x5B2F43": "miss",
+    "0x5B2EAB": "miss",
+    "0x5B2D6D": "miss",
+    "0x5B2CB7": "miss",
+    "0x5B2C9D": "miss",
+    "0x5B2C85": "HIT"
+  },
+  "conclusion": "the window is closed: the fault happens at or inside the call to 0x66F170 made at 0x5B2C85. The prologue, memset and everything after 0x66F170 are exonerated. Note the registers: ecx and esi are stack addresses (valid), edi is a valid heap address, so this is not a wild-pointer read -- it is an access past a bound (e.g. a stack/heap buffer overrun or an offset too large for the region).",
+  "next": [
+    "disassemble 0x66F170 from 0x66F1B8 onward (the part after the three [edi+...] loads) and look for the system-DLL call whose pointer/size argument derives from the stack structures",
+    "the crash address 0x2AF590A7 is in a system DLL, so the fault is likely a memcpy/string op with a bad length, not a bad pointer"
+  ],
+  "artifacts": ["runs/codex-bp-bisect-6-call.json"]
+}
