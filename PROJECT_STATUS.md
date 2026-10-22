@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 列表模型写入点与注入失败**：`0x62CD30`（显示单个房间：`room+0x7238` → `room+0x7470`，count=1，通知监听器）、`0x637720`（批量列表，EAX=count）、`0x637590`（通知分发）。实测直接写 `room+0x7470`+count=1 不渲染；窗口线程调 `0x637720` 不渲染；写 `room+0x7238` 后调 `0x62CD30` → `unhandled_exception`（条目 +0/+8 是智能指针，伪造指针非法）。下一轮观察客户端自建房间时 `room+0x7238` 的填充方式。证据 [`20261022-list-model-injection.json`](evidence/experiments/20261022-list-model-injection.json)。
+
 > **2026-10-22 成功分支崩溃：响应处理器少做“准备参数”**：窗口线程 `0x7FAF50(EAX=slot, 1)` → `unhandled_exception`，因为 `0x7F4330` 成功分支 `mov ecx,[esi+0x28]; call 0xB83D20` 而 params+0x28=30（pageSize）不是指针。响应处理器只写了 `params+0x1C`（解码记录），没写 `+0x28`（结果容器）也没把 handler/ctx 落到 `+0x40/+0x44`。handler 链 `0x6376F0 → 0x637590(room=[0x82E13FC])` 把 count×0x238 字节拷到 `room+0x7470`、count 写 `room+0x7230`（UI 列表模型）。证据 [`20261022-success-branch-crash.json`](evidence/experiments/20261022-success-branch-crash.json)。
 
 > **2026-10-22【再进一步】回执已到达服务层，只差“成功完成”调用**：任务槽 `+0x40` handler=`0x6376F0`、`+0x44` context=5；params 对象（vtable `0xD59A08`）`+0x1C` 已写入解码记录指针（`0x24557BA8`）。完成函数：`0x7FAF50`（单槽，EAX=槽指针，栈参数=成功标志）与 `0x7FB240`（批量，标志硬编码 0）。远程线程直接调 `0x7F4330(params,1)` 会崩溃（UI 线程亲和）。下一轮在窗口线程调用 `0x7FAF50(EAX=slot, arg=1)`。证据 [`20261022-completion-path-found.json`](evidence/experiments/20261022-completion-path-found.json)。

@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:38:08.129946+00:00",
+  "claim": "找到列表模型写入点，但直接注入记录会崩溃（条目内含智能指针）",
+  "functions": {
+    "0x62cd30": "显示单个房间：通知监听器(vtable+0x24, (1,0)) → 把 room+0x7238 的 0x238 字节拷到 room+0x7470 → room+0x7230=1 → room+0xe360=0 → 调 0x6293B0",
+    "0x637720": "批量列表：EAX=count，[ebp+8]=flag，[ebp+0xc]=src，ECX=room；count×0x238 拷到 room+0x7470，count→room+0x7230",
+    "0x637590": "通知分发：遍历 room+4 的监听器链表，调 vtable+0x10(code 0x1C/0x1D)"
+  },
+  "tests": [
+    {
+      "action": "直接写 room+0x7470 + count=1，点刷新",
+      "result": "列表仍空（模型写了但 UI 不渲染）"
+    },
+    {
+      "action": "窗口线程调 0x637720(EAX=1, src=record, ECX=room)",
+      "result": "未渲染"
+    },
+    {
+      "action": "写 room+0x7238 后窗口线程调 0x62CD30",
+      "result": "stop_reason=unhandled_exception（条目 +0/+8 是两个智能指针，UI 会操作它们）"
+    }
+  ],
+  "next": [
+    "观察客户端自己创建房间时 room+0x7238 如何被填充（用有效智能指针），再复用该路径",
+    "或用客户端自己的对象构造/引用计数函数构造合法条目"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-injectlist.json",
+    "evidence/experiments/20261022-show-room-call.json",
+    "runs/natural-b/launch-bi.log"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "utc": "2026-10-22T04:36:47.599946+00:00",
+  "pid": 41960,
+  "room": "0x245b7878",
+  "count_before": 0,
+  "record": "0x245b7bb8",
+  "wrote_bytes": 568,
+  "count_after": 1,
+  "head_after": "f079dc00c4cbdd00fc79dc00cccbdd000100000000000000007f000001000000"
+}
