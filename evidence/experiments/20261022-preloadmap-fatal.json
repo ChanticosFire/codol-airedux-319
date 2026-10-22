@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:43:45.366117+00:00",
+  "claim": "preloadmap 后客户端弹“致命错误框”（stop_reason=fatal_dialog），launcher 守卫随即终止进程；组合 state=3 也一样",
+  "observations": {
+    "[0xC7AF690]@lobby": 1,
+    "state@lobby": 0,
+    "state3_plus_preloadmap": "进程消失（fatal_dialog）",
+    "preloadmap_only": "黑屏 20s 后 fatal_dialog"
+  },
+  "conclusion": "preloadmap 确实走到 0x5C7C70 的加载路径，但加载/初始化过程中触发 Com_Error 致命错误；launcher 的 fatal 守卫会自动杀掉进程，需要在 fatal 出现时抓错误文本",
+  "next": [
+    "用 --until-close 或关闭 fatal 守卫启动，注入 preloadmap 后抓错误对话框文本",
+    "拿到错误文本即可定位 0x5C7C70 内部失败点",
+    "再针对性补齐前置（服务器对象/state/资源）"
+  ]
+}
