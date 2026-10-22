@@ -27,5 +27,16 @@
     "0x5C83F1": "mov esi,[ebp+8]; and esi,2; jne 0x5C841A -- argument bit 1 triggers the reset branch; push 1 has bit 1 clear, so it takes the normal path",
     "0x5C841A..0x5C844D": "clears several globals (0x7508B80, 0x77DB830) and conditionally initialises a 0x10-sized structure"
   },
-  "allocation_branch": "the 0x12A700 allocation at 0x5C85AD is reached through the jump table at 0x5C85A6 (jmp [ebx*4+0x5C8A3C]) after a 0..3 loop at 0x5C8583; which table entry runs depends on a byte array at [ebp-0x2C]"
+  "allocation_branch": "the 0x12A700 allocation at 0x5C85AD is reached through the jump table at 0x5C85A6 (jmp [ebx*4+0x5C8A3C]) after a 0..3 loop at 0x5C8583; which table entry runs depends on a byte array at [ebp-0x2C]",
+  "jump_table": {
+    "address": "0x5C8A3C (4 entries, ebx<4 at 0x5C8590)",
+    "entries": {
+      "0": "0x5C85AD -- allocate 0x12A700 and store the encoded pointer (the client object)",
+      "1": "0x5C85C9 -- allocate 0xAA10, xor 0x6891D1C7, store to [0x76638F4]",
+      "2": "0x5C89B6 -- call 0x44B310",
+      "3": "0x5C89BB -- mark [ebp+ebx-0x2C]=1"
+    },
+    "control_flow": "the 0x5C8560 loop decrements [ebp-0x3C] and repeats until it reaches 0 (jg 0x5C8560), marking each visited entry with 1 at 0x5C89BB. So all four branches run, in the order the random byte array from 0x5C8550..0x5C857F selects -- it is an obfuscated sequential dispatch, not a conditional choice.",
+    "consequence": "CL_Init performs the allocations (including the 0x12A700 client object) but contains no code that writes clc.state or a netadr. Those must be filled by a later path such as CL_Connect."
+  }
 }
