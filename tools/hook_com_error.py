@@ -20,7 +20,7 @@ import start_conn as sc
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / "runs" / "com_error_state.json"
-COM_ERROR = 0x4F82E0
+COM_ERROR = 0x77C930  # Fatal error (was Com_Error 0x4F82E0)
 PROLOGUE = bytes.fromhex("558bec83e4f8")
 
 K32 = sc.k32
@@ -89,7 +89,7 @@ def main() -> int:
                 old = C.c_uint32(0)
                 K32.VirtualProtectEx(handle, C.c_void_p(COM_ERROR), len(PROLOGUE), 0x40,
                                      C.byref(old))
-                patch = b"\xe9" + struct.pack("<I", cave - (COM_ERROR + 5)) + b"\x90"
+                patch = b"\xe9" + struct.pack("<I", (cave - (COM_ERROR + 5)) & 0xFFFFFFFF) + b"\x90"
                 ok = write(handle, COM_ERROR, patch)
                 row.update(status="installed" if ok else "patch_failed",
                            cave=hex(cave), dump=hex(dump))

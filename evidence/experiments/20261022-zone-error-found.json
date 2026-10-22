@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:55:15.738917+00:00",
+  "claim": "Fatal error hook 抓到真正原因：WIN_ZONE_ERROR:[common_gametype_mp.ff]（zone 资源缺失），不是服务异常",
+  "hook": {
+    "target": "0x77C930 (Fatal error)",
+    "cave": "0x11760000",
+    "dump": "0x11761000"
+  },
+  "capture": {
+    "return_address": "0x49EEC8",
+    "arg1": "0xDB659C",
+    "text": "WIN_ZONE_ERROR:[common_gametype_mp.ff]"
+  },
+  "meaning": "preloadmap 走到地图加载时，引擎找不到 common_gametype_mp.ff 这个 zone 文件 → 致命错误 → launcher 守卫杀进程",
+  "asset_available": {
+    "source": "CODOL-2.6.9.7-Launcher/runtime/game/decoded-resources/client_shipretail/chinese/common_gametype_mp.ff",
+    "size": 20594965
+  },
+  "client_zone_state": "E:/GAME/COD/Original Client 下没有任何 .ff 文件；1649370 的 loose-library 只有 main/",
+  "next": [
+    "把 common_gametype_mp.ff 复制到 1649370 可加载的 zone 路径（loose-library/main 或 client_shipretail/chinese）",
+    "重试 preloadmap，看是否继续到下一个缺失文件",
+    "逐个补齐 zone 后地图加载应能完成"
+  ]
+}
