@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【`cl+0xA8F0` 的唯一写入者是 `CL_Init` 的 `0x5C8660` 分支】** 交叉引用 `0xA8F0` 与 key `0x96B9DC91` 共 9 处：写入者 `0x5C8660`（`push 0x180; call 0x5C8330; xor eax,0x96B9DC91; mov [esi+0xA8F0],eax`），读者含崩溃点 `0x5B2E04`、`0x472796`、`0x5B3060`/`0x5B3078`/`0x5B308E`、`0x5BEC03`/`0x5BED05`。因 `CL_Init` 不可对活客户端调用，可行路子是只复现这一步：`VirtualAllocEx` 分配 `0x180` 字节，把 `[cl+0xA8F0]` 写成 `分配地址 ^ 0x96B9DC91`；然后再以（阶段 8、标志 0）调 `0x5B2C10`，看能否越过 `0x5B2E13`。证据 [20261022-codex-a8f0-writer.json](evidence/experiments/20261022-codex-a8f0-writer.json)。
+
 > **2026-10-23【崩溃链还原：`[cl+0xA8F0]` 是编码指针，`cl`=0 时解码成 `0x96B9DC91` 后立即解引用崩溃】** `0x5B2DFD..0x5B2E1F`：`dec eax` → `and eax,[ebx+0xA8DC]`（0）→ `xor edx,0x96B9DC91`（`edx` 原为 `[cl+0xA8F0]`=0）→ `lea ecx,[eax+eax*2]`（0）→ `sub eax,[edx+ecx*4]` = `[0x96B9DC91]` → 崩溃。**缺失的初始化就是往 `cl+0xA8F0` 写入有效编码指针的那段代码**。下一步：按“解码后存入 `[reg+0xA8F0]`”与常量 `0x96B9DC91` 两路搜索它的写入者。证据 [20261022-codex-5b2de8.json](evidence/experiments/20261022-codex-5b2de8.json)。
 
 > **2026-10-23【`0x5B2C10` 的 memset 之后都是安全操作】** `0x5B2C8A..0x5B2D21`：memset → `0x66E720`（填 0x800 缓冲）→ 取 `[ebp-0x860]`/`[ebp-0x864]`/`[ebp-0x86C]` → `mov cl,[ebx+0x3BE8]` 写 `[edi+eax]` → `mov edx,[esi+0x80148]` 写 `[edi+eax]`。`0x3BE8`/`0x80148` 都在 1.2MB 的 `cl` 内且 `cl` 全 0，故读 0、写栈缓冲，不会崩。`0x66E720` 只是 memset(0x30)+存两个参数，不调用 API，也不可能产生系统 DLL 崩溃。下一步：继续反汇编 `0x5B2D21..0x5B2E20` 找第一处把指针交给系统 DLL 的调用（`ecx=0x840112CA` 像部分解码的指针）。证据 [20261022-codex-5b2c8a.json](evidence/experiments/20261022-codex-5b2c8a.json)。

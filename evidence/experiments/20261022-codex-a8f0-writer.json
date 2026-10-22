@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T02:20:00+00:00",
+  "scope": "who sets cl+0xA8F0",
+  "xrefs": {
+    "key_0x96B9DC91_and_disp_0xA8F0": ["0x472798(sic: 0x472796)", "0x5B2BE0", "0x5B2E06", "0x5B3060", "0x5B3078", "0x5B308E", "0x5BEC03", "0x5BED05", "0x5C8669"],
+    "writer": "0x5C8660..0x5C866D inside CL_Init: push 0x180; call 0x5C8330 (allocate 0x180 bytes); xor eax,0x96B9DC91; mov [esi+0xA8F0],eax",
+    "readers": ["0x5B2E04 (the crash)", "0x472796", "0x5B3060", "0x5B3078", "0x5B308E", "0x5BEC03", "0x5BED05"]
+  },
+  "finding": "cl+0xA8F0 stores the ENCODED address of a freshly allocated 0x180-byte block. CL_Init is the only writer we found, and calling CL_Init on the live client kills it, so the practical route is to reproduce just this one step: allocate 0x180 bytes in the process, then write [cl+0xA8F0] = allocated ^ 0x96B9DC91.",
+  "next": [
+    "reproduce the allocation+encode step manually with VirtualAllocEx and one dword write",
+    "then call 0x5B2C10 again (phase 8, flag 0) and see whether it gets past 0x5B2E13",
+    "the same pattern probably applies to the other encoded pointers CL_Init sets; expect a few iterations"
+  ],
+  "artifacts": []
+}
