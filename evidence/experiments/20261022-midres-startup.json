@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:33:33.056326+00:00",
+  "claim": "删除 hires 后 overlay 保留 1356 文件（原 542）；启动日志有内容但仍在启动中，需继续观察",
+  "overlay": {
+    "before_copy": 542,
+    "after_copy": 1861,
+    "after_remove_hires": 1356
+  },
+  "launch_log_bytes": 1421,
+  "next": [
+    "继续观察 midres 会话是否正常起来",
+    "若正常则说明 1861 里某些目录(如 hires)导致失败",
+    "再逐步只加 main/images"
+  ]
+}
