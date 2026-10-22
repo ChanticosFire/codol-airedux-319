@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T16:00:00+00:00",
+  "scope": "forged-ACK slot selection and the real CS_PRIMED blocker",
+  "forge_slot_selection": {
+    "problem": "the first name hit was a heap string copy, so the tool read garbage (reliableSequence 925776174, command 'apon_stinger')",
+    "fix": "only accept candidate addresses inside the image data range (0x400000..0x8000000) with sane reliableSequence/ack/gamestate fields",
+    "selected": {"name_address": "0x5692908", "challenge": 1516976360, "reliableSequence": 0,
+                 "reliableAcknowledge": 0, "reliableSent": 0, "messageAcknowledge": 1,
+                 "gamestateMessageNum": 31, "command": ""},
+    "result": "packet sent (seq 1, qport 0, ack 0); after_reliableAcknowledge stayed 0"
+  },
+  "key_finding": {
+    "reliableSequence_is_zero": true,
+    "meaning": "the server has no queued reliable commands awaiting acknowledgement: the gamestate is delivered as a netchan message, and the configstring pump is not running while CS_PRIMED. The ACK was never the missing piece.",
+    "server_log_ack_field": "the 'ack 1' in 'state 3 ack 1 gamestate 31' is the message acknowledgement, not reliableAcknowledge"
+  },
+  "real_blocker": {
+    "server_source": "runs/2697-native-src/src/sv_snapshot.c SV_SendClientMessages",
+    "logic": [
+      "SV_BuildClientSnapshot(c) runs only when c->state == CS_ACTIVE || c->state == CS_ZOMBIE",
+      "SV_WriteSnapshotToClient(c) also runs only for CS_ACTIVE/CS_ZOMBIE",
+      "for CS_PRIMED the loop still calls SV_BeginClientSnapshot/SV_EndClientSnapshot, producing the 122-byte empty snapshots seen in 'out 162/284/...'"
+    ],
+    "consequence": "the 1649370 client stays at phase 8 waiting for a real snapshot; the server waits for the first clc_move to enter CS_ACTIVE; both time out after about 32 s"
+  },
+  "next": [
+    "locate SV_SendClientMessages in dedrun and relax both state checks to include CS_PRIMED (or CS_CONNECTED)",
+    "verify SV_BuildClientSnapshot is safe without a gentity (it may need a null guard), or only relax the SV_WriteSnapshotToClient side after a real build",
+    "if the client then enters the world, continue with player control and bots"
+  ],
+  "artifacts": ["runs/forge-ack-4.json", "runs/codex-ring-bridge-28-forward.json", "runs/20261022-ring-2697n/main/qconsole.log"]
+}

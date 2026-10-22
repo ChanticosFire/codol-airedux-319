@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【ACK 不是瓶颈；CS_PRIMED 只发空快照】** forge 工具修正槽位选择后读取活跃 client：`reliableSequence=0`，说明服务端没有待确认的可靠命令，ACK 从来不是缺口（日志 `ack 1` 是 message acknowledgement）。`SV_SendClientMessages` 只在 `CS_ACTIVE || CS_ZOMBIE` 调用 `SV_BuildClientSnapshot`/`SV_WriteSnapshotToClient`，`CS_PRIMED` 只产生 122 字节空快照，客户端因此停在阶段 8 并约 32 秒超时。下一步：定位 `SV_SendClientMessages` 并放宽状态检查，让 `CS_PRIMED` 也收到真实快照。证据 [20261022-codex-primed-snapshot-blocker.json](evidence/experiments/20261022-codex-primed-snapshot-blocker.json)。
+
 > **2026-10-22【客户端包需要 qport，伪造 ACK 仍被拒】** 2697 客户端→服务端包格式为 `u32 sequence + u16 qport + 加密 body`；`SV_ReadPackets` 要求 IP 与 qport 同时匹配。此前伪造包缺 qport，被服务端当作 connectionless（`bad connectionless packet`）。forge 工具已加入 qport 扫描（client name 前扫 netadr），本次未命中；全内存按端口 60543 搜索也无结果。阶段 8 约 32 秒后超时。下一步：按两种字节序扫描端口定位 netchan_t，或 patch 服务端跳过 qport 比较，或让 CS_PRIMED 也构建真实快照。证据 [20261022-codex-qport-ack.json](evidence/experiments/20261022-codex-qport-ack.json)。
 
 > **2026-10-22【密钥区非零；伪造 ACK 首测未生效；阶段 8 约 32 秒超时】** 读取客户端 `0xE60B78` = `0x5A752F99`，密钥区已初始化，心跳崩溃来自 `[edi+0x24]` 对象字段未初始化。新工具 `tools/forge_client_ack.py` 按 `SV_Netchan_Decode` 算法伪造 `ack + clc_move` 包；发送后服务端 `reliableAcknowledge` 仍为 0，日志 `bad connectionless packet`，最可能是桥 UDP 源端口与服务端绑定的客户端端口不一致。补丁后服务端确实发送 `d 0 <configstring>`。阶段 8 稳定约 32 秒后回 0，`cl_timeout`/`cl_connectTimeout` 600 均无效。下一步：读 `client_t.netchan.remoteAddress` 获取客户端端口并用 `SO_REUSEADDR` 绑定重发，或 patch 服务端让 `CS_PRIMED` 也构建真实快照。证据 [20261022-codex-ack-forge-and-key-init.json](evidence/experiments/20261022-codex-ack-forge-and-key-init.json)。

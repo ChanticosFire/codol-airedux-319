@@ -95,10 +95,30 @@ def main() -> int:
         hits = client_reader.find_name(handle, b"AdministraClient\0")
         if not hits:
             raise SystemExit("client name not found")
-        base = hits[0]
-        raw = client_reader.read(handle, base + OFF_RELIABLE_SEQUENCE, 24)
-        values = struct.unpack("<6i", raw)
-        challenge = struct.unpack("<i", client_reader.read(handle, base + OFF_CHALLENGE, 4))[0]
+        best = None
+        candidates = []
+        for base in hits:
+            raw = client_reader.read(handle, base + OFF_RELIABLE_SEQUENCE, 24)
+            if not raw or len(raw) < 24:
+                continue
+            values = struct.unpack("<6i", raw)
+            challenge = struct.unpack("<i", client_reader.read(handle, base + OFF_CHALLENGE, 4))[0]
+            candidates.append({"base": base, "values": values, "challenge": challenge})
+        if not candidates:
+            raise SystemExit("client structures not readable")
+        # A stale freed slot reads all zeros; a heap string copy reads garbage.
+        # Keep only plausible client_t hits inside the image data range.
+        def plausible(row) -> bool:
+            values = row["values"]
+            return (0x400000 <= row["base"] < 0x8000000
+                    and 0 <= values[0] < 100000
+                    and -1 <= values[1] <= values[0]
+                    and 0 <= values[4] < 1000000)
+        valid = [row for row in candidates if plausible(row)]
+        best = max(valid or candidates, key=lambda row: (row["values"][4], abs(row["challenge"])))
+        base = best["base"]
+        values = best["values"]
+        challenge = best["challenge"]
         command = client_reader.read(handle, base + OFF_COMMANDS, 64).split(b"\0")[0]
         ack = args.ack if args.ack is not None else values[0]
         qport, client_port, adr_address = find_qport(handle, base)
