@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T17:55:00+00:00",
+  "scope": "secure profile attachment for the enter-world script path",
+  "found_files": {
+    "runs/v319-server/bd_data/mpdata_s": {"size": 743, "sha256_prefix": "697AB51B600E7A0B"},
+    "runs/v319-server/bd_data/mpdata_s.level1.proposed": {"size": 227, "sha256_prefix": "A534BE340472E6A4"},
+    "copy": "runs/2697-server-test/profile/mpdata_s"
+  },
+  "attempt": {
+    "config": "+set codol_profilePath <319>/runs/2697-server-test/profile",
+    "server_log": "CoDOL secure profile for client 0 (uid 934477427295145000): schema/attach rejected",
+    "conclusion": "the v319-server mpdata_s is not accepted by the 2697 mp/playersecuredata.def schema (different build/format)"
+  },
+  "bind_flow": {
+    "function": "CODOL_AutoBindClientSecureProfile",
+    "read": "0x53D917 call 0x57BE1A (CODOL_ReadSecureProfile) -> status in ebx",
+    "status_check": "0x53D91E cmp eax,1 / je 0x53D983",
+    "schema": "0x53D983 call 0x542998 (CODOL_LoadMountedStructuredSchema 'mp/playersecuredata.def'); failure -> 0x53D99B",
+    "attach": "0x53D9BD call 0x579F68 (CODOL_AttachClientSecureProfile client/uid/profile/0x8000/schema)",
+    "failure_log": "0x53D99B -> 0x53D9B6 'schema/attach rejected' (string 0x7EE70E) -> common print at 0x53DA39"
+  },
+  "options": [
+    "construct a 2.6.9.7 mpdata_s: read mp/playersecuredata.def, infer the header/magic, write a minimal zero-filled profile with the right magic/version",
+    "patch 0x57BE1A (CODOL_ReadSecureProfile) to zero the output buffer and return 1, then see whether attach accepts an all-zero profile",
+    "patch 0x53D9E6 (test eax,eax / je rejected) so a failed attach still proceeds; GSC getPlayerData may then read defaults instead of throwing",
+    "patch the GSC getPlayerData runtime error path (last resort, engine-side hard-coded)"
+  ],
+  "next": "try the zero-profile + attach-relaxation patch first: it is small, reversible and directly answers whether GSC needs real values or only an attached profile"
+}
