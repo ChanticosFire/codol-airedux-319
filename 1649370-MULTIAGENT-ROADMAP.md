@@ -1222,3 +1222,8 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 
 - Could not connect to server. Error %d（0xD8E2E8）→ 742 候选。
 - 下轮：定位连接检查并 patch/伪造。
+
+## 2026-10-22 connection+0x14 无效（本轮）
+
+- 写 +0x14=2 仍报无法连接主机。
+- 下轮：hook 错误框触发点。
