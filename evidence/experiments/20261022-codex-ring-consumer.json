@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:25:00+00:00",
+  "scope": "ring-B consumer identified",
+  "xrefs": {
+    "0x7872C00 (ring read cursor)": ["0x675141", "0x675161", "0x675166", "0x67517C", "0x6751CF"],
+    "0x7872C04 (ring write cursor)": ["0x675147", "0x675158", "0x67516C"],
+    "0x786DBC0 (ring base)": ["0x67518E"]
+  },
+  "consumer": "0x675140 -- the ring-B packet pop. It is called at 0x4F8EEA inside 0x4F8D70 (the read-packet function), in a loop: 0x4F8E20 body -> call 0x5C2260 (message handling) at 0x4F8ED8 -> call 0x675140 (pop) at 0x4F8EEA -> jne 0x4F8E20 while a packet was returned.",
+  "contradiction": "0x5C2260 is supposed to run every frame from this loop, and it would call 0x674EB0 at 0x5C2380 -- yet the 0x674EB0 breakpoint never fired. So either the frame loop never reaches 0x4F8ED8, or 0x5C2260 returns before 0x5C2380 (early exits: [0x84abb08]/[0x84abb14] setup at 0x5C2271, msg length < 4 at 0x5C22B5, phase < 7 at 0x5C22FC).",
+  "next": [
+    "breakpoint 0x4F8ED8 (the call to 0x5C2260) and 0x4F9428 (the read-packet call): if neither fires the frame loop is not running at all; if 0x4F8ED8 fires but 0x674EB0 does not, 0x5C2260 exits early",
+    "narrow the early exit by breakpointing 0x5C22B5 and 0x5C22FC"
+  ],
+  "artifacts": []
+}
