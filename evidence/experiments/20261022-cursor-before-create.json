@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:48:27.017287+00:00",
+  "image": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\find_cursor.png",
+  "template": "E:\\GAME\\COD\\codol-airedux\\319\\tools\\cursor_template.png",
+  "cursor_top_left": [
+    774,
+    358
+  ],
+  "hotspot": [
+    784,
+    368
+  ],
+  "score": 700982.0,
+  "image_size": [
+    1920,
+    1080
+  ]
+}

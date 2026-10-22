@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【突破】键盘 Tab+Enter 触发“创建房间”，已进入本地房间场景**：鼠标在创建按钮上网格扫描 15 点无反应；改为点击名字框 → Tab×2 → Enter 后客户端立刻建房并切入房间场景（战术团队竞技/迷你战争/1/12/高级选项/准备/返回大厅）。服务端无新请求 → 纯本地离线流程。证据 [`20261022-room-local-create.json`](evidence/experiments/20261022-room-local-create.json)、[`20261022-room-entered.png`](evidence/experiments/20261022-room-entered.png)。
+
 > **2026-10-22【新工具】游戏内光标模板点击校准**：`tools/find_cursor.py` + `tools/cursor_template.png`，FFT 互相关 SSD 定位光标。实测请求点击 `(1447,877)` → 光标热点 `(1448,883)`，误差约 6px；按钮区域 205×65 完全覆盖 → 按钮无响应不是坐标问题，而是控件状态/客户端逻辑。工具依赖 numpy，用 DSH 自带 Python 运行。证据 [`20261022-cursor-calibration.json`](evidence/experiments/20261022-cursor-calibration.json)。
 
 > **2026-10-22 点击可靠性：post 方式解决标签页，创建按钮仍无响应**：新增 `tools/click_verified.py`（点击后截图比对目标区域，未变化重试）。开始游戏/自定义用 `mouse` 即可命中；创建房间标签必须用 `--method post`；创建按钮两种方式、多个位置点击都无新请求。下一步网格扫描按钮区域或检查 disabled 状态。证据 [`20261022-click-reliability.json`](evidence/experiments/20261022-click-reliability.json)。
