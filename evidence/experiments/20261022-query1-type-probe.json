@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:50:49.922139+00:00",
+  "claim": "训练匹配回执未被采用：客户端从不在靶场阶段连接游戏端口；QUERY1_TYPE=1 变体同样无效",
+  "server_switch": "QUERY1_TYPE 环境变量已加入 server319/lsg_derived.py（21/5 body 的类型字节，默认 3）",
+  "tests": [
+    {
+      "type": 3,
+      "client_conns": "只有到 28969 的 LSG 连接，无 8466",
+      "screen": "正在搜寻服务器"
+    },
+    {
+      "type": 1,
+      "client_conns": "只有到 28969 的 LSG 连接，无 8466",
+      "screen": "正在搜寻服务器"
+    }
+  ],
+  "implication": "回执到达但不被 21/5 流程采用；可能 body 结构不符（缺字段）或响应未路由到训练匹配 handler",
+  "next": [
+    "测试 QUERY1_TYPE 0/2/4 等其它值",
+    "完全不回（超时路径）观察客户端行为",
+    "从响应处理器 0xB79B50 反推期望的 body 结构"
+  ]
+}

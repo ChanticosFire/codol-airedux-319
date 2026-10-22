@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【进图】训练回执不被采用：靶场阶段无游戏端口连接**：新增 `QUERY1_TYPE` 开关（默认 3）；type=3 与 type=1 两次实验客户端都只连 28969，不连 8466，画面停在“正在搜寻服务器”。下步试 0/2/4、超时对照、或从 0xB79B50 反推 body。证据 [`20261022-query1-type-probe.json`](evidence/experiments/20261022-query1-type-probe.json)。
+
 > **2026-10-22【进图】hook 抓 21/5 发送链：训练匹配走独立 API**：send IAT(0xCA84E0) hook 抓到 `ret=0xC76DD3`、82B、`chain=0xC739F3→0xBA25A2→0xBA2ECC→0xBA33DD→0xB793CF→0xB79C09`；`0xB79360` 为发送封装。与 21/13 的 `0x62DD60→0x7F43C0` 完全不同 → 等待状态机在 0xB79xxx 上层。证据 [`20261022-send-ring-analysis.json`](evidence/experiments/20261022-send-ring-analysis.json)。
 
 > **2026-10-22【进图】靶场卡在“正在搜寻服务器”；21/5 任务不在 bdService 表**：训练→靶场→进入靶场后发 `21/5`（37B），服务器回 114B entry（127.0.0.1:8466），客户端 20s 无变化。任务表 8 个槽 action 无 21 → 21/5 走独立路径。下步在 0x62DD60 附近找登记点/完成回调。证据 [`20261022-training-task-missing.json`](evidence/experiments/20261022-training-task-missing.json)。

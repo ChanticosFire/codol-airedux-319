@@ -594,7 +594,8 @@ class DerivedLsgServer(AuthServer):
                     # servers"; the result is the 114-byte bdMatchMaking entry.
                     game_port = int(os.environ.get("GAME_PORT", "8466"))
                     entry = make_server_entry(b"\x7f\x00\x00\x01", game_port)
-                    body = (_typed_u64(counter) + _typed_u32(0) + b"\x03" + bytes([task])
+                    q1_type = int(os.environ.get("QUERY1_TYPE", "3")) & 0xFF
+                    body = (_typed_u64(counter) + _typed_u32(0) + bytes([q1_type]) + bytes([task])
                             + _typed_u32(1) + _typed_u32(1) + entry)
                     frame = build_server_frame85(keys, body, counter=received_counter,
                                                  iv=os.urandom(16))
