@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T21:15:00+00:00",
+  "scope": "how the client sets connection phase 9/10",
+  "phase_setter": {
+    "entry": "0x5BE030 (int3 padding before it; no push ebp prologue, likely regparm/leaf)",
+    "body": "shl eax,5; cmp [eax+0x76446B0],5; ...; mov [esi],edi; ret -- eax*32 selects a slot and edi is the new phase",
+    "references": "no direct 'call 0x5BE030' and no imm32 pointer to it in the image; the call is indirect (table or register)",
+    "implication": "static xrefs cannot find the phase 9/10 transition; dynamic monitoring is required"
+  },
+  "phase_writes": {
+    "imm9": "none",
+    "imm10": "none",
+    "mov [0x76446B0],reg": "none",
+    "conclusion": "all phase changes funnel through the indirect 0x5BE030 entry"
+  },
+  "next": [
+    "use a hardware write breakpoint (DR0..3) on 0x76446B0 in the client debug loop, capture the caller and the value written, then follow that caller",
+    "or patch 0x5BE030 to log eax/edi to a scratch buffer in the client and read it from the bridge",
+    "then determine which message/condition gates phase 9/10"
+  ],
+  "artifacts": []
+}
