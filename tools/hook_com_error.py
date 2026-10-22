@@ -84,6 +84,11 @@ def main() -> int:
             code += b"\xa1" + struct.pack("<I", dump + 0x84)           # mov eax,[dump+0x84]
             code += b"\x89\xc6"                                        # mov esi,eax
             code += b"\xf3\xa4"                                        # rep movsb
+            code += b"\x8b\xf4"                                        # mov esi,esp (after pushad -> original rsp+0x20)
+            code += b"\x81\xc6\x20\x00\x00\x00"                     # add esi,0x20
+            code += b"\xbf" + struct.pack("<I", dump + 0x200)          # mov edi,dump+0x200
+            code += b"\xb9\x20\x00\x00\x00"                         # mov ecx,0x20 (0x80 bytes)
+            code += b"\xf3\xa4"                                        # rep movsd
             code += b"\x61"                                            # popad
             code += PROLOGUE
             target = TARGET + len(PROLOGUE)

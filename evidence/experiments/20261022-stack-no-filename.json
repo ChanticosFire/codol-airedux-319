@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:17:10.795303+00:00",
+  "claim": "栈帧 dump 显示 Com_Error 参数里只有 WIN_FILE_NOT_FOUND，没有文件名；文件名在更早调用栈",
+  "stack": [
+    "0x4f83d8",
+    "0x33e7958(WIN_FILE_NOT_FOUND)",
+    "0x33e7958",
+    "0x14bc1084",
+    "0x4f4d30",
+    "0x15",
+    "0xc202e0"
+  ],
+  "strings": [
+    "WIN_FILE_NOT_FOUND"
+  ],
+  "meaning": "Com_Error 只收到错误消息；真正缺失的文件名在调用者(0x4F4D30 附近)的局部变量/参数里",
+  "next": [
+    "反汇编 0x4F4D30 附近（Com_Error 调用者），找它从哪里取文件名",
+    "或 hook 0x4F4D30 的调用者",
+    "或搜索 WIN_FILE_NOT_FOUND 的所有引用点"
+  ]
+}
