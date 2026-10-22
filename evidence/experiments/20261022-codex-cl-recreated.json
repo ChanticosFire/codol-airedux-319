@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T11:25:00+00:00",
+  "scope": "compare the flag window before and after 0x5B2C10",
+  "measurements": {
+    "cl_before": "0x13992D34",
+    "window_before (cl+0x100250..0x100270)": "all zero",
+    "cl_after": "0x133AAB40",
+    "window_after (new cl+0x100250..0x100270)": "all zero",
+    "phase": 8,
+    "flag": 0,
+    "client": "alive"
+  },
+  "key_observation": "cl CHANGED during the call (0x13992D34 -> 0x133AAB40). The object was re-created, so the before/after window comparison is meaningless -- they are different allocations. 0x5B2C10 evidently triggers a re-initialisation of the client object (or the frame tick did).",
+  "implication": "any flag we set on the old cl is lost. And the new cl still has 0x100260 = 0, so the connected flag is not set by simply running the initialiser.",
+  "next": [
+    "watch cl across time: if it keeps changing, something is repeatedly re-initialising the client, which would explain why writes keep disappearing",
+    "find what re-creates cl: hook the allocator of the 0x12A700 object or the store into [0x331C0C8]",
+    "only after cl is stable can the connected flag be set meaningfully"
+  ],
+  "artifacts": ["runs/codex-flagdump-1-call.json"]
+}
