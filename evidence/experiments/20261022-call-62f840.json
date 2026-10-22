@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:53:18.649976+00:00",
+  "pid": 38944,
+  "tid": 23920,
+  "target": "0x62f840",
+  "args": [
+    "0x1",
+    "0x0",
+    "0x0"
+  ],
+  "original": {
+    "eip": "0x76f4826c",
+    "esp": "0x11acfea4"
+  },
+  "ecx": "0x245b7840",
+  "eax": "0x0",
+  "cave": "0x11860000",
+  "resumed": true,
+  "process_alive_after": true
+}

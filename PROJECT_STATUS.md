@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【进图】房间 vtable 全表；0x62F840 前置条件满足但无画面变化**：vtable 0xDC7274 共 50 项，开局入口 +0x3C=0x62F840（ret 0xC），可开始检查 +0xBC=0x6311C0，房间构建 +0xC0=0x6312E0。实测 room=0x245B7840、[+0x278]=1、[0x76446B0]=0、[+0x105D8]=1、[+0x105FE]=12 全部满足；调用后进程存活、房间 UI 仍在、地图变核弹小镇。下步试参数与 vtable+0xC0。证据 [`20261022-room-vtable-analysis.json`](evidence/experiments/20261022-room-vtable-analysis.json)。
+
 > **2026-10-22【进图】训练回执不被采用：靶场阶段无游戏端口连接**：新增 `QUERY1_TYPE` 开关（默认 3）；type=3 与 type=1 两次实验客户端都只连 28969，不连 8466，画面停在“正在搜寻服务器”。下步试 0/2/4、超时对照、或从 0xB79B50 反推 body。证据 [`20261022-query1-type-probe.json`](evidence/experiments/20261022-query1-type-probe.json)。
 
 > **2026-10-22【进图】hook 抓 21/5 发送链：训练匹配走独立 API**：send IAT(0xCA84E0) hook 抓到 `ret=0xC76DD3`、82B、`chain=0xC739F3→0xBA25A2→0xBA2ECC→0xBA33DD→0xB793CF→0xB79C09`；`0xB79360` 为发送封装。与 21/13 的 `0x62DD60→0x7F43C0` 完全不同 → 等待状态机在 0xB79xxx 上层。证据 [`20261022-send-ring-analysis.json`](evidence/experiments/20261022-send-ring-analysis.json)。

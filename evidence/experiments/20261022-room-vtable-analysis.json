@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:54:04.040226+00:00",
+  "claim": "房间 vtable 全表 + 开局函数 0x62F840 的前置条件实测全部满足，但调用后画面无变化",
+  "vtable": {
+    "address": "0xDC7274",
+    "entries": 50,
+    "start_entry": "+0x3C = 0x62F840 (ret 0xC, 3 params)",
+    "can_start": "+0xBC = 0x6311C0 (返回 bool)",
+    "build_room_ui": "+0xC0 = 0x6312E0 (构建房间/玩家列表, 调 0x62BD00)"
+  },
+  "preconditions": {
+    "room": "0x245B7840",
+    "[room+0x278]": 1,
+    "[0x76446B0]": 0,
+    "[room+0x105D8]": 1,
+    "[room+0x105FE]": 12,
+    "verdict": "条件满足（0x278!=0、全局<3、1<=12）→ 应继续到 [room+0x289]=1 + vtable+0xBC"
+  },
+  "observed": "call_main_thread --target 0x62f840 --ecx-room --args 1 0 0 后进程存活、房间 UI 仍在、地图变成核弹小镇",
+  "next": [
+    "0x62F840 ret 0xC（3 参数），试不同参数组合（0/1/2）",
+    "直接调用 vtable+0xC0 (0x6312E0) 看是否触发房间数据构建进而加载地图",
+    "在 0x6312E0 内部找地图加载调用（可能在 0x62BD00 之后）"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-room-vtable-call.png",
+    "evidence/experiments/20261022-call-62f840.json"
+  ]
+}
