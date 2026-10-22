@@ -1206,3 +1206,8 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - 全线程 EIP 都在系统 DLL（0x76F4xxxx），无游戏代码；sendto 0 条。
 - 说明黑屏是等待状态。
 - 下轮：解析等待对象与所需触发。
+
+## 2026-10-22 等待函数= NtWaitForSingleObject（本轮）
+
+- 0x76F4826C → ntdll+0x7826C → NtWaitForSingleObject。
+- 引擎空闲等待；下轮找等待对象。
