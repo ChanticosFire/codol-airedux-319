@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:17:47.319984+00:00",
+  "claim": "四个 patch 全部 verified（含两条验签失败路径），但 state=3 回读验证因进程提前退出未完成",
+  "verified_patches": [
+    {
+      "at": "0x49EEA3",
+      "from": "0f85b7020000",
+      "to": "e9b802000090"
+    },
+    {
+      "at": "0x6751F0",
+      "from": "558bec",
+      "to": "b001c3"
+    },
+    {
+      "at": "0x483681",
+      "from": "32c0",
+      "to": "b001"
+    },
+    {
+      "at": "0x4836BC",
+      "from": "32c0",
+      "to": "b001"
+    }
+  ],
+  "issue": "patch 全 succeeded，但随后 12s 内进程退出，state=3 回读未执行到",
+  "next": [
+    "缩短 patch→state3 间隔（<5s）",
+    "或先只打 0x49EEA3+0x6751F0 两条，再加验签 patch 对比",
+    "用 hook 抓这次退出的 fatal 文本"
+  ]
+}
