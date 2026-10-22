@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【环桥连接突破】客户端原生 OOB 连接链已通过环桥实跑**：静态确认环 A（`0x7872C08`，出站 type-2 loopback，`0x6750A0` 写）与环 B（`0x786DBC0`，`0x4F8D70→0x5C2260` 消费）布局；连接入口 `0x5BE730`、阶段机 `0x5C05F0`、challengeResponse/connectResponse 处理器均已反汇编核对。实跑 `codex-ring-bridge-2`：`getchallenge` → challengeResponse → 阶段 4 → `connect` → 2697 `CS_CONNECTED`（AdministraClient num 0）→ connectResponse → 阶段 5；随后客户端产生 32768B profile 的 zlib `stats` 包，但本版 profile CRC 头与 2697 归档格式不符，服务器拒绝，桥已实现仅重写 4 字节校验字并重压缩。地图世界仍未加载，G2 未通过。2697 在客户端 WFP 守卫期间不能用 UDP 28969，改用 28970。工具 [ring_bridge_1649370.py](tools/ring_bridge_1649370.py)、[disasm_image_1649370.py](tools/disasm_image_1649370.py)；证据 [20261022-codex-ring-bridge-connection.json](evidence/experiments/20261022-codex-ring-bridge-connection.json)。下一步：干净服务端、分阶段注入、stats 完成后放开 netchan data 抓 gamestate 与地图装载。
+
 > **2026-10-22 资源交接**：已形成中文 [1649370-RESOURCE-HANDOFF-20261022.md](1649370-RESOURCE-HANDOFF-20261022.md) 与 3305 项 [逐文件目录](evidence/experiments/20261022-codex-resource-catalog.json)，说明原始 IFS、提取目录、哈希、用途、私有装载路径和下一门槛。仍坚持 Build 1649370，G2–G4 未通过。
 
 > **2026-10-22 Build 1649370 连接状态校正**：`[0x76446B0]` 的 0/3/4/7 等值属于客户端连接阶段；强写 3 不等于进图。G2 需真实连接和 gamestate 路径，再以世界画面和可控玩家验收。见 [静态/运行证据](evidence/experiments/20261022-codex-connection-state-correction.json)。

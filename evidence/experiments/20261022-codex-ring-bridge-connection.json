@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T10:36:00+00:00",
+  "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "scope": "loopback ring bridge to a real IW4OL server; G2 still not accepted",
+  "static_findings": {
+    "method": "PE VA map + Capstone disassembly of the exact offline image (tools/disasm_image_1649370.py), plus a byte scan for absolute references",
+    "ring_a_outgoing": {
+      "base": "0x7872C08",
+      "slots": 64,
+      "stride": "0x4F0",
+      "read_cursor": "0x7886808",
+      "write_cursor": "0x788680C",
+      "length_offset": "0x4E8",
+      "type_offset": "0x4EC",
+      "writer": "0x6750A0 branch arg1<1 (called from 0x6751F0 when the connection index is 0 and adr type == 2)",
+      "engine_drain": "0x674F30 (only caller 0x4F9210 inside 0x4F9170)"
+    },
+    "ring_b_incoming": {
+      "base": "0x786DBC0",
+      "slots": 16,
+      "stride": "0x504",
+      "adr_offset": 0,
+      "payload_offset": "0x18",
+      "length_offset": "0x500",
+      "read_cursor": "0x7872C00",
+      "write_cursor": "0x7872C04",
+      "consumer": "0x675140, only called from 0x4F8D70 (client receive pump); the shipped image never writes ring B",
+      "dispatch": "0x4F8D70 -> 0x5C2260 (OOB prefix check) -> 0x5C1EE0 (command tokenizer) -> 0x5C1678 compare chain"
+    },
+    "ring_c_server_slots": {
+      "base": "0x7867768",
+      "stride": "0x62C8 per port",
+      "slots": 20,
+      "slot_stride": "0x4F0",
+      "length_offset": "0x4E8",
+      "port_offset": "0x4EC",
+      "note": "written when 0x6750A0 receives a connection index >= 1; unused by the local type-2 client slot"
+    },
+    "connect_entry": {
+      "function": "0x5BE730",
+      "behavior": "clears state, forces the address buffer to 'localhost' for the local branch, writes connection phase 7 then 4, parses 0xC7AF590 with 0x675390 into connection+0x14..+0x28, then calls the 0x5C05F0 phase machine",
+      "string_parser": "0x675390: 'localhost' -> type 2 (NA_LOOPBACK), port 0, channel 0x9D"
+    },
+    "phase_machine": {
+      "function": "0x5C05F0",
+      "phases": "switch [0x76446B0] in {3,4,5,6}; table 0x5C0F3C -> 3:0x5C070E getchallenge, 4:0x5C0776 connect, 5:0x5C0E07, 6:0x5C0EBB",
+      "format_strings": {
+        "getchallenge": "0xDBFD04 'getchallenge 0 \"%s\"'",
+        "connect": "0xDBFE28 'connect %s \"%s\"'",
+        "responses": "0xDBFEE8 challengeResponse, 0xDBFEFC connectReject, 0xDBFF0C connectResponse"
+      },
+      "send_wrappers": "0x675260 and 0x675310 copy the text after a 0xFFFFFFFF marker and call 0x6751F0; 0x6751F0 forwards type 2 to 0x6750A0 and other types to 0x77FB80/0x622040"
+    },
+    "response_handlers": {
+      "challengeResponse": "0x5C169F: 0x5C1300(phase 3), then connection+0x14.. receives the packet adr, +0x138 challenge, 0x5BE030(4) writes phase 4",
+      "connectResponse": "0x5C17C9: 0x5C1300(phase 4) compares the connection adr with the packet adr via 0x674D90; on success 0x674200 parses the info string, then 0x5BE030(5) writes phase 5"
+    }
+  },
+  "runtime_findings": {
+    "session": "codex-ring-bridge-2, private five-pack stage, natural Auth/LSG login to ui_state=5/auth_state=9/lsg_state=2",
+    "server": "2697 codol_dedrun, mp_cross_fire, UDP 28970 (28969 could not bind while the client's WFP guard was active)",
+    "bridge": "tools/ring_bridge_1649370.py: reads ring A, writes ring B, calls 0x4F8D70 on the CODO window thread; the engine's own ring-A drain 0x674F30 was temporarily replaced by xor eax,eax;ret so packets survive, then restored",
+    "observed_sequence": [
+      "client phase armed to 3; getchallenge 0 \"0cf7ee44e08c4c28\" (38 B) left through ring A and reached 2697 (server logged SV packet ... getchallenge)",
+      "the server's challengeResponse was written to ring B; the pump advanced the client to phase 4 (connection adr type 2 / port 0 / channel 0x9D)",
+      "the client then sent connect 0cf7ee44e08c4c28 \"\\name\\...\\xuid\\...\\challenge\\1553576585...\" (410 B); 2697 logged SV packet ... connect and CS_FREE -> CS_CONNECTED for AdministraClient num 0",
+      "a synthetic connectResponse injected alone advanced the live client from phase 4 to phase 5",
+      "after phase 5 the client produced 850-byte OOB stats packets: 0xFFFFFFFF 'stats' 0x00 index:u8 compressed:u16 + zlib stream; one stream inflates to exactly 32768 bytes",
+      "the profile header is not crc32(profile[4:]) for this build (observed 0x86AC2088 vs 0xB2BFEF12), so the 2697 archive handler rejects the upload; the bridge can rewrite only the 4-byte check word and re-compress",
+      "with the rewritten header 2697 received the stats packets, but the live run ended with 'Going to CS_ZOMBIE' and no 'stats complete' line; the client then timed out back to phase 0"
+    ],
+    "evidence_files": [
+      "runs/codex-ring-bridge-2-forward.json",
+      "runs/codex-ring-bridge-2-oob2.json",
+      "runs/codex-ring-bridge-2-handshake3.json",
+      "runs/codex-stats-capture/000.bin",
+      "runs/20261022-ring-2697/main/qconsole.log"
+    ]
+  },
+  "conclusion": "The client's own OOB connection protocol is now reachable without patching game code: getchallenge -> challengeResponse -> connect -> connectResponse -> phase 5 all executed through the engine's loopback rings, and the client produced a real 32768-byte stats upload. G2 is still not accepted because the map world was not loaded; the remaining gap is the stats/gamestate progression and possibly the packet injection order while netchan data is present.",
+  "next": [
+    "restart a clean 2697 server, arm phase 3 once, and inject only OOB replies until phase 5 is stable",
+    "after phase 5, forward the rewritten stats upload but do not inject netchan data until phase 6/clc_move is observed",
+    "capture the first clc_move and the resulting gamestate; then allow netchan data injection and watch for the map load",
+    "if 2697 continues to zombie the connection, compare its SV_DirectConnect/userinfo checks with the captured connect line and fix the bridge address semantics"
+  ]
+}
