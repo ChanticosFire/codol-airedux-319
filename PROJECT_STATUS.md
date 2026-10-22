@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【断点证明：快照解析器 0x471E90 从未被调用】** `--breakpoint 0x471E90:snapshot_parse` + 完整握手：events.jsonl 有 149 module、64 系统级 exception、4 条 `lansp_c.dll` 调试串，**无 snapshot_parse 命中**。说明消息在分派前被丢弃/校验失败，快照体根本没被解析——真正的第一道关是**消息读取/校验**。下一步：断点 `0x473A50` 的读取流程（`0x5C2200`/`0x794380`/长度闸门）与 `0x473BAA`/`0x473BE8`。证据 [20261022-codex-snapshot-never-called.json](evidence/experiments/20261022-codex-snapshot-never-called.json)。
+
 > **2026-10-22【EOF 修复：三种标记与客户端分派表一致】** `enterworld12`（`e2ba5a6c…`）把 `SV_EndClientSnapshot` 的 EOF 字节从 6 改成 5（`0x4A4CA4`，由前置 `call 0x4B6010` 定位）。现在 `svc_snapshot=0`、`svc_gamestate=3`、`svc_EOF=5` 与客户端映射完全一致。实测客户端仍 21 秒停阶段 8、黑屏。框架层已正确，剩余差异在快照体字段。下一步：断点 `0x471E90` 确认解析器是否被调用，再逐字段对照。证据 [20261022-codex-eof-fix.json](evidence/experiments/20261022-codex-eof-fix.json)。
 
 > **2026-10-22【重大发现：客户端 svc 分派表解码；EOF 应为 5 而非 6】** 顶层解析器 `0x473A50`：`cmp eax,5 → 0x473C3E`（EOF）、`cmp eax,3 / ja`（未知值跳过剩余）、`jmp [eax*4+0x473C50]`。表 = `[0x473BF7(snapshot→0x471E90), 0x473BBF, 0x473BCC, 0x473BD9(gamestate→0x473260)]`。客户端映射：**0=snapshot、3=gamestate、5=EOF**。2697 的 snapshot=0/gamestate=3 正确，**EOF=6 错误**（客户端当未知值跳过）。下一步：把 EOF 改为 5 并复测。证据 [20261022-codex-client-svc-map.json](evidence/experiments/20261022-codex-client-svc-map.json)。

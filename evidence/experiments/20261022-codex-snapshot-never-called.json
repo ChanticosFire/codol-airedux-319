@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T02:00:00+00:00",
+  "scope": "breakpoint proof: the client never reaches the snapshot parser",
+  "experiment": {
+    "launcher": "python tools/launch_1649370.py ... --breakpoint 0x471E90:snapshot_parse --name codex-ring-bridge-49",
+    "handshake": "full ring bridge through CS_ACTIVE with the EOF=5 server (enterworld12)",
+    "result": "events.jsonl contains 149 module events, 64 exceptions (all CRT/system: 0x80000003, 0x4000001f, 0x406d1388 thread naming) and 4 debug strings from lansp_c.dll -- no snapshot_parse breakpoint hit at all"
+  },
+  "meaning": "0x471E90 (client svc 0 = snapshot handler) is never entered. The client receives packets and settles at phase 8 but the message is discarded or fails validation before dispatch, so the snapshot body never gets parsed. This supersedes the body-format hypothesis as the first gate.",
+  "next": [
+    "instrument the message reader in 0x473A50: the flow is 0x473AE9 call 0x5C2200 (begin reading), 0x473B00 call 0x794380 (decompress/validate), 0x473AD3 cmp eax,0x20000 guard",
+    "a breakpoint at 0x473BAA (the svc dispatch compare) would show whether the reader loop is reached at all",
+    "also breakpoint 0x473BE8 (the call to the gamestate parser) to confirm the parser path executes for the gamestate message"
+  ],
+  "artifacts": ["E:/GAME/COD/1649370/workspaces/offline-runs/codex-ring-bridge-49/events.jsonl", "runs/codex-ring-bridge-49-launcher.out"]
+}
