@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:58:38.529318+00:00",
+  "claim": "overlay 修复(132+20ff)后客户端成功进入游戏大厅并登录；state=3 后 15 秒闪退（老问题）",
+  "observations": {
+    "login": "stage=5/state=0/ui=5（大厅态），FSM 成功",
+    "screen": "游戏大厅 UI：角色/每周任务/商城/生涯任务/军火基地（截图 1.33MB）",
+    "after_state3": "t=5/10s 画面正常(1.33MB)，t=15s 进程退出"
+  },
+  "significance": "overlay 修复彻底解决了启动问题：现在能进大厅、能看到完整 UI；剩余问题是 state=3 后的闪退",
+  "next": [
+    "分析 state=3 闪退（fatal 文本已 hook，0x11761000）",
+    "可能是地图初始化的资源注册表缺失"
+  ]
+}
