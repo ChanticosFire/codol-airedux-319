@@ -1,0 +1,199 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "pid": 40764,
+  "utc": "2026-10-22T09:27:13.584003+00:00",
+  "status": "read",
+  "count": 21,
+  "entries": [
+    {
+      "sequence": 0,
+      "caller": "0xc513d9",
+      "name_ptr": "0x1aea28",
+      "name": "",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 1,
+      "caller": "0xc513d9",
+      "name_ptr": "0x1aea28",
+      "name": "",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 2,
+      "caller": "0x776f80",
+      "name_ptr": "0x2386fce0",
+      "name": "mu¾",
+      "handle": "0xd9c",
+      "last_error": 0,
+      "failed": false
+    },
+    {
+      "sequence": 3,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 4,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xd38",
+      "last_error": 0,
+      "failed": false
+    },
+    {
+      "sequence": 5,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 6,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 2,
+      "failed": true
+    },
+    {
+      "sequence": 7,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 8,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 9,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 10,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 11,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 12,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xd38",
+      "last_error": 0,
+      "failed": false
+    },
+    {
+      "sequence": 13,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 14,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 2,
+      "failed": true
+    },
+    {
+      "sequence": 15,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 16,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 17,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 18,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 19,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 20,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2386fa2c",
+      "name": ".\\devraw_shared\\images\\compass_map_mp_cross_fire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 2,
+      "failed": true
+    }
+  ]
+}

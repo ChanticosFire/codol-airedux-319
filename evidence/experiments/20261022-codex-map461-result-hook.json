@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "pid": 37644,
+  "utc": "2026-10-22T09:21:29.405922+00:00",
+  "status": "installed",
+  "iat": "0xca8208",
+  "original": "0x74e0ea40",
+  "cave": "0x4db30000",
+  "record": "0x4db40000",
+  "slot": "0x4db50000",
+  "readback": "0x4db30000",
+  "cave_hex": "558bec83ec0460a10000b44d8d500189150000b44d83e01fc1e008051000b44d8945fc8b550489108b55088950048b75088d7810ba7f000000fcacaa84c074034a75f7c6070061ff7520ff751cff7518ff7514ff7510ff750cff7508ff150000b54d8b4dfc894108648b153400000089510c8be55dc21c00"
+}

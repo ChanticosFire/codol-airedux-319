@@ -92,6 +92,9 @@ ACCOUNT_DB = PRIVATE_DATA / "local.sqlite3"
 SETTINGS_DB = PRIVATE_DATA / "game-settings.sqlite3"
 OriginalSettingsStore = game_settings_mod.SettingsStore
 MAP_PROBE = None
+MAP_LOADSCREEN_PLACEHOLDER = False
+MAP_COMPASS_PROBE = False
+MAP_LOOSE_CROSSFIRE = False
 MAP_COMMAND_MODE = "startup"
 ROOM_COMMAND = None
 CBUF_COMMAND = None
@@ -2309,6 +2312,74 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
             staged.append({"name": name, "sha256": expected, "size": destination.stat().st_size})
         log["map_probe_resources"] = staged
 
+    if MAP_LOADSCREEN_PLACEHOLDER:
+        # Diagnostic only: use this build's own fallback image to satisfy the
+        # map loadscreen lookup without touching the shared image-library mount.
+        source = stage / "main/images/default.iwi"
+        destination = stage / "devraw_shared/images/loadscreen_mp_crossfire.iwi"
+        if not source.is_file():
+            raise FileNotFoundError(f"same-build fallback IWI missing: {source}")
+        for candidate in (stage, destination.parent.parent, destination.parent):
+            if candidate.exists() and (candidate.is_symlink() or candidate.is_junction()):
+                raise ValueError(f"refusing to write through a shared mount: {candidate}")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.exists():
+            raise ValueError(f"unexpected existing diagnostic IWI: {destination}")
+        shutil.copyfile(source, destination)
+        log["map_loadscreen_placeholder"] = {
+            "source": str(source), "destination": str(destination),
+            "sha256": hashlib.sha256(destination.read_bytes()).hexdigest(),
+            "diagnostic_only": True,
+        }
+
+    if MAP_COMPASS_PROBE:
+        source = (Path(__file__).resolve().parents[1]
+                  / "runs/20261022-crossfire-compass-v461/main/images/compass_map_mp_cross_fire.iwi")
+        expected = "d2ceae4461f048d16be8570753e8b7fa09f25e3cda76d306763435ddd9f33a88"
+        if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != expected:
+            raise ValueError("same-build compass source missing or fingerprint mismatch")
+        destination = stage / "devraw_shared/images/compass_map_mp_cross_fire.iwi"
+        for candidate in (stage, destination.parent.parent, destination.parent):
+            if candidate.exists() and (candidate.is_symlink() or candidate.is_junction()):
+                raise ValueError(f"refusing to write through a shared mount: {candidate}")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.exists():
+            raise ValueError(f"unexpected existing compass destination: {destination}")
+        shutil.copyfile(source, destination)
+        log["map_compass_probe"] = {"destination": str(destination), "sha256": expected}
+
+    if MAP_LOOSE_CROSSFIRE:
+        root = Path(__file__).resolve().parents[1] / "runs/20261022-crossfire-loose-v461"
+        receipt = root / "receipt.json"
+        receipt_sha = hashlib.sha256(receipt.read_bytes()).hexdigest()
+        if receipt_sha != "78c0e517fd854d32b35d32bc8d966b3c57b36721f5b6cfa67e3e72fac928bd67":
+            raise ValueError("Cross Fire loose receipt fingerprint mismatch")
+        report = json.loads(receipt.read_text(encoding="utf-8"))
+        if (report.get("build") != 1649370 or report.get("scope") != "all_main"
+                or report.get("source_sha256") != "c340793c2ea18e6e37cde3b94b9475aa6b7f91bd89c2c111eb54b8b119634386"
+                or report.get("decoded") != 538 or report.get("missing")):
+            raise ValueError("Cross Fire loose resource receipt mismatch")
+        mount = stage / "devraw_shared"
+        if stage.is_junction() or stage.is_symlink() or (mount.exists() and (mount.is_junction() or mount.is_symlink())):
+            raise ValueError("refusing to write through a shared mount")
+        staged_loose = 0
+        for item in report["resources"]:
+            parts = Path(item["member"]).parts
+            if len(parts) < 3 or parts[0].lower() != "main" or ".." in parts:
+                raise ValueError("invalid Cross Fire loose member path")
+            source = root.joinpath(*parts)
+            if hashlib.sha256(source.read_bytes()).hexdigest() != item["decoded_sha256"]:
+                raise ValueError(f"Cross Fire loose resource fingerprint mismatch: {source}")
+            destination = mount.joinpath(*parts[1:])
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if destination.parent.is_junction() or destination.parent.is_symlink() or destination.exists():
+                raise ValueError(f"unsafe Cross Fire loose destination: {destination}")
+            shutil.copyfile(source, destination)
+            staged_loose += 1
+        log["map_loose_crossfire"] = {"count": staged_loose,
+                                      "receipt_sha256": receipt_sha,
+                                      "destination_root": str(mount)}
+
     if _MAP_DIR:
         source_dir = Path(_MAP_DIR)
         destination_dir = stage / "client_shipretail/chinese"
@@ -2341,7 +2412,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, TCP_LOOPBACK_GUARD, LOCAL_AUTH_LSG, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
+    global MAP_PROBE, MAP_LOADSCREEN_PLACEHOLDER, MAP_COMPASS_PROBE, MAP_LOOSE_CROSSFIRE, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, TCP_LOOPBACK_GUARD, LOCAL_AUTH_LSG, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -2352,6 +2423,12 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     parser.add_argument("--local-profile", action="store_true")
     parser.add_argument("--verify-resources", action="store_true")
     parser.add_argument("--map-probe", choices=tuple(MAP_PROBE_FILES))
+    parser.add_argument("--map-loadscreen-placeholder", action="store_true",
+                        help="diagnostic: stage this build's default.iwi as the Cross Fire loadscreen")
+    parser.add_argument("--map-compass-probe", action="store_true",
+                        help="stage verified same-build Cross Fire compass IWI in private runtime")
+    parser.add_argument("--map-loose-crossfire", action="store_true",
+                        help="stage all 538 verified same-build Cross Fire loose assets")
     parser.add_argument("--map-command-mode", choices=("startup", "queue", "none"), default="startup")
     parser.add_argument("--audit-breakpoints", action="store_true")
     parser.add_argument("--capture-ui-movie", action="store_true")
@@ -2418,6 +2495,19 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="用伪造 EBP 帧直接进入 0x5C1678 challengeResponse 分支")
     known, passthrough = parser.parse_known_args(user_argv)
     MAP_PROBE = known.map_probe
+    MAP_LOADSCREEN_PLACEHOLDER = known.map_loadscreen_placeholder
+    MAP_COMPASS_PROBE = known.map_compass_probe
+    MAP_LOOSE_CROSSFIRE = known.map_loose_crossfire
+    if MAP_LOADSCREEN_PLACEHOLDER and MAP_PROBE != "mp_cross_fire_native":
+        parser.error("--map-loadscreen-placeholder requires --map-probe mp_cross_fire_native")
+    if MAP_COMPASS_PROBE and MAP_PROBE != "mp_cross_fire_native":
+        parser.error("--map-compass-probe requires --map-probe mp_cross_fire_native")
+    if MAP_LOOSE_CROSSFIRE and MAP_PROBE != "mp_cross_fire_native":
+        parser.error("--map-loose-crossfire requires --map-probe mp_cross_fire_native")
+    if MAP_LOOSE_CROSSFIRE and MAP_COMPASS_PROBE:
+        parser.error("--map-loose-crossfire already includes the compass IWI")
+    if MAP_LOOSE_CROSSFIRE and MAP_LOADSCREEN_PLACEHOLDER:
+        parser.error("--map-loose-crossfire already includes the authentic loadscreen IWI")
     MAP_COMMAND_MODE = known.map_command_mode
     ROOM_COMMAND = known.room_command
     CBUF_COMMAND = known.cbuf_command

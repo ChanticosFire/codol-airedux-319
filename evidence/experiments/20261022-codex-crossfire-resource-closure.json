@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "gate": "G2",
+  "input_image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "fastfile_pack_sha256": "3ba43cf2c0d1944a9941debb9878781c1d58f99d264cd0f357493088365b28c8",
+  "loose_pack_sha256": "c340793c2ea18e6e37cde3b94b9475aa6b7f91bd89c2c111eb54b8b119634386",
+  "loose_receipt_sha256": "78c0e517fd854d32b35d32bc8d966b3c57b36721f5b6cfa67e3e72fac928bd67",
+  "same_build_loose_resources_decoded": 538,
+  "same_build_loose_resources_missing_from_extraction": 0,
+  "verified_loadscreen_sha256": "2afd36d3033717b26d07234236a1c5a63cb6349a80a4d262708d1929f38ba5fd",
+  "verified_compass_sha256": "d2ceae4461f048d16be8570753e8b7fa09f25e3cda76d306763435ddd9f33a88",
+  "observed_createfilea_result": {
+    "mp_cross_fire_load.ff": {"handle": "0xd5c", "last_error": 0},
+    "loadscreen_mp_crossfire.iwi_in_unmodified_stage": {"all_searched_paths_failed": true, "last_error_values": [2, 3]}
+  },
+  "control_experiments": [
+    {"stage": "signed_ff_only", "login_ui_state": 5, "preloadmap_queued": true, "fatal": "WIN_FILE_NOT_FOUND"},
+    {"stage": "signed_ff_plus_same_build_default_iwi_placeholder", "without_result_hook_stop_reason": "fatal_dialog"},
+    {"stage": "signed_ff_plus_verified_compass_and_placeholder", "stop_reason": "fatal_dialog"},
+    {"stage": "signed_ff_plus_all_538_original_loose_resources", "screen_at_5s": "black", "stop_reason": "fatal_dialog"}
+  ],
+  "safety": {"shared_overlay_modified": false, "source_archives_modified": false,
+             "private_stage_only": true, "wfp_guard_closed_after_runs": true,
+             "wfp_engine_close_status": 0, "private_sqlite_integrity": "ok",
+             "private_nickname_preserved": "南韩超人朴玄俊"},
+  "gate_result": "G2 not passed: no generated world or controllable player",
+  "limits": [
+    "The full loose package may not be the entire dependency closure; other same-build IFS packages may be needed.",
+    "The CreateFileA result hook's first version copied a fixed-length name buffer and triggered an unhandled exception; the later pointer-only version avoided that copy but needs faster polling to preserve names.",
+    "A black screenshot and fatal dialog do not identify the exact upstream failing call."
+  ],
+  "next_experiment": "Use a fast result-ring watcher and the existing fatal hook in one private guarded run with all 538 authentic loose resources to capture the last failed file call and/or upstream Com_Error callsite; if no missing file aligns with the fatal, trace map-loading state dependencies rather than adding more files by guesswork.",
+  "references": [
+    "evidence/experiments/20261022-codex-map461-result-read3.json",
+    "evidence/experiments/20261022-codex-map461-result-fatal-read3.json",
+    "runs/20261022-crossfire-loose-v461/receipt.json",
+    "runs/codex-map461-full-loose-prep.out",
+    "evidence/experiments/20261022-codex-map461-full-loose-cbuf.json",
+    "evidence/experiments/20261022-codex-map461-full-loose-screen5.png",
+    "runs/codex-map461-full-loose-client.out"
+  ]
+}

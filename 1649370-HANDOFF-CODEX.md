@@ -1,5 +1,7 @@
 # 1649370 阶段性交接（给 codex）
 
+> **2026-10-22 最新进度**：已从 1649370 原始 `lf_init_mp_cross_fire_V10.ifs` 解出并验过 538 件地图松散资源（含真实 loadscreen、compass），`--map-loose-crossfire` 只在私有 stage 按哈希装配。配合发行签名 v461 三份 FF、自然 Auth/LSG 登录，`preloadmap` 后仍黑屏并 `fatal_dialog`。本文件较旧的“缺 v461 load FF”及“仅缺注册表即可完成进图”均不能作为当前已证根因；G2 未通过。见 [本轮证据](evidence/experiments/20261022-codex-crossfire-resource-closure.json)。
+
 > **2026-10-22 复核纠偏**：本文件的“缺 461 版 `mp_cross_fire_load.ff`”已过时。`ff_init_mp_cross_fire_V70.ifs` 内含 `mp_cross_fire.ff`、`_load.ff`、`_const.ff` 三件套，均为 v461 且发行签名/哈希链通过；仓库原有 `runs/20261021-1649370-crossfire-base` 与本轮独立提取 SHA-256 一致。使用 `--map-probe mp_cross_fire_native --map-command-mode none` 的私有 stage 已确认覆盖三件套。自然登录到大厅后注入 `preloadmap mp_cross_fire 1` 仍报 `WIN_FILE_NOT_FOUND`，所以 G2 尚未通过。现有 CreateFileA 钩子只记录打开尝试，不能凭 `loadscreen_*` 名称断定缺件。复核见 [本轮证据](evidence/experiments/20261022-codex-map461-assessment.json)；下轮抓 CreateFileA 返回值/错误码并关联 `0x4F4D30`/`0x4F5120`。旧的手写 `state=3` 配方仅作历史对照，当前以自然 Auth/LSG 登录链为基线。
 
 > 生成时间：2026-10-22

@@ -1,0 +1,145 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "pid": 37644,
+  "utc": "2026-10-22T09:21:38.297973+00:00",
+  "status": "read",
+  "count": 15,
+  "entries": [
+    {
+      "sequence": 0,
+      "caller": "0x776f80",
+      "name_ptr": "0x2370fce0",
+      "name": ".\\client_shipRetail\\chinese\\patch_localized_ui_mp.ff",
+      "handle": "0xffffffff",
+      "last_error": 2,
+      "failed": true
+    },
+    {
+      "sequence": 1,
+      "caller": "0x776f80",
+      "name_ptr": "0x2370fce0",
+      "name": ".\\client_shipRetail\\chinese\\localized_ui_mp.ff",
+      "handle": "0xd20",
+      "last_error": 0,
+      "failed": false
+    },
+    {
+      "sequence": 2,
+      "caller": "0xc513d9",
+      "name_ptr": "0x1aea28",
+      "name": ".\\main\\video\\mp_cross_fire_load.bk2",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 3,
+      "caller": "0xc513d9",
+      "name_ptr": "0x1aea28",
+      "name": ".\\raw\\video\\mp_cross_fire_load.bk2",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 4,
+      "caller": "0x776f80",
+      "name_ptr": "0x2370fce0",
+      "name": ".\\client_shipRetail\\chinese\\mp_cross_fire_load.ff",
+      "handle": "0xd5c",
+      "last_error": 0,
+      "failed": false
+    },
+    {
+      "sequence": 5,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2370fa2c",
+      "name": ".\\hires\\images\\default.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 6,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2370fa2c",
+      "name": ".\\main\\images\\default.iwi",
+      "handle": "0xd60",
+      "last_error": 0,
+      "failed": false
+    },
+    {
+      "sequence": 7,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2370fa2c",
+      "name": ".\\hires\\images\\loadscreen_mp_crossfire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 8,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2370fa2c",
+      "name": ".\\main\\images\\loadscreen_mp_crossfire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 2,
+      "failed": true
+    },
+    {
+      "sequence": 9,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2370fa2c",
+      "name": ".\\main_shared\\images\\loadscreen_mp_crossfire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 10,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2370fa2c",
+      "name": ".\\players\\images\\loadscreen_mp_crossfire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 11,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2370fa2c",
+      "name": ".\\raw\\images\\loadscreen_mp_crossfire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 12,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2370fa2c",
+      "name": ".\\raw_shared\\images\\loadscreen_mp_crossfire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 13,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2370fa2c",
+      "name": ".\\devraw\\images\\loadscreen_mp_crossfire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    },
+    {
+      "sequence": 14,
+      "caller": "0xc513d9",
+      "name_ptr": "0x2370fa2c",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi",
+      "handle": "0xffffffff",
+      "last_error": 3,
+      "failed": true
+    }
+  ]
+}
