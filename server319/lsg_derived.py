@@ -49,6 +49,67 @@ def _typed_u32(value: int) -> bytes:
     return b"\x08" + struct.pack("<I", value)
 
 
+def decode_typed_fields(buf: bytes, limit: int = 8) -> str:
+    """Decode the typed (bdv) argument list of a client task request.
+
+    Mirrors the codec in codol-node/lsg.js (TypeReader): every value carries a
+    one-byte type tag -- 0x03 byte, 0x06 u16, 0x08 u32, 0x0a u64, 0x10
+    NUL-terminated string, 0x13 blob (plus an extra 0x08 length tag).  Only for
+    readable evidence, so an unknown tag ends the list instead of raising.
+    """
+    out: list[str] = []
+    offset = 0
+    while offset < len(buf) and len(out) < limit:
+        tag = buf[offset]
+        offset += 1
+        if tag == 0x03:
+            if offset >= len(buf):
+                out.append("truncated")
+                break
+            out.append(f"u8({buf[offset]})")
+            offset += 1
+        elif tag == 0x06:
+            if offset + 2 > len(buf):
+                out.append("truncated")
+                break
+            out.append(f"u16({struct.unpack_from('<H', buf, offset)[0]})")
+            offset += 2
+        elif tag == 0x08:
+            if offset + 4 > len(buf):
+                out.append("truncated")
+                break
+            out.append(f"u32({struct.unpack_from('<I', buf, offset)[0]})")
+            offset += 4
+        elif tag == 0x0A:
+            if offset + 8 > len(buf):
+                out.append("truncated")
+                break
+            out.append(f"u64({struct.unpack_from('<Q', buf, offset)[0]})")
+            offset += 8
+        elif tag == 0x10:
+            end = buf.find(b"\x00", offset)
+            if end < 0:
+                end = len(buf)
+            text = buf[offset:end]
+            if text and all(32 <= byte < 127 for byte in text):
+                out.append('str("%s")' % text.decode("latin-1"))
+            else:
+                out.append("str_hex(%s)" % text.hex())
+            offset = end + 1
+        elif tag == 0x13:
+            if offset < len(buf) and buf[offset] == 0x08 and offset + 5 <= len(buf):
+                size = struct.unpack_from("<I", buf, offset + 1)[0]
+                out.append(f"blob({size}B)")
+                offset += 5 + size
+            else:
+                out.append("blob(malformed)")
+                break
+        else:
+            out.append(f"tag(0x{tag:02x})")
+            break
+    return ",".join(out)
+
+
 def _typed_u64(value: int) -> bytes:
     return b"\x0a" + struct.pack("<Q", value)
 
@@ -256,7 +317,9 @@ class DerivedLsgServer(AuthServer):
                                         reason=f"service={service} tag={tag:#x}")
                     continue
                 self.evidence.write("task_request", session,
-                                    reason=f"service={service} task={task} bytes={len(payload)}")
+                                    reason=f"service={service} task={task} bytes={len(payload)} "
+                                           f"args={decode_typed_fields(payload[3:])}",
+                                    body_hex=payload.hex() if len(payload) <= 1024 else None)
                 if (service, task) == (71, 4):
                     # LSG_T4_MODE selects the task4 reply shape. "entry" sends a
                     # full 114-byte bdMatchMaking record (same as task9), which

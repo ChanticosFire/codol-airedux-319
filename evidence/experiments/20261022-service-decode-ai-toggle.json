@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T02:49:23.766618+00:00",
+  "session": "natural-f-20261022",
+  "server_log": "evidence/experiments/20261022-decoded-tasks.jsonl",
+  "request_decoding": {
+    "tool": "server319/lsg_derived.py decode_typed_fields()",
+    "requests": [
+      {
+        "service": 71,
+        "task": 4,
+        "bytes": 83,
+        "args": "blob16,blob16,u32(31902622),blob0,blob0,str(\"1C-83-41-CE-8D-EE\")"
+      },
+      {
+        "service": 28,
+        "task": 4,
+        "bytes": 29,
+        "args": "tag(0x6c)"
+      },
+      {
+        "service": 102,
+        "task": 7,
+        "bytes": 558,
+        "args": "u32(50),u8(1),u64(0),u8(1),u64(1),u8(1),u64(2),u8(1)..."
+      },
+      {
+        "service": 102,
+        "task": 1,
+        "bytes": 24,
+        "args": "u32(0),u32(1),u8(3),u64(0)"
+      },
+      {
+        "service": 3,
+        "task": 46,
+        "bytes": 26,
+        "args": "str(empty),u64(0),str(empty),u32(10),u32(0)"
+      },
+      {
+        "service": 3,
+        "task": 48,
+        "bytes": 31,
+        "args": "str(empty),u64(0),str(empty),u32(0),u32(100),u32(0)"
+      },
+      {
+        "service": 80,
+        "task": 232,
+        "bytes": 5,
+        "args": "str(empty)"
+      },
+      {
+        "service": 9,
+        "task": 5,
+        "bytes": 8,
+        "args": "u32(100)"
+      }
+    ]
+  },
+  "ai_toggle": {
+    "mode_official": "战术团队竞技：鼠标/键盘对 AI 开关均无效（行值保持关闭）",
+    "mode_ffa": "个人竞技：点值框弹出 打开/关闭 下拉；选择 打开 后行值变为 打开，应用后房间进入个人竞技模式",
+    "evidence": {
+      "dialog": "evidence/experiments/20261022-ffa-advanced.png",
+      "dropdown": "evidence/experiments/20261022-ffa-ai-dropdown.png",
+      "ai_on": "evidence/experiments/20261022-ffa-ai-on.png",
+      "applied": "evidence/experiments/20261022-ffa-room-ai-applied.png"
+    },
+    "sha256": {
+      "20261022-ffa-advanced.png": "664172500ae8a11fe74e83a7bcb379c54a685d6d87d0ca4e19dbbb2b7fd9ac9c",
+      "20261022-ffa-ai-dropdown.png": "8cc84815de806045ff959b442771dc42cfc36abccff313a086b6a2be5e04937d",
+      "20261022-ffa-ai-on.png": "fcb2dcf62e5f5fe3c03d5d868602c98c6fe6bc148ae05c099136699dab413b4d",
+      "20261022-ffa-room-ai-applied.png": "50a2823d224965f003620bb2951cbdf46563d0cc76fcd6f710e319642b0aa393"
+    },
+    "coordinates": {
+      "advanced": [
+        265,
+        545
+      ],
+      "ffa_mode": [
+        670,
+        488
+      ],
+      "ai_value": [
+        1250,
+        835
+      ],
+      "dropdown_open": [
+        1218,
+        885
+      ],
+      "apply": [
+        1361,
+        935
+      ]
+    }
+  },
+  "main_thread_room_start": {
+    "tool": "tools/call_main_thread.py",
+    "target": "0x62f840",
+    "ecx": "[0x82E13FC]=0x24607890",
+    "args": [
+      0,
+      0,
+      0
+    ],
+    "result": "进程存活；房间 UI 被拆除并停在无 UI 的房间场景；[room+0x7230]=1；地图索引仍 0xffffffff、世界 0x35053DC=0；仍无 LSG 请求",
+    "evidence": "evidence/experiments/20261022-mainthr-room-start.json",
+    "screenshot": "evidence/experiments/20261022-mainthr-room-start-ui.png",
+    "sha256": "a7cbc12dc27a13a7685db44eb942eab0192be8ee4b3472b3dfe30e3964a2e3a4"
+  },
+  "playlist_source": {
+    "finding": "0x3306910 的写入点只出现在 0x5C206E/0x5C213C 等网络消息解析路径；0x3306994/0x33069D4 没有静态写入，说明赛单/地图表由服务端下发而非本地文件生成",
+    "implication": "本地开图与 0x6398A0 的 startgame 回调都需要服务端先下发赛单；下一步应实现赛单/发布文件服务或直接合成 gamestate"
+  },
+  "next_gate": "实现 1649370 的游戏通道服务端（NAT/INIT/DATA/gamestate）；参考 319/他人文件参考/codol3333服务端开发文档/GAME_TRANSPORT_PROGRESS.md"
+}
