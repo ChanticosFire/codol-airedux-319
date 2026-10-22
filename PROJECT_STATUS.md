@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【循环里的 `0x66F410` 也安全】** `0x5B2EE6..0x5B2F3B`：`ecx=[cl+0x68D0]` → `(ecx+edx+1)&0xFF` → `imul 0x2C` → `esi=[cl+0x3CD0+idx*0x2C]` → `call 0x66F410`。`0x66F410`：`eax=[esi]`（槽内）→ `sub eax,[ecx]`（栈参数）→ `cmp 0x100` → `call 0x66E7F0` → `cmp eax,[edi+0x10]` 后带边界检查写 `[eax+edx]`。操作数全部有效，不是故障点；`0x5B2F43` 之后同样有上界检查。下一步：**直接扫描 `0x5B2C10` 到 `0x5B3127` 内所有进入系统模块的调用**，定位 `0xB02BCC94`。证据 [20261022-codex-5b2f14.json](evidence/experiments/20261022-codex-5b2f14.json)。
+
 > **2026-10-23【修复点之后一段代码全部安全】** `0x5B2E53..0x5B2EEC`：`call 0x66E840` → `[cl+0x8014C]`/`+0x80154` → `call 0x769560` → `xor eax,[cl+0x80148]`/`[cl+0x13C]` → `ecx=[cl+0x68D0]`。全部只读 1.2MB `cl` 内字段，`cl` 为 0 时安全。新崩溃 `0xB02BCC94` 在更后面（`0x5B2F43` 之后）。下一步：反汇编 `0x5B2EE6..0x5B3040` 找真正出错的调用，并查 `0x769560` 返回值是否被当索引且无边界检查。证据 [20261022-codex-5b2e53.json](evidence/experiments/20261022-codex-5b2e53.json)。
 
 > **2026-10-23【修复技巧验证：手工补 `cl+0xA8F0` 后崩溃点前移】** 阶段 8、标志 0；`VirtualAllocEx` 分配 0x180 @ `0x11790000`；写 `[cl+0xA8F0]=0x11790000^0x96B9DC91=0x87C0DC91`；`call_main_thread(0x5B2C10)` 后客户端仍退出，**但新崩溃点为 `0xC0000005 @ 0xB02BCC94`**（`ecx=0x11A3F5C8` 栈地址），不再是 `0x5D1CF4C5`。**说明补编码指针确实解除了 `0x5B2E13` 的故障，初始化器前进到下一个失败点**。下一步：确认 `0xB02BCC94` 的模块/参数，按同一模式逐个复现其余 `0x96B9DC91` 类编码指针的 `CL_Init` 步骤。证据 [20261022-codex-fix-a8f0.json](evidence/experiments/20261022-codex-fix-a8f0.json)。

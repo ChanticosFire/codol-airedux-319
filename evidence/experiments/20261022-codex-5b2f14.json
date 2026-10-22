@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T03:25:00+00:00",
+  "scope": "the loop that likely contains the new fault",
+  "disassembly": {
+    "0x5B2EE6": "ecx=[ebx+0x68D0] (cl+0x68D0); sub ecx,[ebp-0x840]",
+    "0x5B2EF8": "ecx = (ecx+edx+1) & 0xFF; imul ecx,0x2C",
+    "0x5B2F0D": "lea esi,[ecx+ebx+0x3CD0] -- a per-slot structure inside cl",
+    "0x5B2F14": "push edx; push eax; lea eax,[ebp-0x874]; call 0x66F410 -- the per-iteration call",
+    "0x5B2F35": "cmp eax,[ebp-0x840]; jl 0x5B2EE0 -- loop continues",
+    "0x5B2F43..0x5B2F56": "appends dwords from cl+0x3C80 into the stack buffer"
+  },
+  "suspect": "0x66F410 is called once per iteration with esi pointing at cl+0x3CD0+index*0x2C and eax pointing at a stack structure. Everything it receives is either inside cl or on the stack, so any fault must come from something inside 0x66F410 itself (an API call with a field from the still-empty slot).",
+  "next": [
+    "continue past 0x5B2F43: the appends there write into [ebp-0x86C] with bounds checks, so keep walking until a call into a system DLL appears",
+    "0xB02BCC94 is far outside the exe; scan the rest of 0x5B2C10 (up to 0x5B3127) for calls into system modules"
+  ],
+  "artifacts": [],
+  "0x66F410": {
+    "disassembly": "push ebp; mov ebp,esp; sub esp,0x18; ecx=[ebp+0xC]; push ebx; ebx=[ebp+8]; push edi; edi=eax; eax=[esi]; sub eax,[ecx]; [ebp-0xC]=eax; cmp eax,0x100; jae 0x66F44C; eax=edi; call 0x66E7F0; eax=[edi+0x14]; cmp eax,[edi+0x10]; jge 0x66F498; edx=[edi+8]; cl=[ebp-0xC]; mov [eax+edx],cl; ...",
+    "assessment": "it reads [esi] (inside cl), [ecx] (a stack argument) and writes through edi with an explicit bounds check against [edi+0x10]. All operands are valid, so this function is not the fault."
+  }
+}
