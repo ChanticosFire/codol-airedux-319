@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T11:16:00+00:00",
+  "scope": "dedrun defer patch, launcher recovery, and the reliable-ACK bottleneck",
+  "dedrun_patch": {
+    "target": "CODOL_DeferConfigstringCommand",
+    "exe_in": "runs/2697-server-test/codol_dedrun.exe",
+    "exe_in_sha256": "1736926655100b53499ae75ea5bddd0741983c12c89cdb51d49aef8a0be03243",
+    "string": "CoDOL configstring %lu deferred for client %u (%d pending) @ file 0x3B36EC (VA 0x7B62EC)",
+    "entry_va": "0x47BB34",
+    "entry_bytes_before": "5589e5",
+    "entry_bytes_after": "31c0c3",
+    "exe_out": "runs/2697-defer-patched/codol_dedrun_deferpatch.exe",
+    "exe_out_sha256": "e928a55d74081e3188024ed69830e0319876a9a6c5318fd2d3e6034b87c8041a",
+    "tool": "tools/patch_dedrun_defer.py",
+    "effect": "the patched server no longer prints 'configstring ... deferred' and keeps serving the map; configstring commands are queued through the normal reliable path"
+  },
+  "launcher_recovery": {
+    "problem": "after the forced stop of round 8 the private profile's currentCharacterIndex no longer matched the native cache; the host raised ValueError in GameSessionBridge.handle_exception and terminated the client",
+    "fix": "tools/launch_1649370.py wraps observe_state/handle_exception and records 'selected-character cache' / 'inventory' errors instead of aborting",
+    "result": "rounds 10-12 reached the lobby and login again"
+  },
+  "round_12_result": {
+    "server": "patched dedrun, mp_cross_fire, UDP 28970, sv_timeout 300",
+    "client": "phase 8, gamestate consumed, gamestateupdate 1 sent",
+    "packets": {"server_sent": 3003, "bridge_injected": 775, "client_forwarded": 79},
+    "server_log": "state 3 (CS_PRIMED) with growing 'out' bytes; no configstring defer line",
+    "client": "waited at phase 8 and raised its own '服务器连接超时' dialog; still no usercmd from the client",
+    "conclusion": "ring B has only 16 slots; at the server's reliable-command retransmit rate the bridge cannot deliver every packet, and without a client acknowledgement the server keeps retransmitting the configstring/reliable backlog. Defer is no longer the blocker; ACK delivery is."
+  },
+  "next": [
+    "read the dedrun client_t.reliableSequence from the server process and send a clc_move whose acknowledgement field equals it",
+    "or prioritise reliable-command packets over empty snapshots when injecting into ring B",
+    "record every injected packet type (the 300-event cap hid the OOB/data split in round 12)",
+    "then verify CS_ACTIVE, world rendering and the first client usercmd"
+  ]
+}

@@ -2777,6 +2777,37 @@ def main(argv=None) -> int:
         self.record({"breakpoint_audit": {"phase": label, "points": points}})
 
     bridge_mod.GameSessionBridge.breakpoint = observed_breakpoint
+
+    # 强杀/异常退出后，私有档案的 currentCharacterIndex 与游戏内缓存可能暂时
+    # 不一致；host 在异常处理的档案检查里会因此终止客户端。这里只记录并
+    # 跳过该库存 UI 检查，避免因此阻断连接实验（档案数据本身不改）。
+    original_observe_state = bridge_mod.GameSessionBridge.observe_state
+
+    def tolerant_observe_state(self):
+        try:
+            return original_observe_state(self)
+        except ValueError as error:
+            message = str(error)
+            if "selected-character cache" in message or "inventory" in message:
+                self.record({"local_profile_warning": message})
+                return None
+            raise
+
+    bridge_mod.GameSessionBridge.observe_state = tolerant_observe_state
+
+    original_handle_exception = bridge_mod.GameSessionBridge.handle_exception
+
+    def tolerant_handle_exception(self, event, code, address, row):
+        try:
+            return original_handle_exception(self, event, code, address, row)
+        except ValueError as error:
+            message = str(error)
+            if "selected-character cache" in message or "inventory" in message:
+                self.record({"local_profile_warning": message})
+                return None
+            raise
+
+    bridge_mod.GameSessionBridge.handle_exception = tolerant_handle_exception
     if MAP_PROBE and MAP_COMMAND_MODE == "queue":
         menu_queue_mod.COMMAND = ("\nswitchtomainmenu\ndevmap " + MAP_PROBE + "\n").encode("ascii")
         print("[patched] map probe queued after main-menu transition:", MAP_PROBE, flush=True)
