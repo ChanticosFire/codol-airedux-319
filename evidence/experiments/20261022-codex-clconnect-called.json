@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T19:55:00+00:00",
+  "scope": "invoke CL_Connect on the window thread",
+  "call": {
+    "tool": "tools/call_main_thread.py --target 0x5C05F0 --ecx 0 --settle 2",
+    "cave": "0x10CE0000",
+    "resumed": true,
+    "process_alive_after": true
+  },
+  "observed_after": {
+    "phase": "still 3",
+    "cl": "0x130F0594",
+    "[cl]": "0x00000000 (clc.state still not written)",
+    "[cl+0x100260]": "0x0",
+    "[cl+0x109260]": "0x0",
+    "cl+0x30": "0x9D (newly written)",
+    "cl+0x34": "0x920D0000 (newly written)",
+    "cl+0x14": "02 00 00 00 00 00 00 00 2a 71 (the address we wrote)"
+  },
+  "meaning": "CL_Connect does run: it wrote new values at cl+0x30 and cl+0x34. But it did not write clc.state and did not advance the phase. Only the early part of the function executed (or the sub-state dispatch at 0x5C0662 took the branch that does not set state).",
+  "next": [
+    "identify what cl+0x30 / cl+0x34 now hold (likely a sub-state value and a timer) and whether the function's later part needs another call",
+    "single-stepping or a breakpoint at 0x5C064D/0x5C0662 would show which jump-table entry ran",
+    "if the dispatch needs a specific [cl+0x28] value, write that before calling"
+  ],
+  "artifacts": ["runs/codex-clconnect-1-call.json"]
+}
