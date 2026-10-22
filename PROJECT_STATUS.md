@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【线程 EIP：全部等待】** 新工具 `tools/client_eip.py`（含 `Wow64GetThreadContext` 修正）采样 77 个线程：EIP 全部在 ntdll 等待例程，**无一在客户端模块内**——gamestate 后整体阻塞在等待上，与“只处理一条消息”一致。下一步：主线程栈回溯取客户端返回地址，定位等待对象后补信号或 patch。证据 [20261022-codex-thread-waits.json](evidence/experiments/20261022-codex-thread-waits.json)。
+
 > **2026-10-22【决定性：只处理 1 条消息（gamestate）后不再读网络】** 对照实验证明断点机制有效（`Com Init`/`Initial fastfiles`/`Engine init`/`Switch to main menu` 均有 milestone）。带三个读取循环断点的完整握手统计：`begin_reading` 1 次、`svc_dispatch` 1 次、`gamestate_call` 1 次；客户端 `state 8`、环 B 已收 6531 包但不再消费。结论：客户端分派 gamestate 后不再回到读取循环——**gamestate 后的地图加载路径卡住**，不是快照体格式问题。下一步：在 gamestate 尾段（`0x473260` 尾 / `0x5C0310`）找阻塞调用并追踪其后的文件打开。证据 [20261022-codex-one-message-only.json](evidence/experiments/20261022-codex-one-message-only.json)。
 
 > **2026-10-22【断点证明：快照解析器 0x471E90 从未被调用】** `--breakpoint 0x471E90:snapshot_parse` + 完整握手：events.jsonl 有 149 module、64 系统级 exception、4 条 `lansp_c.dll` 调试串，**无 snapshot_parse 命中**。说明消息在分派前被丢弃/校验失败，快照体根本没被解析——真正的第一道关是**消息读取/校验**。下一步：断点 `0x473A50` 的读取流程（`0x5C2200`/`0x794380`/长度闸门）与 `0x473BAA`/`0x473BE8`。证据 [20261022-codex-snapshot-never-called.json](evidence/experiments/20261022-codex-snapshot-never-called.json)。

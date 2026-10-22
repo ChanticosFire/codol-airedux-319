@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T02:35:00+00:00",
+  "scope": "thread EIP sampling of the stuck client",
+  "tool": "tools/client_eip.py (enumerates threads, SuspendThread + Wow64GetThreadContext, reports EIP and file VA)",
+  "fix": "a 64-bit Python must call Wow64GetThreadContext on a 32-bit process; plain GetThreadContext returned zeroed contexts",
+  "sample": {
+    "pid": 35192,
+    "threads": 77,
+    "module_base": "0x400000",
+    "result": "every sampled thread is parked in ntdll wait routines (0x76f4xxxx); no thread is executing inside the client module"
+  },
+  "interpretation": "after the gamestate message the client is not spinning or parsing: its threads are all blocked in waits, i.e. the game is waiting for an event/completion that never arrives. That is consistent with the 'one message only' finding.",
+  "next": [
+    "walk the main thread's stack to recover the client-side return addresses (the wait caller), then map them to file VAs",
+    "typical candidates: a load-completion event, a render-thread handshake, or a network-thread wakeup that the gamestate path expects",
+    "once the waiting object is known, supply the missing signal or patch the wait"
+  ],
+  "artifacts": []
+}
