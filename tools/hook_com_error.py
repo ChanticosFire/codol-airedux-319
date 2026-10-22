@@ -62,6 +62,8 @@ def main() -> int:
             cave = int(K32.VirtualAllocEx(handle, None, 0x2000, 0x3000, 0x40))
             dump = cave + 0x1000
             code = bytearray(b"\x60")                                  # pushad
+            code += b"\x8b\x44\x24\x20"                                # mov eax,[esp+0x20] (return address)
+            code += b"\xa3" + struct.pack("<I", dump + 0x88)
             code += b"\x8b\x44\x24\x24"                                # mov eax,[esp+0x24]
             code += b"\xa3" + struct.pack("<I", dump + 0x80)
             code += b"\x8b\x4c\x24\x28"                                # mov ecx,[esp+0x28]
@@ -98,7 +100,9 @@ def main() -> int:
             dump = int(saved.get("dump", "0x0"), 16)
             data = read(handle, dump, 0x90) if dump else None
             code = read(handle, dump + 0x80, 4) if dump else None
+            ret = read(handle, dump + 0x88, 4) if dump else None
             row.update(dump=saved.get("dump"),
+                       return_address=hex(struct.unpack("<I", ret)[0]) if ret else None,
                        error_code=hex(struct.unpack("<I", code)[0]) if code else None,
                        text=(data.split(b"\x00")[0].decode("latin-1") if data else None),
                        status="read" if data else "read_failed")

@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:53:14.309137+00:00",
+  "claim": "Com_Error(0x4F82E0) hook 安装成功但未捕获到调用（dump 全 0）→ 742 的 fatal 可能走 0x77C930 或其它路径",
+  "attempts": [
+    {
+      "session": "cy",
+      "hook": "installed cave=0x10BD0000 dump=0x10BD1000",
+      "result": "6s 后读为 0；再读进程已退出"
+    },
+    {
+      "session": "cz",
+      "hook": "installed dump=0x11761000",
+      "result": "轮询 80 次仅首轮读到全 0，随后进程消失"
+    }
+  ],
+  "possible_causes": [
+    "fatal 走 0x77C930（Fatal error）而不是 0x4F82E0",
+    "cave 代码有误（字符串复制段）",
+    "轮询在 Com_Error 之前就因进程退出而停止"
+  ],
+  "next": [
+    "hook 0x77C930 而不是 0x4F82E0",
+    "或先验证 patch 是否真的写到 0x4F82E0（读回字节应为 E9 xx xx xx xx 90）",
+    "用 ETW/驱动级断点抓更早的错误路径"
+  ]
+}
