@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T02:52:18.429757+00:00",
+  "session": "natural-g-20261022",
+  "probe": "call 0x643300 (game/matching transport factory) from a remote thread",
+  "object": "0x24552518",
+  "object_head_hex": "c8a9d500 0df0adba 01f0fb55 98885524 f06d5624 04000000 03000000",
+  "observations": [
+    "object vtable 0xd5a9c8",
+    "offsets +4.. hold 0xbaadf00d / 0xbaadXXXX debug fill patterns, i.e. the transport object is uninitialised",
+    "no 127.0.0.1, no 8466/30002/28969 netadr found in the first 0x200 bytes"
+  ],
+  "implication": "the client has no game-server target in a local custom room; the address must arrive from the matchmaking service (svc71/task9 or a push) before 0x801960/0xBAD810 can connect",
+  "next": "implement svc71/task9 + publisher/playlist delivery, then the NAT/INIT game channel from GAME_TRANSPORT_PROGRESS.md"
+}
