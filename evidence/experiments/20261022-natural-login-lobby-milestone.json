@@ -85,5 +85,61 @@
     "map load",
     "bot spawn",
     "exit to lobby"
-  ]
+  ],
+  "lobby_navigation": {
+    "play_tab": {
+      "path": "evidence/experiments/20261022-natural-lobby-play-tab.png",
+      "sha256": "7c85a31bf1eac779e39d865bdefdb4a14341d30c6f8150b8f5fe877a08bf3226"
+    },
+    "pvp_tab": {
+      "path": "evidence/experiments/20261022-natural-lobby-pvp.png",
+      "sha256": "1f66c52b602b263db1a5622d5a37f763dbd6830e426761a70ed584f3842ff69c"
+    },
+    "observed": "开始游戏 -> 多人竞技(PVP) 原生页可交互；赛单列表面板显示“未找到赛单”"
+  },
+  "lsg_task_requests": [
+    {
+      "service": 71,
+      "task": 4,
+      "bytes": 83,
+      "handled": "candidate reply"
+    },
+    {
+      "service": 28,
+      "task": 4,
+      "bytes": 29,
+      "handled": "silent by design"
+    },
+    {
+      "service": 102,
+      "task": 7,
+      "bytes": 558,
+      "handled": "error=14"
+    },
+    {
+      "service": 102,
+      "task": 1,
+      "bytes": 24,
+      "handled": "error=14"
+    },
+    {
+      "service": 3,
+      "task": 46,
+      "bytes": 26,
+      "handled": "error=14"
+    },
+    {
+      "service": 80,
+      "task": 232,
+      "bytes": 5,
+      "handled": "error=14"
+    },
+    {
+      "service": 9,
+      "task": 5,
+      "bytes": 8,
+      "handled": "error=14"
+    }
+  ],
+  "next_gate": "serve playlist/publisher data so 赛单 fills; then custom room and mmstart; then game transport"
 }

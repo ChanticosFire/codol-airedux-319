@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T02:41:39.180593+00:00",
+  "session": "natural-e-20261022",
+  "server_log": {
+    "path": "evidence/experiments/20261022-natural-auth-lsg-e.jsonl"
+  },
+  "login_gates": {
+    "ui_state": 5,
+    "login_ready": 2,
+    "auth_state": 9,
+    "lsg_state": 2,
+    "conn_c8": 2,
+    "conn_5e8": 3
+  },
+  "native_room": {
+    "reached": "开始游戏 -> 自定义 -> 创建房间；房间 1/12，可打开高级选项",
+    "screenshot": "evidence/experiments/20261022-native-room-advanced.png",
+    "screenshot_sha256": "045d32ffff6f839609b85e05c03196fbbb7e279c063722bdca50dc0865584f75"
+  },
+  "ai_toggle": {
+    "row": "AI开关",
+    "value_before": "关闭",
+    "value_after": "关闭",
+    "attempts": [
+      "click row label (620,870) + Right",
+      "click value box (1270,870) + Right",
+      "click value icon (1195,869)"
+    ],
+    "evidence": [
+      "evidence/experiments/20261022-native-room-ai-row.png",
+      "evidence/experiments/20261022-native-room-ai-attempt.png",
+      "evidence/experiments/20261022-native-room-ai-after.png"
+    ],
+    "interpretation": "战术团队竞技模式下该行不响应鼠标/键盘，与早期“模式相关/禁用项”记录一致；需换 个人竞技 等模式复测"
+  },
+  "ready": {
+    "action": "click 准备 (1790,1050)",
+    "observed": "按钮进入准备高亮，房间仍 1/12；LSG 无新 task_request（只有 zero_frame/idle_control）",
+    "interpretation": "房间与 ready 都是本地状态，开局仍缺服务端房间/匹配实现"
+  },
+  "direct_room_start": {
+    "session": "natural-d-20261022",
+    "room": "0x245d7838",
+    "call": "0x62F840(ecx=room, 0,0,0) via remote thread",
+    "result": "WaitForSingleObject 超时(258)，随后客户端 unhandled_exception；守卫 cleanup 正常",
+    "interpretation": "与既有结论一致：start 必须在主线程的真实房间上下文中执行；远程线程直调仍会破坏状态"
+  },
+  "coordinates": {
+    "play_tab": [
+      450,
+      57
+    ],
+    "custom_tab": [
+      715,
+      137
+    ],
+    "create_room": [
+      1643,
+      914
+    ],
+    "advanced_options": [
+      265,
+      545
+    ],
+    "ai_row_label": [
+      620,
+      870
+    ],
+    "ai_value_box": [
+      1270,
+      870
+    ],
+    "ready": [
+      1790,
+      1050
+    ],
+    "back_to_lobby": [
+      1640,
+      1050
+    ]
+  },
+  "next_gate": "让客户端在准备/开局时产生服务端可见请求：优先换 个人竞技 模式复测 AI 行；并补齐 svc71/task4 真实应答与房间/匹配服务"
+}
