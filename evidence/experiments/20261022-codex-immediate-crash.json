@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T05:05:00+00:00",
+  "scope": "invoke 0x5B2C10 with the 0xA8F0 repair and sample immediately",
+  "setup": {
+    "phase": 8,
+    "flag": 0,
+    "cl+0xA8F0": "repaired (alloc 0x180 @ 0x10CC0000 ^ 0x96B9DC91)",
+    "counter_stub": "installed at 0x5B2C10",
+    "call": "call_main_thread --target 0x5B2C10 --settle 0.2"
+  },
+  "result": {
+    "call_main_thread_reports": "process_alive_after: true",
+    "immediate_check": "alive right after call: False -- the process was already gone",
+    "new_crash": "0xC0000005 at 0x29D986A6 (ecx=0x11ADF5C8)",
+    "previous_crashes": ["0x5D1CF4C5", "0xB02BCC94"]
+  },
+  "key_finding": [
+    "the crash IS inside 0x5B2C10 (or its immediate callees) -- the process dies during the call, not later",
+    "call_main_thread's process_alive_after is unreliable: it checks too early and reports true even though the process is already terminating",
+    "the crash address changes every run (0x5D1CF4C5 -> 0xB02BCC94 -> 0x29D986A6) which is the signature of dereferencing a garbage pointer read from a partially-filled structure"
+  ],
+  "next": [
+    "stop trusting process_alive_after; always verify with tasklist immediately after the call",
+    "to find the faulting read, install a breakpoint/counter at the callees reached after 0x5B2F43 and bisect: the crash address changes but the CALL SITE should be stable",
+    "a single-step or hardware-breakpoint trace on the write to cl+0x... that produces the garbage pointer would pin it down; alternatively watch which cl field is written just before the crash"
+  ],
+  "artifacts": ["runs/codex-quick-1-call.json"]
+}

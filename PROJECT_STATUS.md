@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【定论：崩溃在 `0x5B2C10` 内部，且崩溃地址每轮都变】** 阶段 8、标志 0、补 `0xA8F0`（alloc 0x180 @ `0x10CC0000` ^ key）、`0x5B2C10` 计数器 stub、`call_main_thread --settle 0.2`。`process_alive_after` 报 true，**但紧接着 `tasklist` 显示进程已消失**；新崩溃 `0xC0000005 @ 0x29D986A6`（`ecx=0x11ADF5C8`）。三条结论：(1) 崩溃在 `0x5B2C10` 内或其直接被调；(2) **`process_alive_after` 不可信，必须 `tasklist` 复核**；(3) 崩溃地址每轮变化（`0x5D1CF4C5`→`0xB02BCC94`→`0x29D986A6`）——典型“半填充结构读出垃圾指针”。下一步：对 `0x5B2F43` 之后的被调函数二分（崩溃地址变、调用点应稳定），并监视崩溃前刚写入的 `cl` 字段。证据 [20261022-codex-immediate-crash.json](evidence/experiments/20261022-codex-immediate-crash.json)。
+
 > **2026-10-23【对照实验推翻“异步反复调用”假设】** 阶段 8；补 `cl+0xA8F0`（`VirtualAllocEx` 0x180 @ `0x11820000` ^ key）；`0x5B2C10` 前 9 字节换成计数器 stub。**结果：计数器 5 秒恒为 0、阶段稳定 8、客户端全程存活**。结论：帧 tick 不会自动调用 `0x5B2C10`；单独补 `0xA8F0` 安全稳定；崩溃只在真正调用 `0x5B2C10` 时出现。下一步：保持修复与 stub，真正调用一次并亚秒级采样，判断故障是立即还是延迟。证据 [20261022-codex-counter-control.json](evidence/experiments/20261022-codex-counter-control.json)。
 
 > **2026-10-23【关键洞察：崩溃是异步的】** 多轮数据里 `call_main_thread` 都在 settle 点报 `process_alive_after: true`，客户端之后才死——说明 **`0x5B2C10` 正常返回**，崩溃不在手动调用内。推论：阶段 8 + 标志 0 时帧 tick 每帧走 `0x4746E2` 反复调用 `0x5B2C10`，手动调用只是预热，真正崩溃来自随后某次自动调用。下一步：(1) 在 `0x5B2C10` 挂计数器 stub 统计调用次数；(2) 确认 `0xB02BCC94` 所属 DLL（在模块列表里找 `0xB02B0000` 附近基址）。证据 [20261022-codex-async-crash.json](evidence/experiments/20261022-codex-async-crash.json)。
