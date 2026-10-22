@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:00:00+00:00",
+  "scope": "the full parse gate inside 0x5C2260",
+  "code_path": {
+    "0x5C22FC": "cmp [0x76446B0],7 / jl 0x5C2413 (phase below 7 skips)",
+    "0x5C2309": "state pointer = [0x331c0c8] xor 0xD362501F",
+    "0x5C2380": "call 0x674EB0; test eax,eax; je 0x5C2413  <-- receive check #1 (no packet -> return)",
+    "0x5C23A0": "call 0x674740; test eax,eax; je 0x5C2413  <-- receive check #2 (sequence/order check -> return)",
+    "0x5C23AC..0x5C240D": "timestamp/sequence bookkeeping; 0x5C240B jge 0x5C241C",
+    "0x5C242B": "call 0x470A60 (message buffer setup)",
+    "0x5C2434": "call 0x473A50 (CL_ParseServerMessage)",
+    "0x5C2439": "add esp,0xc; cmp [esi],0; je 0x5C245C"
+  },
+  "meaning": "the parse only happens when both 0x674EB0 and 0x674740 return non-zero. The client does call this function every frame (the frame chain is unconditional), but one of those two checks keeps failing after the gamestate, so parsing never happens again.",
+  "next": [
+    "instrument the two return values on the live client (or patch the je to fall through) to see which gate fails",
+    "check whether the bridge's injected server packets reach the client's ring-B reader at all after the gamestate (the ring-B read cursor may stop advancing even though packets are queued)"
+  ],
+  "artifacts": [],
+  "gate_functions": {
+    "0x674EB0": "packet receive helper; calls 0x674E10 then normalises the result with neg/sbb/inc (returns 0/1). A 0 means 'no packet available' and the parse path exits.",
+    "0x674740": "message reader: takes msg in ebx, checks (cursize+readcount) >= 4, calls 0x66E760 (MSG_ReadData) for 4 bytes and sets readcount=4, else returns 0. So it validates that the received message has at least the 4-byte header.",
+    "consequence": "if either returns 0 the parse is skipped: no packet, or a message shorter than 4 bytes / already consumed."
+  }
+}
