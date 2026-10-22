@@ -20,7 +20,8 @@ import start_conn as sc
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / "runs" / "com_error_state.json"
-COM_ERROR = 0x77C930  # Fatal error (was Com_Error 0x4F82E0)
+DEFAULT_TARGET = 0x77C930  # Fatal error; pass --target 0x4F82E0 for Com_Error
+TARGET = DEFAULT_TARGET
 PROLOGUE = bytes.fromhex("558bec83e4f8")
 
 K32 = sc.k32
@@ -47,10 +48,15 @@ def write(handle, address: int, data: bytes) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--target", type=lambda v: int(v, 0), default=DEFAULT_TARGET)
     parser.add_argument("--install", action="store_true")
     parser.add_argument("--read", action="store_true")
     parser.add_argument("--output")
     args = parser.parse_args()
+    global TARGET
+    TARGET = args.target
+    global STATE
+    STATE = ROOT / "runs" / f"com_error_state_{TARGET:08x}.json"
     pid = sc.find_pid()
     handle = K32.OpenProcess(0x1F0FFF, False, pid)
     if not handle:
@@ -80,17 +86,17 @@ def main() -> int:
             code += b"\xf3\xa4"                                        # rep movsb
             code += b"\x61"                                            # popad
             code += PROLOGUE
-            target = COM_ERROR + len(PROLOGUE)
+            target = TARGET + len(PROLOGUE)
             code += b"\xe9" + struct.pack("<I", (target - (cave + len(code) + 5)) & 0xFFFFFFFF)
             if not write(handle, cave, bytes(code)):
                 row["status"] = "cave_write_failed"
             else:
                 K32.FlushInstructionCache = getattr(K32, "FlushInstructionCache")
                 old = C.c_uint32(0)
-                K32.VirtualProtectEx(handle, C.c_void_p(COM_ERROR), len(PROLOGUE), 0x40,
+                K32.VirtualProtectEx(handle, C.c_void_p(TARGET), len(PROLOGUE), 0x40,
                                      C.byref(old))
-                patch = b"\xe9" + struct.pack("<I", (cave - (COM_ERROR + 5)) & 0xFFFFFFFF) + b"\x90"
-                ok = write(handle, COM_ERROR, patch)
+                patch = b"\xe9" + struct.pack("<I", (cave - (TARGET + 5)) & 0xFFFFFFFF) + b"\x90"
+                ok = write(handle, TARGET, patch)
                 row.update(status="installed" if ok else "patch_failed",
                            cave=hex(cave), dump=hex(dump))
                 STATE.write_text(json.dumps(row, ensure_ascii=False, indent=2) + "\n",

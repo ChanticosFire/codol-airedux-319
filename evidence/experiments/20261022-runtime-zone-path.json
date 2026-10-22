@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:02:43.205662+00:00",
+  "claim": "zone 文件必须放进每次会话的 runtime 副本目录；launcher 不会把 Original Client 里的 ff 复制进 runtime",
+  "evidence": {
+    "runtime_dir": "1649370/workspaces/offline-runs/<session>/runtime",
+    "structure": "runtime/{main(dir), client_shipretail/, players/, locales/, ...}",
+    "ff_present_in_runtime": "递归搜索 common_gametype_mp.ff → 无",
+    "original_client": "E:/GAME/COD/Original Client 下已放入 ff（main/ 与 client_shipretail/chinese/）但没有被复制进 runtime"
+  },
+  "double_hook_result": "装了 0x4F82E0 与 0x77C930 双 hook 后注入 preloadmap，两个 dump 都未捕获（none），但 stop_reason 仍是 fatal_dialog",
+  "conclusion": "修复路径：会话启动后在 runtime 副本里放入 ff，再注入 preloadmap；或把 ff 加入 launcher 的 overlay 资源（offline-resources）",
+  "next": [
+    "启动会话（runtime 生成）",
+    "把 common_gametype_mp.ff 复制到 runtime/main 与 runtime/client_shipretail/chinese",
+    "装双 hook → 注入 preloadmap → 抓下一个缺失项"
+  ]
+}
