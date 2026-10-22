@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【服务端包流完整转储】** 桥 forward 新增 `--dump-in`，转储 `runs/ring-dump-43.jsonl`（6917 包 / 1582 万字节：6914 分片 + 3 OOB）。编码公式确认：`SV_Netchan_Encode` → `CODOL_Xor(data+4, len, (uint8_t)(challenge^outgoingSequence), lastClientCommandString)`，逐字节 `key ^= command[j] << (i&1)`。下一步：读 challenge/lastClientCommandString，重组分片，解码 svc 流并与 1649370 读取端对照。证据 [20261022-codex-packet-dump.json](evidence/experiments/20261022-codex-packet-dump.json)。
+
 > **2026-10-22【阶段 8 稳定驻留 30 秒】** 50 次采样 `[0x76446B0]` 全部为 8（约 30 秒不回落），桥 keepalive 让连接维持；服务端 `state 4` 持续快照（`out` +121~135/包）。客户端在阶段 8 等的是“进入游戏”信号而非网络包：可能是缺失的 `svc_clientCommand`（map/spawn）或快照字段不匹配。下一步：解码实际快照并对照 1649370 的读取逻辑。证据 [20261022-codex-phase8-dwell.json](evidence/experiments/20261022-codex-phase8-dwell.json)。
 
 > **2026-10-22【阶段设置函数间接调用】** `0x5BE030` 是阶段设置入口（裸函数，`shl eax,5` 选槽、`mov [esi],edi` 写阶段），但镜像内没有直接 `call` 或 imm32 指针引用，也没有 `mov [0x76446B0],9/10` 的直接写入——阶段切换走间接调用。下一步：对 `0x76446B0` 下硬件写断点，或 patch `0x5BE030` 记录 eax/edi，由桥读取，确定阶段 9/10 的触发消息。证据 [20261022-codex-phase-setter-indirect.json](evidence/experiments/20261022-codex-phase-setter-indirect.json)。

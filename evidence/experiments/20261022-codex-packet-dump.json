@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T21:50:00+00:00",
+  "scope": "capturing and decoding the server-to-client packet stream",
+  "tool_change": "ring_bridge forward gained --dump-in <path>; every injected server packet is stored as JSONL {length,state,hex}",
+  "dump": {
+    "file": "runs/ring-dump-43.jsonl",
+    "bytes": 15828466,
+    "packets": 6917,
+    "kinds": {"netchan_fragment": 6914, "OOB challengeResponse": 1, "OOB connectResponse": 1, "OOB statResponse": 1}
+  },
+  "encoding": {
+    "source": "sv_net_chan.c SV_Netchan_Encode + codol_wire.c CODOL_Xor",
+    "packet": "u32 outgoingSequence (plain) + encoded body; CODOL_NetchanSubmit wraps it in fragments (sequence|0x80000000 header)",
+    "xor": "key = (uint8_t)(challenge ^ outgoingSequence); for each byte: key ^= lastClientCommandString[j] << (i&1); data[i] ^= key; j resets on NUL/end",
+    "inputs_needed": ["client->challenge", "client->netchan.outgoingSequence", "client->lastClientCommandString"]
+  },
+  "next": [
+    "read challenge and lastClientCommandString from the live dedrun client_t (correct ASLR base)",
+    "reassemble fragments, decode the body, and parse the svc_ command stream (svc_snapshot, svc_gamestate, configstrings)",
+    "compare the snapshot fields with the 1649370 reader to find the field the client rejects"
+  ],
+  "artifacts": ["runs/ring-dump-43.jsonl", "runs/codex-ring-bridge-43-forward.json"]
+}

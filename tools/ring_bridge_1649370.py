@@ -597,6 +597,7 @@ def cmd_forward(client: Client, args) -> dict:
     host, port_text = args.target.rsplit(":", 1)
     target = (host, int(port_text))
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    dump_handle = open(args.dump_in, "w", encoding="utf-8") if getattr(args, "dump_in", None) else None
     sock.setblocking(False)
     events = []
     sent = 0
@@ -717,6 +718,10 @@ def cmd_forward(client: Client, args) -> dict:
                                    "length": len(data), "state": state_now})
                     progressed = True
                     continue
+                if dump_handle is not None:
+                    dump_handle.write(json.dumps({"length": len(data), "state": state_now,
+                                                  "hex": data.hex()}) + "\n")
+                    dump_handle.flush()
                 result = client.inject_oob_raw(data, args.adr_type, args.port)
                 events.append({"t": round(time.monotonic(), 3), "dir": "in",
                                "length": len(data), "source": f"{source[0]}:{source[1]}",
@@ -743,6 +748,8 @@ def cmd_forward(client: Client, args) -> dict:
                 events = events[-args.max_events:]
     finally:
         sock.close()
+        if dump_handle is not None:
+            dump_handle.close()
     return {"sent": sent, "received": received, "injected": injected,
             "events": events[-args.max_events:], "status_after": client.status()}
 
@@ -843,6 +850,7 @@ def main() -> int:
     p.add_argument("--dedup", action="store_true",
                    help="forward each identical outgoing payload only once")
     p.add_argument("--max-events", type=int, default=300)
+    p.add_argument("--dump-in", help="write every injected server packet as JSONL (length/state/hex)")
     p.set_defaults(func=cmd_forward)
 
     p = sub.add_parser("start-challenge")
