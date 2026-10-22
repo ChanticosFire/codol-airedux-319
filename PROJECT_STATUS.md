@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【链路逆出】preloadmap→0x470750→0x5C7C70**：handler 需 ≥3 参数；0x5C7C70 内含 0x81DF20 加载、[0x827606C]=1.0、0x5C80E0、检查核心全局 [0xC7AF690]（10 处引用）。崩溃更像发生在 0x5C80E0 之后依赖该全局的初始化。下步：进房间注入并读该全局。证据 [`20261022-preloadmap-chain.json`](evidence/experiments/20261022-preloadmap-chain.json)。
+
 > **2026-10-22【实测】preloadmap 触发加载**：`preloadmap mp_cross_fire 1` → 画面立刻全黑（加载过渡），约 20s 后进程退出。与 map/devmap/map_restart 无反应形成对比 → preloadmap 是真正驱动地图挂载的命令。下步试参数形式/反汇编 handler/补前置。证据 [`20261022-preloadmap-test.json`](evidence/experiments/20261022-preloadmap-test.json)。
 
 > **2026-10-22【正确顺序入口】官方 state=3 写入点 0x470467（前面 0x47045C call 0x7F85C0）+ preloadmap 脚本命令**：命令表 0x33303B0 中 unpausegame(0xDC0834)/preloadmap(0xDC0840)/switchtomainmenu(0xDC084C)；preloadmap 注册于 0x5C7879-0x5C7899，格式串 `preloadmap %s %s`（两参数）。下步用 Cbuf 注入 preloadmap。证据 [`20261022-preloadmap-command.json`](evidence/experiments/20261022-preloadmap-command.json)。
