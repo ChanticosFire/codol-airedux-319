@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:32:03.621637+00:00",
+  "claim": "找到连接失败格式串：Could not connect to server. Error %d（0xD8E2E8），其 %d 很可能就是用户看到的 742",
+  "strings": {
+    "0xD8E2E8": "Could not connect to server. Error %d\\n",
+    "0xD35394": "Unable to parse FTP file list",
+    "0xD36CAF": "Unable to load public key",
+    "0xD36F11": "Unable to read issuer cert (%s)"
+  },
+  "refs": {
+    "0xD8E2E8": [
+      "0x876FD9",
+      "0xC652ED"
+    ]
+  },
+  "interpretation": "742 是连接错误码，由该格式串对应路径输出；中文“无法连接主机/服务异常742”是本地化后的显示",
+  "next": [
+    "定位 state=3 后触发连接检查的代码路径（hook 0x876FD9 或相关函数）",
+    "patch 连接检查或伪造连接状态",
+    "结合 preloadmap 顺序在场景切换后设置连接状态"
+  ]
+}
