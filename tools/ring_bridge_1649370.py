@@ -398,6 +398,24 @@ class Client:
             self.w32(base + RING_C_SLOTS * RING_C_SLOT_STRIDE, read)
         return packets
 
+    def inject_ring_a(self, payload: bytes, type_hint: int = 2) -> dict:
+        """Queue a packet in the client's own loopback outbox.
+
+        The engine drain 0x674F30 sends ring A through the client's UDP socket,
+        so the source port stays the one the server has bound to this client.
+        """
+        write = self.u32(RING_A_WRITE)
+        read = self.u32(RING_A_READ)
+        if write - read >= RING_A_SLOTS:
+            return {"status": "ring_a_full", "read": read, "write": write}
+        slot = RING_A_BASE + (write & (RING_A_SLOTS - 1)) * RING_A_STRIDE
+        ok = (self.write(slot, payload)
+              and self.w32(slot + RING_A_LENGTH, len(payload))
+              and self.w32(slot + RING_A_TYPE, type_hint)
+              and self.w32(RING_A_WRITE, write + 1))
+        return {"status": "queued" if ok else "write_failed", "slot": hex(slot),
+                "length": len(payload)}
+
     def drain_ring_a(self) -> list[dict]:
         read = self.u32(RING_A_READ)
         write = self.u32(RING_A_WRITE)
@@ -779,6 +797,11 @@ def main() -> int:
     p.add_argument("--ring", choices=("a", "c"), default="a")
     p.add_argument("--port", type=int, default=0)
     p.set_defaults(func=cmd_drain)
+
+    p = sub.add_parser("inject-ring-a")
+    p.add_argument("--hex", required=True)
+    p.add_argument("--type", type=int, default=2)
+    p.set_defaults(func=lambda client, args: client.inject_ring_a(bytes.fromhex(args.hex), args.type))
 
     p = sub.add_parser("drain-ring-c")
     p.add_argument("--port", type=int, default=0)

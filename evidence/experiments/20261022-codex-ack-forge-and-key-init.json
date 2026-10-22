@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T15:40:00+00:00",
+  "scope": "key init check, forged ACK, phase-8 timeout duration",
+  "key_region": {
+    "addresses": "0xE60B34..0xE60B78 (18 dwords copied by 0x401000 from resource 0x196D180)",
+    "observed": {"[0xE60B78]": "0x5A752F99", "others": "non-zero"},
+    "conclusion": "the key region is initialised; the heartbeat crash comes from the object field [edi+0x24] (client object + 0x30) being uninitialised, not from a zero key"
+  },
+  "forged_ack": {
+    "tool": "tools/forge_client_ack.py",
+    "reads": "dedrun client_t: challenge, messageAcknowledge, reliableSequence/Ack, reliableCommands[0].command",
+    "encoding": "key = challenge ^ (byte)serverId ^ messageAcknowledge; per byte key ^= command[index] << (i&1); same routine as SV_Netchan_Decode",
+    "result": "packet sent, after_reliableAcknowledge stayed 0",
+    "likely_causes": [
+      "the bridge UDP socket source port differs from the port the server bound to client 0 (netchan address match)",
+      "sequence 1 may not match netchan.incomingSequence",
+      "the 6-byte body (ack + clc_move + cmdCount 0) may be too short for SV_ExecuteClientMessage"
+    ],
+    "server_log": "gamestateupdate 1 followed by 'bad connectionless packet from 127.0.0.1:50428'"
+  },
+  "server_configstring": {
+    "log": "CoDOL reliable letter 'd' first use: d 0 \\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\2492\\CODOL 2.6.9.7 Local Serve",
+    "meaning": "after the defer patch the server really does queue and send the configstring 0 reliable command while the client is CS_PRIMED"
+  },
+  "phase8_timeout": {
+    "samples": "phase 7 -> 8 for about 32 s -> 0",
+    "cvars_tried": ["cl_timeout 600", "cl_connectTimeout 600"],
+    "effect": "none; the timeout is not driven by those cvars or they do not exist in this build"
+  },
+  "missing_optional": {
+    "files": ["client_shipRetail/chinese/patch_ui_mp.ff", "client_shipRetail/chinese/patch_localized_ui_mp.ff"],
+    "source_check": "absent from both E:\\GAME\\COD\\使命召唤OL and E:\\GAME\\COD\\Original Client; they are optional patch fastfiles"
+  },
+  "next": [
+    "read client_t.netchan.remoteAddress (client source port) and have the bridge bind SO_REUSEADDR to that port before sending the forged ACK",
+    "or read the client configstring array to confirm the 'd 0' update arrived and was applied",
+    "or patch SV_BuildClientSnapshot/SV_WriteSnapshotToClient to include CS_PRIMED so the client receives a real snapshot before its 32 s timeout"
+  ]
+}
