@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:45:46.645224+00:00",
+  "claim": "manifest 的 source_exe_sha256=36997674 是“资源来源 exe”（原版安装），不是目标 exe；1649370 资源本就派生自它，manifest 不是冲突原因",
+  "cache": {
+    "path": "1649370/workspaces/offline-resource-cache",
+    "entries": [
+      "548ac4fa...",
+      "f2ed57de..."
+    ],
+    "both_sha": "36997674b18f2896"
+  },
+  "conclusion": "overlay 冲突是我用 client 备份覆盖了原始文件导致，与 manifest 无关",
+  "next": [
+    "用缓存目录里的 main 重建 overlay",
+    "或删除被覆盖的 models/sound 文件恢复原始",
+    "重建后用 launcher 校验"
+  ]
+}
