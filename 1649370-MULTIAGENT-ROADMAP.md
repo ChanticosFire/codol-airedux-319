@@ -1127,3 +1127,8 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - stop_reason=fatal_dialog；黑屏后弹致命错误框。
 - [0xC7AF690]=1 非空指针。
 - 下轮：--until-close + 抓错误文本。
+
+## 2026-10-22 fatal 抓取失败（本轮）
+
+- until-close/连拍都抓不到 fatal 文本。
+- 下轮改 hook Com_Error 参数。

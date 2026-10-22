@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:47:58.112102+00:00",
+  "claim": "preloadmap 后的 fatal 窗口消失太快（<14s），连拍只能抓到黑屏；需要 hook Com_Error 记录文本",
+  "attempts": [
+    {
+      "method": "--until-close 启动",
+      "result": "守卫仍在 fatal 后杀进程"
+    },
+    {
+      "method": "注入后立即连拍 8 张",
+      "result": "全部纯黑（10143B），fatal 尚未出现"
+    },
+    {
+      "method": "等 14s 后连拍 8 张",
+      "result": "窗口已消失，截图全部失败"
+    }
+  ],
+  "conclusion": "fatal 出现在 preloadmap 后 5-14 秒之间，且黑屏遮挡；截图方案不可行",
+  "next": [
+    "写 hook_com_error：在 0x4F82E0（Com Error）下 cave hook，dump [esp+4]/[esp+8] 指向的字符串到进程内存再由外部读取",
+    "或捕获 0x77C930（Fatal error）的调用参数",
+    "拿到文本后针对性修 0x5C7C70 的失败点"
+  ]
+}
