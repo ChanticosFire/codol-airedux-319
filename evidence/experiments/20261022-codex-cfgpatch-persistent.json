@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T10:15:00+00:00",
+  "scope": "make the configstring bypass persistent",
+  "change": {
+    "file": "E:/GAME/COD/1649370/resources/v1649370/offline-menu-patches.json",
+    "entry": {"va": "0x4730a0", "before": "558bec", "after": "b001c3"},
+    "backup": "runs/client-backup/offline-menu-patches.orig.json",
+    "new_sha256": "FB56D64D1DA9967AD43012BED312BFAEC601A3FE938A1E293782AE905E9AA819"
+  },
+  "result": {
+    "phase": "7 -> 8 and stable 8 for the whole 21 s sample (no runtime patch this time -- the launcher applied it)",
+    "screenshot": "10,750 bytes (black)",
+    "client_sha": "55F067AC24E7D5EA9BEA5ACD46A1514EB1B7780A627B73C2094F41133DCE3FFD (unchanged; the launcher patches the image in its staging copy)"
+  },
+  "meaning": "the configstring bypass is now part of the launcher patch set, so every future run keeps the client connected past the gamestate self-check. The client still renders nothing at stable phase 8.",
+  "next": [
+    "re-run the counter stub at 0x674EB0 with the persistent patch plus --port 28970 to learn whether the receive helper now reports success",
+    "if it does, check whether the snapshot parser runs and what the client does with the snapshot",
+    "the black screen at stable phase 8 is the active blocker"
+  ],
+  "artifacts": ["runs/codex-cfgpatch-1-state.png", "runs/client-backup/offline-menu-patches.orig.json"]
+}

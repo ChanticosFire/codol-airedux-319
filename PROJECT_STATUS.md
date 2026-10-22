@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【configstring 绕过已持久化】** 补丁条目 `{"va":"0x4730a0","before":"558bec","after":"b001c3"}` 已加入 `offline-menu-patches.json`（原文件备份于 `runs/client-backup/offline-menu-patches.orig.json`，新 SHA `FB56D64D…`）。新会话 `codex-cfgpatch-1` 不做运行时 patch 启动：客户端 `7 → 8` 稳定 21 秒（截图 10,750 字节黑屏），exe SHA 仍 `55F067AC…`。后续每轮不再被 `EXE_CONFIGSTRINGMISMATCH` 打断，当前阻断为黑屏/快照内容。下一步：持久补丁 + `--port 28970` 下重跑 `0x674EB0` 计数 stub。证据 [20261022-codex-cfgpatch-persistent.json](evidence/experiments/20261022-codex-cfgpatch-persistent.json)。
+
 > **2026-10-22【绕过 configstring 自检：断线消失，稳定阶段 8 黑屏】** `0x4730A0` 运行时改为 `b0 01 c3`（`mov al,1; ret`）后，`forward --port 28970` 下客户端 `7 → 8` 并稳定 21 秒不再断线；截图 10,609 字节黑屏，服务端 `state 4`（`out 168/291/413/534`）。断线原因（`EXE_CONFIGSTRINGMISMATCH`）已解释并绕过，当前活跃阻断下移到快照内容/世界进入。下一步：持久化该 patch（launcher `--patches` 或每轮运行时写入），再用计数 stub 确认快照是否被消费并解释黑屏。证据 [20261022-codex-cfgskip.json](evidence/experiments/20261022-codex-cfgskip.json)。
 
 > **2026-10-22【断线原因 = `EXE_CONFIGSTRINGMISMATCH`】** 客户端最后的 `Com Error`（0x4F82E0）栈返回 `0x4731EC`（`CL_ParseGamestate 0x473180` 内），错误点 `0x4731E0 push 0xDB46E4 → Com_Error`，字符串 `EXE_CONFIGSTRINGMISMATCH`；前置校验 `0x4730A0` 比较 dvar `ui_mapname`（`0xDB2F98`）与 `ui_gametype`（`0xDB16E0`），本轮两者为空 → 校验失败 → 主动掉线。**断线不是快照畸形**。下一步：设置 `ui_mapname`/`ui_gametype` 或 patch `0x4730A0` 返回 1，看下一层阻断。证据 [20261022-codex-configstring-mismatch.json](evidence/experiments/20261022-codex-configstring-mismatch.json)。
