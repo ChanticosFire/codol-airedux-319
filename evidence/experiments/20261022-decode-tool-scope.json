@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:06:45.817761+00:00",
+  "claim": "decode_loose_resources.py 解的是 .ifs loose 资源(AES-192-CTR+zlib)，IWff 直接透传，不解 ff 内部加密",
+  "tool_facts": {
+    "key": "159a0325e0752e80c6c0942a505c1c688c17ef5399f8683c (AES-192)",
+    "algo": "AES-192 CTR per 32KiB chunk, IV=(crc32(name), size, offset, chunk_len), then zlib",
+    "ff_handling": "if raw.startswith(b'IWff'): data=raw  # 透传，不处理",
+    "purpose": "解密 .ifs 包内的 iwi/models 等 loose 资源"
+  },
+  "meaning": "ff 的内部加密（RSA+AES 头）与 .ifs 的 AES 是两层不同的东西；前者仍需社区文档方案",
+  "next": [
+    "ff 内部加密需原私钥或用换信任根方案",
+    "评估是否有其它工具处理 ff 头",
+    "或继续用已改版本的 ff 测试其它路径"
+  ]
+}
