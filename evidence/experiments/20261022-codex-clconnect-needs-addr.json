@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T19:15:00+00:00",
+  "scope": "what CL_Connect actually needs before it can be invoked",
+  "calling_convention": {
+    "0x5C060F": "mov edi,ecx -- the argument arrives in ecx",
+    "0x5BEAE8": "xor ecx,ecx -- the known caller passes 0",
+    "0x5C071E": "the getchallenge send reads the netadr from [ebx+0x14]..[ebx+0x28], where ebx = cl"
+  },
+  "consequence": "CL_Connect does not take the server address as an argument. It reads it out of cl (at cl+0x14 and beyond). Since cl is entirely zero, invoking CL_Connect now would send getchallenge to a zero address.",
+  "chicken_and_egg": "the UI normally fills cl+0x14 with the selected server before calling CL_Connect; in our flow neither happens.",
+  "plan": [
+    "first populate the address fields at cl+0x14 (type/ip/port for loopback:28970) -- this offset is far from the 0x109260 field that crashed",
+    "then invoke CL_Connect (0x5C05F0) on the window thread with a large stack",
+    "then check whether it writes clc.state and cl+0x100260 / cl+0x109260"
+  ],
+  "artifacts": []
+}
