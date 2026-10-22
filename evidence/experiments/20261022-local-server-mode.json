@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:30:45.963307+00:00",
+  "claim": "state=3 后游戏进程自绑 UDP 127.0.0.1:8466（本地服务器模式）；但 launcher 的 --init-transport/--transport-connect 会导致客户端退出",
+  "observations": {
+    "after_state3": {
+      "game_udp_endpoints": [
+        "127.0.0.1:8466",
+        "0.0.0.0:53772",
+        "0.0.0.0:22011"
+      ],
+      "note": "客户端自己监听 8466，说明 state=3 走的是本地 listen server 路径",
+      "screen": "深色游戏场景 + 无法连接主机"
+    },
+    "udp_responder": "tools/udp_challenge.py 在 127.0.0.1:8466 起应答器失败（端口被客户端占用）",
+    "init_transport": "--init-transport 启动后客户端在登录前退出（同 --transport-connect）"
+  },
+  "implication": "进图需要本地服务器正确初始化；客户端自绑 8466 说明它已在尝试，但缺少前置传输初始化导致 connect 失败",
+  "next": [
+    "写 state=3 之后再调用 0x621E50（此时上下文是游戏态，参数 buf/adr/2）",
+    "或在 state=3 前完成 transport init（0xBB2C40），但不用 launcher 的自动注入（会崩），改成手动分步",
+    "观察客户端自绑 8466 后是否自发 challenge（UDP 自连）"
+  ]
+}
