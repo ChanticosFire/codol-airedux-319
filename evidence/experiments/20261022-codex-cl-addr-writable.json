@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T19:35:00+00:00",
+  "scope": "populate the netadr that CL_Connect reads",
+  "observations": {
+    "[0xC7AF58C]": "0x1",
+    "cl after start-challenge": "0x133AABC4",
+    "cl+0x14 before": "02 00 00 00 00 00 00 00 00 00 00 00 -- the type is ALREADY 2 (the bridge's start-challenge sets it)",
+    "cl+0x14 after": "02 00 00 00 00 00 00 00 2a 71 00 00 -- port 28970 written",
+    "client": "alive, still phase 3 after one second"
+  },
+  "meaning": [
+    "cl+0x14 is the netadr CL_Connect reads, and it is writable without crashing",
+    "the bridge already puts type=2 there during start-challenge; only the port was missing",
+    "so the precondition for invoking CL_Connect is now satisfiable: cl+0x14 holds loopback:28970"
+  ],
+  "next": [
+    "invoke CL_Connect (0x5C05F0) on the window thread with a large stack after writing the port",
+    "then verify that it writes clc.state, that cl+0x100260 becomes 1, and that CL_ParseServerMessage starts accepting snapshots"
+  ],
+  "artifacts": []
+}

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【`cl+0x14` 是 `CL_Connect` 读的 netadr，且可安全写入】** 阶段 3 实测：`cl+0x14` 原本已是 `02 00 00 00 …`（桥的 `start-challenge` 已写 type=2），补端口 28970 后为 `02…2a 71`，客户端存活并停在阶段 3。**调用 `CL_Connect` 的前置条件现在可满足**。下一步：窗口线程 + 大栈（`0x11BC`）调用 `0x5C05F0`，验证 `clc.state`、`cl+0x100260`、快照接受情况。证据 [20261022-codex-cl-addr-writable.json](evidence/experiments/20261022-codex-cl-addr-writable.json)。
+
 > **2026-10-22【调用者 `0x5BE5F0` 也从未命中】** `--breakpoint 0x5BE5F0:connect_caller` 下握手到 8，启动器无命中记录（`events.jsonl` 52,393 字节仅为常规异常）。**被调用者 `0x5C05F0` 与调用者 `0x5BE5F0` 都被证明从未进入**——离线路径不经过该 UI 流程，阶段值摆弄不会填充 `cl`，connect 序列必须显式调用。下一步：用桥的 `call_main_thread` 原语在窗口线程上给 `CL_Connect`（栈帧 `0x11BC`）真实大栈调用，检查 `cl+0x100260`/`cl+0x109260` 是否填充、收包助手是否返回 1。证据 [20261022-codex-caller-never.json](evidence/experiments/20261022-codex-caller-never.json)。
 
 > **2026-10-22【门控假设被证伪：`[0xC7AF58C]` 运行时就是 1】** 登录后读 `[0xC7AF58C] = 0x1`（非 0），`start-challenge` 返回 `challenge_armed`/`state=3`。所以 `0x5BE618` 的 `je` 并未生效——跳过的不是这里。结合 `CL_Connect` 断点从未命中，只能是**调用者 `0x5BE5F0` 整个没执行**（属于离线路径不进入的 UI 流程）。下一步：(a) 断点 `0x5BE5F0` 确认；(b) 找它的上层调用与所属界面；(c) 备选：窗口线程真实栈上直接调用 `CL_Connect`。证据 [20261022-codex-gate-open.json](evidence/experiments/20261022-codex-gate-open.json)。
