@@ -652,8 +652,8 @@ class DerivedLsgServer(AuthServer):
                         continue
                     reply_payload = room_listing_reply(
                         counter,
-                        task_id=(service if os.environ.get("ROOM_TASK_SOURCE") == "service"
-                                 else task),
+                        task_id={"service": service, "action": 0x26}.get(
+                            os.environ.get("ROOM_TASK_SOURCE", "task"), task),
                         records=records,
                         count_mode=os.environ.get("ROOM_COUNT_MODE", "double"),
                         hmac_key=_room_hmac_key(os.environ.get("ROOM_HMAC_MODE", "none"), keys))

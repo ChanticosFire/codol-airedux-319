@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:54:00.021270+00:00",
+  "claim": "任务完成回调不触发与回执 task 字节无关；已抓到查询任务对象",
+  "tests": [
+    {
+      "variant": "回执 task 字节 = 0x26 (addTask action)",
+      "callback_hits": 0,
+      "record_decoded": true
+    },
+    {
+      "variant": "回执 task 字节 = 0x15 (service)",
+      "callback_hits": 0,
+      "record_decoded": true
+    },
+    {
+      "variant": "回执 task 字节 = 0x0D (request task)",
+      "callback_hits": 0,
+      "record_decoded": true
+    }
+  ],
+  "task_object": {
+    "address": "0x4de5ce08",
+    "vtable": "0x00d59a08",
+    "dump_head": "089ad500 01000000 7d02e666 f8010000 0000c841 03000000 00000000 00f87b58 24000000 00010000 001e0000 00010000 00090000 00000000 04000000 c01e370e ff000000 08000000",
+    "note": "0x1E/0x09/0x04 等值疑似 pageSize / tid / 状态，需按 vtable 0xD59A08 的类定义解析"
+  },
+  "manager": {
+    "address": "0x6376f0",
+    "add_task": "0x7fa800（由 0x7faa20 构建 functor 后调用）",
+    "action": 38
+  },
+  "next": [
+    "反汇编任务类 vtable 0xD59A08 与 0x7FA800，找出响应匹配条件（action/service/task/tid/state）",
+    "hook 0x7FA800 记录响应到达时在任务表中的查找键",
+    "确认后用正确键构造回执，使 0x7F4330 回调触发，UI 即可出行"
+  ],
+  "tools": [
+    "tools/hook_task_ptr.py（0x7F4411 任务指针环形记录 + 转储）"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-task-dump2.json",
+    "evidence/experiments/20261022-querycb-action-read.json"
+  ]
+}

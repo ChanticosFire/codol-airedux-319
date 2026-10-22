@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 1649370 任务完成与回执 task 字节无关**：task 字节取 `0x0D` / `0x15` / `0x26`（action）三种，回调 `0x7F4330` 均 hits=0，记录均解码成功。已用 `tools/hook_task_ptr.py` 记录查询任务对象（`0x4de5ce08`，`vtable 0x00d59a08`），任务注册链为 `0x7FAA20 → 0x7FA800`（管理器 `0x6376F0`，action=38）。下一轮反汇编任务类虚表与 `0x7FA800` 找匹配键。证据 [`20261022-task-completion-analysis.json`](evidence/experiments/20261022-task-completion-analysis.json)。
+
 > **2026-10-22 1649370 房间查询回调定位：回调从不触发**：`send` IAT 环形 hook + EBP 链抓到 `21/13` 完整链 `0x62DD60 → 0x7F43C0 →（注册回调 0x7F4330）→ 0xBA3370 → 0xC739E0 → 0xC76DB0 → ws2_32!send`；查询条件结构在 `ebp-0x1C`。hook `0x7F4330` 后 hits=0（task 字节 13/21 两次会话均如此），而记录仍解码成功 → 结果解码与任务完成是两条路径。下一轮 hook 任务完成/出队函数。证据 [`20261022-room-query-chain.json`](evidence/experiments/20261022-room-query-chain.json)。
 
 > **2026-10-22 1649370 房间记录已解码但 UI 不消费**：开泵后 `21/13` 回执稳定解码进内存（字段与文档一致），但全内存 `AI-Room` 始终只有 1 份副本，说明 UI/结果缓存从未消费；`查找房间` 仍为空。已排除 v4/v46 地址布局、未实现任务改空成功、刷新与模式点击重查（都不重发 21/13）。下一轮 hook 查询发送构建路径或 bdService 任务完成回调，确认结果为何未交给 UI。证据 [`20261022-room-ui-not-consuming.json`](evidence/experiments/20261022-room-ui-not-consuming.json)。

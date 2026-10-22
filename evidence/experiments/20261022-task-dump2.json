@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "utc": "2026-10-22T03:53:49.846707+00:00",
+  "pid": 33308,
+  "count": 1,
+  "pointers": [
+    "0x4de5ce08"
+  ],
+  "dumps": [
+    {
+      "task": "0x4de5ce08",
+      "bytes": "089ad500010000007d02e666f80100000000c8410300000000000000f87b582400000000010000001e00000001000000090000000000000004000000c01e370eff000000080000000df0adba0df0adba0df0adba0df0adba0df0adbaababababababababeefeeefe0000000000000000caf4989afc1e1900781c0c4e3887f94deefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefeeefe"
+    }
+  ]
+}
