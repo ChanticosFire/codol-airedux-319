@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【状态扫描噪声过大】** 按“`[x]==8` 且 `[x+0x109260]` 非全 0”扫描 918 个区域得 **151,612** 命中，无区分度。下一步收紧：`[x]==8` + netadr `type==2`/`port==28970` + `[x+0x100260]==1`（游戏自身的检查）+ 可写私有内存；若仍无命中，则 `0x109260` 前提需重新审视。证据 [20261022-codex-state-scan.json](evidence/experiments/20261022-codex-state-scan.json)。
+
 > **2026-10-22【`ebx` 基址被证伪】** 全局 `phase=8` 时 `[0x331c0c8]^0xD362501F` 得 `0x134EB138`，但 `[ebx]=0`、前 16 dword 全 0——**`ebx` 不是 client-state**。此前“客户端地址全 0”是拿错基址的假象。下一步：扫描进程内存找“首 dword 等于 8 且 +0x109260 区域有合理 netadr”的结构，确认真实 client-state 指针。证据 [20261022-codex-ebx-wrong.json](evidence/experiments/20261022-codex-ebx-wrong.json)。
 
 > **2026-10-22【最小 10 字节写入仍崩溃，`ebx` 疑点】** `[ebx+0x109250]` 0x80 窗口全 0；只写 10 字节（type/ip/port）读回一致后，装 hook 时进程又退出。10 字节不会越界 → 可能 `ebx` 不是客户端状态基址（XOR 后是别的对象），或该字段不是 netadr，或崩溃由 hook 时机引起。下一步：读 `[ebx+0]` 与阶段 8 比对验证 `ebx`，再决定。exe SHA 仍 `55F067AC…`。证据 [20261022-codex-ebx-suspect.json](evidence/experiments/20261022-codex-ebx-suspect.json)。

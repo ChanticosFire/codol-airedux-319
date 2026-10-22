@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T13:35:00+00:00",
+  "scope": "scan for the real client state",
+  "scan": {
+    "criteria": "[x] == 8 (phase) and [x+0x109260] not all zero",
+    "regions_scanned": 918,
+    "hits": 151612
+  },
+  "assessment": "far too noisy: any 4-byte-aligned 8 in code or data qualifies, and almost every 'x+0x109260' lands on some non-zero byte. The scan proves nothing about the client state.",
+  "next": [
+    "tighten the predicate: [x] == 8 AND the netadr at +0x109260 has type 2 AND port 28970 AND [x+0x100260] == 1 (the check the game itself performs at 0x5B2B85)",
+    "also require that the region is writable private memory (not the code image)",
+    "if the tightened scan finds nothing, the field offset may not be 0x109260 for the real state and the whole 0x109260 premise needs revisiting"
+  ],
+  "artifacts": []
+}
