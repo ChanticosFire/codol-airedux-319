@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:15:00+00:00",
+  "scope": "the port fix changes client behaviour",
+  "setup": {
+    "bridge_command": "python tools/ring_bridge_1649370.py --output ... forward --target 127.0.0.1:28970 --port 28970 ...",
+    "note": "--port is a forward subcommand option, not a top-level one; the first attempt placed it before 'forward' and the bridge exited with code 1"
+  },
+  "result": {
+    "phase_trace": "7 -> 8 -> 0 (then 0 for the remaining samples)",
+    "screenshot": "714,750 bytes (error dialog)",
+    "server": "AdministraClient state 4 (CS_ACTIVE), out 166/288/409/531",
+    "exceptions": "only system-level ones (0x7670bae4 thread naming); no client crash"
+  },
+  "meaning": "with the injected packets carrying source port 28970 the client now leaves its previous 'stuck at 8 forever' pattern: it advances to 8 and then drops to 0 (disconnect). That is progress -- the address check now passes and the client attempts to consume the stream, but something in the content/path then disconnects it.",
+  "next": [
+    "find why it disconnects: check the client's console/last packets and the server's drop reason",
+    "the server may be dropping the client for 'reliable command overflow' or timeout; the client may be dropping itself on a malformed snapshot",
+    "compare the disconnect timing with the first real snapshot: if it happens right after the first parse, the snapshot body is now the active blocker (as expected)",
+    "keep --port 28970 in every future run"
+  ],
+  "artifacts": ["runs/codex-portfix-1b-state.png", "runs/20261022-ring-2697bc/main/qconsole.log"]
+}

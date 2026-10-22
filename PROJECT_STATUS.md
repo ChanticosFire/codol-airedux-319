@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【端口修复生效：从“永远卡 8”到“进 8 后断线”】** `forward --port 28970`（`--port` 是 forward 子参数）后，客户端阶段 `7 → 8 → 0`，截图 714,750 字节错误框；服务端仍 `state 4`（`out 166/288/409/531`），无客户端崩溃异常。说明地址检查已通过，客户端开始消费数据流后**主动断线**——**快照体/内容层成为当前活跃阻断**。下一步：定位断线原因并与“第一个真实快照被解析”的时刻对齐。证据 [20261022-codex-port-fix.json](evidence/experiments/20261022-codex-port-fix.json)。
+
 > **2026-10-22【根因：注入包端口为 0，NET_CompareAdr 不匹配】** 计数 stub 证明 `0x674EB0` 每秒被调用约 280 次（此前"从未调用"结论错误）；反汇编其依赖 `0x674E10 = NET_CompareAdr`：type==5 时比较 `+8` 的端口。桥 `--port` 默认 0，注入包源端口为 0，而客户端期望 127.0.0.1:28970 → 地址不匹配 → 返回 0 → 解析器直接返回 → 所有快照被丢弃。**修复：forward 传 `--port 28970`**。证据 [20261022-codex-counter-proof.json](evidence/experiments/20261022-codex-counter-proof.json)。
 
 > **2026-10-22【字节一致但两观测冲突】** 活进程 dump 证实 `0x5C2380=call 0x674EB0` 等三条指令与静态一致；自旋测试复跑仍不卡死（未进入），而强制成功测试曾导致退出（被到达）。两者逻辑冲突，需单独复现并用真正的计数 stub 判定。证据 [20261022-codex-bytes-and-spin.json](evidence/experiments/20261022-codex-bytes-and-spin.json)。
