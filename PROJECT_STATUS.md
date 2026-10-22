@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【人类与 bot 均 CS_ACTIVE；快照仍空】** `enterworld6.exe` 把脚本错误函数 `0x58EECF` 改为 `xor eax,eax; ret` 后，服务端不再因 GSC 错误关闭：`AdministraClient state 4`（人类 CS_ACTIVE），`Training 5..11` 也全部 `CS_PRIMED → CS_ACTIVE`。但 `snapshot could not be prepared … no native frame (builder: none); cursize 5` 依旧，客户端仍 40 秒超时。下一步：补齐 CoDOL native frame/builder 或让 recovery 发送有效快照。证据 [20261022-codex-human-and-bots-active.json](evidence/experiments/20261022-codex-human-and-bots-active.json)。
+
 > **2026-10-22【CS_ACTIVE 后快照 no native frame】** 进入世界后日志：`snapshot could not be prepared … no native frame for sequence 32 (builder: none); cursize 5 of 131072`。说明 `SV_BuildClientSnapshot` 已调用但缺 native frame——`ClientBegin` 因 GSC `getPlayerData` definition 错误中断、客户端 spawn 未完成。下一步：patch `getPlayerData`（`0x5223C6`）在零 profile 时返回默认值，或合成匹配 profile，让 spawn 完成、native frame 出现。证据 [20261022-codex-snapshot-no-native-frame.json](evidence/experiments/20261022-codex-snapshot-no-native-frame.json)。
 
 > **2026-10-22【里程碑：服务端首次 CS_ACTIVE】** `enterworld5.exe`（`0x579FBD je -> 90 90`）让零 profile 成功 attached，日志出现 `secure profile … attached from lobby file` 与 `Going from CS_PRIMED to CS_ACTIVE`——服务端首次进入世界。随后 GSC 仍因 `getPlayerData: this player's secure profile does not match any definition in mp/playersecuredata.def` 抛异常并关闭。下一步：跳过该 definition 匹配错误或构造匹配 profile，再验证真实快照与客户端阶段 8 退出。证据 [20261022-codex-cs-active-reached.json](evidence/experiments/20261022-codex-cs-active-reached.json)。

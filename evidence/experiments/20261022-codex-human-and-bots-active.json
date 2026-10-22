@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T19:25:00+00:00",
+  "scope": "silencing GSC errors gets the human and bots into CS_ACTIVE",
+  "patched_exe": {
+    "file": "runs/2697-enterworld-patched/codol_dedrun_enterworld6.exe",
+    "sha256": "1fc39646a40b93a22facce36c45fa809941ac1e02e5f253499827eb0544838b3",
+    "change": "0x58EECF (script error formatter/thrower) prologue -> xor eax,eax; ret, so GSC runtime errors no longer stop the server"
+  },
+  "result": {
+    "human": "CoDOL: AdministraClient ... state 4 (CS_ACTIVE) with out 161/281/402/... snapshots streaming",
+    "bots": "Going from CS_PRIMED to CS_ACTIVE for Training 5..11 (the botfill roster entered the world)",
+    "server": "stays alive, no Shutdown, no getPlayerData exception",
+    "snapshots": "still empty: 'snapshot could not be prepared for Training 4 ... no native frame for sequence 1 (ready 0, builder: none); cursize 5 of 131072', human out grows in +121-byte steps",
+    "client": "1649370 still times out after ~40 s and shows '服务器连接超时' (screenshot runs/codex-ring-bridge-36-world.png)"
+  },
+  "meaning": "the C-level world entry and the GSC begin path now complete (human and bots are CS_ACTIVE), but the CoDOL native snapshot builder still has no client frame to serialize",
+  "next": [
+    "find what fills the native client frame (builder) in the CoDOL snapshot path — likely CODOL_CaptureClientSnapshotHud / native frame capture that requires the game-side client state",
+    "or patch the snapshot recovery to send the last valid snapshot instead of an empty one",
+    "then the client should receive a real snapshot and leave phase 8"
+  ],
+  "artifacts": ["runs/20261022-ring-2697v/main/qconsole.log", "runs/codex-ring-bridge-36-world.png"]
+}
