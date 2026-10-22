@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T20:55:00+00:00",
+  "scope": "identify the indirect validator [0xCA8168]",
+  "address": "0x74E0E9B0 -- high in the process address space, typical of a system DLL image (kernel32/ws2_32), not the exe",
+  "signature": "called as fn(handle, 0) and checked with test eax,eax / jne fail -- i.e. only a zero return is accepted, almost exactly WaitForSingleObject(h, 0) where WAIT_OBJECT_0 == 0 and a timeout/failure returns non-zero",
+  "implication": [
+    "the check asks whether each handle is already signalled",
+    "in our flow the client's network events are not signalled when CL_Connect is called, so WaitForSingleObject times out and 0x5BE700 returns 0",
+    "that is consistent with cl being empty: nothing has primed the network events yet"
+  ],
+  "practical_consequence": "if the handles are event/socket objects, making the socket readable before calling CL_Connect should flip the check to pass. Injecting one packet into the receive ring beforehand (or nudging the socket) may be enough.",
+  "next": [
+    "enumerate the client's modules and confirm which DLL owns 0x74E0E9B0 (expect kernel32!WaitForSingleObject)",
+    "then try: inject a packet so the socket has data, call CL_Connect, and see whether 0x5BE700 now returns 1 and cl gets filled"
+  ],
+  "artifacts": []
+}

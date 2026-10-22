@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【校验语义 ≈ `WaitForSingleObject(h,0)`：要求句柄已信号】** `[0xCA8168]=0x74E0E9B0`（系统 DLL 映像地址），调用形态 `fn(handle,0)`、判定 `test eax,eax; jne 失败`（只接受 0）——与 `WaitForSingleObject(h,0)` 吻合（`WAIT_OBJECT_0=0`）。即要求两个句柄**已信号**；我们流程里网络事件未触发 → 超时 → `0x5BE700` 返回 0 → `CL_Connect` 退出。实践：**先让 socket 可读（先注入一个包）再调用 `CL_Connect`**。下一步：枚举模块确认归属，然后实测“先注入包→调用 CL_Connect”。证据 [20261022-codex-validator-guess.json](evidence/experiments/20261022-codex-validator-guess.json)。
+
 > **2026-10-22【句柄都在，失败在间接校验 `[0xCA8168]`】** 阶段 3 实测 `[0x7887040]=0x390`、`[0x7886E64]=0x39C`（都存在且非 0），`[0xCA8168]=0x74E0E9B0`（运行时模块地址，不在 exe 导入表）。失败只能是 `call [0xCA8168](handle,0)` 返回非 0。下一步：枚举模块把该地址映射回具体导出名（形似 `WaitForSingleObject(h,0)` 或 WSA 事件检查），弄清期望的句柄状态后在调用前准备好。证据 [20261022-codex-clconnect-handles.json](evidence/experiments/20261022-codex-clconnect-handles.json)。
 
 > **2026-10-22【`CL_Connect` 前段即退：`0x5BE700` 句柄校验返回 0】** 子状态表 `0x5C0F2C`：0/3→`0x5C067A`、1→返回、2→`0x5C0693`。`0x5C067A` 调 `0x5BE700`，后者校验 `[0x7887040]` 与 `[0x7886E64]` 两个句柄（经 `[0xCA8168]` 间接调用），任一缺失/失败即返回 0 → `CL_Connect` 跳到出口 `0x5C0F1B`，故只写了 `cl+0x30/0x34`。下一步：阶段 3 读这两个句柄找出缺失项，并查清 `[0xCA8168]` 的语义。证据 [20261022-codex-clconnect-check.json](evidence/experiments/20261022-codex-clconnect-check.json)。
