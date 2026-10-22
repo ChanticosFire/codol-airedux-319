@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:47:05.998240+00:00",
+  "claim": "用游戏内光标模板做点击校准：mouse 点击落点与请求坐标仅差约 6px，按钮无响应不是坐标问题",
+  "tool": {
+    "name": "tools/find_cursor.py",
+    "template": "tools/cursor_template.png (45x38 游戏内箭头光标)",
+    "method": "灰度 + FFT 互相关求 SSD 最小值，输出模板左上角与热点",
+    "interpreter": "需要 numpy，用 DSH 自带 python 运行"
+  },
+  "measurement": {
+    "screenshot": "runs/natural-bl-ui/after-create2.png",
+    "requested_click": [
+      1447,
+      877
+    ],
+    "cursor_top_left": [
+      1438,
+      873
+    ],
+    "hotspot": [
+      1448,
+      883
+    ],
+    "delta_y": 6
+  },
+  "conclusion": "mouse 方式点击位置准确（误差 ~6px，按钮 205x65 区域完全覆盖）；创建房间按钮无响应是控件状态/客户端逻辑问题，不是坐标问题",
+  "next": [
+    "用光标工具校准后续所有 mouse 点击；post 点击仍用区域比对验证",
+    "检查创建按钮是否 disabled（对比像素/尝试点击后立即截图看 hover 态）",
+    "检查创建前是否缺少服务器数据（赛单/频道）"
+  ],
+  "evidence": [
+    "tools/cursor_template.png",
+    "tools/find_cursor.py"
+  ]
+}
