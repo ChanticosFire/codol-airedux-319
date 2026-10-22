@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T14:55:00+00:00",
+  "scope": "the client-state init function and its callers",
+  "function": {
+    "entry": "0x5C83D0",
+    "callers": [
+      "0x47039D (push 1)",
+      "0x4FE77B (push 1)",
+      "0x5C8163 (push 1)",
+      "0x813D25"
+    ],
+    "caller_0x47039D": "inside the gamestate path: push 0; call 0x81DF20; push 1; call 0x5C83D0; then mov eax,[0x331c0c8]; xor eax,key -- i.e. the parser calls the init, then reads cl immediately",
+    "caller_0x5C8163": "same shape: push 0; call 0x81DF20; push 1; call 0x5C83D0; mov eax,[0x331c0c8]; xor eax,key; mov byte [eax+0x38],0"
+  },
+  "observation": "the init runs (the allocation branch at 0x5C85AD is reached), but the object stays all zero. The allocation branch only allocates; it does not fill clc.state or the netadr.",
+  "next": [
+    "map the four jump-table targets at 0x5C8A3C to see which one allocates versus fills",
+    "check whether the caller's push 1 selects the allocate-only entry (which would explain a zeroed cl)",
+    "if so, find the argument value that selects the fill entry and test it"
+  ],
+  "artifacts": [],
+  "prologue": {
+    "0x5C83D0..0x5C83F4": "push ebp; mov ebp,esp; sub esp,0x70; stack cookie; push ebx/esi/edi; xor edi,edi",
+    "0x5C83E5": "cmp [0x3381398],edi; jg 0x5C8A29 -- early out while a counter is positive",
+    "0x5C83F1": "mov esi,[ebp+8]; and esi,2; jne 0x5C841A -- argument bit 1 triggers the reset branch; push 1 has bit 1 clear, so it takes the normal path",
+    "0x5C841A..0x5C844D": "clears several globals (0x7508B80, 0x77DB830) and conditionally initialises a 0x10-sized structure"
+  },
+  "allocation_branch": "the 0x12A700 allocation at 0x5C85AD is reached through the jump table at 0x5C85A6 (jmp [ebx*4+0x5C8A3C]) after a 0..3 loop at 0x5C8583; which table entry runs depends on a byte array at [ebp-0x2C]"
+}

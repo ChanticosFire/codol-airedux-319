@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【`CL_Init = 0x5C83D0`：gamestate 时被调用，但 `push 1` 走“只分配不填充”分支】** 调用者 `0x47039D`（gamestate：`push 0; call 0x81DF20; push 1; call 0x5C83D0` 后立刻读 `cl`）、`0x4FE77B`、`0x5C8163`、`0x813D25`。序言 `mov esi,[ebp+8]; and esi,2; jne 0x5C841A`——`push 1` 的 bit1 为 0 走正常路径；`0x12A700` 分配位于跳转表分支 `0x5C85A6 jmp [ebx*4+0x5C8A3C]`（`ebx` 来自 0..3 循环），该分支只建空对象、不填 `clc.state`/netadr。下一步：映射 `0x5C8A3C` 四个目标（分配 vs 填充），找出能选中“填充”入口的参数值。证据 [20261022-codex-clinit.json](evidence/experiments/20261022-codex-clinit.json)。
+
 > **2026-10-22【修正：`0x331c0c8` 不太可能是 `cl`】** 分配大小 `0x12A700`（1.2 MB）远大于经典 IW4 的 `clientState_t`，更像渲染/UI 容器；`+0x109260` 偏移也符合大对象。运行时该容器前 16 dword 全 0（未初始化），但服务端已见 `AdministraClient CS_ACTIVE`——说明**连接状态在另一个全局**。下一步：停止把它当 `cl`，改为找真正设置 `CA_CONNECTED`/`CA_ACTIVE` 的全局，收包助手的 netadr partner 很可能就在那里。证据 [20261022-codex-cl-size.json](evidence/experiments/20261022-codex-cl-size.json)。
 
 > **2026-10-22【`[0x331c0c8]` = `cl` 结构（0x12A700 字节）的编码指针；`cl` 从未初始化】** 写入点 `0x5C85BF`：`push 0x12A700; call 0x5C8330`（分配 1,222,400 字节）→ `xor eax,0xD362501F` → `mov [0x331c0c8],eax`；`0x5C8AC0` 为同一常量的另一初始化路径。`0x109260 < 0x12A700` 说明解析器字段在该分配内。但运行时 `[ebx]` 前 16 dword 全 0——**`clc.state`=0（CA_DISCONNECTED）**。统一解释：离线流程只把 CODOL 自定义阶段 `[0x76446B0]` 推到 8，**游戏网络层读取的 `clc.state` 从未被初始化**，故 `NET_CompareAdr` 拿零地址、`0x674EB0` 恒失败、快照从不被消费。下一步：找 `cl` 初始化/连接路径（`CL_Init`/`CL_Connect`）为何没运行——这是 G2 真正总闸。证据 [20261022-codex-cl-allocation.json](evidence/experiments/20261022-codex-cl-allocation.json)。
