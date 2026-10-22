@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【门控假设被证伪：`[0xC7AF58C]` 运行时就是 1】** 登录后读 `[0xC7AF58C] = 0x1`（非 0），`start-challenge` 返回 `challenge_armed`/`state=3`。所以 `0x5BE618` 的 `je` 并未生效——跳过的不是这里。结合 `CL_Connect` 断点从未命中，只能是**调用者 `0x5BE5F0` 整个没执行**（属于离线路径不进入的 UI 流程）。下一步：(a) 断点 `0x5BE5F0` 确认；(b) 找它的上层调用与所属界面；(c) 备选：窗口线程真实栈上直接调用 `CL_Connect`。证据 [20261022-codex-gate-open.json](evidence/experiments/20261022-codex-gate-open.json)。
+
 > **2026-10-22【找到跳过 `CL_Connect` 的门控 `[0xC7AF58C]`】** 调用者入口 `0x5BE5F0`（帧时间门控 + 全局检查）中：`0x5BE612 cmp [0xC7AF58C],0; 0x5BE618 je 0x5BE6ED`——**该全局为 0 时整段 `0x5BEAEA call 0x5C05F0` 被跳过**。假设离线流程里它恒为 0，这正是断点从未命中的原因。下一步：运行时读该全局确认为 0，找出写入点（很可能是 UI“加入”动作），置位后观察 `0x5C05F0` 是否运行、`cl` 是否被填充。证据 [20261022-codex-clconnect-gate.json](evidence/experiments/20261022-codex-clconnect-gate.json)。
 
 > **2026-10-22【断点实证：`0x5C05F0` 从未命中】** launcher 一次性断点 `0x5C05F0:cl_connect` 下跑完整握手：阶段正常到 8，但启动器无命中记录、`events.jsonl` 0 字节。**定论：阶段到 3/8 都不会驱动 `CL_Connect`**，`cl` 始终未初始化。交叉引用找到两处 `call`：`0x5BEAEA`（`xor ecx,ecx; call`）与 `0x5C2AB9`（疑似误报）。下一步：对齐反汇编 `0x5BEAEA` 所在函数确认所属 UI 流程，再决定满足前置条件或运行时 stub 直接调用。证据 [20261022-codex-clconnect-never.json](evidence/experiments/20261022-codex-clconnect-never.json)。

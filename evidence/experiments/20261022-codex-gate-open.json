@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T18:35:00+00:00",
+  "scope": "read the gate global at runtime",
+  "reading": {
+    "[0xC7AF58C]": "0x00000001 -- NOT zero",
+    "when": "before start-challenge, client logged in",
+    "after": "start-challenge returned challenge_armed / connection 0x13E1D0D8 / state 3"
+  },
+  "refutation": "the gate is already open, so the je at 0x5BE618 is not what skips CL_Connect. The hypothesis is wrong.",
+  "consequence": "since the gate is 1 and CL_Connect still never runs (breakpoint never hit), the whole caller function 0x5BE5F0 must never execute. It is presumably part of a UI flow (server browser / join screen) that the offline start path never enters.",
+  "next": [
+    "put a breakpoint at 0x5BE5F0 itself: if it never hits, the caller is never called and the UI flow is what needs driving",
+    "then look at what invokes 0x5BE5F0 and what screen/state it belongs to",
+    "an alternative that avoids the UI entirely: invoke CL_Connect (0x5C05F0) from a runtime stub on the window thread with a real stack (frame 0x11BC)"
+  ],
+  "artifacts": []
+}
