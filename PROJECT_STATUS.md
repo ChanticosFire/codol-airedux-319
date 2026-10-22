@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【`0x5B2C10` 跑起来了但崩在 `call 0x66F170`：根因是 `CL_Init` 从未分配 `[0x76638F4]`】** 阶段 8、标志 0、`call_main_thread(0x5B2C10)` 后客户端延迟崩溃：`0xc0000005` @ `0x5D1CF4C5`、`mov eax,[ecx+0x218]`、`ecx=0x840112CA`（垃圾），栈帧 `0x5B2C8A`→`0x10BD0006`（cave）。回溯 `0x5B2C70`：`mov ebx,[0x76638F4]; xor ebx,0x6891D1C7; lea edi,[ebx+0xC]; call 0x66F170`——`[0x76638F4]` 正是 `CL_Init`（`0x5C83D0`）第二分支分配的 `0xAA10` 块。**`CL_Init` 也从未运行**，两笔分配都缺，故解引用垃圾。**正确完整序列**：调 `CL_Init` → 推阶段 8 → 调 `0x5B2C10` → 检查 `cl+0x100260`/`cl+0x109260`。证据 [20261022-codex-init-crash.json](evidence/experiments/20261022-codex-init-crash.json)。
+
 > **2026-10-22【关键突破：真正的连接初始化是 `0x5B2C10`，它在标志=1 或阶段<7 时提前退出】** `0x4746E2`：`call 0x5B2B70; test eax,eax; je 0x4746F0`，否则 `call 0x5B2C10`。`0x5B2C10` 开头：`sub esp,0x884`、cookie、`ecx=[0x331c0c8]`、`edx=[0x76446B0]`（阶段）、`eax=ecx^key`；`cmp [eax+0x100260],1; je 0x5B3127`（标志=1 退出）；`[0x7508B80]` 检查；`cmp edx,7; jl 0x5B3127`（阶段<7 退出）。**正确序列**：阶段≥7（推 8）→ 标志保持 0 → 调用 `0x5B2C10` 填充 `cl` → 之后再置标志。这也解释了组合实验为何崩溃（标志把初始化也关掉了）。证据 [20261022-codex-5b2c10.json](evidence/experiments/20261022-codex-5b2c10.json)。
 
 > **2026-10-22【修正：`0x5B2C02` 只是 `xor eax,eax; ret`；真正的小函数在 `0x5B2B70`】** `0x5B2B70` 的逻辑：`ecx=[0x331c0c8]`、`eax=ecx^key`；空指针转 `0x5B2B8E`；`cmp [eax+0x100260],1; je 0x5B2C02`（返回 0）；`0x5B2B8E` 读阶段 `[0x76446B0]`，阶段 1/2 → 返回 0；否则 `mov eax,1; ret`。它回答“调用者该不该做连接工作”，调用者有 3 处：`0x4746E2`（解析器附近）、`0x5B3141`、`0x5B31AB`。组合实验的崩溃发生在消费该返回值的调用者分支。下一步：反汇编 `0x4746E2` 看标志=1（返回 0）时它走的分支。证据 [20261022-codex-5b2c02.json](evidence/experiments/20261022-codex-5b2c02.json)。

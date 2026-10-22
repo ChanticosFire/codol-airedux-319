@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T00:35:00+00:00",
+  "scope": "call 0x5B2C10 at phase 8 with the flag clear",
+  "sequence": {
+    "phase": "8 (set-state), flag cl+0x100260 kept at 0",
+    "call": "call_main_thread --target 0x5B2C10 (cave 0x10BD0000), reported process_alive_after true at 2 s",
+    "then": "the client died shortly after"
+  },
+  "crash": {
+    "exception": "0xc0000005 at 0x5D1CF4C5",
+    "instruction": "8b 81 18 02 00 00 = mov eax,[ecx+0x218]",
+    "ecx": "0x840112CA -- garbage, so ecx+0x218 = 0x840114E2 is unmapped",
+    "frames": [
+      "0x5B2C8A (inside 0x5B2C10)",
+      "0x10BD0006 (the cave return address)",
+      "0x766FE772",
+      "0x67CBAE"
+    ],
+    "eip_bytes": "8b81180200008b911c020000b13d... (the callee reads [ecx+0x218] and [ecx+0x21C])"
+  },
+  "meaning": "0x5B2C10 ran past its guards (phase 8, flag clear) and reached 0x5B2C8A, where it calls a function that expects ecx to point at a valid structure. In our process ecx holds garbage, so the initialiser crashed. The missing piece is whatever global 0x5B2C10 reads into ecx before this call -- it is still zero/uninitialised.",
+  "next": [
+    "disassemble around 0x5B2C80..0x5B2C8A to see which global/field is loaded into ecx before the call",
+    "populate that field (or call whatever normally sets it) and retry",
+    "the callee at 0x5D1CF4C5 belongs to another module; only the ecx source matters"
+  ],
+  "artifacts": [],
+  "ecx_source": {
+    "0x5B2C70": "mov ebx,[0x76638F4]",
+    "0x5B2C76": "xor ebx,0x6891D1C7",
+    "0x5B2C7C": "lea edi,[ebx+0xC]",
+    "0x5B2C7F": "lea esi,[ebp-0x834]",
+    "0x5B2C85": "call 0x66F170 -- this is the call that crashed",
+    "globals": {
+      "0x76638F4": "allocated by CL_Init's second branch (0x5C85C9: push 0xAA10; call 0x5C8330; xor 0x6891D1C7; store)"
+    }
+  },
+  "real_root_cause": "[0x76638F4] is still zero because CL_Init (0x5C83D0) never ran either. Both allocations CL_Init makes (the 0x12A700 client object at [0x331c0c8] and the 0xAA10 block at [0x76638F4]) are missing, so every later initialiser dereferences garbage.",
+  "correct_sequence": [
+    "call CL_Init (0x5C83D0, an argument is optional -- it used push 1)",
+    "then push the phase to 8",
+    "then call 0x5B2C10",
+    "then check whether cl+0x100260 / cl+0x109260 finally populate"
+  ]
+}
