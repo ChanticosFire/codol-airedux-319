@@ -2296,6 +2296,35 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
         log["extra_root_files"] = copied
         print("[patched] copied extra root files:", ",".join(copied), flush=True)
 
+    # 可选：把额外解出的 gfx 贴图补进 stage 的 main/images 与 hires/images。
+    # 阶段 8 文件追踪显示客户端会直接搜索 hires/images/*.iwi，而五包 loose
+    # 资源只覆盖 main/images；CODOL_EXTRA_GFX 用分号分隔若干根目录。
+    extra_gfx = [Path(p) for p in os.environ.get("CODOL_EXTRA_GFX", "").split(";") if p]
+    if extra_gfx:
+        staged_gfx = {"main": 0, "hires": 0}
+        destination_dir = stage / "hires" / "images"
+        if stage.is_junction() or stage.is_symlink():
+            raise ValueError("refusing to stage extra gfx through a shared mount")
+        if destination_dir.exists() and (destination_dir.is_junction() or destination_dir.is_symlink()):
+            raise ValueError("refusing to write extra gfx through a shared mount")
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        for root in extra_gfx:
+            # The client searches hires/images directly; stage/main is the
+            # shared overlay mount, so every extra image goes to the private
+            # hires tree (hi-resolution copies first, main copies fill gaps).
+            for kind in ("hires", "main"):
+                source_dir = root / kind / "images"
+                if not source_dir.is_dir():
+                    continue
+                for source in source_dir.glob("*.iwi"):
+                    destination = destination_dir / source.name
+                    if destination.exists():
+                        continue
+                    shutil.copyfile(source, destination)
+                    staged_gfx["hires"] += 1
+        log["extra_gfx"] = staged_gfx
+        print("[patched] staged extra gfx:", staged_gfx, flush=True)
+
     if LOCAL_AUTH_LSG:
         config = b"127.0.0.1 28969\r\n127.0.0.1 28969\r\n03EA\r\n"
         (stage / "dwauth.ini").write_bytes(config)
@@ -2802,6 +2831,31 @@ def main(argv=None) -> int:
             return original_handle_exception(self, event, code, address, row)
         except ValueError as error:
             message = str(error)
+            if "selected-character cache" in message:
+                # The forced stop of an earlier run left the native
+                # selected-character cache at 0 while the account profile
+                # still names a character.  Restore the cache from the
+                # profile so the inventory/UI bridge can finish instead of
+                # merely skipping the check (skipping leaves the lobby
+                # modes disabled).
+                try:
+                    from codol_rebuild.adapters.game.profile_format.fields import Fields
+                    fields = Fields(self.profiles.schemas["public"])
+                    public = self.profiles.account["profiles"]["public"]
+                    selected = fields.read(public, "currentCharacterIndex")
+                    expected = fields.read(public, f"characterClasses.{selected}.slots.0")
+                    repaired = 0
+                    if expected and expected > 0:
+                        for trap_address, (profile_data, phase, pool) in self.profile_traps.items():
+                            self.process.write(profile_data + 68, struct.pack("<I", expected))
+                            repaired += 1
+                    self.record({"local_profile_repair": {"selected": selected,
+                                                          "expected": expected,
+                                                          "traps": repaired}})
+                    if repaired:
+                        return original_handle_exception(self, event, code, address, row)
+                except Exception as repair_error:  # noqa: BLE001
+                    self.record({"local_profile_repair_error": str(repair_error)})
             if "selected-character cache" in message or "inventory" in message:
                 self.record({"local_profile_warning": message})
                 return None

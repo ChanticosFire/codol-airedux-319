@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T12:00:00+00:00",
+  "scope": "stage-8 map-asset trace, hires gfx staging, lobby UI restore",
+  "stage8_asset_trace": {
+    "method": "--trace-files CreateFileA traps on the 1649370 client",
+    "initial_missing": {
+      "spark_atlas.iwi": 4,
+      "smk_white_atlas.iwi": 4,
+      "wind_hl_atlas.iwi": 4,
+      "whisp_spiral.iwi": 4,
+      "glow_org.iwi": 4,
+      "spotlight_beam.iwi": 4,
+      "codo_i*.iwi": "many"
+    },
+    "meaning": "the client does start loading mp_cross_fire effect/UI textures at phase 8; the five loose packs only carry main/images, while the client looks under hires/images first"
+  },
+  "new_resources": {
+    "common_gfx": {
+      "pack": "lf_init_common_gfx_V63.ifs",
+      "sha256": "b544f992fe962247845f57094d4c8a52ab616c4b003f8c2dcb73b87c89a842b4",
+      "members": 526,
+      "decoded_main_images": 399,
+      "out": "319/runs/20261022-1649370-common_gfx"
+    },
+    "hi_gfx": {
+      "pack": "lf_hi_init_common_gfx_V8.ifs",
+      "sha256": "decd9cfb6e81ad8578074db804b58f516d9ff5a8f05afc9d0ffe7f1fd960a714",
+      "members": 200,
+      "decoded_hires_images": 199,
+      "out": "319/runs/20261022-1649370-hi_gfx"
+    },
+    "tool": "tools/extract_1649370_common_gfx.py",
+    "launcher": "CODOL_EXTRA_GFX=dir1;dir2 stages every main/hires *.iwi into <stage>/hires/images (main/ is the shared overlay mount)"
+  },
+  "after_staging": {
+    "hires_images": 403,
+    "remaining_missing": {
+      "hires/sound/music/ui/ui_sp_hz_af_caves_loud.mp3": 1249,
+      "hires/sound/music/ui/ui_sp_hz_t_menumusic.mp3": 1201,
+      "client_shipRetail/chinese/patch_ui_mp.ff": 6,
+      "client_shipRetail/chinese/patch_localized_ui_mp.ff": 4
+    },
+    "conclusion": "map texturing/UI icons are complete; the remaining misses are music and optional patch fastfiles, not map assets"
+  },
+  "lobby_ui_regression": {
+    "symptom": "PVP/PVE/ranked buttons greyed out, task icons grey, GP shown as unknown, no character card, after the forced stop of round 8",
+    "root_cause": "the private account's currentCharacterIndex no longer matched the native selected-character cache (cache was 0); GameSessionBridge raised 'Native selected-character cache not initialized for inventory UI', the launcher skipped the error and the profile bridge never finished, so the lobby modes stayed locked",
+    "fix": "tools/launch_1649370.py now rewrites the native cache (profile_data+68) from the account profile's characterClasses.<currentCharacterIndex>.slots.0 and retries the bridge",
+    "verified": "round 21 screenshot shows coloured mode tiles, GP 1999951600, CP 1520 and a character card; runs/codex-ring-bridge-21-lobby.png"
+  },
+  "phase8_after_fix": {
+    "state": "client still returns to phase 0 after about 40 s at phase 8",
+    "missing_assets": "only music/patch fastfiles",
+    "server": "CS_PRIMED, gamestateupdate 1 received, reliableAcknowledge stays 0",
+    "next": [
+      "find the client-side 40 s connect timeout and raise it, or make the server reach CS_ACTIVE before it expires",
+      "craft a correctly encoded clc_move ack (challenge ^ serverId ^ messageAcknowledge + reliableCommands[0] string) from the values in client_t",
+      "verify whether the client waits for the first snapshot before sending usercmd"
+    ]
+  }
+}
