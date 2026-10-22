@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【对照实验推翻“异步反复调用”假设】** 阶段 8；补 `cl+0xA8F0`（`VirtualAllocEx` 0x180 @ `0x11820000` ^ key）；`0x5B2C10` 前 9 字节换成计数器 stub。**结果：计数器 5 秒恒为 0、阶段稳定 8、客户端全程存活**。结论：帧 tick 不会自动调用 `0x5B2C10`；单独补 `0xA8F0` 安全稳定；崩溃只在真正调用 `0x5B2C10` 时出现。下一步：保持修复与 stub，真正调用一次并亚秒级采样，判断故障是立即还是延迟。证据 [20261022-codex-counter-control.json](evidence/experiments/20261022-codex-counter-control.json)。
+
 > **2026-10-23【关键洞察：崩溃是异步的】** 多轮数据里 `call_main_thread` 都在 settle 点报 `process_alive_after: true`，客户端之后才死——说明 **`0x5B2C10` 正常返回**，崩溃不在手动调用内。推论：阶段 8 + 标志 0 时帧 tick 每帧走 `0x4746E2` 反复调用 `0x5B2C10`，手动调用只是预热，真正崩溃来自随后某次自动调用。下一步：(1) 在 `0x5B2C10` 挂计数器 stub 统计调用次数；(2) 确认 `0xB02BCC94` 所属 DLL（在模块列表里找 `0xB02B0000` 附近基址）。证据 [20261022-codex-async-crash.json](evidence/experiments/20261022-codex-async-crash.json)。
 
 > **2026-10-23【主要被调函数入口全部安全】** `0x470B80`（只读写 `cl` 内偏移）、`0x470AD0`（全局非零才调 `0xB9A0F0`）、`0xB9A0F0`（`lea eax,[ecx+0xD8]; ret` getter）、`0x6743D0`（整数 `imul 0xE32943`）、`0x66E840`（位缓冲移位掩码）、`0x66EA90`（`sub esp,0x404` 字符串处理 + `cmp edx,0x400` 边界）——入口处都无系统调用。故障要么在更深层，要么在“`cl` 部分填充后才走到”的另一处调用点。下一步：补 `0xA8F0` 后给 `0x5B2C10` 挂返回 hook；若仍 fault，在 `0x5B2F43`/`0x5B30DE` 下断点确认真实进度。证据 [20261022-codex-rem-callees.json](evidence/experiments/20261022-codex-rem-callees.json)。

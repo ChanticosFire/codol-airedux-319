@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T04:45:00+00:00",
+  "scope": "control run: counter stub on 0x5B2C10 without calling it",
+  "setup": {
+    "phase": "8",
+    "cl+0xA8F0": "repaired (VirtualAllocEx 0x180 @ 0x11820000, stored ^ 0x96B9DC91)",
+    "0x5B2C10": "replaced by a counter stub (pushad; mov eax,scratch; inc [eax]; popad; original 9 bytes; jmp 0x5B2C19)"
+  },
+  "result": {
+    "counter": "0 for the whole 5 s sample",
+    "phase": "8 stable",
+    "client": "alive throughout"
+  },
+  "conclusions": [
+    "the frame tick does NOT call 0x5B2C10 on its own -- the earlier 'asynchronous repeated calls' idea is refuted",
+    "the 0xA8F0 repair by itself is safe and stable for at least 5 seconds",
+    "so the crash only appears when 0x5B2C10 is actually invoked (manually)"
+  ],
+  "next": [
+    "invoke 0x5B2C10 with the repair in place and sample immediately (sub-second) to see whether the fault is immediate rather than delayed",
+    "keep the counter stub installed so the number of entries is known",
+    "if it faults on the very first entry, the crash is inside 0x5B2C10 and the 0xB02BCC94 address is its callee"
+  ],
+  "artifacts": []
+}
