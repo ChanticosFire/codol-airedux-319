@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【返回值 hook 首版 bug：跳转目标错导致栈双重调整】** `0x5C2380` hook stub 为 `call 0x674EB0; mov [scratch],eax; add esp,0x30; jmp 0x5C2385`，但 `0x5C2385` 正是 `add esp,0x30` 本身，导致二次调整栈、客户端立刻退出。正确目标应为 `0x5C2388`。下一步：修正后重跑，scratch 将记录收包路径的 `eax`（0/1）。证据 [20261022-codex-retval-hook.json](evidence/experiments/20261022-codex-retval-hook.json)。
+
 > **2026-10-22【计数复测：收包助手约 280 次/秒，网络路径完全活跃】** 在“持久 configstring 补丁 + `forward --port 28970`”下挂计数 stub：3 秒 844、6 秒 1728（约 280/秒），阶段稳定 8、客户端存活。包能从环 B 走到收包帮助手指令，剩余阻断不在“包是否到达”，而在快照内容/客户端消费快照。下一步：在 `0x5C238A` 记录 `eax`（返回值），区分“解析在跑但内容无效”与“仍返回失败”。证据 [20261022-codex-counter-2.json](evidence/experiments/20261022-codex-counter-2.json)。
 
 > **2026-10-22【configstring 绕过已持久化】** 补丁条目 `{"va":"0x4730a0","before":"558bec","after":"b001c3"}` 已加入 `offline-menu-patches.json`（原文件备份于 `runs/client-backup/offline-menu-patches.orig.json`，新 SHA `FB56D64D…`）。新会话 `codex-cfgpatch-1` 不做运行时 patch 启动：客户端 `7 → 8` 稳定 21 秒（截图 10,750 字节黑屏），exe SHA 仍 `55F067AC…`。后续每轮不再被 `EXE_CONFIGSTRINGMISMATCH` 打断，当前阻断为黑屏/快照内容。下一步：持久补丁 + `--port 28970` 下重跑 `0x674EB0` 计数 stub。证据 [20261022-codex-cfgpatch-persistent.json](evidence/experiments/20261022-codex-cfgpatch-persistent.json)。

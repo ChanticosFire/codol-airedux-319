@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T10:55:00+00:00",
+  "scope": "record the receive helper's return value",
+  "stub": {
+    "target": "0x5C2380 (call 0x674EB0)",
+    "bytes_laid_out": "e8 <rel> (call 0x674EB0) ; a3 <scratch> (mov [scratch],eax) ; 83 c4 30 (add esp,0x30) ; e9 <rel to 0x5C2385>",
+    "hook": "0x5C2380 -> e9 <stub>",
+    "result": "the client process died immediately; reading its memory then failed"
+  },
+  "bug": "the stub ends with jmp 0x5C2385, but 0x5C2385 is the 'add esp,0x30' instruction that the stub already executed -- so the stack gets adjusted twice and the function returns with a corrupted stack. The jump must target 0x5C2388 (after add esp,0x30).",
+  "next": [
+    "re-run with the corrected jump target 0x5C2388",
+    "the scratch will then hold the helper's eax (0 or 1), which tells whether the receive path reports success or failure",
+    "no code change is needed to the client image; the hook lives only in the process"
+  ],
+  "artifacts": []
+}
