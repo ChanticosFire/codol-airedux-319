@@ -121,9 +121,9 @@ def main() -> int:
                 if not name_ptr:
                     continue
                 raw = read(handle, name_ptr, 260)
-                name = raw.split(b"\x00\x00")[0]
+                name = raw.split(b"\x00")[0]
                 try:
-                    text = name.decode("utf-16-le", "ignore")
+                    text = name.decode("latin-1", "replace")
                 except Exception:
                     text = ""
                 entries.append({"ret": hex(ret), "access": hex(access), "name": text})
@@ -135,7 +135,10 @@ def main() -> int:
     text = json.dumps(row, ensure_ascii=False, indent=2)
     if args.output:
         Path(args.output).write_text(text + "\n", encoding="utf-8")
-    print(text)
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        print(text.encode("ascii", "replace").decode("ascii"))
     return 0
 
 

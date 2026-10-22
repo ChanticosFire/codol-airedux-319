@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:30:19.401922+00:00",
+  "claim": "2.6.9.7 launcher 里有 mp_cross_fire 的完整解码资源包（1321 文件/362MB），很可能就是 1649370 缺的地图资源",
+  "found": {
+    "path": "CODOL-2.6.9.7-Launcher/runtime/game/training-resources/mp_cross_fire/decoded",
+    "files": 1321,
+    "bytes": 362877535,
+    "dirs": [
+      "main",
+      "hires",
+      "client_shipretail",
+      ".\\devraw_shared\\images\\dpad_ks_uav.iwi 在 main/images 下"
+    ]
+  },
+  "evidence": "CreateFileA hook 抓到的缺失文件 dpad_ks_uav.iwi 在这个包的 main/images 里能找到",
+  "next": [
+    "把该 decoded 目录整体复制到 1649370 的 offline-resources overlay（或 runtime）",
+    "重测 preloadmap，看加载是否继续",
+    "注意只复制不覆盖 1649370 自己的 461 版本 ff"
+  ]
+}

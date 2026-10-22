@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "pid": 24364,
+  "utc": "2026-10-22T08:29:57.513435+00:00",
+  "count": 530,
+  "entries": [
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\dpad_ks_uav.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\dpad_ks_uav.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ""
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ""
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ""
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ""
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ""
+    },
+    {
+      "ret": "0x776f80",
+      "access": "0x80000000",
+      "name": "\u0010"
+    },
+    {
+      "ret": "0x776f80",
+      "access": "0x80000000",
+      "name": "\u0010"
+    },
+    {
+      "ret": "0x776f80",
+      "access": "0x80000000",
+      "name": "\u0010"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\dpad_ks_uav.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\dpad_ks_uav.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\dpad_ks_uav.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\dpad_ks_uav.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\dpad_ks_uav.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\dpad_ks_uav.iwi"
+    }
+  ],
+  "status": "read"
+}
