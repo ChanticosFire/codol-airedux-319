@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:19:31.226835+00:00",
+  "claim": "0x4F7D30 是错误码→消息映射（比较'1130'返回 UNABLE_TO_RESET_D3D_DEVICE），与文件名无关；文件名在更上游",
+  "strings": {
+    "0xDB82E8": "1130",
+    "0xDBD1A4": "UNABLE_TO_RESET_D3D_DEVICE"
+  },
+  "meaning": "Com_Error 链路里没有文件名；真正的文件缺失判定在 win_zone 加载处（更上游）",
+  "next": [
+    "搜索 'WIN_FILE_NOT_FOUND' 字符串的其它引用点（找到判定处）",
+    "或 hook 文件系统打开失败（CreateFileW/ReadFile）记录失败路径"
+  ]
+}
