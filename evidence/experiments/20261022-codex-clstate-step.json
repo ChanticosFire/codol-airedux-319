@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T16:00:00+00:00",
+  "scope": "step-by-step write: which byte at cl+0x109260 kills the client",
+  "sequence": {
+    "cl": "0x13CDD810 (decoded from [0x331c0c8] ^ 0xD362501F)",
+    "before": "16 zero bytes at cl",
+    "step1": "write 0x08 at cl+0 (clc.state) -- client alive, value kept",
+    "step2": "write dword 2 at cl+0x109260 (netadr type) -- client DIED immediately",
+    "never_reached": "the port write"
+  },
+  "conclusion": "cl+0x109260 is not a writable netadr type field. Writing a non-zero dword there makes the client dereference or dispatch through it and crash. Either the field is a pointer (and NET_CompareAdr receives the pointer value as the type), or the parser copies the six dwords from a different base than cl.",
+  "implications": [
+    "the whole 'fill cl's netadr' route is dead -- the address the receive helper compares against is not (only) stored at cl+0x109260",
+    "the 0x5C231E copy at 0x5C2260 may read through an indirection: mov ebx,[0x331c0c8]; xor ebx,key; then [ebx+0x109260] could be a pointer to the real netadr rather than the netadr itself"
+  ],
+  "next": [
+    "dump the dword at cl+0x109260 as a pointer and follow it -- if it is non-null, the parser's six dwords come from there",
+    "if it is zero, the parser is comparing against a null pointer copied as the type, which is exactly why the comparison always fails and why writing 2 crashes (the client then treats 2 as a pointer)",
+    "that would mean the real fix is to make the connect path allocate/populate that pointer, i.e. run the game's own connect sequence"
+  ],
+  "artifacts": []
+}

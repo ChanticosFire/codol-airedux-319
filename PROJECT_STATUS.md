@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【分步写入：`cl+0x109260` 不是可写 netadr】** 同一次运行：`cl=0x13CDD810`，写 `cl+0`=`0x08` 后存活；写 `cl+0x109260` 的 dword 2 后客户端**立刻死亡**（port 写入未执行）。说明该偏移要么存指针（`NET_CompareAdr` 拿指针值当 type），要么解析器不以 `cl` 为基址。下一步：把 `[cl+0x109260]` 当指针跟随；若为空则解析器在比较空指针，真正修复是让游戏自己的 `CL_Connect` 序列分配并填充它。证据 [20261022-codex-clstate-step.json](evidence/experiments/20261022-codex-clstate-step.json)。
+
 > **2026-10-22【写 `clc.state=8` 安全但不足以恢复收包】** `cl=0x13C9CC74`，写入单字节 `0x08` 后读回、跨 tick 保持、客户端存活——证明**在 `cl+0` 写是安全的**，此前写 `cl+0x109260` 的崩溃与 `cl` 无关。但 `eax` 仍 0、阶段 8——netadr 字段仍零。下一步：同一运行内先写状态再写 netadr，分步写入以定位致命步骤。证据 [20261022-codex-clcstate-write.json](evidence/experiments/20261022-codex-clcstate-write.json)。
 
 > **2026-10-22【`CL_Init` 四分支全会执行，但只分配不填充】** 跳转表 `0x5C8A3C`：0→`0x5C85AD`（分配 `0x12A700`）、1→`0x5C85C9`（分配 `0xAA10`）、2→`0x5C89B6`（`call 0x44B310`）、3→`0x5C89BB`（打标记）。`0x5C8560` 循环递减计数、`jg` 反复，四分支**全部执行**，顺序由随机字节数组决定（混淆的顺次派发）。函数体内无任何写 `clc.state`/netadr 的代码——所以 `cl` 分配后仍全 0。下一步：定位 `CL_Connect`/`CA_CONNECTED` 写入点，确认它是否根本没被调用。证据 [20261022-codex-clinit.json](evidence/experiments/20261022-codex-clinit.json)。
