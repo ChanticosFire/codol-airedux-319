@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:19:03.410239+00:00",
+  "claim": "记录解码与 task 字节无关；tid=0 不解决；0x84 帧会让客户端断开",
+  "tests": [
+    {
+      "variant": "回执 task 字节=99",
+      "record_decoded": true,
+      "callback_hits": 0,
+      "conclusion": "记录解析由 service 级处理器完成，与 task 字节无关"
+    },
+    {
+      "variant": "回执 tid 从 0 开始（LSG_TID_START=0）",
+      "callback_hits": 0
+    },
+    {
+      "variant": "0x85 结果后补发 3 个 0x84 帧（u32 9 / u32 13 / u16 13）",
+      "result": "客户端在收到后中止连接（WinError 10053），无回调"
+    }
+  ],
+  "implication": "0x84 帧不是完成通道（或载荷格式错误导致致命错误）；任务完成 functor 从未被 TODO 调用",
+  "next": [
+    "对比法：找一个客户端确实会完成的 SDK 任务（如登录后 svc71/task4），观察其完成时是否有回调/状态变化",
+    "静态定位 SDK 任务表：从 0x7FAA20 的 functor 注册（[0xCA8128]）入手，找到保存任务的容器",
+    "或转传输旁路：解析 0xBAD810 读取的端点字段（+0x1F4 状态、+0x208、+0x4D70），直接写入我们的端点"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-task99.jsonl",
+    "evidence/experiments/20261022-room-name-scan18.json",
+    "evidence/experiments/20261022-querycb-tid0-read.json",
+    "evidence/experiments/20261022-ackprobe.jsonl"
+  ]
+}

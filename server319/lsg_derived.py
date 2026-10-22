@@ -258,6 +258,14 @@ def append_message_hmac(payload: bytes, key: bytes, mode: str = "payload",
     return payload + hmac.digest(key, data, "sha1")[:8]
 
 
+def _room_task_id(service: int, task: int) -> int:
+    """Task byte for the room reply; ROOM_TASK_SOURCE may be a number."""
+    raw = os.environ.get("ROOM_TASK_SOURCE", "task")
+    if raw.isdigit():
+        return int(raw)
+    return {"service": service, "action": 0x26}.get(raw, task)
+
+
 def room_listing_reply(transaction_id: int, task_id: int = 13,
                        room_name: bytes = b"AI-Room", channel_id: int = 1,
                        port: int = 28969, records: list[bytes] | None = None,
@@ -413,7 +421,7 @@ class DerivedLsgServer(AuthServer):
                      + keys.challenge[8:])
             conn.sendall(token)
             self.evidence.write("token_reply", session, reply_hex=token.hex())
-            counter = 1
+            counter = int(os.environ.get("LSG_TID_START", "1"))
             # PROGRESS.md: the reference server pushes a ZEROFRAME (bare u32 0)
             # every 30 s to keep the lobby alive. Send it from a helper thread so
             # the recv loop stays blocking.
@@ -625,6 +633,28 @@ class DerivedLsgServer(AuthServer):
                     delay_ms = int(os.environ.get("ROOM_DELAY_MS", "0") or 0)
                     if delay_ms > 0:
                         time.sleep(delay_ms / 1000.0)
+                    if os.environ.get("ROOM_ACK_MODE", "0") == "1":
+                        # Send the 0x85 result, then probe 0x84 frames as a
+                        # possible task-completion/ack channel.
+                        base = room_listing_reply(counter, task_id=task)
+                        frame = build_server_frame85(keys, base,
+                                                     counter=received_counter,
+                                                     iv=os.urandom(16))
+                        conn.sendall(frame)
+                        acks = [bytes([0x08]) + struct.pack("<I", 9),
+                                bytes([0x08]) + struct.pack("<I", 13),
+                                bytes([0x06]) + struct.pack("<H", 13)]
+                        for payload in acks:
+                            ack = build_server_frame85(keys, payload,
+                                                       counter=received_counter + 1,
+                                                       iv=os.urandom(16),
+                                                       frame_type=0x84)
+                            conn.sendall(ack)
+                            time.sleep(0.2)
+                        self.evidence.write("room_ack_probe", session,
+                                            reason="0x85 result + 3x 0x84 ack probes")
+                        counter += 1
+                        continue
                     if os.environ.get("ROOM_ENVELOPE_MATRIX") == "1":
                         rec = make_room_listing_record(
                             room_name=os.environ.get("ROOM_NAME", "AI-Room").encode("latin-1"),
@@ -751,8 +781,7 @@ class DerivedLsgServer(AuthServer):
                         continue
                     reply_payload = room_listing_reply(
                         counter,
-                        task_id={"service": service, "action": 0x26}.get(
-                            os.environ.get("ROOM_TASK_SOURCE", "task"), task),
+                        task_id=_room_task_id(service, task),
                         records=records,
                         count_mode=os.environ.get("ROOM_COUNT_MODE", "double"),
                         hmac_key=_room_hmac_key(os.environ.get("ROOM_HMAC_MODE", "none"), keys))

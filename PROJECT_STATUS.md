@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 1649370 记录解码与 task 字节无关；0x84 帧会断开连接**：task 字节改成 99 后记录仍解码 → 记录解析走 service 级处理器，与 task 字节无关。`LSG_TID_START=0` 仍 0 命中。0x85 结果后补发 3 个 0x84 帧导致客户端中止连接（10053）。结论：任务完成 functor 从未被调用。下一轮用对比法（`svc71/task4`）定位真正的任务表与完成条件。证据 [`20261022-completion-round12.json`](evidence/experiments/20261022-completion-round12.json)。
+
 > **2026-10-22【新入口】1649370 训练页“靶场”直接发 `21/5 query1`（游戏服分配）**：训练 → 靶场 → 进入靶场，客户端请求 `u32(1),u32(0),u32(10),tag(7)`。服务端已实现该分支回 114 字节 bdMatchMaking 条目（`127.0.0.1:8466`），客户端仍停在“正在搜寻服务器...”（同任务完成问题）。此路径不需要房间浏览器，任务完成一旦打通即可连我们的游戏服。证据 [`20261022-training-alloc-finding.json`](evidence/experiments/20261022-training-alloc-finding.json)。
 
 > **2026-10-22 1649370 信封/帧形态矩阵全部失败**：空结果、帧类型矩阵（`0x85/0x84` × `0x01/0x86/0x00`）、信封标签矩阵（tid/err/task 各两种 tag）与 4 种无 tid 形态，共 12 种回执，回调 `0x7F4330` 全部 0 命中。另 `0xB9B230` 返回对象回执前后 128 字节完全相同 → 是请求参数不是任务对象。结论：完成路径可能不由 `0x85` 业务帧驱动。下一轮检查 `0x84` 帧处理 `0xBA0E20` 与 functor 注册位置。证据 [`20261022-envelope-matrix-conclusion.json`](evidence/experiments/20261022-envelope-matrix-conclusion.json)。
