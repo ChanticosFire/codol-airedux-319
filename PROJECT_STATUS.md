@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【编码回调受阻：`cl+0x30` 被帧 tick 覆盖】** 思路：`edx = (cl+0x2C) ^ [cl+0x30] ^ [0xE60B78]`，任选 `F` 令 `cl+0x30 = key ^ F` 即可让 `edx == F`。实测：`cl=0x13010BC0`、`key=0x9DD15D5A`、`ret` stub @ `0x11020000`，写入 `0x8CD35D5A` 但**读回 `0x5A5DD38C`**——值被覆盖。原因：写入与调用之间隔着桥的 `set-state`（数秒），帧 tick 改写了该字段。结论：不能“先写后调”地用。下一步：优先把 `0x66F20E` 的两字节 `call edx`（`ff d2`）换成 `nop nop` 让初始化器无视回调继续，或把补 `0xA8F0` + 写 `cl+0x30` + 调用合并为一次脚本执行。证据 [20261022-codex-retcb.json](evidence/experiments/20261022-codex-retcb.json)。
+
 > **2026-10-23【`0x66F20E` 命中：间接调用确实执行，崩溃在 `edx` 指向处】** `--breakpoint 0x66F20E:hit20e` + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`0x66F20E hits: 1`**，客户端调用中退出。结论：`call edx` 真的执行，控制流跳到 `edx` 持有的地址并死亡——吻合“崩溃地址每轮都变”；`0x66F1FA..0x66F20E` 之间 11 条指令排除。遗留：算出的 `edx=0xC597C468` 与崩溃 `0xD6C8FF3C` 不符（`[0xE60B78]` 时序或 `edx` 另被修改）。下一步：把 `edx` 存进 `cl` 内部的 stub 拿真实目标，或直接找设置 `cl+0x2C`/`cl+0x30` 的初始化器。证据 [20261022-codex-66f20e-hit.json](evidence/experiments/20261022-codex-66f20e-hit.json)。
 
 > **2026-10-23【`0x66F1FA` 命中：执行走到指针解码块，故障在其后】** `--breakpoint 0x66F1FA:hit1fa` + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`0x66F1FA hits: 1`**，客户端调用中退出。结论：执行确实到达 `0x66F1FA`，故障在 `0x66F1FA..0x66F20E` 之间或 `0x66F20E` 间接调用内部/之后；`0x66F170` 前面的浮点/载入段排除。下一步：在 `0x66F20E` 下断点——命中则故障在调用内部，未命中则在那 11 条指令里。证据 [20261022-codex-66f1fa-hit.json](evidence/experiments/20261022-codex-66f1fa-hit.json)。

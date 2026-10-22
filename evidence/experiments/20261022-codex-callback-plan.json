@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:45:00+00:00",
+  "scope": "plan to supply a valid callback pointer",
+  "static_scan": {
+    "pattern": "consecutive stores to [reg+0x20] then [reg+0x24] with the same register",
+    "hits": 93,
+    "verdict": "too many to identify the real initialiser by pattern alone"
+  },
+  "key_insight": "edx = (cl+0x2C) ^ [cl+0x30] ^ [0xE60B78]. Because only the XOR result matters, we can pick ANY target function F and set cl+0x2C = 0, cl+0x30 = [0xE60B78] ^ F. Then edx == F exactly, and the indirect call jumps where we choose.",
+  "plan": [
+    "choose F = 0x5C05F0 (CL_Connect) or a harmless ret-like stub inside .text",
+    "write cl+0x2C = 0 and cl+0x30 = key ^ F right before calling 0x5B2C10",
+    "the call at 0x66F20E then goes to F instead of a garbage address, and 0x5B2C10 can continue past it"
+  ],
+  "caveat": "the real initialiser probably points at a genuine callbacks routine with a specific calling convention; jumping to CL_Connect may misbehave. A ret-only stub is the safer first test -- it lets the initialiser finish so we can see what comes next.",
+  "next": [
+    "build a tiny 'ret' stub in allocated memory, set F = its address, write the encoded value into cl+0x30, then call 0x5B2C10",
+    "if 0x5B2C10 completes, move on to the next blocker; if it faults elsewhere, the window shifts"
+  ],
+  "artifacts": []
+}

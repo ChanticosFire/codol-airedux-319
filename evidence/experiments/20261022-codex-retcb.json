@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T10:05:00+00:00",
+  "scope": "try to supply a valid callback via the XOR encoding",
+  "attempt": {
+    "cl": "0x13010BC0",
+    "key_[0xE60B78]": "0x9DD15D5A",
+    "ret_stub": "0x11020000 (one byte 0xC3)",
+    "write": "cl+0x2C = 0; cl+0x30 = key ^ stub = 0x9DD15D5A ^ 0x11020000 = 0x8CD35D5A",
+    "read_back": "cl+0x2C = 0x00000000; cl+0x30 = 0x5A5DD38C -- NOT the value written"
+  },
+  "finding": "cl+0x30 is overwritten between my write and the call. The game's frame tick runs during that gap (the bridge set-state and the later tasklist spans seconds), so it clobbers the field. The encoded-callback approach cannot be applied this way -- the write must happen immediately before the call, or the call site itself must be patched.",
+  "next": [
+    "combine the write and the call in a single shot: do the repair + the cl+0x30 write and then either (a) call 0x5B2C10 in the same script immediately with no bridge round-trip, or (b) patch 0x66F20E to a stub that ignores edx and just returns",
+    "option (b) is more robust: replace the 2-byte call edx (ff d2) with nop nop, so the initialiser continues regardless of the callback value",
+    "then see whether 0x5B2C10 completes"
+  ],
+  "artifacts": ["runs/codex-retcb-1-call.json"]
+}
