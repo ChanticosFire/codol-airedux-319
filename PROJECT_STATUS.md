@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 资源交接**：已形成中文 [1649370-RESOURCE-HANDOFF-20261022.md](1649370-RESOURCE-HANDOFF-20261022.md) 与 3305 项 [逐文件目录](evidence/experiments/20261022-codex-resource-catalog.json)，说明原始 IFS、提取目录、哈希、用途、私有装载路径和下一门槛。仍坚持 Build 1649370，G2–G4 未通过。
+
 > **2026-10-22 Build 1649370 连接状态校正**：`[0x76446B0]` 的 0/3/4/7 等值属于客户端连接阶段；强写 3 不等于进图。G2 需真实连接和 gamestate 路径，再以世界画面和可控玩家验收。见 [静态/运行证据](evidence/experiments/20261022-codex-connection-state-correction.json)。
 
 > **2026-10-22 Build 1649370 指标校正**：`[0x3306910]=-1` 是命令解析器空闲值，`[0x35053DC]=0` 是错误处理重入计数，两者都不能判定地图/世界；相关旧解释已由同版 EXE 反汇编推翻。G2 未通过的有效证据是仅见黑屏加载、无可控世界或玩家；下一步寻找真实世界状态和房间转场条件。见 [静态校正](evidence/experiments/20261022-codex-command-context-correction.json)。
