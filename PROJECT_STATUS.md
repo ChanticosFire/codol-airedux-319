@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 1649370 内层 HMAC 已定位密钥、旁路仍不足**：运行时从客户端 `0xBA02A0` 取出的 20 字节密钥与 LSG 派生 `server_mac` 完全一致；6 种 HMAC 覆盖均未被接受；比较点 `0xBA398D` 的记录 hook 命中数为 0（说明在比较点之前就被拒）；把 `0xBA38E5` 整段 HMAC 处理跳过（`E9 FD 00 00 00`）后，房间列表仍为空、内存扫描也无 `AI-Room`。结论：缺口已收敛到明文/消息布局或 bdService 信封字段。新工具 `tools/patch_client_bytes.py`、`tools/hook_hmac_compare.py`。证据 [`20261022-room-hmac-bypass-result.json`](evidence/experiments/20261022-room-hmac-bypass-result.json)。
+
 > **2026-10-22 1649370 bdService 内层 HMAC 门槛**：所有业务回执都被客户端 `0xBA3710` 的 16 字节 HMAC 校验丢弃（字符串 `0xD5A4FC "HMAC mismatch"`、`0xD5A520 "Bad recv counter"`、`0xD5A50C "HMAC calculation"` 均在该函数内）。内存扫描（约 958MB）找不到我们记录中的 `AI-Room`，证明记录从未进入解码，而不是 UI 过滤；已排除序号起始值、回执顺序、单/双 count 与地址块布局。下一步在 `0xBA3710` 比较点下断点确定 HMAC 字段位置/覆盖范围/密钥。证据 [`20261022-bdservice-hmac-gate.json`](evidence/experiments/20261022-bdservice-hmac-gate.json)。
 
 > **2026-10-22 1649370 房间浏览 21/13 实测**：客户端在 `自定义 → 查找房间` 时主动发出 `svc21/task13`（`query=5`、`initial=true`、8B 游标、`pageSize=30`、4×Int32 条件含 build），这是首个客户端主动房间业务请求。已按 3.3.3.3 文档实现 37B common address + 8B session id + kind/max/current + 名称/房主 + 安全键 + channel ID 的列表记录，并测试双/单 count、v4/v46 地址块与计数回显，客户端列表仍显示“未找到房间”，且只查询一次。结论：请求链路已通，**记录二进制形状仍需逆向**（下一轮用解码对象偏移 +0x10/+0x120/+0x124/+0x128/+0x1cc/+0x208 下写断点）。证据 [`20261022-room-browser-attempt.json`](evidence/experiments/20261022-room-browser-attempt.json)。

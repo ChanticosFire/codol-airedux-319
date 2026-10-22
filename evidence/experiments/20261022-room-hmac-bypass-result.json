@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:22:43.812571+00:00",
+  "claim": "bdService 业务消息的内层校验比预想更靠前；跳过 HMAC 段仍不足以让房间记录被解码",
+  "verified": [
+    "运行时调用客户端 0xBA02A0 取出的 20 字节密钥与 LSG 派生 server_mac 逐字节一致",
+    "6 种 HMAC 覆盖（payload/frame_plain/frame_plain_padded/payload_skip4/length_payload/payload_no_tail8）全部未被接受",
+    "在 0xBA398D 装记录 hook 后，未带 HMAC 的应答命中数为 0，说明在比较点之前就被拒绝（HMAC calculation/size 或更早）",
+    "把 0xBA38E5 整段 HMAC 处理用 jmp 0xBA39E7 跳过并验证字节后，扫描 958MB 内存仍无 AI-Room，列表仍“未找到房间”"
+  ],
+  "implication": "下一门槛已从“HMAC 值不对”收敛为“明文/消息布局或 bdService 信封字段与客户端不一致”。需要在下一次会话里 hook 0xBA39E7/0xBA3A05（分发调用）确认消息是否到达分发器，并 dump 分发器收到的 buffer/len。",
+  "tools": [
+    "tools/patch_client_bytes.py（运行时字节补丁+回读校验+revert）",
+    "tools/hook_hmac_compare.py（0xBA398D 记录型 hook）",
+    "tools/scan_client_memory.py（全内存字符串扫描）"
+  ],
+  "patches": [
+    "0xBA39D4: 74 11 -> EB 11（跳过 HMAC 比较）",
+    "0xBA38E5: 原 8B 45 0C... -> E9 FD 00 00 00（跳过整段 HMAC 处理，跳到 0xBA39E7）"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-room-skip-hmac-empty.png",
+    "evidence/experiments/20261022-hmac-compare-capture.json",
+    "evidence/experiments/20261022-room-name-scan8.json",
+    "evidence/experiments/20261022-skip-hmac-patch.json"
+  ]
+}

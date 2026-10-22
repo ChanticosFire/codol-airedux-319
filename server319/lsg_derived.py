@@ -8,6 +8,7 @@ Unknown requests remain visible in the run log and receive no fake success.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import dataclasses
 import json
 from pathlib import Path
@@ -18,7 +19,8 @@ import threading
 import time
 
 from .auth import AuthServer
-from .lsg_crypto import (LsgProtocolError, build_server_frame85, derive_keys,
+from .lsg_crypto import (LsgProtocolError, build_server_frame85,
+                         build_server_frame85_preamble, derive_keys,
                          parse_client_frame85)
 from .profile import default_store
 from .ticket import SESSION_KEY
@@ -215,15 +217,58 @@ def make_room_listing_record(room_name: bytes = b"AI-Room", channel_id: int = 1,
     return bytes(out)
 
 
+def _room_hmac_key(mode: str, keys) -> bytes | None:
+    """Pick the key for the reply's 8-byte bdService HMAC tail.
+
+    The key was verified at runtime: calling the client's `0xBA02A0` returns
+    exactly the LSG-derived 20-byte `server_mac` (the server-frame HMAC key), so
+    only the *coverage* of the message HMAC is still open.
+    """
+    if mode in ("server_mac", "burst"):
+        return keys.server_mac
+    if mode == "client_mac":
+        return keys.client_mac
+    return None
+
+
+def append_message_hmac(payload: bytes, key: bytes, mode: str = "payload",
+                        inner_type: int = 1) -> bytes:
+    """Append the 8-byte bdService message HMAC under different coverage rules.
+
+    `payload` is the bdService envelope before the HMAC tail; the length header
+    and inner type byte are the ones the frame builder will use.
+    """
+    length = len(payload) + 8
+    head = struct.pack("<I", length) + bytes([inner_type])
+    if mode == "payload":
+        data = payload
+    elif mode == "frame_plain":
+        data = head + payload
+    elif mode == "frame_plain_padded":
+        body = head + payload
+        data = body + bytes((-len(body)) % 16)
+    elif mode == "payload_skip4":
+        data = payload[4:]
+    elif mode == "payload_no_tail8":
+        data = payload[:-8] if len(payload) > 8 else payload
+    elif mode == "length_payload":
+        data = struct.pack("<I", length) + payload
+    else:
+        raise ValueError(f"unknown hmac coverage {mode!r}")
+    return payload + hmac.digest(key, data, "sha1")[:8]
+
+
 def room_listing_reply(transaction_id: int, task_id: int = 13,
                        room_name: bytes = b"AI-Room", channel_id: int = 1,
                        port: int = 28969, records: list[bytes] | None = None,
-                       count_mode: str = "double", **record_kwargs) -> bytes:
+                       count_mode: str = "double", hmac_key: bytes | None = None,
+                       **record_kwargs) -> bytes:
     """bdService reply carrying room listing records (page-sized list allowed).
 
     `count_mode="double"` mirrors the reference server's count/count quirk;
     `"single"` writes the object count once, which is the other shape the
-    Demonware bdService envelope accepts.
+    Demonware bdService envelope accepts.  `hmac_key` appends the 8-byte
+    HMAC-SHA1 tail that the client's 0xBA3710 message parser compares.
     """
     if records is None:
         records = [make_room_listing_record(room_name=room_name, channel_id=channel_id,
@@ -235,6 +280,8 @@ def room_listing_reply(transaction_id: int, task_id: int = 13,
         out += _typed_u32(len(records))
     for record in records:
         out += record
+    if hmac_key:
+        out += hmac.digest(hmac_key, bytes(out), "sha1")[:8]
     return bytes(out)
 
 
@@ -551,9 +598,57 @@ class DerivedLsgServer(AuthServer):
                         room_name=os.environ.get("ROOM_NAME", "AI-Room").encode("latin-1"),
                         channel_id=int(os.environ.get("ROOM_CHANNEL", "1")),
                         port=int(os.environ.get("FINDSESS_PORT", "28969")))
+                    if os.environ.get("ROOM_HMAC_MODE") == "burst":
+                        # One query, several candidate HMAC coverages.  The
+                        # client's received-counter check increments per
+                        # message, so each candidate needs its own counter.
+                        frame_counter = received_counter
+                        modes = ("payload", "frame_plain", "frame_plain_padded",
+                                 "payload_skip4", "length_payload", "payload_no_tail8")
+                        for mode in modes:
+                            base = room_listing_reply(counter, task_id=task, records=records)
+                            payload = append_message_hmac(base, keys.server_mac, mode)
+                            frame = build_server_frame85(keys, payload,
+                                                         counter=frame_counter,
+                                                         iv=os.urandom(16))
+                            conn.sendall(frame)
+                            frame_counter += 1
+                            time.sleep(0.15)
+                        self.evidence.write("room_list_burst", session,
+                                            reason="coverage candidates=" + ",".join(modes))
+                        counter += 1
+                        continue
+                    if os.environ.get("ROOM_LAYOUT") == "preamble_burst":
+                        # The client's 0xBA3710 parser reads a 4-byte field and
+                        # then a 16-byte field before the service envelope, so
+                        # A/B a preamble between the length prefix and the inner
+                        # byte.  Length coverage is also A/B'd.
+                        base = room_listing_reply(counter, task_id=task, records=records)
+                        frame_counter = received_counter
+                        combos = [(16, "body"), (16, "inner"), (8, "body"),
+                                  (8, "inner"), (0, "body")]
+                        for plen, covers in combos:
+                            iv = os.urandom(16)
+                            if plen:
+                                frame = build_server_frame85_preamble(
+                                    keys, base, counter=frame_counter, iv=iv,
+                                    preamble=bytes(plen), length_covers=covers)
+                            else:
+                                frame = build_server_frame85(keys, base,
+                                                             counter=frame_counter, iv=iv)
+                            conn.sendall(frame)
+                            frame_counter += 1
+                            time.sleep(0.2)
+                        self.evidence.write("room_layout_burst", session,
+                                            reason="layouts=" +
+                                                   ",".join(f"pre{plen}/{covers}"
+                                                            for plen, covers in combos))
+                        counter += 1
+                        continue
                     reply_payload = room_listing_reply(
                         counter, task_id=task, records=records,
-                        count_mode=os.environ.get("ROOM_COUNT_MODE", "double"))
+                        count_mode=os.environ.get("ROOM_COUNT_MODE", "double"),
+                        hmac_key=_room_hmac_key(os.environ.get("ROOM_HMAC_MODE", "none"), keys))
                     reply = build_server_frame85(keys, reply_payload, counter=received_counter,
                                                  iv=os.urandom(16))
                     conn.sendall(reply)

@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:16:24.526577+00:00",
+  "pid": 9924,
+  "needles": {
+    "ascii": "AI-Room",
+    "utf16": "AI-Room"
+  },
+  "scanned_bytes": 964706304,
+  "hits": []
+}

@@ -103,3 +103,28 @@ def build_server_frame85(keys: LsgKeys, payload: bytes, *, counter: int,
     body = b"\xab\x85" + struct.pack("<I", counter) + iv + cipher
     frame = struct.pack("<I", len(body) + 8) + body
     return frame + hmac.digest(keys.server_mac, frame, "sha1")[:8]
+
+
+def build_server_frame85_preamble(keys: LsgKeys, payload: bytes, *, counter: int,
+                                  iv: bytes, inner_type: int = 1,
+                                  preamble: bytes = bytes(16),
+                                  length_covers: str = "body") -> bytes:
+    """Server frame whose plaintext is [len][preamble][inner][payload].
+
+    The client's 0xBA3710 message parser reads a 4-byte field and then a
+    16-byte field from the plaintext head before the service envelope.  This
+    builder exists to A/B that layout; `length_covers` selects whether the
+    length prefix counts the preamble (`body`) or only inner+payload.
+    """
+    if len(preamble) not in (8, 16):
+        raise LsgProtocolError("preamble_length")
+    if len(iv) != 16 or not 0 <= counter <= 0xFFFFFFFF or not 0 <= inner_type <= 255:
+        raise LsgProtocolError("reply_parameters")
+    body = bytes([inner_type]) + payload
+    declared = len(body) + len(preamble) if length_covers == "body" else len(body)
+    plaintext = struct.pack("<I", declared) + preamble + body
+    plaintext += bytes((-len(plaintext)) % 16)
+    cipher = AES.new(keys.server_aes, AES.MODE_CBC, iv).encrypt(plaintext)
+    outer = b"\xab\x85" + struct.pack("<I", counter) + iv + cipher
+    frame = struct.pack("<I", len(outer) + 8) + outer
+    return frame + hmac.digest(keys.server_mac, frame, "sha1")[:8]
