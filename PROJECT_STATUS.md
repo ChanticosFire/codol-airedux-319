@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【移植蓝本】LocalMatchBegin 全流程 + 1649370 映射**：蓝本 14 步（档案头→UDP→hook 0x5B1CF0/0x5B1C30→UID patch→**invoke 0x621230 离开前端**→preload 地图→重置时间缩放→0x49F5F0→connection 校验→0x499A00→state=3）。1649370 侧：transport init 0xBB2C40、connection [0x331C0C8]^0xD362501F、建通道 0x621E50、getchallenge 0x5C05F0、解析 0x5C0FD0。0x621E50 与 0x621230 同段，疑为前端过渡函数。`--transport-connect --inject-challenge` 启动即退出，需拆分。证据 [`20261022-match-begin-blueprint.json`](evidence/experiments/20261022-match-begin-blueprint.json)。
+
 > **2026-10-22【源码级】拿到 client_room2697.cpp（534 行）与 launch_backend.py；本机客户端 SHA-256 不匹配 2.6.9.7**：补丁硬编码 room_service=0xDD39338/vtable=0xCD1D0C，调用 0x6AB8D0/0xB84280/0xA83C40/0x5CBE40；后端命令 `python launch_backend.py --game <dir> --username <n> --fov <f> --max-fps <m>`。manifest 期望 exe sha256 `353754047...`，本机两个安装均 `36997674b...` → 无正确 2.6.9.7 客户端。证据 [`20261022-room2697-source.json`](evidence/experiments/20261022-room2697-source.json)。
 
 > **2026-10-22【路线级发现】能进图+加BOT的是 2.6.9.7 + room2697_enhanced.dll**：该 DLL(117KB) 导出 `LocalMatchBegin`/`LocalRoomPump`/`LocalMapTable2697` 等，字符串含 `room_ready`/`room_match_begin`/`native_world_ready`/`mp_trainingground`/`mp_cqbtraining`，并把 endpoint 指向 127.0.0.1:28969。研究记录原文：「终于能进添加BOT的TDM了」「可以稳定在创建房间进入地图了」「创建房间-点准备等待3到5s进地图」。证据 [`20261022-room2697-finding.json`](evidence/experiments/20261022-room2697-finding.json)。

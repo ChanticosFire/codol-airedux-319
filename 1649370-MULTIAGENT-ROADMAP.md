@@ -1075,3 +1075,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - client_room2697.cpp 534 行源码 + launch_backend.py 到手。
 - 本机两安装 exe sha256 均与 2.6.9.7 manifest 不符。
 - 下轮：找匹配客户端或适配补丁到 1649370。
+
+## 2026-10-22 移植蓝本（本轮）
+
+- LocalMatchBegin 14 步全流程读出；1649370 对应函数已定位（0x621E50/0x5C05F0/0x5C0FD0/0xBB2C40）。
+- --transport-connect --inject-challenge 启动即退出，需拆分。
+- 下轮：拆分验证 + 反汇编对比。

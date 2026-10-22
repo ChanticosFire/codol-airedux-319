@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:24:05.159622+00:00",
+  "claim": "拿到 2.6.9.7 LocalMatchBegin 完整进图蓝本，并定位到 1649370 对应传输函数链",
+  "blueprint_2697": {
+    "source": "CODOL-2.6.9.7-Launcher/source/client/client_native_loopback.cpp:167",
+    "steps": [
+      "initialize_local_profile_headers (public=233/0x70cd4cc5, secure=19/0xd84aea8a)",
+      "UDP socket bind loopback, connect 127.0.0.1:28969, nonblocking",
+      "hook 0x5B1CF0 (send) / 0x5B1C30 (receive)",
+      "patch uid reader 0x749620 -> return local identity",
+      "invoke 0x621230  // Native transition away from the frontend",
+      "set [0x1BBBCF0]=1",
+      "preload_crossfire() // mount map before netconst checksum",
+      "retire_preview_pump()",
+      "reset [0x2C5B4B0]=1.0, [0x2C5DAC0]=1.0, [0x2C5DAA8]=0, [0x2C5DAC4]=0",
+      "if(![0x1BBBD3C]) invoke 0x49F5F0  // client allocation",
+      "connection = [0x1A89500] ^ 0x2B90AC87; VirtualQuery(connection)",
+      "invoke 0x499A00  // localhost map/connection init",
+      "require [0x1BBBCFC]==4 && [connection+0x14]==2",
+      "set [0x1BBBCFC]=3; [connection+8]=-9999; [connection+0x30]=-9999; transport_ready=true"
+    ]
+  },
+  "mapping_1649370": {
+    "transport_init": "0xBB2C40 (host=[0xE85C68], biz=host+0x1F0, arg1=host+0xC)",
+    "connection": "[0x331C0C8] ^ 0xD362501F",
+    "channel_create": "0x621E50",
+    "getchallenge": "0x5C05F0",
+    "challenge_parse": "0x5C0FD0",
+    "challenge_branch": "0x5C1678",
+    "note": "1649370 与 2.6.9.7 地址空间形状相近，0x621xxx 段很可能都有前端过渡函数"
+  },
+  "test": "--transport-connect --inject-challenge 启动后客户端在登录前自行退出（engine_close_status 0）",
+  "next": [
+    "先单独验证 --transport-connect（不带 inject-challenge）",
+    "把 0x621230 的语义映射到 1649370 0x621xxx 段（反汇编对比）",
+    "按蓝本逐步在 1649370 复现：UID patch → 前端过渡 → preload → connection init → state=3"
+  ]
+}
