@@ -1132,3 +1132,8 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 
 - until-close/连拍都抓不到 fatal 文本。
 - 下轮改 hook Com_Error 参数。
+
+## 2026-10-22 Com_Error 工具（本轮）
+
+- hook_com_error.py 写好（cave hook 0x4F82E0，dump 错误码+文本）。
+- 修了 pack 负数偏移 bug；下轮实测。
