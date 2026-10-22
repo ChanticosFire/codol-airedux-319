@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T23:10:00+00:00",
+  "scope": "the 2697 snapshot body is a custom bit stream, not the standard IW4 snapshot",
+  "server_body_order": {
+    "source": "codol_snapshot.c CODOL_WriteSnapshotDeltaNumber",
+    "fields": [
+      "WriteByte(0)              // svc_snapshot",
+      "WriteLong(ctx->server_time) // 4 bytes (written where IW4 puts serverCommandSequence)",
+      "WriteByte(delta)",
+      "WriteByte(flags)",
+      "WriteBits(base != NULL, 1) // extra bit IW4 does not have",
+      "player state section",
+      "anim commands section",
+      "actors section",
+      "entities section",
+      "clients section",
+      "glass section",
+      "WriteByte(5)              // trailing marker"
+    ],
+    "captured": "00 | 00 08 1a 01 | 00 | 0c | 96 07 60 00 18 ..."
+  },
+  "why_the_client_ignores_it": [
+    "the body after svc_snapshot starts with a 4-byte server_time where the IW4 reader expects serverCommandSequence",
+    "an extra 1-bit 'delta base present' flag is inserted before the player state, shifting every following bit",
+    "the sections are 2697's own codol_* serializers, not the IW4 snapshot bit stream"
+  ],
+  "implication": "the 1649370 CL_ParseSnapshot cannot consume this body; it either aborts the message or decodes garbage, so the client never gets a usable snapshot and stays at phase 8",
+  "next": [
+    "disassemble the 1649370 CL_ParseSnapshot to capture the exact expected order",
+    "either write a translator that converts the 2697 body to the IW4 body on the server side, or patch the client parser to accept the 2697 layout",
+    "the translator is likely the smaller change because the 2697 sources are available"
+  ],
+  "artifacts": []
+}

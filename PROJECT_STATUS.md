@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【根因确认：快照体 bit 流不兼容】** `codol_snapshot.c` 的快照体顺序为 `svc_snapshot(0)` → `server_time(4B)` → `delta(1B)` → `flags(1B)` → `base-present(1 bit)` → player/anim/actors/entities/clients/glass 各节 → `5` 尾标记；dump 实测 `00 | 00 08 1a 01 | 00 | 0c | 96…` 与源码一致。IW4 读取端在同样位置期望 `serverCommandSequence`，且没有那 1 bit——整条位流错位，客户端中止/解出垃圾，故停在阶段 8。这是客户端不进世界的**根本原因**。下一步：反汇编 `CL_ParseSnapshot` 取精确顺序，然后写服务端翻译器或 patch 客户端。证据 [20261022-codex-snapshot-body-mismatch.json](evidence/experiments/20261022-codex-snapshot-body-mismatch.json)。
+
 > **2026-10-22【svc 对调假设推翻：快照体格式才是问题】** 解析 `seq=33`：文本结束于 1137，随后 `00 00 08 …`（svc_snapshot=0、delta=0、flags=8），末尾 `06`=EOF——与 `codol_snapshot.c`/`codol_2697_service.h` **完全一致**。客户端收到格式正确的 `svc_snapshot` 却不处理，说明差异在**快照体序列化**（2697 自定义布局 vs 1649370 `CL_ParseSnapshot`）。下一步：对比字段顺序/长度检查，找客户端中止点；必要时改发 1649370 期望的快照体或 patch 读取端。证据 [20261022-codex-snapshot-body-format.json](evidence/experiments/20261022-codex-snapshot-body-format.json)。
 
 > **2026-10-22【快照在消息末尾；svc 编号疑对调】** 解码消息尾部：快照数据紧邻结尾 `… 07 00 00 00 06`（07 后三个 0、最后 06）。2697 线上实际是 snapshot=7、EOF=6，而 1649370 风格枚举是 snapshot=6、EOF=7——**若客户端把 07 当 EOF，快照会被提前截断丢弃**，完美解释“消费包但不进世界”。下一步：反汇编 `CL_ParseServerMessage` 确认数值，若确认则在 2697 写入端交换编号并复测。证据 [20261022-codex-svc-swap-hypothesis.json](evidence/experiments/20261022-codex-svc-swap-hypothesis.json)。
