@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:24:25.678987+00:00",
+  "claim": "房间内点“准备”不产生任何网络请求；运行时状态快照显示 ui_state=5/stage=5/playlist_count=1",
+  "ready_probe": {
+    "requests_before": 8,
+    "requests_after": 8,
+    "conclusion": "准备是本地逻辑且未被触发（无 21/x 请求）"
+  },
+  "runtime_snapshot": {
+    "playlist_count_0x3306994": 1,
+    "ui_state_0x84ABA50": 5,
+    "stage_0xE59D20": 5,
+    "room_object_ptr_0x82E13FC": "0x245b7848",
+    "room_head_hex": "7472dc00508cfa4fa0c0622406000000",
+    "room_0x7230": 0,
+    "room_0x7470": "0x00DC7C30",
+    "room_0xE360": "0xFFFFFFFF"
+  },
+  "implication": "进图的关键开关是 ui_state 5→3（0x7F25B0 stage selector 的语义），准备按钮未触发本地逻辑",
+  "next": [
+    "分析 0x7F25B0 调用条件与副作用，尝试主线程调用让它把 ui_state 切到 3",
+    "或找房间“开始游戏”的真实回调（准备按钮的 handler）并直接调用",
+    "准备按钮点击可能被 UI 层级遮挡，用键盘焦点确认"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-ready-probe.jsonl"
+  ]
+}
