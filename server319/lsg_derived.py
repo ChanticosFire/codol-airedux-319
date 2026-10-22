@@ -286,14 +286,18 @@ def room_listing_reply(transaction_id: int, task_id: int = 13,
 
 
 def room_list_variant(index: int, room_name: bytes = b"AI-Room",
-                      channel_id: int = 1, port: int = 28969) -> tuple[list[bytes], str]:
+                      channel_id: int = 1, port: int = 28969,
+                      addr_layout: str | None = None) -> tuple[list[bytes], str]:
     """A/B variants for the room listing record.
 
     0 baseline, 1 full page (pagination ack probe), 2 IPv4+IPv6 address block,
     3 session kind 4, 4 documented build value in every int32, 5 zero-length
-    owner name.
+    owner name.  `addr_layout` overrides the common-address layout for all
+    variants (the record only carries the opaque 37-byte blob).
     """
     def one(**kwargs):
+        if addr_layout:
+            kwargs.setdefault("addr_layout", addr_layout)
         return make_room_listing_record(room_name=room_name, channel_id=channel_id,
                                         port=port, **kwargs)
     variant = index % 6
@@ -597,7 +601,8 @@ class DerivedLsgServer(AuthServer):
                         variant,
                         room_name=os.environ.get("ROOM_NAME", "AI-Room").encode("latin-1"),
                         channel_id=int(os.environ.get("ROOM_CHANNEL", "1")),
-                        port=int(os.environ.get("FINDSESS_PORT", "28969")))
+                        port=int(os.environ.get("FINDSESS_PORT", "28969")),
+                        addr_layout=os.environ.get("ROOM_ADDR_LAYOUT") or None)
                     if os.environ.get("ROOM_HMAC_MODE") == "burst":
                         # One query, several candidate HMAC coverages.  The
                         # client's received-counter check increments per
@@ -716,13 +721,22 @@ class DerivedLsgServer(AuthServer):
                 else:
                     self.evidence.write("unhandled_task", session,
                                         reason=f"service={service} task={task}")
-                    reply = build_server_frame85(
-                        keys, terminal_unavailable_reply(counter),
-                        counter=received_counter, iv=os.urandom(16))
-                    conn.sendall(reply)
-                    self.evidence.write("terminal_task_reply", session,
-                                        reason=f"service={service} task={task} error=4; "
-                                               "candidate contract, consumption unverified")
+                    if os.environ.get("LSG_UNIMPL_MODE", "error4") == "empty":
+                        reply = build_server_frame85(
+                            keys, candidate_empty_success_reply(counter, task),
+                            counter=received_counter, iv=os.urandom(16))
+                        conn.sendall(reply)
+                        self.evidence.write("candidate_empty_task_reply", session,
+                                            reason=f"service={service} task={task} "
+                                                   "empty success; consumption unverified")
+                    else:
+                        reply = build_server_frame85(
+                            keys, terminal_unavailable_reply(counter),
+                            counter=received_counter, iv=os.urandom(16))
+                        conn.sendall(reply)
+                        self.evidence.write("terminal_task_reply", session,
+                                            reason=f"service={service} task={task} error=4; "
+                                                   "candidate contract, consumption unverified")
                     counter += 1
         except (LsgProtocolError, EOFError, OSError, TimeoutError) as exc:
             self.evidence.write("raw_session_end", session,

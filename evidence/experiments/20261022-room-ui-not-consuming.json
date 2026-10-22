@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:38:42.762958+00:00",
+  "claim": "记录被解码但 UI 从不消费：内存中始终只有一份 AI-Room",
+  "observations": [
+    "三轮独立会话（v4 地址、v46 地址、其它任务改空成功）中，记录都出现在客户端内存（+0x120=12、+0x124=1、+0x128=\"AI-Room\"、+0x168=1、+0x170=\"Player\"）",
+    "每轮全内存扫描 AI-Room 命中数都恰好为 1，说明 UI/结果缓存没有复制该记录",
+    "查找房间页的刷新按钮、左侧模式点击都不会重新发送 21/13，每轮只能查询一次",
+    "把未实现任务的应答从 error=4 改成空成功，不改变列表行为"
+  ],
+  "ruled_out": [
+    "common address 布局 v4 vs v46",
+    "其它任务失败导致模块异常",
+    "刷新可重查",
+    "列表按模式过滤导致空（点击模式不重查）"
+  ],
+  "next": [
+    "hook 21/13 请求的发送构建路径，拿到查询对象的回调地址",
+    "或 hook 任务完成回调（bdService task 对象），确认结果是否被交给 UI",
+    "拿到回调后可直接构造结果对象，绕过列表 UI"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-room-name-scan13.json",
+    "evidence/experiments/20261022-room-name-scan14.json",
+    "evidence/experiments/20261022-room-name-scan15.json",
+    "evidence/experiments/20261022-room-v46.jsonl",
+    "evidence/experiments/20261022-room-empty-unimpl.jsonl"
+  ]
+}
