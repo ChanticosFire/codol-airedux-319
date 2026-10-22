@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:41:23.740433+00:00",
+  "claim": "challenge 失败点定位：0x5C075A call 0x675260 返回 0 即报 EXE_CLIENTFAILEDTOCHALLENGE；sendto 仍 0 条说明未到网络层",
+  "code": {
+    "0x5C075A": "call 0x675260（challenge 发送尝试）",
+    "0x5C0762": "test al,al",
+    "0x5C0764": "jne 0x5C0F1B（成功）",
+    "0x5C076A": "push 0xDBB708 (\"EXE_CLIENTFAILEDTOCHALLENGE\")",
+    "0x5C076F": "push 2; jmp 0x5C0F13（Com_Error）"
+  },
+  "string": "EXE_CLIENTFAILEDTOCHALLENGE @ 0xDBB708（引用 0x4F2897 / 0x5C076B）",
+  "network": "hook_sendto 在 netadr+state3 后仍 0 条 → 失败发生在发送之前（0x675260 内部早期返回）",
+  "next": [
+    "反汇编 0x675260 找失败条件（socket/连接对象/地址校验）",
+    "可能需先创建 socket 或初始化连接对象",
+    "补齐后 challenge 才会真正发出"
+  ]
+}
