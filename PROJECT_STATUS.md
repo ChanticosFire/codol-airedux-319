@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【断点实证：`0x5C05F0` 从未命中】** launcher 一次性断点 `0x5C05F0:cl_connect` 下跑完整握手：阶段正常到 8，但启动器无命中记录、`events.jsonl` 0 字节。**定论：阶段到 3/8 都不会驱动 `CL_Connect`**，`cl` 始终未初始化。交叉引用找到两处 `call`：`0x5BEAEA`（`xor ecx,ecx; call`）与 `0x5C2AB9`（疑似误报）。下一步：对齐反汇编 `0x5BEAEA` 所在函数确认所属 UI 流程，再决定满足前置条件或运行时 stub 直接调用。证据 [20261022-codex-clconnect-never.json](evidence/experiments/20261022-codex-clconnect-never.json)。
+
 > **2026-10-22【阶段 3 停留 4 秒，`cl` 仍完全没被写——`0x5C05F0` 未运行】** 100ms 采样：`start-challenge` 返回 `challenge_armed`/`connection=0x136DB1F8`/`state=3`；阶段稳定 3 达 4 秒，`cl` 不变，`[cl+0x100260]`、`[cl+0x109260]` 每个采样都是 0。**只置 `[0x76446B0]=3` 不驱动 `CL_Connect`**——桥注释与实测不符，存在未满足的开关。下一步：在 `0x5C05F0` 下断点确认是否进入，并找出帧 tick 在阶段 3..6 的实际调用与缺失条件。证据 [20261022-codex-phase3-cl.json](evidence/experiments/20261022-codex-phase3-cl.json)。
 
 > **2026-10-22【`CL_Connect = 0x5C05F0`，只在阶段 3/4/5/6 运行】** 从 `getchallenge` 引用 `0x5C071E` 回溯到最近的 `55 8B EC` 得入口 `0x5C05F0`（栈帧 `0x11BC`）：`0x5C0607 mov eax,[0x76446B0]`（阶段）→ `0x5C0617 mov ebx,ecx; xor ebx,key`（`ebx=cl`）→ `0x5C0635..0x5C0647 cmp eax,3/4/6/5; jne 0x5C0F1B`（**只在 3/4/5/6 运行**）→ `0x5C064D` 测非空并 `cmp [ebx+0x100260],1; je` 提前返回 → `0x5C0662` 按 `[ebx+0x28]` 查跳转表分发。**悖论**：帧 tick 本应在阶段 3..6 调用它，但阶段 8 时 `cl` 仍全 0——要么提前返回一直命中，要么阶段被直接写 `[0x76446B0]` 推上去而没走 `0x5C05F0`。下一步：**在阶段 3..6 采样 `cl`**，并找出谁把 `[0x76446B0]` 直接置 8。证据 [20261022-codex-clconnect-entry.json](evidence/experiments/20261022-codex-clconnect-entry.json)。

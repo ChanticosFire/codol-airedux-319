@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T17:55:00+00:00",
+  "scope": "breakpoint on CL_Connect during a full handshake",
+  "setup": "launcher --breakpoint 0x5C05F0:cl_connect (one-shot) plus the usual breakpoint set",
+  "result": {
+    "client_state": "8 (the handshake completed normally)",
+    "cl_connect_breakpoint": "no hit reported; the launcher output contains only the startup log",
+    "events_jsonl": "0 bytes -- no exceptions at all this run"
+  },
+  "conclusion": "CL_Connect (0x5C05F0) is never entered during our offline handshake. That is the definitive answer to the earlier puzzle: the phase value reaching 3 or 8 does not make the game run its own connect function, so cl stays uninitialised and the receive helper keeps rejecting snapshots.",
+  "next": [
+    "align the disassembly around 0x5BEAEA from a known prologue to identify the real function and what UI flow reaches it",
+    "if that flow is the server-browser join, the offline start path clearly bypasses it"
+  ],
+  "artifacts": [
+    "runs/codex-clbp-1-launcher.out"
+  ],
+  "callers": {
+    "direct_call_sites": [
+      "0x5BEAEA",
+      "0x5C2AB9"
+    ],
+    "0x5BEAEA_context": "xor ecx,ecx; call 0x5C05F0 -- preceded by a config query on a string pointer (0xDB99F0 points into a symbol-name pool: 'active'), and the call happens whether or not that query hit",
+    "0x5C2AB9": "disassembly does not align (the bytes look like data), so this reference is probably spurious"
+  }
+}
