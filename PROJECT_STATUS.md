@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【绕过 configstring 自检：断线消失，稳定阶段 8 黑屏】** `0x4730A0` 运行时改为 `b0 01 c3`（`mov al,1; ret`）后，`forward --port 28970` 下客户端 `7 → 8` 并稳定 21 秒不再断线；截图 10,609 字节黑屏，服务端 `state 4`（`out 168/291/413/534`）。断线原因（`EXE_CONFIGSTRINGMISMATCH`）已解释并绕过，当前活跃阻断下移到快照内容/世界进入。下一步：持久化该 patch（launcher `--patches` 或每轮运行时写入），再用计数 stub 确认快照是否被消费并解释黑屏。证据 [20261022-codex-cfgskip.json](evidence/experiments/20261022-codex-cfgskip.json)。
+
 > **2026-10-22【断线原因 = `EXE_CONFIGSTRINGMISMATCH`】** 客户端最后的 `Com Error`（0x4F82E0）栈返回 `0x4731EC`（`CL_ParseGamestate 0x473180` 内），错误点 `0x4731E0 push 0xDB46E4 → Com_Error`，字符串 `EXE_CONFIGSTRINGMISMATCH`；前置校验 `0x4730A0` 比较 dvar `ui_mapname`（`0xDB2F98`）与 `ui_gametype`（`0xDB16E0`），本轮两者为空 → 校验失败 → 主动掉线。**断线不是快照畸形**。下一步：设置 `ui_mapname`/`ui_gametype` 或 patch `0x4730A0` 返回 1，看下一层阻断。证据 [20261022-codex-configstring-mismatch.json](evidence/experiments/20261022-codex-configstring-mismatch.json)。
 
 > **2026-10-22【端口修复生效：从“永远卡 8”到“进 8 后断线”】** `forward --port 28970`（`--port` 是 forward 子参数）后，客户端阶段 `7 → 8 → 0`，截图 714,750 字节错误框；服务端仍 `state 4`（`out 166/288/409/531`），无客户端崩溃异常。说明地址检查已通过，客户端开始消费数据流后**主动断线**——**快照体/内容层成为当前活跃阻断**。下一步：定位断线原因并与“第一个真实快照被解析”的时刻对齐。证据 [20261022-codex-port-fix.json](evidence/experiments/20261022-codex-port-fix.json)。

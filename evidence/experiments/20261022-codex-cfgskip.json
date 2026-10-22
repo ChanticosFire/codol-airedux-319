@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:55:00+00:00",
+  "scope": "bypassing the configstring self-check stops the disconnect",
+  "patch": {
+    "site": "0x4730A0 (the ui_mapname/ui_gametype validation)",
+    "runtime_write": "55 8b ec -> b0 01 c3 (mov al,1; ret)",
+    "verified": "read back b0 01 c3"
+  },
+  "result": {
+    "phase": "7 -> 8 and stable 8 for the whole 21 s sample",
+    "disconnect": "none (previously 7 -> 8 -> 0 within seconds)",
+    "screenshot": "10,609 bytes (black)",
+    "server": "AdministraClient state 4 (CS_ACTIVE), out 168/291/413/534"
+  },
+  "meaning": "the EXE_CONFIGSTRINGMISMATCH disconnect is fully explained and bypassed by forcing the validator to succeed. With it out of the way the client stays connected at phase 8 but renders nothing, so the next active blocker is downstream: the snapshot content / world entry.",
+  "follow_up": [
+    "make the patch persistent: add 0x4730A0 -> b0 01 c3 to the launcher's --patches JSON (or re-apply it at runtime each run)",
+    "then re-check whether the parser now consumes snapshots (the counter stub can confirm) and what the client does with them",
+    "the black screen at stable phase 8 is the next thing to explain"
+  ],
+  "artifacts": ["runs/codex-cfgskip-1-state.png", "runs/20261022-ring-2697bd/main/qconsole.log"]
+}
