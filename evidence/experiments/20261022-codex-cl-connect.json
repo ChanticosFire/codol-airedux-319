@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T15:20:00+00:00",
+  "scope": "is CL_Connect ever called?",
+  "reasoning": [
+    "CL_Init (0x5C83D0) only allocates; it never writes clc.state or a netadr",
+    "at phase 8 the allocated client object is still all zero, so the state-writing path never ran",
+    "the classic path that writes clc.state = CA_CONNECTING/CONNECTED/ACTIVE is CL_Connect, and it also emits the connect packet via the out-of-band print",
+    "yet the server reports AdministraClient CS_ACTIVE, so connect/gamestate traffic does flow -- it must be produced by a different code path (the offline/UI start path), which is exactly why the game's own cl stays untouched"
+  ],
+  "implication": "the offline UI reaches the server without ever initialising cl. The parser then compares the injected netadr against a zero field and rejects every snapshot.",
+  "next": [
+    "test the hypothesis directly: at runtime write only clc.state (byte at [cl+0] = 8) and the netadr field at [cl+0x109260], then hook the return value and see whether eax becomes 1",
+    "if that works, the fix is a small runtime shim applied after CL_Init each run -- no image change needed",
+    "if it crashes again, the write must be done through the same code path (call CL_Connect-style init) rather than as raw bytes"
+  ],
+  "artifacts": []
+}
