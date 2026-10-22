@@ -53,6 +53,8 @@ def main() -> int:
                         help="Drive native BA41D0 receive state machine after connect tick")
     parser.add_argument("--outer-pump", action="store_true",
                         help="Drive native BA4430 receive and gate dispatch")
+    parser.add_argument("--netobj-pump", action="store_true",
+                        help="Drive native B838A0 owner pump and event dispatch")
     args = parser.parse_args()
     result: dict = {"schema": 1, "build": 1649370,
                     "utc": datetime.now(timezone.utc).isoformat(),
@@ -182,14 +184,15 @@ def main() -> int:
                 samples = []
                 while time.monotonic() < deadline:
                     time.sleep(0.25)
-                    target = (0xBA4430 if args.outer_pump else
+                    target = (0xB838A0 if args.netobj_pump else
+                              0xBA4430 if args.outer_pump else
                               0xBA41D0 if args.recv_pump else 0xBA24C0)
                     def tick_code(cave: int) -> bytes:
                         code = bytearray()
                         if args.outer_pump:
                             code += b"\x68" + struct.pack("<I", outer_context + 0x10)
                             code += b"\x68" + struct.pack("<I", outer_context)
-                        code += b"\xb9" + struct.pack("<I", conn)
+                        code += b"\xb9" + struct.pack("<I", netobj if args.netobj_pump else conn)
                         call_at = len(code)
                         code += b"\xe8\x00\x00\x00\x00\xc3"
                         struct.pack_into("<i", code, call_at + 1,
@@ -209,6 +212,10 @@ def main() -> int:
                     if args.outer_pump:
                         samples[-1]["state_out"] = sc.u32(handle, outer_context)
                         samples[-1]["crypto_holder"] = hex(sc.u32(handle, outer_context + 0x10))
+                    if args.netobj_pump:
+                        samples[-1]["owner"] = hex(sc.u32(handle, netobj + 4))
+                        samples[-1]["owner_event"] = sc.u32(handle, netobj + 0x5B8)
+                        samples[-1]["global_state"] = sc.u32(handle, 0x84ABA7C)
                     if len(samples) >= 200:
                         break
                 result["pump_samples"] = samples

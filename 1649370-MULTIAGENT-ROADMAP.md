@@ -1,6 +1,6 @@
 # CODOL Build 1649370 本地 bot 对战：多 agent 技术路线
 
-> **2026-10-22 新门槛**：原生 TCP LSG 已完成 hello/gate/client_auth/token，客户端 `conn+0x5E8=3`；真实加密初始化尚缺，空白 0x87 会断连。下一步从成功会话复原 0x87/认证上下文；详见 [1649370-REASSESSMENT-20261022.md](1649370-REASSESSMENT-20261022.md)。
+> **2026-10-22 新门槛**：人工原生 TCP LSG 已完成 hello/gate/client_auth/token；成功会话下个 `0x85` 是客户端主动发送。当前离线副本缺 `dwauth.ini` 与认证来源，优先恢复本地 Auth/LSG 上下文和自然入口，停止尝试服务端 0x87；详见 [1649370-REASSESSMENT-20261022.md](1649370-REASSESSMENT-20261022.md)。
 
 > **2026-10-22 边界更新**：用户已允许驱动和更高权限跟踪。旧文中的“不加载驱动”要求已被新指令取代；但不得中断本机网络/工作流，任何网络过滤仍限可回退的进程内临时 WFP 动态会话。当前优先实验和判定门槛见 [1649370-REASSESSMENT-20261022.md](1649370-REASSESSMENT-20261022.md)。
 

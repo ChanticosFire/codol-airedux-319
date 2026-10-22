@@ -166,26 +166,9 @@ class LsgServer(AuthServer):
                                 conn.sendall(frame83)
                                 self.evidence.write("token_reply", session,
                                                     reply_hex=frame83.hex())
-                                # 0xBA3AEB: only a type-0x87 frame (with conn+0x640 >= 220)
-                                # reaches 0xBA3590, which builds the crypt channel and sets
-                                # [conn+0x644]=1. Without it crypt stays 0 and 0xBA0780 can
-                                # never return 2, so ui_state never reaches 5.
-                                # 0xBA3ABB: the u32 length field is added to the post-type
-                                # offset (5), so it must count only the payload bytes.
-                                # 0xBA308E reads tag 1 with a 136-byte payload via 0xB75DE0,
-                                # so the 0x87 body must actually carry that much data.
-                                # 0xBA3590 checks byte0==1, then 0xBA3010 reads tag 1 with a
-                                # 0x88-byte payload via 0xB75DE0, so encode tag+len+data.
-                                f87_body = b"\x01" + b"\x88" + b"\x00" * 136
-                                f87 = (struct.pack("<I", len(f87_body))
-                                       + b"\x87" + f87_body)
-                                # 0xBA2B5D: while crypt==0 the receiver requires
-                                # lstate==2 && stage==3, and stage only reaches 3 a few
-                                # seconds after 0x83, so delay the 0x87 frame.
-                                # PROGRESS.md: svc28 must stay silent; pushing unsolicited
-                                # frames (0x87) only accelerates the disconnect.
-
-                                self.evidence.write("frame87", session, reply_hex=f87.hex())
+                                # 2026-10-22 correction: at stage 3, BA46A2
+                                # accepts only 0x85 or 0x84. The old unsent 0x87
+                                # candidate was tested and reset the connection.
                                 # Keep reading: the client may answer with the
                                 # 0x85 encrypted channel frame right after.
                                 try:

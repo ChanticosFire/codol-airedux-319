@@ -162,21 +162,6 @@ class DerivedLsgServer(AuthServer):
                      + keys.challenge[8:])
             conn.sendall(token)
             self.evidence.write("token_reply", session, reply_hex=token.hex())
-            frame87_delay = float(os.environ.get("LSG_PUSH_87_DELAY", "0"))
-            if frame87_delay > 0:
-                def _push_frame87() -> None:
-                    time.sleep(frame87_delay)
-                    body = b"\x01\x88" + bytes(136)
-                    frame87 = struct.pack("<I", len(body)) + b"\x87" + body
-                    try:
-                        conn.sendall(frame87)
-                        self.evidence.write("frame87_probe", session,
-                                            reply_hex=frame87.hex(),
-                                            reason=f"explicit diagnostic after {frame87_delay:g}s")
-                    except OSError as exc:
-                        self.evidence.write("frame87_probe_failed", session,
-                                            reason=type(exc).__name__)
-                threading.Thread(target=_push_frame87, daemon=True).start()
             counter = 1
             # PROGRESS.md: the reference server pushes a ZEROFRAME (bare u32 0)
             # every 30 s to keep the lobby alive. Send it from a helper thread so
