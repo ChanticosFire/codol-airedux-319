@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【二分第三步：`0x5B2D6D` 未命中，窗口 `0x5B2C10..0x5B2D6D`】** `--breakpoint 0x5B2D6D:bisect3` + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`bisect3_hits: 0`**，客户端调用中退出。**窗口约 0x15D 字节，只剩 4 个候选 + 序言**：`0x66F170`（`0x5B2C85`）、memset（`0x5B2C9D`）、`0x66E720`（`0x5B2CB7`）、以及 `0x5B2C10..0x5B2C84` 的阶段/标志/指针守卫。下一步：测 `0x5B2CB7`；未命中再测 `0x5B2C85`。证据 [20261022-codex-bp-bisect3.json](evidence/experiments/20261022-codex-bp-bisect3.json)。
+
 > **2026-10-23【二分第二步：`0x5B2EAB` 未命中，窗口收缩到 `0x5B2C10..0x5B2EAB`】** `--breakpoint 0x5B2EAB:bisect2` + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`bisect2_hits: 0`**，新崩溃 `0xC0000005 @ 0x2AF65924`（`ecx=0x11A4F5C8`）。**窗口 `0x5B2C10..0x5B2EAB`（约 0x29B 字节）**，只剩：序言/守卫、`0x66F170`、memset、`0x66E720`、`0x66E840`、`0x66EA90`、`0x5B2E53` 的 `0x66E840` 分支。下一步：`--breakpoint 0x5B2D6D:bisect3` 再取中点。证据 [20261022-codex-bp-bisect2.json](evidence/experiments/20261022-codex-bp-bisect2.json)。
 
 > **2026-10-23【断点二分成功：`0x5B2F43` 未命中，崩溃在 `0x5B2C10` 前半段】** `--breakpoint 0x5B2F43:bisect` 新会话 + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`bisect_hits: 0`**，客户端调用中退出，新崩溃 `0xC0000005 @ 0x416B9304`（`ecx=0x11B3F5C8`）。**窗口收缩到 `0x5B2C10..0x5B2F43`**（序言/守卫、`0x66F170`、memset、`0x66E720`、两个 `0x66E840` 分支、`0x66EA90`、`0x769560`、`0x66F410` 循环）。下一步：`--breakpoint 0x5B2EAB:bisect` 继续对半；注意 launcher 断点一次性，每轮只答一个问。证据 [20261022-codex-bp-bisect.json](evidence/experiments/20261022-codex-bp-bisect.json)。
