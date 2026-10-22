@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:50:37.411953+00:00",
+  "claim": "按 manifest 裁剪 overlay（删除 220 多余文件）后客户端可以启动：stop_reason 从 None 变成 fatal_dialog",
+  "action": {
+    "manifest_entries": 18154,
+    "overlay_before": 352,
+    "removed": 220,
+    "kept": 132,
+    "backup": "offline-resources.bak-118"
+  },
+  "result": {
+    "stop_reason": "fatal_dialog",
+    "log_bytes": 5985,
+    "meaning": "客户端已启动，进入游戏后触发 fatal，而非 overlay 冲突阻断启动"
+  },
+  "next": [
+    "用 0x77C930 hook 抓 fatal_dialog 的具体错误",
+    "按需从 archive 补齐缺失资源",
+    "继续 preloadmap/state3 链路"
+  ]
+}
