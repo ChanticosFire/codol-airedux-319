@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T02:20:00+00:00",
+  "scope": "the client processes exactly one message (the gamestate) and then stops reading the network",
+  "breakpoints": {
+    "0x473AE9:begin_reading": 1,
+    "0x473BAA:svc_dispatch": 1,
+    "0x473BE8:gamestate_call": 1
+  },
+  "control_experiment": {
+    "default breakpoints": "Com Init 0x4FD9B0, Initial fastfiles 0x4FCC00, Engine init returned 0x77F8B8, Switch to main menu 0x4706D0 all produced milestone records in a plain launch",
+    "meaning": "the breakpoint mechanism works; the counts above are real"
+  },
+  "interpretation": {
+    "one_message": "the client reads the gamestate message once, dispatches it, and never re-enters the read loop; ring B keeps receiving 6531 packets that the client does not consume",
+    "why": "after CL_ParseGamestate the client hands control to the map-load path and waits for it to complete; since no map assets are opened (verified earlier), that path is stuck before the next read",
+    "consequence": "the snapshot never gets parsed because the client is not reading at all, not because the snapshot body is wrong"
+  },
+  "next": [
+    "breakpoint inside the gamestate handler after the parse (0x473260 tail / 0x5C0310) to find the blocking call",
+    "trace file opens right after the gamestate (the client should start loading the map zone); see which resource it waits on",
+    "if it is a missing resource, supply it; if it is a hang, patch the wait"
+  ],
+  "artifacts": ["E:/GAME/COD/1649370/workspaces/offline-runs/codex-ring-bridge-50/events.jsonl"]
+}

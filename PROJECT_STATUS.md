@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【决定性：只处理 1 条消息（gamestate）后不再读网络】** 对照实验证明断点机制有效（`Com Init`/`Initial fastfiles`/`Engine init`/`Switch to main menu` 均有 milestone）。带三个读取循环断点的完整握手统计：`begin_reading` 1 次、`svc_dispatch` 1 次、`gamestate_call` 1 次；客户端 `state 8`、环 B 已收 6531 包但不再消费。结论：客户端分派 gamestate 后不再回到读取循环——**gamestate 后的地图加载路径卡住**，不是快照体格式问题。下一步：在 gamestate 尾段（`0x473260` 尾 / `0x5C0310`）找阻塞调用并追踪其后的文件打开。证据 [20261022-codex-one-message-only.json](evidence/experiments/20261022-codex-one-message-only.json)。
+
 > **2026-10-22【断点证明：快照解析器 0x471E90 从未被调用】** `--breakpoint 0x471E90:snapshot_parse` + 完整握手：events.jsonl 有 149 module、64 系统级 exception、4 条 `lansp_c.dll` 调试串，**无 snapshot_parse 命中**。说明消息在分派前被丢弃/校验失败，快照体根本没被解析——真正的第一道关是**消息读取/校验**。下一步：断点 `0x473A50` 的读取流程（`0x5C2200`/`0x794380`/长度闸门）与 `0x473BAA`/`0x473BE8`。证据 [20261022-codex-snapshot-never-called.json](evidence/experiments/20261022-codex-snapshot-never-called.json)。
 
 > **2026-10-22【EOF 修复：三种标记与客户端分派表一致】** `enterworld12`（`e2ba5a6c…`）把 `SV_EndClientSnapshot` 的 EOF 字节从 6 改成 5（`0x4A4CA4`，由前置 `call 0x4B6010` 定位）。现在 `svc_snapshot=0`、`svc_gamestate=3`、`svc_EOF=5` 与客户端映射完全一致。实测客户端仍 21 秒停阶段 8、黑屏。框架层已正确，剩余差异在快照体字段。下一步：断点 `0x471E90` 确认解析器是否被调用，再逐字段对照。证据 [20261022-codex-eof-fix.json](evidence/experiments/20261022-codex-eof-fix.json)。
