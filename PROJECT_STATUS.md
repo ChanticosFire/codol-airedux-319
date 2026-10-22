@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【阶段 8 稳定驻留 30 秒】** 50 次采样 `[0x76446B0]` 全部为 8（约 30 秒不回落），桥 keepalive 让连接维持；服务端 `state 4` 持续快照（`out` +121~135/包）。客户端在阶段 8 等的是“进入游戏”信号而非网络包：可能是缺失的 `svc_clientCommand`（map/spawn）或快照字段不匹配。下一步：解码实际快照并对照 1649370 的读取逻辑。证据 [20261022-codex-phase8-dwell.json](evidence/experiments/20261022-codex-phase8-dwell.json)。
+
 > **2026-10-22【阶段设置函数间接调用】** `0x5BE030` 是阶段设置入口（裸函数，`shl eax,5` 选槽、`mov [esi],edi` 写阶段），但镜像内没有直接 `call` 或 imm32 指针引用，也没有 `mov [0x76446B0],9/10` 的直接写入——阶段切换走间接调用。下一步：对 `0x76446B0` 下硬件写断点，或 patch `0x5BE030` 记录 eax/edi，由桥读取，确定阶段 9/10 的触发消息。证据 [20261022-codex-phase-setter-indirect.json](evidence/experiments/20261022-codex-phase-setter-indirect.json)。
 
 > **2026-10-22【阶段 8 收包但未加载地图】** `--trace-files` 复跑显示客户端在服务端 CS_ACTIVE、快照持续投递（ring_b 6629、out 每包 +121/122）时，文件访问只有配置查找，**无任何 `mp_cross_fire`/zone/image 打开**；服务端已发 `f "MP_CONNECTED…"`、`d 330 250`、`U 3584 -596 35` 等命令。结论：客户端在等阶段 9/10 的前置条件，而非快照数据。下一步：定位阶段 8→9/10 的客户端门槛，并与真实 2.6.9.7 客户端对比收包序列。证据 [20261022-codex-phase8-no-map-load.json](evidence/experiments/20261022-codex-phase8-no-map-load.json)。

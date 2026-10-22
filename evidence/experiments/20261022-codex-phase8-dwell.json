@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T21:30:00+00:00",
+  "scope": "phase-8 dwell time with the bridge keepalive",
+  "samples": {
+    "method": "read [0x76446B0] every 0.6 s for 50 samples",
+    "sequence": "8 x50 (about 30 s, no drop to 0 during the sample)",
+    "after": "state returned to 0 by the time the screenshot was taken (about 60 s after connect)"
+  },
+  "server": {
+    "state": "AdministraClient state 4 (CS_ACTIVE)",
+    "snapshots": "out 290/413/534/669 (+121..135 bytes per packet)",
+    "bot_warning": "Training 4 still has no native frame"
+  },
+  "interpretation": {
+    "network": "the bridge keepalive keeps the connection alive; the client no longer drops within ~30 s",
+    "blocker": "the client waits at phase 8 for an 'enter game' signal, not for packets; snapshots arrive but do not move it",
+    "candidate_signals": [
+      "a server-side svc_clientCommand (map/spawn) the 2697 server does not send on this path",
+      "a snapshot field mismatch (serverCommandSequence/delta) that makes the client discard the snapshot"
+    ]
+  },
+  "next": [
+    "decode one delivered snapshot packet and compare svc_snapshot fields against the 1649370 reader",
+    "check whether the server ever sends a clientCommand that triggers the client's map load"
+  ],
+  "artifacts": ["runs/codex-ring-bridge-42-state.png", "runs/20261022-ring-2697ab/main/qconsole.log"]
+}
