@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T00:15:00+00:00",
+  "scope": "what the caller does with the predicate result",
+  "disassembly": {
+    "0x4746E2": "call 0x5B2B70",
+    "0x4746E7": "test eax,eax",
+    "0x4746E9": "je 0x4746F0   -- predicate 0 -> skip the big call",
+    "0x4746EB": "call 0x5B2C10   -- predicate 1 -> run the big initialiser",
+    "0x4746F0": "xor eax,eax; pop esi; mov esp,ebp; pop ebp; ret"
+  },
+  "meaning": "0x5B2C10 is the function that runs only when the predicate says 'not connected yet'. It has a 0x884-byte stack frame -- a substantial initialiser, and the most likely candidate for the code that actually fills cl.",
+  "why_the_combo_crashed": "setting the 'connected' flag made the predicate return 0, so 0x5B2C10 was skipped. That by itself should not crash; but the rest of the frame then runs with cl still empty, and some later consumer dereferences it.",
+  "next": [
+    "disassemble 0x5B2C10 and look for stores to [ebx]/[eax] derived from the decoded cl pointer",
+    "if it writes clc.state or the netadr, it is the real connect initialiser we have been hunting",
+    "then the correct sequence is: leave the flag 0, call the predicate's caller path (or 0x5B2C10 directly), and only then set the flag"
+  ],
+  "artifacts": [],
+  "head_of_0x5B2C10": "push ebp; mov ebp,esp; sub esp,0x884; stack cookie; mov ecx,[0x331c0c8]; mov edx,[0x76446B0]; eax=ecx^key; store eax at [ebp-0x83C]; if ecx==0 or eax==0 skip; cmp [eax+0x100260],1; je 0x5B3127; then [0x7508B80] checks; cmp edx,7; jl 0x5B3127",
+  "new_insight": "0x5B2C10 ALSO bails out to 0x5B3127 when [cl+0x100260]==1. So setting the flag suppresses the very initialiser that would fill cl -- which explains both why the flag alone does nothing and why the combo run then crashed with cl still empty."
+}

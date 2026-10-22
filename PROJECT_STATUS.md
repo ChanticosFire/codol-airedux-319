@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【关键突破：真正的连接初始化是 `0x5B2C10`，它在标志=1 或阶段<7 时提前退出】** `0x4746E2`：`call 0x5B2B70; test eax,eax; je 0x4746F0`，否则 `call 0x5B2C10`。`0x5B2C10` 开头：`sub esp,0x884`、cookie、`ecx=[0x331c0c8]`、`edx=[0x76446B0]`（阶段）、`eax=ecx^key`；`cmp [eax+0x100260],1; je 0x5B3127`（标志=1 退出）；`[0x7508B80]` 检查；`cmp edx,7; jl 0x5B3127`（阶段<7 退出）。**正确序列**：阶段≥7（推 8）→ 标志保持 0 → 调用 `0x5B2C10` 填充 `cl` → 之后再置标志。这也解释了组合实验为何崩溃（标志把初始化也关掉了）。证据 [20261022-codex-5b2c10.json](evidence/experiments/20261022-codex-5b2c10.json)。
+
 > **2026-10-22【修正：`0x5B2C02` 只是 `xor eax,eax; ret`；真正的小函数在 `0x5B2B70`】** `0x5B2B70` 的逻辑：`ecx=[0x331c0c8]`、`eax=ecx^key`；空指针转 `0x5B2B8E`；`cmp [eax+0x100260],1; je 0x5B2C02`（返回 0）；`0x5B2B8E` 读阶段 `[0x76446B0]`，阶段 1/2 → 返回 0；否则 `mov eax,1; ret`。它回答“调用者该不该做连接工作”，调用者有 3 处：`0x4746E2`（解析器附近）、`0x5B3141`、`0x5B31AB`。组合实验的崩溃发生在消费该返回值的调用者分支。下一步：反汇编 `0x4746E2` 看标志=1（返回 0）时它走的分支。证据 [20261022-codex-5b2c02.json](evidence/experiments/20261022-codex-5b2c02.json)。
 
 > **2026-10-22【组合实验崩溃：标志=1 + 阶段 8 走进成功分支 `0x5B2C02`】** `start-challenge`→写 `cl+0x100260=1`→`set-state 8`（`state_written: true`）→读取前客户端已退出（启动器以 `finished_at` 结束）。说明标志置位后解析器**真的进入 `0x5B2C02`**，而该分支解引用未初始化资源 → 崩溃。**这与以往“静默跳过”不同，证明标志确实改变执行流**。下一步：(1) 对照——只 `set-state 8` 不写标志；(2) 反汇编 `0x5B2C02` 找崩溃点解引用的字段。证据 [20261022-codex-combo-crash.json](evidence/experiments/20261022-codex-combo-crash.json)。
