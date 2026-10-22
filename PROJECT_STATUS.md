@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【二分第二步：`0x5B2EAB` 未命中，窗口收缩到 `0x5B2C10..0x5B2EAB`】** `--breakpoint 0x5B2EAB:bisect2` + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`bisect2_hits: 0`**，新崩溃 `0xC0000005 @ 0x2AF65924`（`ecx=0x11A4F5C8`）。**窗口 `0x5B2C10..0x5B2EAB`（约 0x29B 字节）**，只剩：序言/守卫、`0x66F170`、memset、`0x66E720`、`0x66E840`、`0x66EA90`、`0x5B2E53` 的 `0x66E840` 分支。下一步：`--breakpoint 0x5B2D6D:bisect3` 再取中点。证据 [20261022-codex-bp-bisect2.json](evidence/experiments/20261022-codex-bp-bisect2.json)。
+
 > **2026-10-23【断点二分成功：`0x5B2F43` 未命中，崩溃在 `0x5B2C10` 前半段】** `--breakpoint 0x5B2F43:bisect` 新会话 + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`bisect_hits: 0`**，客户端调用中退出，新崩溃 `0xC0000005 @ 0x416B9304`（`ecx=0x11B3F5C8`）。**窗口收缩到 `0x5B2C10..0x5B2F43`**（序言/守卫、`0x66F170`、memset、`0x66E720`、两个 `0x66E840` 分支、`0x66EA90`、`0x769560`、`0x66F410` 循环）。下一步：`--breakpoint 0x5B2EAB:bisect` 继续对半；注意 launcher 断点一次性，每轮只答一个问。证据 [20261022-codex-bp-bisect.json](evidence/experiments/20261022-codex-bp-bisect.json)。
 
 > **2026-10-23【二分法受阻：内存计数器随进程消失】** 同时装 `0x5B2C10` 与 `0x5B2F43` 两个内存计数器，补 `0xA8F0`、阶段 8、`call_main_thread --settle 0.3`；客户端再次在调用中死亡，**两个计数器都在进程内存里、随进程消失，读不到**。教训：目标会死时内存计数器无用，必须用进程外记录——**launcher 一次性断点**或写文件的 stub。下一步：`--breakpoint 0x5B2F43:bisect` 开新会话（命中=越过该点），再用 `0x5B30DE`/`0x5B3116` 收窄。证据 [20261022-codex-bisect-dead.json](evidence/experiments/20261022-codex-bisect-dead.json)。

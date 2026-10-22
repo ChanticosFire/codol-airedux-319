@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T06:05:00+00:00",
+  "scope": "second bisect step",
+  "setup": {
+    "breakpoint": "launcher --breakpoint 0x5B2EAB:bisect2 (the call 0x769560 site)",
+    "phase": 8,
+    "cl+0xA8F0": "repaired (alloc 0x180 @ 0x10C30000 ^ key)",
+    "call": "call_main_thread --target 0x5B2C10 --settle 0.5"
+  },
+  "result": {
+    "bisect2_hits": 0,
+    "client": "exited during the call",
+    "new_crash": "0xC0000005 at 0x2AF65924 (ecx=0x11A4F5C8)"
+  },
+  "conclusion": "the fault is BEFORE 0x5B2EAB. Combined with the previous step the window is now 0x5B2C10..0x5B2EAB (about 0x29B bytes), containing: the prologue and guards, 0x66F170 (0x5B2C85), memset (0x5B2C9D), 0x66E720 (0x5B2CB7), 0x66E840 (0x5B2D6D), 0x66EA90 (0x5B2DC2), plus the 0x5B2E53 0x66E840 branch.",
+  "next": [
+    "next breakpoint: 0x5B2D6D (the first 0x66E840 call). Hit => fault after it; miss => before it",
+    "then halve again with 0x5B2C9D or 0x5B2CB7 as needed"
+  ],
+  "artifacts": ["runs/codex-bp-bisect-2-call.json"]
+}
