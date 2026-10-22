@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T18:30:00+00:00",
+  "scope": "first successful server-side world entry (CS_ACTIVE)",
+  "patched_exe": {
+    "file": "runs/2697-enterworld-patched/codol_dedrun_enterworld5.exe",
+    "sha256": "0bc2ec9dbcafc17fa5873ca73ae71be28f764cbf7f60cdd61cb85e24aa77561a",
+    "stack": [
+      "enterworld2: NOP-cave stub calls SV_ClientEnterWorld for CS_PRIMED, bypasses SV_DropClient for the missing secure profile",
+      "enterworld3: CODOL_ReadSecureProfile returns a zero-filled profile",
+      "enterworld4: getPlayerData persistent-data error branch nop'ed at 0x51C750",
+      "enterworld5: 0x579FBD je (CODOL_ProfileRecord failed) -> 90 90, so CODOL_AttachClientSecureProfile accepts the zero profile"
+    ]
+  },
+  "result": {
+    "secure_profile": "CoDOL secure profile for client 0 (uid 934477423527886848): attached from lobby file",
+    "state_transition": "Going from CS_PRIMED to CS_ACTIVE for AdministraClient",
+    "meaning": "the server finally entered the world on the main thread and would build real snapshots",
+    "remaining_error": "throwing script exception: getPlayerData: this player's secure profile does not match any definition in mp/playersecuredata.def (maps/mp/gametypes/_persistence.gsc line 34) -> self waittill('begin') -> Server Shutdown",
+    "note": "this is a different, later error than the previous 'no attached secure profile': attach now succeeds, but the all-zero profile matches no definition"
+  },
+  "next": [
+    "locate the 'does not match any definition' string reference in dedrun and nop/redirect that getPlayerData failure branch",
+    "or synthesise a profile record whose layout matches one definition of mp/playersecuredata.def (needs the def contents)",
+    "then verify real snapshots reach the client and it leaves phase 8"
+  ],
+  "artifacts": ["runs/20261022-ring-2697u/main/qconsole.log", "runs/codex-ring-bridge-35-forward.json"]
+}

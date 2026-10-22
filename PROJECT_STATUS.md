@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【里程碑：服务端首次 CS_ACTIVE】** `enterworld5.exe`（`0x579FBD je -> 90 90`）让零 profile 成功 attached，日志出现 `secure profile … attached from lobby file` 与 `Going from CS_PRIMED to CS_ACTIVE`——服务端首次进入世界。随后 GSC 仍因 `getPlayerData: this player's secure profile does not match any definition in mp/playersecuredata.def` 抛异常并关闭。下一步：跳过该 definition 匹配错误或构造匹配 profile，再验证真实快照与客户端阶段 8 退出。证据 [20261022-codex-cs-active-reached.json](evidence/experiments/20261022-codex-cs-active-reached.json)。
+
 > **2026-10-22【零 profile 仍被拒；playersecuredata.def 未挂载】** `patch_dedrun_zeroprofile.py` 让 `CODOL_ReadSecureProfile` 返回零 profile（`enterworld3`），并把 `getPlayerData` 异常分支 nop 掉（`enterworld4`）；两次实跑仍是 `schema/attach rejected` + 脚本异常 + 服务端关闭。根因是 `CODOL_LoadMountedStructuredSchema("mp/playersecuredata.def")` 失败——工作区与 974 个 IFS 都没有该 def，它在客户端 fastfile 中而未挂载到 2697 服务端。下一步：从客户端 FF 提取 def 并放到服务端可挂载路径，或 patch schema 加载构造最小 schema。证据 [20261022-codex-zeroprofile-and-def-missing.json](evidence/experiments/20261022-codex-zeroprofile-and-def-missing.json)。
 
 > **2026-10-22【v319 mpdata_s 被 2697 schema 拒绝】** 复制 `runs/v319-server/bd_data/mpdata_s` 到私有 profile 目录并设置 `codol_profilePath`，服务端日志为 `schema/attach rejected`——格式/版本与 2697 的 `mp/playersecuredata.def` 不兼容。已定位附件流程：`0x53D917` 读文件 → `0x53D91E` 状态检查 → `0x53D983` 加载 schema → `0x53D9BD` attach（`0x579F68`）→ 失败打印 `0x7EE70E`。下一步：构造 2.6.9.7 格式 profile，或 patch `CODOL_ReadSecureProfile` 返回零 profile 并放宽 attach 失败检查。证据 [20261022-codex-secure-profile-attach.json](evidence/experiments/20261022-codex-secure-profile-attach.json)。
