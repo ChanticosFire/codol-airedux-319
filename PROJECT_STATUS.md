@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【主要被调函数入口全部安全】** `0x470B80`（只读写 `cl` 内偏移）、`0x470AD0`（全局非零才调 `0xB9A0F0`）、`0xB9A0F0`（`lea eax,[ecx+0xD8]; ret` getter）、`0x6743D0`（整数 `imul 0xE32943`）、`0x66E840`（位缓冲移位掩码）、`0x66EA90`（`sub esp,0x404` 字符串处理 + `cmp edx,0x400` 边界）——入口处都无系统调用。故障要么在更深层，要么在“`cl` 部分填充后才走到”的另一处调用点。下一步：补 `0xA8F0` 后给 `0x5B2C10` 挂返回 hook；若仍 fault，在 `0x5B2F43`/`0x5B30DE` 下断点确认真实进度。证据 [20261022-codex-rem-callees.json](evidence/experiments/20261022-codex-rem-callees.json)。
+
 > **2026-10-23【`0x5B2C10` 无系统调用：14 个 call 全在 `.text`】** 扫描 `0x5B2C10..0x5B3127`：14 内部、0 IAT、0 外部。目标：`0x66F170`、`0xC42DE0`、`0x66E720`、`0x66E840`×3、`0x66EA90`、`0x769560`、`0x66F410`、`0x470B80`、`0x470AD0`、`0xB9A0F0`、`0xC3CE1B`、`0x6743D0`（前三者已确认安全）。修正：`0xB9A0F0`/`0xC3CE1B` 均在 `.text`（0x401000..0x10A889A）内，是代码不是数据。故 `0xB02BCC94` 来自这些被调函数之一或更深层。下一步：优先反汇编 `0x470B80`、`0x470AD0`、`0x6743D0` 找系统 DLL 调用。证据 [20261022-codex-5b2c10-calls.json](evidence/experiments/20261022-codex-5b2c10-calls.json)。
 
 > **2026-10-23【循环里的 `0x66F410` 也安全】** `0x5B2EE6..0x5B2F3B`：`ecx=[cl+0x68D0]` → `(ecx+edx+1)&0xFF` → `imul 0x2C` → `esi=[cl+0x3CD0+idx*0x2C]` → `call 0x66F410`。`0x66F410`：`eax=[esi]`（槽内）→ `sub eax,[ecx]`（栈参数）→ `cmp 0x100` → `call 0x66E7F0` → `cmp eax,[edi+0x10]` 后带边界检查写 `[eax+edx]`。操作数全部有效，不是故障点；`0x5B2F43` 之后同样有上界检查。下一步：**直接扫描 `0x5B2C10` 到 `0x5B3127` 内所有进入系统模块的调用**，定位 `0xB02BCC94`。证据 [20261022-codex-5b2f14.json](evidence/experiments/20261022-codex-5b2f14.json)。

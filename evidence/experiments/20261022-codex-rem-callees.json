@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T04:05:00+00:00",
+  "scope": "check the remaining unchecked callees",
+  "checked": {
+    "0x470B80": "reads [eax+0xA8D4] and writes [ecx+eax+0x68D4] -- all inside cl; safe",
+    "0x470AD0": "calls 0x4709E0, then only calls 0xB9A0F0 when [0x84ABB08] or [0x84ABB14] is non-zero; otherwise skips; safe",
+    "0xB9A0F0": "lea eax,[ecx+0xD8]; ret -- a plain getter; safe",
+    "0x6743D0": "integer math on [edi+0x44] with imul 0xE32943 and a zero store; safe",
+    "0x66E840": "bit buffer helper: cmp [edi],0; reads [edi+0x10]/[edi+0x14]/[edi+8]; shift/mask on edx; no system calls in the prologue",
+    "0x66EA90": "sub esp,0x404; strlen loop over the ecx string; cmp edx,0x400 bound; copies into a stack buffer -- no system calls in the prologue"
+  },
+  "still_unchecked": [
+    "0x769560",
+    "0x66E7F0"
+  ],
+  "next": [
+    "all primary callees of 0x5B2C10 now look safe in their prologues. Either the fault is deeper inside one of them, or the crash happens in a different call site reached only when cl is partially filled.",
+    "re-run the repair (0xA8F0) and hook 0x5B2C10's own return; if it returns cleanly now, the next step is to inspect what the caller (0x4746E2 path) does afterwards",
+    "if it still faults, add a breakpoint at 0x5B2F43 and 0x5B30DE to see how far execution actually gets"
+  ],
+  "artifacts": []
+}
