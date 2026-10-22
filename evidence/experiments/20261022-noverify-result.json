@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:11:21.412288+00:00",
+  "claim": "patch 免验签(0x483681/0x4836BC -> B0 01)后，state=3 时客户端仍停留在大厅，t=15s 退出",
+  "screen": "t=5/10s 截图 1.42MB = 完整游戏大厅(角色/任务/商城/QQ窗)，说明仍在大厅而非进图",
+  "patches_attempted": [
+    "0x483681 b0 01",
+    "0x4836BC b0 01",
+    "0x49EEA3 e9...",
+    "0x6751F0 b0 01 c3"
+  ],
+  "note": "patch 命令输出被 Select-String 过滤后为空，未确认 verified；可能部分失败",
+  "next": [
+    "重跑并完整输出每个 patch 的 verified 状态",
+    "确认 state=3 是否真的写入(可能被重置)",
+    "检查 0x77C930 hook 是否抓到 fatal"
+  ]
+}
