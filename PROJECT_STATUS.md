@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【svc 对调假设推翻：快照体格式才是问题】** 解析 `seq=33`：文本结束于 1137，随后 `00 00 08 …`（svc_snapshot=0、delta=0、flags=8），末尾 `06`=EOF——与 `codol_snapshot.c`/`codol_2697_service.h` **完全一致**。客户端收到格式正确的 `svc_snapshot` 却不处理，说明差异在**快照体序列化**（2697 自定义布局 vs 1649370 `CL_ParseSnapshot`）。下一步：对比字段顺序/长度检查，找客户端中止点；必要时改发 1649370 期望的快照体或 patch 读取端。证据 [20261022-codex-snapshot-body-format.json](evidence/experiments/20261022-codex-snapshot-body-format.json)。
+
 > **2026-10-22【快照在消息末尾；svc 编号疑对调】** 解码消息尾部：快照数据紧邻结尾 `… 07 00 00 00 06`（07 后三个 0、最后 06）。2697 线上实际是 snapshot=7、EOF=6，而 1649370 风格枚举是 snapshot=6、EOF=7——**若客户端把 07 当 EOF，快照会被提前截断丢弃**，完美解释“消费包但不进世界”。下一步：反汇编 `CL_ParseServerMessage` 确认数值，若确认则在 2697 写入端交换编号并复测。证据 [20261022-codex-svc-swap-hypothesis.json](evidence/experiments/20261022-codex-svc-swap-hypothesis.json)。
 
 > **2026-10-22【包流解码：无独立快照包】** 新解码器按真实分片格式重组并用 `CODOL_Xor` 解密：8345 包全是分片（0 whole），600 条消息为 gamestate（3426B）+ 可靠命令流（11342B，含 `f "MP_CONNECTED…"`）。消息尺寸 11–17KB，**没有任何小快照包**；日志 `out +121` 是 netchan 记账。说明快照没有作为独立 UDP 包发出（overflow/recovery 或被丢弃）。下一步：检查 `SV_EndClientSnapshot` 的 overflow 分支或观测 `msg->cursize`。证据 [20261022-codex-decoded-stream.json](evidence/experiments/20261022-codex-decoded-stream.json)。

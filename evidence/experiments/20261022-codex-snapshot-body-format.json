@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T22:55:00+00:00",
+  "scope": "svc swap hypothesis refuted; the snapshot BODY format is the suspect",
+  "message_33_layout": {
+    "length": 11338,
+    "text_runs": 22,
+    "last_text": "U 5830 -4369 -95",
+    "last_text_end": 1137,
+    "bytes_after": "00 00 08 1a 01 00 00 0c 96 07 60 00 18 00 c0 6d 45 ...",
+    "tail": "... 07 00 00 00 06"
+  },
+  "reading": {
+    "svc_snapshot": "0x00 at offset 1137 (matches codol_snapshot.c CODOL_WriteByte(m,0))",
+    "delta": "0x00",
+    "flags": "0x08",
+    "following": "serverCommandSequence / snapshot body",
+    "eof": "0x06 at the very end (matches CODOL2697_SVC_EOF=6)"
+  },
+  "conclusion": "the svc_snapshot/svc_EOF swap hypothesis is wrong: the wire values are snapshot=0, EOF=6, exactly as the writer source says. The client receives a well-formed svc_snapshot marker but does not act on it, so the mismatch is inside the snapshot BODY (2697's custom codol_snapshot serialization vs the 1649370 CL_ParseSnapshot layout).",
+  "next": [
+    "compare CODOL_WriteSnapshotDeltaNumber's field order (delta, flags, origin, entities, players, clients, actors, glass) with the 1649370 CL_ParseSnapshot reader",
+    "check whether the client aborts the message on a body length/format check (would explain 'consumes packets, stays phase 8')",
+    "if the layouts differ, either emit the 1649370-expected body or patch the client reader"
+  ],
+  "artifacts": ["runs/ring-dump-43.jsonl"]
+}
