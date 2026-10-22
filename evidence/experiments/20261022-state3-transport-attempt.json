@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:35:00.493262+00:00",
+  "claim": "state=3 后客户端不主动发 UDP；在 state=3 上下文中直接调用 0x621E50 会让进程退出",
+  "observations": {
+    "sendto_after_state3": {
+      "total": 0,
+      "entries": [],
+      "note": "自绑 8466 但无任何 UDP 发送"
+    },
+    "state_reset": "写 state=3 后约 2 秒被重置回 0（错误处理导致）",
+    "same_call_attempt": {
+      "tool": "tools/transport_after_state.py --set-state",
+      "gate_after": 1,
+      "status": "called",
+      "ret": null,
+      "adr_after": null,
+      "note": "调用 0x621E50 后进程消失（窗口不存在）"
+    }
+  },
+  "implication": "0x621E50 需要更完整的前置条件（通道表/字符串对象），单独调用会崩；state=3 需要保持住才能继续",
+  "next": [
+    "先用 0x5C05F0 或 0x622040 路径发一次 getchallenge（不调用 0x621E50）",
+    "或找 0x621E50 内部第一处失败点（反汇编追踪参数校验）",
+    "或保持 state=3（阻止重置）再逐步初始化"
+  ]
+}

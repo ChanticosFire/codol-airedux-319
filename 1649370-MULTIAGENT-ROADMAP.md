@@ -1093,3 +1093,8 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - state=3 后客户端自绑 UDP 8466（本地 listen server）。
 - udp_challenge 绑定失败（端口被占）；launcher 自动注入器导致退出。
 - 下轮：state=3 后手动调 0x621E50 建通道。
+
+## 2026-10-22 state=3 后续（本轮）
+
+- 自绑 8466 但不发 UDP；state=3 会被重置。
+- 直接调 0x621E50 崩溃；下轮改走 getchallenge 路径。
