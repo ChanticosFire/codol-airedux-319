@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:28:53.111214+00:00",
+  "claim": "采样地址 0x76F4826C 属于 32 位 ntdll 的 NtWaitForSingleObject（+0x7826C），说明游戏线程在等待内核对象（空闲）",
+  "resolve": {
+    "addr": "0x76F4826C",
+    "module": "SysWOW64/ntdll.dll",
+    "base": "0x76ED0000",
+    "offset": "0x7826C",
+    "nearest_export": "NtWaitForSingleObject/ZwWaitForSingleObject @ 0x78260"
+  },
+  "meaning": "所有线程落在 NtWaitForSingleObject → 引擎空闲等待事件（消息循环/同步对象），不是加载/计算",
+  "next": [
+    "找出主线程等待的具体事件（可用 ETW 或 hook WaitForSingleObject 参数）",
+    "尝试模拟输入/点击看是否推进状态",
+    "检查 preloadmap 之后是否需要额外调用才能开始真正的加载"
+  ]
+}
