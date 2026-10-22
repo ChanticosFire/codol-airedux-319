@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:28:36.477689+00:00",
+  "claim": "找到按 action 完成任务并调用回调的函数 0x7FB240；手动调用成功触发回调",
+  "function": {
+    "address": "0x7fb240",
+    "signature": "__cdecl void complete_tasks_by_action(int action)",
+    "behavior": "遍历任务表（0xE56FFE0/0x50），当 [slot]==action 时调用 slot+0x30 的回调（push 0, push slot），并复位 slot",
+    "related": "0x7FAF50 单槽版本；0x7FB380 另一分支"
+  },
+  "test": {
+    "steps": [
+      "进入查找房间（任务 index 7、action 0x26、tid 38269）",
+      "远程线程调用 0x7FB240(0x26)"
+    ],
+    "callback_result": {
+      "hits": 1,
+      "params": "0xe570210",
+      "success": 0,
+      "handler": "0x6376f0",
+      "context": "0x5"
+    },
+    "ui": "列表仍为空（强制路径不带结果，handler 拿到的是 0）"
+  },
+  "implication": "任务完成机制已打通；下一步是找到“带结果完成”的调用路径（响应解析器里），或在强制完成前把结果挂到任务槽上",
+  "next": [
+    "在 0x7FDFE0/0x8000B0 附近找响应分发（监听器列表 0xE5713EC，通知码 5）",
+    "查找向任务槽 +0x2C/+0x48 写入结果的代码，再调用 0x7FB240",
+    "若找到，回执即可完成并带结果，UI 出行"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-forcecomplete-ui.png",
+    "evidence/experiments/20261022-querycb-tidmatch-read.json"
+  ]
+}
