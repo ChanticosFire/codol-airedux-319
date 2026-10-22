@@ -22,7 +22,7 @@ import start_conn as sc
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / "runs" / "challenge_send_state.json"
 TARGET = 0x6751F0
-PROLOGUE = bytes.fromhex("558bec83ec18")  # push ebp; mov ebp,esp; sub esp,0x18 (6 bytes, jmp needs 5)
+PROLOGUE = bytes.fromhex("558bec8b4d0c")  # push ebp; mov ebp,esp; mov ecx,[ebp+0xc] (6 bytes: jmp needs 5)
 
 K32 = sc.k32
 K32.VirtualAllocEx.argtypes = [C.c_void_p, C.c_void_p, C.c_size_t, C.c_uint32, C.c_uint32]
