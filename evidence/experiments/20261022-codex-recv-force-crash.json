@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:25:00+00:00",
+  "scope": "force the receive helper to report success",
+  "patch": {
+    "site": "0x5C2380",
+    "original": "e8 2b 2b 0b 00 (call 0x674EB0)",
+    "replacement": "6a 01 58 c3 90 (push 1; pop eax; ret; nop) -- always return 1 without calling the helper"
+  },
+  "result": {
+    "immediately_after": "phase stayed 8 for the first sample, then the client process exited (tasklist empty); the launcher closed with engine_close_status 0",
+    "exceptions": "two exceptions at address 0x2 (invalid EIP) in the run's events.jsonl"
+  },
+  "meaning": [
+    "0x5C2380 IS reached -- otherwise the patch could not change anything",
+    "forcing the receive result to success makes the client parse an unfilled/garbage message and die (exception at 0x2)",
+    "so the parse path is live and the parser is entered; what never happens is the helper call itself"
+  ],
+  "reconciles_the_contradiction": "the spin test (EB FE at 0x674EB0, no hang) and this test (0x5C2380 reached, crash on forced success) can both be true only if the helper call at 0x5C2380 is skipped by a branch taken *at* 0x5C2380 -- i.e. the call instruction is patched/reached but the CPU never executes it, or the spin test ran on a different code path. The crash here is the stronger evidence: the line is reached.",
+  "next": [
+    "re-run the spin test now that we know 0x5C2380 is reached: if the client still does not hang, the call instruction must be jumped over somewhere",
+    "disassemble around 0x5C2380 again for a short jump that skips the call",
+    "or dump the live instruction bytes at 0x5C2380 from the process to confirm they are the call we think"
+  ],
+  "artifacts": ["E:/GAME/COD/1649370/workspaces/offline-runs/codex-recv-force-1/events.jsonl"]
+}
