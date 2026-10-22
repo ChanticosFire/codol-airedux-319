@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:44:06.456470+00:00",
+  "claim": "overlay 被 client 备份覆盖后损坏：352 状态也报 overlay 冲突 main/models/projectile_cbu97_clusterbomb_lod010",
+  "history": [
+    "原始542含main/images",
+    "删除images后352",
+    "从client备份robocopy恢复(覆盖)",
+    "352现在也冲突(models)"
+  ],
+  "root_cause": "client 备份的 models 与 1649370 原始 overlay 不完全一致，robocopy /E 覆盖后产生冲突",
+  "impact": "客户端目前无法启动（overlay 数据冲突）",
+  "next": [
+    "找到 1649370 原始 overlay 的干净备份",
+    "或删除 client 备份带入的冲突 models 文件",
+    "报告：需要用户确认是否有原始 overlay 备份"
+  ]
+}
