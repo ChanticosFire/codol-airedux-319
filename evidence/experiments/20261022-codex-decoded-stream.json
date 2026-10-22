@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T22:10:00+00:00",
+  "scope": "decoded server-to-client stream: gamestate and reliable commands, no standalone snapshots",
+  "decoder": {
+    "tool": "tools/decode_ring_dump.py",
+    "fragment_format": "u32 seq|FRAGMENT_BIT, u8 index, u8 last, u16 stride, u16 chunk, chunk bytes (CODOL_WritePacket)",
+    "cipher": "CODOL_Xor(body, len, (uint8_t)(challenge ^ seq), lastClientCommandString)",
+    "challenge": -767244017
+  },
+  "decoded": {
+    "packets": 8345,
+    "fragments": 8342,
+    "whole_packets": 0,
+    "oob": 3,
+    "messages": 600,
+    "seq31": "gamestate 3426 bytes: svc_gamestate + 'mp_cross_fire' + zone 'mp' + configstrings (\\g_gametype\\war... )",
+    "seq33+": "11342-byte reliable messages: 'f \"MP_CONNECTED AdministraClient^7\"', 's cg_drawSpectatorMessages ...', configstrings",
+    "size_histogram": "11-17 KB per message; no message below 400 bytes"
+  },
+  "key_finding": "the server never sends a standalone (whole) snapshot packet: every captured packet is a fragment of an 11-17 KB reliable message. The per-frame 'out +121' in the server log is netchan bookkeeping, not a snapshot datagram. Either SV_EndClientSnapshot still marks the snapshot message overflowed (empty recovery merged into the reliable stream) or snapshots are only written into messages that are then dropped.",
+  "next": [
+    "check SV_EndClientSnapshot's overflow/recovery branch in the live log (CoDOL frame rejected / pending snapshot messages)",
+    "instrument SV_WriteSnapshotToClient's msg->cursize right after a build to see whether a snapshot is actually written",
+    "or force SV_Netchan_Transmit for the snapshot path and capture the resulting packet"
+  ],
+  "artifacts": ["runs/ring-dump-43.jsonl", "tools/decode_ring_dump.py"]
+}

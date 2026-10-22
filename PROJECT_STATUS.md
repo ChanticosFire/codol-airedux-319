@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【包流解码：无独立快照包】** 新解码器按真实分片格式重组并用 `CODOL_Xor` 解密：8345 包全是分片（0 whole），600 条消息为 gamestate（3426B）+ 可靠命令流（11342B，含 `f "MP_CONNECTED…"`）。消息尺寸 11–17KB，**没有任何小快照包**；日志 `out +121` 是 netchan 记账。说明快照没有作为独立 UDP 包发出（overflow/recovery 或被丢弃）。下一步：检查 `SV_EndClientSnapshot` 的 overflow 分支或观测 `msg->cursize`。证据 [20261022-codex-decoded-stream.json](evidence/experiments/20261022-codex-decoded-stream.json)。
+
 > **2026-10-22【服务端包流完整转储】** 桥 forward 新增 `--dump-in`，转储 `runs/ring-dump-43.jsonl`（6917 包 / 1582 万字节：6914 分片 + 3 OOB）。编码公式确认：`SV_Netchan_Encode` → `CODOL_Xor(data+4, len, (uint8_t)(challenge^outgoingSequence), lastClientCommandString)`，逐字节 `key ^= command[j] << (i&1)`。下一步：读 challenge/lastClientCommandString，重组分片，解码 svc 流并与 1649370 读取端对照。证据 [20261022-codex-packet-dump.json](evidence/experiments/20261022-codex-packet-dump.json)。
 
 > **2026-10-22【阶段 8 稳定驻留 30 秒】** 50 次采样 `[0x76446B0]` 全部为 8（约 30 秒不回落），桥 keepalive 让连接维持；服务端 `state 4` 持续快照（`out` +121~135/包）。客户端在阶段 8 等的是“进入游戏”信号而非网络包：可能是缺失的 `svc_clientCommand`（map/spawn）或快照字段不匹配。下一步：解码实际快照并对照 1649370 的读取逻辑。证据 [20261022-codex-phase8-dwell.json](evidence/experiments/20261022-codex-phase8-dwell.json)。
