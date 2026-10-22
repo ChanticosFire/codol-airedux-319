@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 Build 1649370 G2 更新**：五个同版 IFS 散文件包共 3300 项、已验签的 v461 Cross Fire/gametype FF 均只进入私有运行目录。自然登录 + `preloadmap` 后 115 秒内无致命错误，观察到 `stop_reason=observation_timeout`、WFP 守卫正常关闭；但画面仍黑屏转圈，地图索引为 `-1`，未达到可玩地图、bot 战斗或回大厅。G2–G4 仍未通过。下一步定位预加载完成/切换与本地对局状态。详见 [1649370-STATUS.md](1649370-STATUS.md)。
+
 > **2026-10-22 Build 1649370 G2 更新**：原版 v461 Cross Fire 与 gametype FF 已签名/哈希校验并私有放置；Cross Fire、gametype、crash_tropical 三个同版 IFS 共 2674 项 `main/` 散文件已解码校验并私有放置。自然登录及 `preloadmap` 可重复，`localized_common_gametype_mp.ff` 的 zone 错误已排除；最新运行仍为 `WIN_FILE_NOT_FOUND`，文件追踪末尾是 `wavy_nml.iwi`。地图世界、玩家对 bot、退出回大厅尚未验收，G2–G4 未通过。下一轮继续从同版原包补资源并核验进图。详见 [1649370-STATUS.md](1649370-STATUS.md)。
 
 > **2026-10-22 Build 1649370 G2 更新**：从原始同版本 IFS 校验提取交叉火力三份 v461 FF 和 538 件地图松散资源，私有 stage 指纹对账通过；自然 Auth/LSG 登录后提交 `preloadmap`，画面黑屏并以 `fatal_dialog` 结束，G2–G4 仍未通过。`mp_cross_fire_load.ff` 的 CreateFileA 返回成功；旧 stage 的 loadscreen 确曾缺失，但完整原包资源补齐后仍失败，不能再把它当唯一根因。下一轮用高频结果环与 fatal 调用点关联定位。证据：[资源闭包实验](evidence/experiments/20261022-codex-crossfire-resource-closure.json)。

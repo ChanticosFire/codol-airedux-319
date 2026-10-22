@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "pid": 40820,
+  "utc": "2026-10-22T09:58:00.848939+00:00",
+  "dump": "0x48fa1000",
+  "return_address": "0x0",
+  "error_code": "0x0",
+  "text": "",
+  "status": "read"
+}

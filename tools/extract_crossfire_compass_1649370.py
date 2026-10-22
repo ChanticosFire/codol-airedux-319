@@ -27,6 +27,12 @@ PACKS = {
     "crash_tropical": ("lf_init_mp_crash_tropical_V21.ifs",
                        "5605bd43ed2dd5ef5000e4f4ca1de977a350df16ce1a55d23eabf5d1304a2d6d",
                        Path("main/images/sun_flare_icbm.iwi")),
+    "survival": ("lf_init_common_gametype_survival_V17.ifs",
+                 "0f3eb5059e5ac45fe21fe2f37a080f0ef63500ec33c82243defe5a8c6b50e56c",
+                 Path("main/images/wavy_nml.iwi")),
+    "dmz": ("lf_init_common_gametype_dmz_V4.ifs",
+            "161dfe18f6b786c8e9800c8ad6f800dd82149a1fda3793574fbe74ff2e5a68c7",
+            Path("main/images/barrel_d.iwi")),
 }
 IFS_DLL = Path(r"E:\GAME\COD\Original Client\IIPS\IFS2.dll")
 IFS_SHA = "5b0324e0b2ba3545a6c02626287d4fbc6a3116594744f4647333982d85508421"

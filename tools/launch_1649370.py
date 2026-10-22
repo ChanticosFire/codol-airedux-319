@@ -99,6 +99,8 @@ MAP_LOOSE_GAMETYPE = False
 MAP_GAMETYPE_FF = False
 MAP_SUNFLARE = False
 MAP_LOOSE_CRASH_TROPICAL = False
+MAP_LOOSE_SURVIVAL = False
+MAP_LOOSE_DMZ = False
 MAP_COMMAND_MODE = "startup"
 ROOM_COMMAND = None
 CBUF_COMMAND = None
@@ -2385,6 +2387,14 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
         loose_packs.append(("crash_tropical", "20261022-crash-tropical-loose-v461",
                             "da610e1fab1bc7397c68153092c0b5efcae43716d4d02f0744ad453400312cad",
                             "5605bd43ed2dd5ef5000e4f4ca1de977a350df16ce1a55d23eabf5d1304a2d6d", 1099))
+    if MAP_LOOSE_SURVIVAL:
+        loose_packs.append(("survival", "20261022-survival-loose-v461",
+                            "cae5e92b1e55a510b169656411d038810d7542251b6ca6e38f82b2aedf8c5215",
+                            "0f3eb5059e5ac45fe21fe2f37a080f0ef63500ec33c82243defe5a8c6b50e56c", 403))
+    if MAP_LOOSE_DMZ:
+        loose_packs.append(("dmz", "20261022-dmz-loose-v461",
+                            "954b9988954e3a5b119433794812aa8600ef8312235b0f2500a1e8084ed880e0",
+                            "161dfe18f6b786c8e9800c8ad6f800dd82149a1fda3793574fbe74ff2e5a68c7", 223))
     for label, folder, expected_receipt, expected_source, expected_count in loose_packs:
         root = Path(__file__).resolve().parents[1] / "runs" / folder
         receipt = root / "receipt.json"
@@ -2465,7 +2475,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_LOADSCREEN_PLACEHOLDER, MAP_COMPASS_PROBE, MAP_LOOSE_CROSSFIRE, MAP_LOOSE_GAMETYPE, MAP_GAMETYPE_FF, MAP_SUNFLARE, MAP_LOOSE_CRASH_TROPICAL, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, TCP_LOOPBACK_GUARD, LOCAL_AUTH_LSG, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
+    global MAP_PROBE, MAP_LOADSCREEN_PLACEHOLDER, MAP_COMPASS_PROBE, MAP_LOOSE_CROSSFIRE, MAP_LOOSE_GAMETYPE, MAP_GAMETYPE_FF, MAP_SUNFLARE, MAP_LOOSE_CRASH_TROPICAL, MAP_LOOSE_SURVIVAL, MAP_LOOSE_DMZ, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, TCP_LOOPBACK_GUARD, LOCAL_AUTH_LSG, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -2486,6 +2496,10 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="stage all 1037 verified same-build MP gametype loose assets")
     parser.add_argument("--map-loose-crash-tropical", action="store_true",
                         help="stage 1099 verified same-build loose assets carrying sunflare")
+    parser.add_argument("--map-loose-survival", action="store_true",
+                        help="stage 403 verified same-build loose assets carrying wavy_nml")
+    parser.add_argument("--map-loose-dmz", action="store_true",
+                        help="stage 223 verified same-build loose assets carrying barrel_d")
     parser.add_argument("--map-gametype-ff", action="store_true",
                         help="stage the signed v461 common and localized MP gametype fastfiles")
     parser.add_argument("--map-sunflare", action="store_true",
@@ -2563,6 +2577,8 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     MAP_GAMETYPE_FF = known.map_gametype_ff
     MAP_SUNFLARE = known.map_sunflare
     MAP_LOOSE_CRASH_TROPICAL = known.map_loose_crash_tropical
+    MAP_LOOSE_SURVIVAL = known.map_loose_survival
+    MAP_LOOSE_DMZ = known.map_loose_dmz
     if MAP_LOADSCREEN_PLACEHOLDER and MAP_PROBE != "mp_cross_fire_native":
         parser.error("--map-loadscreen-placeholder requires --map-probe mp_cross_fire_native")
     if MAP_COMPASS_PROBE and MAP_PROBE != "mp_cross_fire_native":
@@ -2577,6 +2593,10 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
         parser.error("--map-sunflare requires --map-probe mp_cross_fire_native")
     if MAP_LOOSE_CRASH_TROPICAL and MAP_PROBE != "mp_cross_fire_native":
         parser.error("--map-loose-crash-tropical requires --map-probe mp_cross_fire_native")
+    if MAP_LOOSE_SURVIVAL and MAP_PROBE != "mp_cross_fire_native":
+        parser.error("--map-loose-survival requires --map-probe mp_cross_fire_native")
+    if MAP_LOOSE_DMZ and MAP_PROBE != "mp_cross_fire_native":
+        parser.error("--map-loose-dmz requires --map-probe mp_cross_fire_native")
     if MAP_LOOSE_CROSSFIRE and MAP_COMPASS_PROBE:
         parser.error("--map-loose-crossfire already includes the compass IWI")
     if MAP_LOOSE_CROSSFIRE and MAP_LOADSCREEN_PLACEHOLDER:

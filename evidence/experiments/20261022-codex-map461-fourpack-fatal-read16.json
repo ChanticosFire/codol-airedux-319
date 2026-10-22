@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "pid": 32144,
+  "utc": "2026-10-22T09:55:24.124893+00:00",
+  "dump": "0x4bb51000",
+  "return_address": "0x4f83d8",
+  "error_code": "0x33e7958",
+  "text": "WIN_FILE_NOT_FOUND",
+  "status": "read"
+}
