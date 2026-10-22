@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T14:15:00+00:00",
+  "scope": "what [0x331c0c8] really is",
+  "writers": {
+    "0x5C85BF": "push 0x12A700; call 0x5C8330 (allocate 1,222,400 bytes); xor eax,0xD362501F; mov [0x331c0c8],eax",
+    "0x5C8AC0": "same constant store in another init path"
+  },
+  "meaning": {
+    "global": "[0x331c0c8] holds the ENCODED pointer to a 0x12A700-byte structure -- this is the client state ('cl')",
+    "offset_check": "0x109260 < 0x12A700, so the parser's field is inside that allocation",
+    "runtime_observation": "[0x331c0c8]^0xD362501F points at the allocation, but its first 16 dwords are all zero at phase 8"
+  },
+  "conclusion": "the cl structure is allocated but never initialised in our run: [cl+0] (clc.state) stays 0 = CA_DISCONNECTED. That is why NET_CompareAdr compares against a zero netadr and the parser rejects every snapshot. The client UI can still look connected because it does not read clc.state for rendering.",
+  "next": [
+    "find the client-state initialisation path (CL_Init / CL_Connect) and why it does not run or does not write this allocation",
+    "one candidate: the code path expects a different 'connect' entry (not through our loopback bridge) and skips CL_Init",
+    "an alternative quick check: write a plausible clc.state (8) plus the loopback netadr into the allocation and see whether the parser accepts packets -- but the state machine may overwrite it"
+  ],
+  "artifacts": []
+}
