@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:55:00+00:00",
+  "scope": "ring-B consumption vs parsing after the gamestate",
+  "sample": {
+    "pid": 30904,
+    "interval": "1 s x 14",
+    "read_cursor": [3379, 3659, 3929, 4219, 4499, 4779, 5054, 5333, 5613, 5903, 6190, 6452, 6749, 7063],
+    "write_cursor": [3379, 3659, 3929, 4219, 4499, 4779, 5054, 5334, 5613, 5903, 6190, 6452, 6749, 7063],
+    "phase": "8 for every sample",
+    "rate": "about 280 injected packets per second, consumed as fast as written"
+  },
+  "meaning": "the client DOES poll and consume ring B after the gamestate (read tracks write exactly), yet the phase never moves and the parse breakpoint fires only once. So the consumer of ring B is not feeding CL_ParseServerMessage, or the consumed data is discarded before the parse gate.",
+  "hypothesis": {
+    "primary": "ring B is drained by the netchan/reassembly layer (fragments) and the completed messages are dropped there (sequence/fragment validation), so 0x674EB0 never sees a complete message",
+    "secondary": "the consumer is a different subsystem (e.g. the bridge's own forwarding) and the game's packet path never sees these packets"
+  },
+  "next": [
+    "breakpoint 0x674EB0 (receive helper) and count hits while packets flow: zero hits would prove the game path never calls it",
+    "breakpoint the ring-B pop routine that advances 0x7872C00 to see which module consumes the slots",
+    "compare the consumed slot's stored address/port with what the game's netchan expects (the bridge writes adr_type/port; a mismatch would drop every packet after the gamestate)"
+  ],
+  "artifacts": ["runs/codex-ring-dwell-60-forward.json"]
+}

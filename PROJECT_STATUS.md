@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【环 B 被消费但不解析】** 14 秒采样：read 与 write 同步增长（3379→7063，约 280 包/秒），阶段恒为 8。客户端确实在取包，但 `CL_ParseServerMessage` 只调用一次——消息在 netchan/分片层被丢弃，或消费者不是游戏收包路径。下一步：断点 `0x674EB0` 计数、断点取包例程、比对槽内 adr/port。证据 [20261022-codex-ring-consumed-not-parsed.json](evidence/experiments/20261022-codex-ring-consumed-not-parsed.json)。
+
 > **2026-10-22【运行时闸门补丁：检查是健康的】** 阶段 8 后把 `0x5C238A`/`0x5C23AA` 运行时 nop，客户端随即回 state 0 并触发 `Com Error`（0x4F82E0），`ring_b.read` 仅 38。说明两道检查正确拒绝无效/过短消息，真正问题是收包侧没有有效包。下一步观测 `0x674EB0` 返回值与环 B 读取游标（`0x786DBC0`/`0x7872C00`）。证据 [20261022-codex-runtime-gate-patch.json](evidence/experiments/20261022-codex-runtime-gate-patch.json)。
 
 > **2026-10-22【客户端二进制受 SHA 校验保护】** 生成 gate 补丁副本（`0a91beec…`，nop 两处 `je`），但 `--image` 非标准路径被拒；直接改标准 exe 后 launcher 拒绝启动（按补丁集校验 SHA）。已恢复原 exe（`55F067AC…`）。下一步：运行时写内存补丁，或改 launcher 的 `--patches` JSON。证据 [20261022-codex-client-patch-gate.json](evidence/experiments/20261022-codex-client-patch-gate.json)。
