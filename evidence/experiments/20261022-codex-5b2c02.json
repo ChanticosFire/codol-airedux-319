@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T23:55:00+00:00",
+  "scope": "what 0x5B2C02 actually is",
+  "disassembly": {
+    "0x5B2C02": "xor eax,eax ; ret -- it simply returns 0 and is the end of the 0x5B2B80 function",
+    "0x5B2C10": "the next function starts here (push ebp; mov ebp,esp; sub esp,0x884 ...)"
+  },
+  "correction": "0x5B2C02 is not a crash site at all. The je at 0x5B2B85 makes the function return 0 early; the crash in the combo run must happen in whoever consumes that return value.",
+  "next": [
+    "disassemble 0x4746E2 (near the snapshot/gamestate parsers) to see what the caller does when this returns 0",
+    "that branch is where the combo run died"
+  ],
+  "artifacts": [],
+  "function": {
+    "entry": "0x5B2B70",
+    "logic": [
+      "ecx=[0x331c0c8]; eax=ecx^key (cl)",
+      "if ecx==0 or eax==0 -> 0x5B2B8E",
+      "cmp [eax+0x100260],1; je 0x5B2C02",
+      "0x5B2B8E: ecx=[0x76446B0] (phase); phase==1 or 2 -> 0x5B2C02",
+      "otherwise 0x5B2BA6: mov eax,1; ret"
+    ],
+    "returns": "0 when 'already connected' or phase is 1/2; 1 otherwise -- so it answers 'should the caller do the connect-ish work?'"
+  },
+  "callers": [
+    "0x4746E2",
+    "0x5B3141",
+    "0x5B31AB"
+  ]
+}

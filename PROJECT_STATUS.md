@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【修正：`0x5B2C02` 只是 `xor eax,eax; ret`；真正的小函数在 `0x5B2B70`】** `0x5B2B70` 的逻辑：`ecx=[0x331c0c8]`、`eax=ecx^key`；空指针转 `0x5B2B8E`；`cmp [eax+0x100260],1; je 0x5B2C02`（返回 0）；`0x5B2B8E` 读阶段 `[0x76446B0]`，阶段 1/2 → 返回 0；否则 `mov eax,1; ret`。它回答“调用者该不该做连接工作”，调用者有 3 处：`0x4746E2`（解析器附近）、`0x5B3141`、`0x5B31AB`。组合实验的崩溃发生在消费该返回值的调用者分支。下一步：反汇编 `0x4746E2` 看标志=1（返回 0）时它走的分支。证据 [20261022-codex-5b2c02.json](evidence/experiments/20261022-codex-5b2c02.json)。
+
 > **2026-10-22【组合实验崩溃：标志=1 + 阶段 8 走进成功分支 `0x5B2C02`】** `start-challenge`→写 `cl+0x100260=1`→`set-state 8`（`state_written: true`）→读取前客户端已退出（启动器以 `finished_at` 结束）。说明标志置位后解析器**真的进入 `0x5B2C02`**，而该分支解引用未初始化资源 → 崩溃。**这与以往“静默跳过”不同，证明标志确实改变执行流**。下一步：(1) 对照——只 `set-state 8` 不写标志；(2) 反汇编 `0x5B2C02` 找崩溃点解引用的字段。证据 [20261022-codex-combo-crash.json](evidence/experiments/20261022-codex-combo-crash.json)。
 
 > **2026-10-22【写 `cl+0x100260=1` 安全但不推进】** 阶段 3 写入单 dword 1 后读回 `0x1`，三次采样客户端存活、阶段仍 3、`cl+0x109260` 仍 0。它是“被读取的标志”而非触发器。下一步：同一运行内组合——写标志 → `set-state` 推阶段到 8 → 挂 `0x5C2380` 返回 hook，看 `eax` 是否变 1。证据 [20261022-codex-conn-flag.json](evidence/experiments/20261022-codex-conn-flag.json)。
