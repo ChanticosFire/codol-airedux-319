@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:56:13.479817+00:00",
+  "claim": "从备份恢复 20 个 ff 后进程存活 50+ 秒（Responding=True），不再秒退",
+  "action": {
+    "restored": "client_shipretail/chinese/*.ff (20)",
+    "from": "offline-resources.bak-118",
+    "overlay_total": 152
+  },
+  "result": {
+    "pid": 8892,
+    "alive_at": "30s, 50s",
+    "responding": true,
+    "screenshot": "窗口暂时未捕获（类名/时机）"
+  },
+  "significance": "fatal 前的主菜单加载阶段已通过，说明 ff 是启动必需资源",
+  "next": [
+    "枚举窗口类名（可能已切换）",
+    "执行 FSM 登录与 preloadmap/state3",
+    "继续进图链路"
+  ]
+}
