@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T21:15:00+00:00",
+  "scope": "module lookup for [0xCA8168] plus the priming attempt",
+  "attempt": "enumerate the client's modules with psapi.EnumProcessModules + psapi.GetModuleInformation + psapi.GetModuleFileNameExW and map 0x74E0E9B0 to its owning image",
+  "result": "the script failed twice on ctypes signatures (GetModuleFileNameExW/GetModuleInformation do not live in kernel32; the HMODULE array must be passed as a c_void_p pointer). No data was obtained this round.",
+  "note": "the client was started and logged in normally, then cleaned up; nothing was patched or poked this round, so the process stayed healthy",
+  "next": [
+    "rewrite the module lookup with psapi-only bindings and a plain c_void_p for the module handle",
+    "simpler alternative: GetModuleHandleW('kernel32') and compare 0x74E0E9B0 against its base -- if the high bits match, the validator is kernel32's WaitForSingleObject and the signalled-handle interpretation stands",
+    "then run the priming experiment: inject one packet (so the socket has data), call CL_Connect, and check 0x5BE700's effect on cl"
+  ],
+  "artifacts": []
+}
