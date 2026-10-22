@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:47:57.769232+00:00",
+  "claim": "challenge 发送类型=4(loopback) 走 0x77FB80 → 0x622040（raw send），不走 0x6750A0；因此 hook_sendto 抓不到是正常的",
+  "captured": {
+    "type_arg": "0x0100007F (127.0.0.1 小端)",
+    "arg1": "0x4 (netadr.type=loopback)",
+    "return_address": "0x6752F0"
+  },
+  "dispatch": {
+    "type 0/1": "返回失败",
+    "type 2": "0x6750A0",
+    "other (含 4)": "0x77FB80 → 0x622040 raw send"
+  },
+  "meaning": "netadr type=4 是正确配置；发送路径是内部 raw send（0x622040），不经过 Winsock sendto 导出",
+  "next": [
+    "hook 0x622040 记录实际发送缓冲区与目标",
+    "或 hook WSASendTo（ws2_32）确认最终网络调用",
+    "确认 challenge 是否真的发出；若发出但无响应，则起应答器"
+  ]
+}
