@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:40:00+00:00",
+  "scope": "frame loop read-packet call chain",
+  "chain": {
+    "read_packets": "0x4F8D70 (large 0x200f8 stack buffer, loops calling 0x5C2260 at 0x4F8ED8)",
+    "caller": "0x4F9428 (single caller, near the end of its function, immediately followed by call 0x4F9170 and the epilogue)",
+    "parse_message": "0x5C2260 -> call 0x473A50 (CL_ParseServerMessage) at 0x5C2434"
+  },
+  "implication": "the read path is invoked from one place in the frame loop and that call is unconditional in the disassembly, yet the parse breakpoint fires only once. So the early exit must be inside 0x4F8D70 before the parse call (a state check that returns immediately).",
+  "next": [
+    "disassemble 0x4F8D70 from its prologue to the loop and find the early return / gate",
+    "patch that gate so reading continues after the gamestate",
+    "verify with the parse breakpoint: it should then fire repeatedly"
+  ],
+  "artifacts": []
+}
