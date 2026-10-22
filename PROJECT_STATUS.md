@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【客户端二进制受 SHA 校验保护】** 生成 gate 补丁副本（`0a91beec…`，nop 两处 `je`），但 `--image` 非标准路径被拒；直接改标准 exe 后 launcher 拒绝启动（按补丁集校验 SHA）。已恢复原 exe（`55F067AC…`）。下一步：运行时写内存补丁，或改 launcher 的 `--patches` JSON。证据 [20261022-codex-client-patch-gate.json](evidence/experiments/20261022-codex-client-patch-gate.json)。
+
 > **2026-10-22【解析闸门定位：两道接收检查】** `0x5C2260` 的解析只在 `0x674EB0`（收包，无包即 `je 0x5C2413` 返回）与 `0x674740`（消息读取器，要求 `cursize+readcount>=4`）都通过后才发生（`0x5C2434 call 0x473A50`）。读包函数每帧被调用但 gamestate 后两道检查之一持续失败。下一步：观测两个返回值或把 `je` 改成不跳转，并检查环 B 读取游标。证据 [20261022-codex-parse-gate-found.json](evidence/experiments/20261022-codex-parse-gate-found.json)。
 
 > **2026-10-22【读包调用链完整还原】** 帧循环 `0x4F9428` 无条件 `call 0x4F8D70`（读包）→ `0x4F8ED8` 循环内 `call 0x5C2260` → `0x5C2434` 调 `CL_ParseServerMessage 0x473A50`。入口段（至 0x4F8DF7）无分支，但解析只命中一次——闸门只可能在 `0x5C2260` 内部。下一步反汇编该函数找提前返回条件并 patch。证据 [20261022-codex-read-chain.json](evidence/experiments/20261022-codex-read-chain.json)。
