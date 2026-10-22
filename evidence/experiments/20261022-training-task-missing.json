@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:44:33.812459+00:00",
+  "claim": "靶场流程可稳定复现到“正在搜寻服务器”；21/5 query1 的任务不登记在 bdService 任务表",
+  "flow": [
+    "训练页 → 靶场对话框 → 进入靶场",
+    "客户端发 service=21 task=5 bytes=37 (u32 1,0,10,tag 0x07)",
+    "服务器回 114B entry（127.0.0.1:8466）",
+    "客户端仍显示“正在搜寻服务器…”，20 秒无变化"
+  ],
+  "task_slots": {
+    "count": 8,
+    "actions": [
+      "0x86",
+      "0xA8",
+      "0x85",
+      "0x33",
+      "0x38",
+      "0x69",
+      "0x5",
+      "0x27"
+    ],
+    "note": "没有 action=21 的槽 → 21/5 的任务不在 bdService 表（0xE56FFE0）里，可能走另一条任务路径"
+  },
+  "next": [
+    "找 21/5 请求的任务登记点（发送链 0x62DD60 附近）或用断点看 21/5 回执被谁处理",
+    "若 21/5 走独立路径，找到它的完成回调",
+    "或让服务器回一个不同格式的 21/5 响应（例如只含 server 地址）"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-training-search.png",
+    "evidence/experiments/20261022-taskslots-training.json"
+  ]
+}
