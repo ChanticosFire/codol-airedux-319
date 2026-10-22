@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T16:20:00+00:00",
+  "scope": "follow the client object's address field",
+  "reading": {
+    "cl": "0x13D9CFA4",
+    "[cl+0x109260]": "0x00000000",
+    "[cl+0x100260]": "0x00000000"
+  },
+  "conclusion": "the whole client object is untouched: every probed field, including the one the receive helper copies as a netadr and the one the game checks against 1 at 0x5B2B85, is zero. CL_Init allocated it and nothing else has ever written to it -- CL_Connect (or whatever fills cl) never ran.",
+  "meaning_for_the_route": [
+    "raw-byte patching of cl is a dead end: the parser reads fields whose semantics depend on other zero fields, and writing them individually crashes",
+    "the only faithful way to get a filled cl is to run the game's own connect path",
+    "that path also explains why the server already reaches CS_ACTIVE: some other, lighter code sends the join packets while cl is left empty"
+  ],
+  "next": [
+    "locate CL_Connect in the binary (the function that writes clc.state and copies the server netadr) and find what UI action triggers it",
+    "two options: (a) call it from a runtime stub with the loopback address, (b) make the offline start path take the branch that calls it",
+    "option (b) is safer: it lets the game fill cl itself instead of us poking fields"
+  ],
+  "artifacts": [],
+  "code_search": {
+    "pattern": "mov eax,[0x331c0c8]; xor eax,0xD362501F; mov byte [eax],imm",
+    "hits": 0,
+    "note": "the decoder in the connect path may use another register (ecx/edx) or a helper, so the exact pattern does not appear. Next attempts should match on the 0xD362501F xor site and inspect the following few instructions instead of requiring a byte store."
+  }
+}

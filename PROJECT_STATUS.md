@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【`cl` 完全空白：`+0x109260` 与 `+0x100260` 都是 0，`CL_Connect` 未运行是总闸】** 跟随指针：`cl=0x13D9CFA4`，`[cl+0x109260]=0`（空指针）、`[cl+0x100260]=0`（游戏拿它跟 1 比较的字段）。`CL_Init` 只分配、无人填充 → 解析器拿空指针当 netadr type 比较（永远失败），写入 2 时被当指针解引用（崩溃）。**逐字段补写是死路**；唯一忠实做法是让游戏自己跑 connect 流程。下一步：定位 `CL_Connect` 及触发它的 UI 动作。代码模式搜索 0 命中，后续改为搜 `0xD362501F` 异或点。证据 [20261022-codex-cl-empty.json](evidence/experiments/20261022-codex-cl-empty.json)。
+
 > **2026-10-22【分步写入：`cl+0x109260` 不是可写 netadr】** 同一次运行：`cl=0x13CDD810`，写 `cl+0`=`0x08` 后存活；写 `cl+0x109260` 的 dword 2 后客户端**立刻死亡**（port 写入未执行）。说明该偏移要么存指针（`NET_CompareAdr` 拿指针值当 type），要么解析器不以 `cl` 为基址。下一步：把 `[cl+0x109260]` 当指针跟随；若为空则解析器在比较空指针，真正修复是让游戏自己的 `CL_Connect` 序列分配并填充它。证据 [20261022-codex-clstate-step.json](evidence/experiments/20261022-codex-clstate-step.json)。
 
 > **2026-10-22【写 `clc.state=8` 安全但不足以恢复收包】** `cl=0x13C9CC74`，写入单字节 `0x08` 后读回、跨 tick 保持、客户端存活——证明**在 `cl+0` 写是安全的**，此前写 `cl+0x109260` 的崩溃与 `cl` 无关。但 `eax` 仍 0、阶段 8——netadr 字段仍零。下一步：同一运行内先写状态再写 netadr，分步写入以定位致命步骤。证据 [20261022-codex-clcstate-write.json](evidence/experiments/20261022-codex-clcstate-write.json)。
