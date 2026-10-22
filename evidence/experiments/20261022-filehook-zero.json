@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:25:25.291231+00:00",
+  "claim": "CreateFileW hook 安装成功（iat_readback=0x11780000）但 8 秒内 count=0：加载已过或调用在更早阶段",
+  "tool": "tools/hook_createfile.py",
+  "iat": "0xCA8284",
+  "cave": "0x11780000",
+  "result": {
+    "count": 0,
+    "entries": []
+  },
+  "analysis": "hook 是在 preloadmap 之后才装的，地图加载/资源打开已发生；需要在 preloadmap 之前安装",
+  "next": [
+    "在 preloadmap 之前安装 hook，覆盖加载全过程",
+    "或延长观察时间"
+  ]
+}
