@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:21:47.989146+00:00",
+  "claim": "找到 2.6.9.7 房间补丁源码与启动后端；但本机两个安装的客户端 SHA-256 都不是 2.6.9.7",
+  "patch_source": "CODOL-2.6.9.7-Launcher/source/client/client_room2697.cpp (534 行)",
+  "patch_notes": [
+    "硬编码 room_service=0xDD39338、room_vtable=0xCD1D0C",
+    "关键调用：0x6AB8D0（准备通知）、0xB84280（文本读取）、0xA83C40（文本赋值）、0x5CBE40（info 复制）",
+    "map_token 只接受 mp_[a-z0-9_]*"
+  ],
+  "backend": "CODOL-2.6.9.7-Launcher/launch_backend.py",
+  "backend_invocation": "python launch_backend.py --game <dir> --username <name> --fov <n> --max-fps <n>",
+  "validation": {
+    "required": [
+      "codoMP_client_shipRetail.exe",
+      "IIPS/IFS2.dll",
+      "awesomium.dll",
+      "icudt.dll",
+      "bink2w32.dll",
+      "mss32.dll",
+      "D3DX9_43.dll",
+      "Microsoft.VC90.CRT",
+      "miles",
+      "localization.txt",
+      "splash.bmp",
+      "logo.bmp",
+      "datapacket.ini",
+      "iips.ini"
+    ],
+    "exe_sha256_expected": "353754047dbbfe3afbf6c7d97de3faca785b3d5d5e34a9053c820ee78814d6e1",
+    "local_installs": {
+      "E:/GAME/COD/使命召唤OL": "36997674b18f2896de5e9d755686f6922af10708f355175714058d0a0172b537 (no match)",
+      "E:/GAME/COD/Original Client": "36997674b18f2896de5e9d755686f6922af10708f355175714058d0a0172b537 (no match)"
+    }
+  },
+  "next": [
+    "找到 SHA-256=353754047... 的 2.6.9.7 客户端安装（可能在其它盘或需重新获取）",
+    "若找不到，评估用 client_room2697.cpp 的逻辑在 1649370 上重新适配（地址不同，工作量大）"
+  ]
+}
