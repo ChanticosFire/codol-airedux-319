@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【客户端包需要 qport，伪造 ACK 仍被拒】** 2697 客户端→服务端包格式为 `u32 sequence + u16 qport + 加密 body`；`SV_ReadPackets` 要求 IP 与 qport 同时匹配。此前伪造包缺 qport，被服务端当作 connectionless（`bad connectionless packet`）。forge 工具已加入 qport 扫描（client name 前扫 netadr），本次未命中；全内存按端口 60543 搜索也无结果。阶段 8 约 32 秒后超时。下一步：按两种字节序扫描端口定位 netchan_t，或 patch 服务端跳过 qport 比较，或让 CS_PRIMED 也构建真实快照。证据 [20261022-codex-qport-ack.json](evidence/experiments/20261022-codex-qport-ack.json)。
+
 > **2026-10-22【密钥区非零；伪造 ACK 首测未生效；阶段 8 约 32 秒超时】** 读取客户端 `0xE60B78` = `0x5A752F99`，密钥区已初始化，心跳崩溃来自 `[edi+0x24]` 对象字段未初始化。新工具 `tools/forge_client_ack.py` 按 `SV_Netchan_Decode` 算法伪造 `ack + clc_move` 包；发送后服务端 `reliableAcknowledge` 仍为 0，日志 `bad connectionless packet`，最可能是桥 UDP 源端口与服务端绑定的客户端端口不一致。补丁后服务端确实发送 `d 0 <configstring>`。阶段 8 稳定约 32 秒后回 0，`cl_timeout`/`cl_connectTimeout` 600 均无效。下一步：读 `client_t.netchan.remoteAddress` 获取客户端端口并用 `SO_REUSEADDR` 绑定重发，或 patch 服务端让 `CS_PRIMED` 也构建真实快照。证据 [20261022-codex-ack-forge-and-key-init.json](evidence/experiments/20261022-codex-ack-forge-and-key-init.json)。
 
 > **2026-10-22【阶段 7/8 心跳链逆向；心跳恢复实验失败】** `0x5C05F0` 只处理阶段 3–6，阶段 7/8 由 `0x5B3160` 驱动（500ms → `0x5B2B00`/`0x5B2B70` → `0x5B2C10` keepalive → `0x66F170`，崩溃点 `0x66F20E`）。只修补崩溃指令并恢复 `0x5B3160` 后，客户端 2 秒内报“服务器连接错误”，服务端记录 `bad connectionless packet`——心跳包内容依赖缺失密钥，不能简单跳过。已回退，继续由桥代发。下一步：定位 `[0xE60B78]`/`[edi+0x24]` 初始化者，或按 `client_t` 字段构造合法 ACK，并找客户端阶段 8 的 40 秒超时。证据 [20261022-codex-heartbeat-chain-and-40s.json](evidence/experiments/20261022-codex-heartbeat-chain-and-40s.json)。

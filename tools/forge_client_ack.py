@@ -52,6 +52,29 @@ def encode(plain: bytes, challenge: int, server_id: int, message_ack: int, comma
     return bytes(data)
 
 
+def find_qport(handle, name_address: int) -> tuple[int, int, int]:
+    """Locate netchan.remoteAddress before `name` and read the following qport.
+
+    netchan_t is at client_t+13 (pack(1)); remoteAddress is +0x10 inside it and
+    qport +0x20, so qport sits 16 bytes after the 16-byte netadr_t.
+    """
+    block = client_reader.read(handle, max(0, name_address - 0x1000), 0x1000)
+    if not block:
+        return 0, 0, 0
+    pattern = b"\x02\x00\x00\x00\x7f\x00\x00\x01"
+    offset = 0
+    while True:
+        pos = block.find(pattern, offset)
+        if pos < 0:
+            break
+        port = struct.unpack_from("<H", block, pos + 8)[0]
+        qport = struct.unpack_from("<H", block, pos + 16)[0]
+        if 0 < port <= 65535 and 0 < qport <= 65535:
+            return qport, port, name_address - 0x1000 + pos
+        offset = pos + 1
+    return 0, 0, 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ack", type=int, help="acknowledgement value (default: reliableSequence)")
@@ -78,16 +101,18 @@ def main() -> int:
         challenge = struct.unpack("<i", client_reader.read(handle, base + OFF_CHALLENGE, 4))[0]
         command = client_reader.read(handle, base + OFF_COMMANDS, 64).split(b"\0")[0]
         ack = args.ack if args.ack is not None else values[0]
+        qport, client_port, adr_address = find_qport(handle, base)
         result.update({
             "name_address": hex(base), "reliableSequence": values[0],
             "reliableAcknowledge": values[1], "reliableSent": values[2],
             "messageAcknowledge": values[3], "gamestateMessageNum": values[4],
             "challenge": challenge, "command": command.decode("latin-1", "replace"),
             "ack": ack, "seq": args.seq, "server_id": args.server_id,
+            "qport": qport, "client_port": client_port, "adr_address": hex(adr_address),
         })
         plain = struct.pack("<I", ack) + b"\x00" + b"\x00"
         body = encode(plain, challenge, args.server_id, values[3], command)
-        packet = struct.pack("<I", args.seq) + body
+        packet = struct.pack("<IH", args.seq, qport) + body
         result["plain_hex"] = plain.hex()
         result["packet_hex"] = packet.hex()
         if args.send:

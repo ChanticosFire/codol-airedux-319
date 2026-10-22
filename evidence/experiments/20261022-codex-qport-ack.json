@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T15:50:00+00:00",
+  "scope": "client-to-server netchan header and why the forged ACK was rejected",
+  "packet_format": {
+    "source": "runs/2697-native-src/src/netchan.c comments lines 47-48",
+    "client_to_server": "u32 sequence + u16 qport + encrypted body",
+    "server_side_match": "SV_ReadPackets: NET_CompareBaseAdr(from, remoteAddress) AND cl->netchan.qport == qport; a port mismatch is repaired, a qport mismatch is rejected"
+  },
+  "forged_ack": {
+    "tool": "tools/forge_client_ack.py (updated with find_qport)",
+    "previous_packet": "u32 seq + encoded body (no qport) -> rejected as connectionless",
+    "current_packet": "u32 seq + u16 qport + encoded body",
+    "qport_lookup": "find_qport scans 0x1000 bytes before the client name for a netadr pattern (type 2, 127.0.0.1) and reads the u16 16 bytes after it",
+    "result": "qport stayed 0 (pattern not found), packet sent with qport 0, reliableAcknowledge stayed 0",
+    "full_memory_scan": "scanning all readable regions for 02 00 00 00 7f 00 00 01 + port 60543 found no hit"
+  },
+  "observation": {
+    "client": "phase 8 at the 22 s sample and still 8; timeout lands around 32 s",
+    "server": "client port 60543; gamestateupdate 1 then 'bad connectionless packet from 127.0.0.1:60543'; snapshots continue with ack 1",
+    "dedrun_client_read": "reliableSequence 0 / ack 0 / gamestateMessageNum 31 / challenge 1840740326 / command empty (the first name hit was a different or reset client slot)"
+  },
+  "next": [
+    "scan the dedrun memory for the u16 60543 in both byte orders and inspect the surrounding netchan_t",
+    "or patch SV_ReadPackets to skip the qport comparison (find the NET_CompareBaseAdr call then the qport compare/jump)",
+    "or patch SV_BuildClientSnapshot/SV_WriteSnapshotToClient to include CS_PRIMED so the client gets a real snapshot before the 32 s timeout"
+  ],
+  "artifacts": ["runs/forge-ack-2.json", "runs/codex-ring-bridge-27-forward.json"]
+}
