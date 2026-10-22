@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:16:09.504795+00:00",
+  "pid": 5024,
+  "command": "preloadmap mp_cross_fire 1",
+  "stage": 5,
+  "status": "injected",
+  "attempt": 1,
+  "old_length": 0,
+  "new_length": 29,
+  "thread": 25160
+}

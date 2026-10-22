@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "pid": 5024,
+  "utc": "2026-10-22T09:16:21.295109+00:00",
+  "count": 121,
+  "entries": [
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": "äüñ8æãñv\b]rKæúm"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": "äüñ8æãñv\b]rKæúm"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": "äüñ8æãñv\b]rKæúm"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ""
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ""
+    },
+    {
+      "ret": "0x776f80",
+      "access": "0x80000000",
+      "name": "mu¾"
+    },
+    {
+      "ret": "0xc513d9",
+      "access": "0x80000000",
+      "name": ".\\devraw_shared\\images\\loadscreen_mp_crossfire.iwi"
+    }
+  ],
+  "status": "read"
+}
