@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T03:45:00+00:00",
+  "scope": "all calls inside 0x5B2C10",
+  "result": {
+    "internal_calls": 14,
+    "iat_calls": 0,
+    "external_calls": 0
+  },
+  "targets": [
+    [
+      "0x5B2C85",
+      "0x66F170",
+      "checked safe"
+    ],
+    [
+      "0x5B2C9D",
+      "0xC42DE0",
+      "memset"
+    ],
+    [
+      "0x5B2CB7",
+      "0x66E720",
+      "checked safe"
+    ],
+    [
+      "0x5B2D6D",
+      "0x66E840",
+      "unchecked"
+    ],
+    [
+      "0x5B2DC2",
+      "0x66EA90",
+      "unchecked"
+    ],
+    [
+      "0x5B2E5E",
+      "0x66E840",
+      "unchecked"
+    ],
+    [
+      "0x5B2EAB",
+      "0x769560",
+      "unchecked (random/timer helper?)"
+    ],
+    [
+      "0x5B2F1A",
+      "0x66F410",
+      "checked safe"
+    ],
+    [
+      "0x5B301C",
+      "0x470B80",
+      "unchecked -- near the parser area"
+    ],
+    [
+      "0x5B3034",
+      "0x66E840",
+      "unchecked"
+    ],
+    [
+      "0x5B30AD",
+      "0x470AD0",
+      "unchecked -- near the parser area"
+    ],
+    [
+      "0x5B30DE",
+      "0xB9A0F0",
+      "unchecked -- high address, may be data not code"
+    ],
+    [
+      "0x5B30FA",
+      "0xC3CE1B",
+      "unchecked -- high address inside .text"
+    ],
+    [
+      "0x5B3116",
+      "0x6743D0",
+      "unchecked"
+    ]
+  ],
+  "key_observation": "0x5B2C10 makes no system calls at all; every one of its 14 calls is into .text. The 0xB02BCC94 fault therefore comes from deeper inside one of those callees.",
+  "next": [
+    "check the three unexamined 'large' callees first: 0x470B80, 0x470AD0, 0x6743D0 -- disassemble each entry and look for the first call into a system DLL",
+    "0x769560 is next in line if those are clean"
+  ],
+  "artifacts": [],
+  "section_check": "all six inspected targets (0xB9A0F0, 0xC3CE1B, 0x470B80, 0x470AD0, 0x6743D0, 0x769560) lie in .text (0x401000..0x10A889A) and are executable. So 0xB9A0F0 is code, not data -- the 'data call' idea is wrong."
+}
