@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【分片与 svc 编号兼容；只剩快照体】** 分片统计 stride=1162、满片 1172 字节；客户端已重组 3426 字节 gamestate 并回 `gamestateupdate`，说明重组器接受该 stride；它接受 `svc_gamestate=3` 并进入阶段 8，说明 svc 编号与 2697 服务层一致。故分片层与 svc 层均无问题，唯一差异是快照体（2697 自定义布局 vs IW4 位流）。下一步：反汇编客户端快照读取分支取精确字段序，再写翻译器或 patch 客户端。证据 [20261022-codex-fragment-stride-verified.json](evidence/experiments/20261022-codex-fragment-stride-verified.json)。
+
 > **2026-10-22【根因确认：快照体 bit 流不兼容】** `codol_snapshot.c` 的快照体顺序为 `svc_snapshot(0)` → `server_time(4B)` → `delta(1B)` → `flags(1B)` → `base-present(1 bit)` → player/anim/actors/entities/clients/glass 各节 → `5` 尾标记；dump 实测 `00 | 00 08 1a 01 | 00 | 0c | 96…` 与源码一致。IW4 读取端在同样位置期望 `serverCommandSequence`，且没有那 1 bit——整条位流错位，客户端中止/解出垃圾，故停在阶段 8。这是客户端不进世界的**根本原因**。下一步：反汇编 `CL_ParseSnapshot` 取精确顺序，然后写服务端翻译器或 patch 客户端。证据 [20261022-codex-snapshot-body-mismatch.json](evidence/experiments/20261022-codex-snapshot-body-mismatch.json)。
 
 > **2026-10-22【svc 对调假设推翻：快照体格式才是问题】** 解析 `seq=33`：文本结束于 1137，随后 `00 00 08 …`（svc_snapshot=0、delta=0、flags=8），末尾 `06`=EOF——与 `codol_snapshot.c`/`codol_2697_service.h` **完全一致**。客户端收到格式正确的 `svc_snapshot` 却不处理，说明差异在**快照体序列化**（2697 自定义布局 vs 1649370 `CL_ParseSnapshot`）。下一步：对比字段顺序/长度检查，找客户端中止点；必要时改发 1649370 期望的快照体或 patch 读取端。证据 [20261022-codex-snapshot-body-format.json](evidence/experiments/20261022-codex-snapshot-body-format.json)。

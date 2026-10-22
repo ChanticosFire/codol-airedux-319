@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T23:25:00+00:00",
+  "scope": "fragment stride and svc numbering are compatible; only the snapshot body differs",
+  "fragment_facts": {
+    "stride": 1162,
+    "chunks": "1162 for full fragments, 59/747/58/866 for tails",
+    "packet_sizes": "1172 (10-byte header + 1162) for full fragments",
+    "codol_wire.h": "CODOL_FRAGMENT_SIZE 1162, CODOL_MAX_FRAGMENTS 128",
+    "client_side": "the client already reassembled the 3426-byte gamestate (3 fragments) and answered gamestateupdate, so its reassembler accepts stride 1162"
+  },
+  "svc_facts": {
+    "gamestate": "the client accepted svc byte 3 (2697 GAMESTATE=3) and entered phase 8, so the client's svc numbering matches the 2697 service layer",
+    "snapshot": "the message carries svc_snapshot=0 at offset 1137",
+    "eof": "the message ends with 6",
+    "conclusion": "svc numbering is compatible; rejecting it would have failed at gamestate already"
+  },
+  "remaining_difference": "the snapshot BODY only: 2697 writes server_time(4B) + delta + flags + a base-present bit + custom codol sections, while the 1649370 CL_ParseSnapshot expects the IW4 bit stream",
+  "next": [
+    "disassemble the 1649370 snapshot reader (the switch case for the byte after a reassembled message reaches svc_snapshot) and record its exact field order",
+    "write a server-side translator for the snapshot body, or patch the client parser",
+    "the translator can reuse the 2697 source structures since they are available"
+  ],
+  "artifacts": ["runs/ring-dump-43.jsonl"]
+}
