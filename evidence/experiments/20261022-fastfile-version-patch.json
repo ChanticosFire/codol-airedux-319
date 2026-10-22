@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:01:40.292528+00:00",
+  "claim": "社区文档揭示：fastfile 版本号在明文前缀(0x8)，不在 RSA 签名覆盖区(0x12C-0x1FD0)，可直接改；已把 mp_cross_fire_load 改为 461",
+  "doc": "319/他人文件参考/Fastfile校验绕过思路.md",
+  "key_insights": [
+    "IWff0100 布局: 0x00 明文前缀21B, 0x15 RSA签名256B, 0x115 加密头8192B, 0x2115 段表, 0x4115 数据块",
+    "版本号在明文前缀 0x8 (u32)",
+    "RSA 签名覆盖 hdr[0x12C:0x1FD0]（解密后的头），不覆盖明文前缀",
+    "校验顺序: 魔数 IWffs100 → hdr[0x14B]==0 → 摘要自比对 → RSA验签 → zone名",
+    "绕过方案: 换 exe 内嵌公钥(270B DER) + 用自建私钥重签"
+  ],
+  "action": {
+    "file": "mp_cross_fire_load.ff",
+    "offset": "0x8",
+    "old": 365,
+    "new": 461
+  },
+  "remaining_365": [
+    "mp_cross_fire.ff (41648405)",
+    "mp_cross_fire_const.ff (49429)"
+  ],
+  "next": [
+    "把 mp_cross_fire.ff / mp_cross_fire_const.ff 也改 461（若内容兼容）",
+    "或从 ff_init_mp_cross_fire_V70.ifs(461) 提取正确 ff",
+    "测试 state=3"
+  ]
+}
