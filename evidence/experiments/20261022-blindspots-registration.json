@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:40:42.851296+00:00",
+  "claim": "协作仓库揭示关键盲点：进图不只需要 preloadmap+state3，还需要资源注册表(Registration)与 game_initial_state 消息",
+  "sources": {
+    "docs/GAME_SESSION_TARGETS.md": [
+      "1649370 原游戏消费尚未验证",
+      "恢复镜像 sha256 55f067ac...（与我们 exe 一致）",
+      "其他九项缺失最终触发原生发布下载失败"
+    ],
+    "docs/FEATURE_PROGRESS.md": [
+      "原生地图运行时尚未连通",
+      "两个目标 Build 均没有已验收的完整真实 PVP/PVE",
+      "1649370 路线当前只读"
+    ],
+    "docs/features/rooms-and-runtime.md#runtime-002": [
+      "需要建立地图/碰撞/实体/脚本/武器/动画/音效依赖闭包及挂载顺序",
+      "需要真实运行时生成资源表/校验信息",
+      "不发送空注册表冒充成功"
+    ],
+    "docs/NATIVE_GAME_MESSAGES.md": [
+      "game_initial_state::InitialState = 3 || server_command_sequence:u32 || map_name:NUL || zone_name:NUL || registration_checksum:u32 || 4 || configstring...",
+      "Registration 必须显式给出 12761 个实际槽类型和校验，无默认全255表",
+      "资源初始化 661B90 → dvar 组 → 校验=77DB834 → 加载排序 type44 的 ncs_<type>_level 组"
+    ]
+  },
+  "blind_spots": [
+    "我们只做了 preloadmap + state=3，没有提供 Registration（12761 槽类型+校验）",
+    "没有发送 game_initial_state（map_name/zone_name/registration_checksum）",
+    "可能因此加载卡住/闪退：客户端等不到有效资源注册"
+  ],
+  "next": [
+    "在 crates/protocol-1604220 里找 game_initial_state 与 Registration 的实际 codec",
+    "对照 1649370 找对应初始化函数（1604220 是 661B90）",
+    "尝试构造最小 Registration + initial_state 注入"
+  ]
+}
