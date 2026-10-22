@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【计数复测：收包助手约 280 次/秒，网络路径完全活跃】** 在“持久 configstring 补丁 + `forward --port 28970`”下挂计数 stub：3 秒 844、6 秒 1728（约 280/秒），阶段稳定 8、客户端存活。包能从环 B 走到收包帮助手指令，剩余阻断不在“包是否到达”，而在快照内容/客户端消费快照。下一步：在 `0x5C238A` 记录 `eax`（返回值），区分“解析在跑但内容无效”与“仍返回失败”。证据 [20261022-codex-counter-2.json](evidence/experiments/20261022-codex-counter-2.json)。
+
 > **2026-10-22【configstring 绕过已持久化】** 补丁条目 `{"va":"0x4730a0","before":"558bec","after":"b001c3"}` 已加入 `offline-menu-patches.json`（原文件备份于 `runs/client-backup/offline-menu-patches.orig.json`，新 SHA `FB56D64D…`）。新会话 `codex-cfgpatch-1` 不做运行时 patch 启动：客户端 `7 → 8` 稳定 21 秒（截图 10,750 字节黑屏），exe SHA 仍 `55F067AC…`。后续每轮不再被 `EXE_CONFIGSTRINGMISMATCH` 打断，当前阻断为黑屏/快照内容。下一步：持久补丁 + `--port 28970` 下重跑 `0x674EB0` 计数 stub。证据 [20261022-codex-cfgpatch-persistent.json](evidence/experiments/20261022-codex-cfgpatch-persistent.json)。
 
 > **2026-10-22【绕过 configstring 自检：断线消失，稳定阶段 8 黑屏】** `0x4730A0` 运行时改为 `b0 01 c3`（`mov al,1; ret`）后，`forward --port 28970` 下客户端 `7 → 8` 并稳定 21 秒不再断线；截图 10,609 字节黑屏，服务端 `state 4`（`out 168/291/413/534`）。断线原因（`EXE_CONFIGSTRINGMISMATCH`）已解释并绕过，当前活跃阻断下移到快照内容/世界进入。下一步：持久化该 patch（launcher `--patches` 或每轮运行时写入），再用计数 stub 确认快照是否被消费并解释黑屏。证据 [20261022-codex-cfgskip.json](evidence/experiments/20261022-codex-cfgskip.json)。
