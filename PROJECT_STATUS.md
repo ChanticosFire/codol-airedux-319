@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【扫描定论：`CL_Connect` 内没有写 `[cl]` 的指令】** 扫 `0x5C05F0..0x5C0F1B` 全部对 `[ebx]`/`[ebx+X]`（`ebx=cl`）的写入，只命中 3 条：`0x5C06F2 mov [ebx+0x30],ecx`、`0x5C0E5B mov [ebx+8],ecx`、`0x5C0EC0 mov [ebx+8],edx`——**没有写 `[cl]` 的**。`cl+8` 的两处实测也没生效（`cl+8` 仍 0），`cl+0x30=0x9D` 也与 `ecx=0` 不符，说明来自别的路径。**`clc.state` 由另一个函数负责**。下一步：找真正写 `[cl]` 的函数，`0x5BE5F0`（调用者）是强候选。证据 [20261022-codex-state-writer.json](evidence/experiments/20261022-codex-state-writer.json)。
+
 > **2026-10-22【绕过 `0x5BE700` 后 `CL_Connect` 多走几步但仍不写 state】** patch `0x5BE700` → `b0 01 c3 90`（读回确认），`call_main_thread(0x5C05F0, ecx=0)` 进程存活；阶段仍 3、`[cl]`/`[cl+0x100260]`/`[cl+0x109260]` 仍 0，但 `cl+0x30=0x9D`、`cl+0x34=0x849C`、`cl+0x38=3` 为新写入。说明检查只是第一道门，设置状态/填地址还更靠后。下一步：完整反汇编 `0x5C0693` 与 `0x5C067A` 之后，找出写 `[cl]` 的指令；若不存在则该写入属于另一个函数。证据 [20261022-codex-bypass-check.json](evidence/experiments/20261022-codex-bypass-check.json)。
 
 > **2026-10-22【预热实验无效】** `start-challenge`→`inject-oob`（环 B 游标 read 1/write 1，payload 16）→阶段一度 5→`call_main_thread(0x5C05F0, ecx=0)` 后阶段回落 3，`[cl]`/`[cl+0x100260]`/`[cl+0x109260]` 仍全 0。**让接收路径有数据并不能绕过 `0x5BE700`**。下一步：运行时把 `0x5BE700` 改为 `mov al,1; ret` 再调用 `CL_Connect`（仅进程内 patch）。证据 [20261022-codex-prime2.json](evidence/experiments/20261022-codex-prime2.json)。
