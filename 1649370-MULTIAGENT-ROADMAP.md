@@ -1366,3 +1366,8 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 
 - etl 371MB/csv 1.2GB，需过滤 provider。
 - 下轮：按 Kernel-File 过滤。
+
+## 2026-10-22 文件 API IAT（本轮）
+
+- CreateFileW @ 0xCA8284 等。
+- 下轮：写 hook_createfile。
