@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:47:47.457690+00:00",
+  "claim": "用 offline-resource-cache 重建 main 后仍报同一 overlay 冲突：缓存文件哈希与 launcher 期望(manifest)不一致",
+  "actions": [
+    "备份 overlay 到 offline-resources.bak-115（352 文件）",
+    "用 f2ed.../main 重建 → 18374 文件",
+    "启动 → 仍报 main/models/projectile_cbu97_clusterbomb_lod010 冲突",
+    "已回滚到备份"
+  ],
+  "conclusion": "overlay 的正确文件应来自离线源(Original Client / 36997674 资源)，缓存是生成物、哈希不符",
+  "next": [
+    "用 Original Client 或原始安装目录重建 overlay",
+    "或找到 launcher 生成 overlay 的原始命令",
+    "或按 manifest 的哈希逐个校验 overlay 文件"
+  ]
+}
