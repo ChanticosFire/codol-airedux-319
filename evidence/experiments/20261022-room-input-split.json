@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:32:11.973447+00:00",
+  "claim": "房间界面键盘事件有效（Tab 改变地图 绿洲→雷达站），但准备/返回大厅的鼠标点击无效",
+  "tests": [
+    {
+      "action": "Tab×5",
+      "result": "地图从 绿洲 变为 雷达站（键盘事件被 UI 处理）"
+    },
+    {
+      "action": "Down×6 + Enter",
+      "result": "无变化（方向键不移动焦点）"
+    },
+    {
+      "action": "Esc 后点准备",
+      "result": "无变化，ui_state 恒 5"
+    },
+    {
+      "action": "点中心×2 激活后点准备",
+      "result": "无变化"
+    },
+    {
+      "action": "点返回大厅 (1476,993)",
+      "result": "无变化（仍在房间）"
+    }
+  ],
+  "implication": "房间 UI 至少两层：Scaleform 面板处理键盘（Tab 可改地图），但 HUD 层按钮（准备/返回大厅）的鼠标事件未被处理；也可能按钮处于 disabled",
+  "next": [
+    "hook 鼠标消息处理（WM_LBUTTONDOWN 或 SendInput 到达性）确认点击是否到达",
+    "或找准备按钮的 Scaleform 焦点路径（Tab 序列 + Enter）",
+    "或绕过 UI：主线程调用房间开始函数"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-room-tab-mapchange.png"
+  ]
+}
