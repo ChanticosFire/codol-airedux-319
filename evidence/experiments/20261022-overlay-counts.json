@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:38:05.589985+00:00",
+  "claim": "当前 overlay 352 文件 = main/models 64 + main/sound 267 + client_shipretail 20 + fileSysCheck.cfg；事故前 542 多出的 190 个正是我复制进来的 main/images",
+  "counts": {
+    "main/models": 64,
+    "main/sound": 267,
+    "client_shipretail": 20,
+    "total": 352
+  },
+  "interpretation": "542 是“352 原始 + 190 个 main/images（我从 2.6.9.7 复制）”；删除 images 后回到 352",
+  "but": "352 状态下启动失败（restoredrun-ev, stop_reason=None）→ 说明 542 时期的 190 个 images 是启动必需的，或另有缺失",
+  "next": [
+    "把 2.6.9.7 的 main/images 中 1649370 不存在的文件复制回来（避开同名冲突）",
+    "若冲突文件多，改用 --resource-library 指向 2.6.9.7 training-resources",
+    "复测启动"
+  ]
+}
