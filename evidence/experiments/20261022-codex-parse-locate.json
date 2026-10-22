@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T01:10:00+00:00",
+  "scope": "locating the client message parser",
+  "found": {
+    "CL_ParseGamestate_entry": "0x473180 (the function whose tail is 0x473240)",
+    "caller_of_gamestate": "0x473409",
+    "caller_function_entry": "0x473260",
+    "caller_prologue": "push ebp / mov ebp,esp / sub esp,0x60; reads [0xe3f240] stack cookie; checks byte [0x76446a1]; uses edi = slot; cmp [eax+0x76446b0],5 (phase check)",
+    "note": "0x473260 is probably CL_ParseServerMessage or the packet handler that dispatches to CL_ParseGamestate; 0x473409 sits inside it"
+  },
+  "next": [
+    "disassemble 0x473260 fully and locate its svc switch: the case that calls 0x473180 is svc_gamestate; the neighbouring cases reveal the numeric svc values",
+    "then find the svc_snapshot case and how it validates the frame",
+    "with the case address known, a breakpoint or a small patch can show whether the snapshot case is ever reached"
+  ],
+  "artifacts": [],
+  "disassembly_0x473260": {
+    "call_gamestate": "0x473409 call 0x473180",
+    "read_next_byte": "0x47341A-0x473448 (MSG_ReadByte into ecx)",
+    "dispatch": "cmp ecx,5 -> 0x47348D ; cmp ecx,4 -> call 0x472D80 + 0x472BE0 ; else -> 0x473469 (end)",
+    "case_5": "reads 4 bytes, checks 0<=value<0x13, then calls 0x473200/0x49E130/0x472900/0x472990 (game state init) and 0x5C0310",
+    "case_4": "calls 0x472D80 then 0x472BE0",
+    "note": "this switch only compares 4 and 5, so 0x473260 is likely a sub-parser (serverCommand/download) rather than the top-level CL_ParseServerMessage; the top-level dispatch is still unknown"
+  }
+}
