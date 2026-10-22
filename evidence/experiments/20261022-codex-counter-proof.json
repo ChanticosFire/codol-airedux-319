@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:55:00+00:00",
+  "scope": "definitive counter stub: 0x674EB0 really runs",
+  "stub": {
+    "alloc": "0x11790000 (VirtualAllocEx, RWX)",
+    "scratch": "alloc+0x800",
+    "bytes": "60 b8 <scratch> ff 00 61 55 8b ec 83 ec 34 e9 <rel32 back to 0x674EB6> (pushad; mov eax,scratch; inc [eax]; popad; push ebp; mov ebp,esp; sub esp,0x34; jmp back)",
+    "entry_patch": "0x674EB0: e9 <rel32> 90 (jmp stub) replacing 55 8b ec 83 ec 34"
+  },
+  "measurement": {
+    "counter_after_3s": 845,
+    "counter_after_6s": 1701,
+    "phase": 8,
+    "client": "alive throughout"
+  },
+  "conclusion": {
+    "helper_runs": "0x674EB0 is entered about 280 times per second -- my earlier 'never called' conclusion (from the spin test and from the one-shot breakpoint) was WRONG",
+    "why_the_spin_failed": "EB FE only freezes if the code is actually executed there; the fact that it did not freeze means the spin patch was reverted or never took effect in that run (most likely the launcher's debugging/reinstall patch chain rewrote the bytes)",
+    "real_state": "the receive helper runs every frame and returns 0, so 0x5C238A je 0x5C2413 returns from the parser without parsing. The next question is why 0x674EB0 reports failure."
+  },
+  "next": [
+    "disassemble 0x674E10 (called from 0x674EB0) to see what it validates",
+    "that validation is now the only thing between the ring packets and a parsed snapshot",
+    "the counter stub technique is reliable and should be reused for every future 'is it called' question"
+  ],
+  "artifacts": [],
+  "root_cause_found": {
+    "0x674E10": "NET_CompareAdr: compares the netadr type at [edx]/[ecx]; when equal it compares further fields; for type==5 it compares the port at +8 (movzx eax,word [edx+8] vs [ecx+8])",
+    "bridge_default_port": "ring_bridge --port defaults to 0, and inject_oob_raw writes socket.htons(port) into the injected netadr, so every server packet is stamped with source port 0",
+    "client_expectation": "the client's netchan remote address is 127.0.0.1:28970 from the connect handshake",
+    "effect": "0x674E10 reports a mismatch, 0x674EB0 returns 0, 0x5C238A je returns from the parser -- every snapshot is silently discarded"
+  },
+  "fix": "pass --port 28970 to the bridge forward (or change the default) so injected packets carry the server port the client expects"
+}
