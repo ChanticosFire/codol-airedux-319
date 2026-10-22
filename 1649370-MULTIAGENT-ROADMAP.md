@@ -1051,3 +1051,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - Cbuf 有客户端自己的 qtalk.hal；quit 40-60s 后退出 → 链路正常。
 - 九条地图/房间命令全部无效果。
 - 下轮：直接找地图加载函数，或改 ui_state 后 devmap。
+
+## 2026-10-22 connect/ui_state 实验（本轮）
+
+- connect 命令无效；写 ui_state=3 画面不变。
+- map_restart 只是启动参数。
+- 下轮：定位于引擎级加载函数。

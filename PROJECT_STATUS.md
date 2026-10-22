@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【进图】connect 与写 ui_state 都无效**：`connect 127.0.0.1:8466` injected 但仍在在大厅；写 [0x84ABA50]=3（读回 3）画面不变、stage 仍 5；`map_restart`(0xDBF98C) 引用点 0x5AA42D 只是启动参数比较。→ ui_state 不是场景切换唯一开关，需引擎级加载或服务器驱动。证据 [`20261022-connect-uistate.json`](evidence/experiments/20261022-connect-uistate.json)。
+
 > **2026-10-22【进图】Cbuf 命令确实执行（qtalk.hal 与 quit 为证），地图命令无效**：抓到客户端自己写的 `qtalk.hal`；`quit` 40–60s 后进程退出；`g_gametype dm`/`map_restart`/`mapname`/`sv_mapname`/`fast_restart`/`map_rotate`/`devmap`/`room.startgame`/`room.create` 全部无变化。`mapname` cvar 在 0xDB0DA4（xrefs 0x43E12C/0x456637/0x515471）。证据 [`20261022-cbuf-activity.json`](evidence/experiments/20261022-cbuf-activity.json)。
 
 > **2026-10-22【进图】三个打桩/误导点**：`0x7FB310` 是空函数（xor al,al;ret）→ +devmap 成功检查永远失败；+devmap 用 argv[ebx]（仍是 devmap）格式化，地图名丢失；room.startgame 实际发 `"chat.room"`(0xDC6738) UI 事件，不是开局；0x62B870 读写 `g_gametype`/"spy"。devmap/map_restart/fast_restart/map_rotate/room.startgame/room.create 全部 injected 且无变化。证据 [`20261022-stubs-and-misleading-commands.json`](evidence/experiments/20261022-stubs-and-misleading-commands.json)。

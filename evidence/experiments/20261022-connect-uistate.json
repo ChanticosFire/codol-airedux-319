@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:12:04.510237+00:00",
+  "claim": "connect 命令无效；直接写 ui_state=3 也不改变画面",
+  "tests": [
+    {
+      "action": "cbuf connect 127.0.0.1:8466",
+      "result": "injected，仍在大厅"
+    },
+    {
+      "action": "写 [0x84ABA50]=3",
+      "result": "写入成功（读回 3），但画面仍是大厅，stage 仍 5"
+    },
+    {
+      "action": "静态：map_restart 字符串 0xDBF98C",
+      "result": "引用点 0x5AA42D 是启动参数比较（不是控制台命令注册）"
+    }
+  ],
+  "implication": "ui_state 不是场景切换的唯一开关；需要引擎级加载调用或服务器驱动的状态迁移",
+  "next": [
+    "找 CL_Connect / SV_SpawnServer 类引擎函数",
+    "或让服务器推送能让前端进入房间/比赛的协议消息",
+    "或评估 REA（Ghidra）静态分析以定位加载函数"
+  ]
+}
