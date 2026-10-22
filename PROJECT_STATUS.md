@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【builder 序列闸门放宽无效】** `enterworld7.exe` 把 `SV_BeginClientSnapshot` 的序列 `jne`（`0x486E06`）nop 后，快照仍空且无 `frame rejected` 日志——说明 `SV_WriteSnapshotToClient` 的 `CODOL_ClientNativeFrame` 自身还有序列检查，返回 NULL 导致空包。下一步：放宽该检查或在写入前同步 `codol_snapshot_sequence`。证据 [20261022-codex-builder-sequence-gate.json](evidence/experiments/20261022-codex-builder-sequence-gate.json)。
+
 > **2026-10-22【重要修正：dedrun ASLR 基址 0x140000】** `EnumProcessModules` 确认 dedrun 实际加载基址为 `0x140000`（文件 VA `0x48AAB0` → 进程 VA `0x1CAAB0`）。按正确基址复查：补丁/stub 均在、`sv.state=2`、人类 `codol_snapshot_ready=1`、`ready_seq=1677`。此前所有基于 0x400000 的运行时读/写（远程 enter world、sv.state 写入、桥 patch-bytes 等）都命中了错误地址，需要重做。剩余问题：`outgoingSequence=1693` 与 `ready_seq=1677` 差 16 帧，`CODOL_ClientNativeFrame` 不匹配仍发空包。下一步：工具加模块基址换算，重做验证并解决 builder 序列滞后。证据 [20261022-codex-dedrun-aslr-base.json](evidence/experiments/20261022-codex-dedrun-aslr-base.json)。
 
 > **2026-10-22【快照 ready=0 根因定位】** 人类 client `state=4`、`gentity=0x1595E454` 非空，但 `codol_snapshot_ready=0`、日志 `no native frame (builder: none); cursize 5`。原因：`SV_SendClientMessages` 对 ACTIVE 调用的 `0x489081` 不是 `SV_BuildClientSnapshot` 真入口（真入口以 `frame = &client->frames[outgoingSequence & 0x1f]` 开始、末尾写 `codol_snapshot_ready[slot]=1`），导致 ready 永远为 0、快照为空。下一步：定位真入口并修正 stub 的 build 分支，复测 `cursize` 增长。证据 [20261022-codex-snapshot-ready-zero.json](evidence/experiments/20261022-codex-snapshot-ready-zero.json)。

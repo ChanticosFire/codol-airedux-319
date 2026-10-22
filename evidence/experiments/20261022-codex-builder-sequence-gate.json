@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T20:25:00+00:00",
+  "scope": "relaxing the snapshot builder's sequence gate",
+  "patch": {
+    "file": "runs/2697-enterworld-patched/codol_dedrun_enterworld7.exe",
+    "sha256": "b8e768aa0c73d05fd20fd2f6ebdaf9562a3438b71f037fdb24ef45221e43acac",
+    "change": "0x486E06 jne 0x486DB4 -> 90 90 in SV_BeginClientSnapshot, so CODOL_BuildGameplayFrame runs even when codol_snapshot_sequence[slot] != client->netchan.outgoingSequence"
+  },
+  "result": {
+    "snapshots": "still empty: 'out' grows by 121/122 bytes per packet",
+    "frame_rejected": "no 'CoDOL frame rejected' line, so CODOL_BuildGameplayFrame itself is not refusing",
+    "human": "state 4, ready 1, ready_seq behind outgoingSequence",
+    "meaning": "SV_WriteSnapshotToClient's CODOL_ClientNativeFrame(slot, sequence) has its own ready/sequence check; relaxing the builder gate alone does not make the native frame visible to the writer"
+  },
+  "next": [
+    "locate CODOL_ClientNativeFrame (it returns the frame pointer used by SV_WriteSnapshotToClient) and relax its sequence comparison to ready-only",
+    "or make the runtime sequence match: after SV_BuildClientSnapshot, force codol_snapshot_sequence[slot] = client->netchan.outgoingSequence in the writer path",
+    "then verify 'out' grows past 121 and the client stops timing out"
+  ],
+  "artifacts": ["runs/20261022-ring-2697y/main/qconsole.log"]
+}
