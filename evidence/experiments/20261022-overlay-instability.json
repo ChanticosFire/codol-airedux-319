@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:53:53.705456+00:00",
+  "claim": "裁剪后的 overlay(132文件)启动不稳定：trim118 曾成功(fatal_dialog)，fatal120/122 进程未出现",
+  "observations": [
+    "trim118-fa: stop_reason=fatal_dialog (成功启动)",
+    "fatal120-fc: fatal_dialog 但在12s前退出",
+    "fatal122-fe: 进程从未出现(33s内)"
+  ],
+  "next": [
+    "复现 trim118 的启动条件（可能要先跑一次成功会话让缓存就绪）",
+    "检查 launch-fe.log 的 error 与资源处理阶段",
+    "考虑 overlay 需要保留部分 ff 才能稳定启动"
+  ]
+}
