@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:10:00+00:00",
+  "scope": "does the game ever call the receive helper 0x674EB0?",
+  "experiment": {
+    "launcher": "--breakpoint 0x674EB0:recv_helper",
+    "handshake": "full ring bridge, phase 8, ring B consumed at ~280 packets/s",
+    "result": "milestone histogram contains CRT entry / WinMain / Com Init / Initial fastfiles / Engine init / Menu command queue / Switch to main menu / Frontend tick / UI views -- and NO recv_helper entry. Total 16 milestone events, zero receive-helper hits."
+  },
+  "meaning": "the client's game-side receive helper 0x674EB0 is never invoked while it consumes ring B. The consumer of ring B is therefore not the game network path (at least not through 0x674EB0). Since CL_ParseServerMessage fired once earlier, the gamestate path must have reached the parser through a different call (or the one call happened before this breakpoint category was active).",
+  "implications": [
+    "ring B is drained by something else (a bridge/side consumer), so the injected packets never enter the game's netchan receive path after the gamestate",
+    "this explains 'consumed but not parsed' and why the two receive checks were healthy when forced: there really is no game-side packet"
+  ],
+  "next": [
+    "identify who advances 0x7872C00: breakpoint the pop routine or scan for code that reads the ring constants",
+    "if the bridge itself drains ring B for its own forwarding, stop that consumer from eating the game's packets",
+    "otherwise make the game's receive path the consumer (call 0x674EB0 from the bridge's injection loop is not enough; the game must invoke it)"
+  ],
+  "artifacts": ["E:/GAME/COD/1649370/workspaces/offline-runs/codex-recv-count-1/events.jsonl"]
+}
