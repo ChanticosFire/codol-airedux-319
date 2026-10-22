@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:25:16.869750+00:00",
+  "claim": "zone 绕过 + 删除 ver365 zone 后，preloadmap 进入持续加载：150 秒内无 Com_Error、无 fatal，会话因观察超时正常结束",
+  "setup": [
+    "patch 0x49EEA3 => E9",
+    "hook 0x4F82E0",
+    "注入 preloadmap mp_cross_fire 1"
+  ],
+  "timeline": {
+    "5-145s": "进程存活、画面黑屏(10-11KB)、内存稳定 1083MB、CPU 持续增长",
+    "150s": "截图 2.3MB（桌面，说明会话已在 240s 观察窗口结束时收尾）",
+    "stop_reason": "observation_timeout（非崩溃）"
+  },
+  "before_vs_after": {
+    "before": "preloadmap 后 5-14 秒 fatal_dialog（WIN_ZONE_ERROR / Com_Error 2）",
+    "after": "150 秒持续加载，无任何 fatal"
+  },
+  "diagnosis": "加载已进入但未完成（黑屏 150s+，内存 1.1GB），可能卡在等待资源/网络或需要额外触发",
+  "next": [
+    "延长观察并 hook 更多点判断卡在哪个加载阶段",
+    "检查是否在等待 UDP/服务器响应（网络 hook）",
+    "分析 0x5C7C70 后续调用（0xBEAA80/0x5BE5F0/0x4FEC40/0x5BFBB0/0x605AD0）定位阻塞点"
+  ]
+}
