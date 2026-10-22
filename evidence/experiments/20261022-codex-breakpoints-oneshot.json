@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:10:00+00:00",
+  "scope": "are launcher breakpoints one-shot?",
+  "experiment": {
+    "launcher": "--breakpoint 0x5C2260:parse_entry",
+    "handshake": "full ring bridge, phase 8, ring B consumed at ~280 packets/s",
+    "result": "parse_entry hits = 1, and the milestone histogram holds exactly one entry per kind (CRT entry, WinMain, ... each 1)"
+  },
+  "conclusion": "the launcher removes a breakpoint after its first hit. A count of 1 therefore means 'reached at least once', never 'reached exactly once'. This invalidates my earlier 'the loop runs once' reading, but not the recv_helper count of 0, which remains reliable (a never-hit breakpoint proves the function was never entered).",
+  "implications": [
+    "0x5C2260 is entered at least once (confirmed), and likely every frame",
+    "0x674EB0 is never entered (still reliable)",
+    "so 0x5C2260 returns before 0x5C2380 every time, but none of the known early-exit conditions (phase<7 or readcount<4) should hold with phase 8 and a 687/1172-byte packet"
+  ],
+  "next": [
+    "settle it with a non-breakpoint method: write a runtime stub at 0x5C2260's entry that increments a memory counter and stores esi/[esi+0x14], then read the scratch from the bridge",
+    "or patch the early exits to call a scratch logger instead of returning",
+    "the counter approach also tells whether the function is entered per frame"
+  ],
+  "artifacts": ["E:/GAME/COD/1649370/workspaces/offline-runs/codex-entry-count-1/events.jsonl"]
+}

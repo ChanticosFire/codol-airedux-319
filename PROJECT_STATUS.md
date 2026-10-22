@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【方法论修正：launcher 断点一次性】** `0x5C2260` 入口断点只记 1 次，所有 milestone 每类 1 条——断点在首次命中后被移除。“1 次”=“至少一次”。此前的“帧循环只跑一次”推断被推翻，但 `recv_helper` 0 命中仍可靠（从未进入）。下一步：用运行时 stub + 计数器替代断点。证据 [20261022-codex-breakpoints-oneshot.json](evidence/experiments/20261022-codex-breakpoints-oneshot.json)。
+
 > **2026-10-22【环 B 槽内容有效】** read=4095/write=4096，槽内是真实 687/1172 字节包（`5d010080…`）——`0x675140` 在运行并写 readcount，但 `0x674EB0` 从未进入。剩余可能：指针不同、另有早期返回、或 0x4F8ED8 非每帧路径。下一步：在 `0x5C2260` 入口用运行时 stub 记录 msg 指针/长度到 scratch 由桥读取。证据 [20261022-codex-slot-valid.json](evidence/experiments/20261022-codex-slot-valid.json)。
 
 > **2026-10-22【`[esi+0x14]` 是取包长度】** 反汇编 `0x675140`：取槽、memcpy、**`mov [ebx+0x14], 包长度`**、推进读游标。故 `0x5C2260` 的 `[esi+0x14]` 是刚取到的包长度。新矛盾：游标在推进、长度被写，但 `0x674EB0` 从未进入——可能 pop 与 parse 不是同一 msg 对象。下一步：抓活客户端 msg 并比对 `ebx`/`eax` 指针。证据 [20261022-codex-readcount-gate.json](evidence/experiments/20261022-codex-readcount-gate.json)。
