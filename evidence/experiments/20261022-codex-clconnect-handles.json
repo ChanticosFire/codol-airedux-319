@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T20:35:00+00:00",
+  "scope": "read the handles 0x5BE700 checks",
+  "reading": {
+    "phase": 3,
+    "cl": "0x139D27D4",
+    "[0x7887040]": "0x390",
+    "[0x7886E64]": "0x39C",
+    "[0xCA8168]": "0x74E0E9B0 (a runtime module address; not in the exe's import table)"
+  },
+  "conclusion": "both handles exist and are non-zero, so the 'missing handle' branches are not taken. The check therefore fails at call [0xCA8168](handle, 0) returning non-zero, i.e. the indirect function reports failure for these handles.",
+  "next": [
+    "identify what 0x74E0E9B0 is: enumerate the client modules and map the address, then look up the export name",
+    "it takes (handle, 0) and returns non-zero on failure -- that shape fits WaitForSingleObject(h, 0) or a WSA event/option check",
+    "once identified, set up the handle state it expects before calling CL_Connect"
+  ],
+  "artifacts": []
+}
