@@ -1160,3 +1160,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - 复制 common_gametype_mp.ff（20MB）到 loose-library/main；启动变慢验证被处理。
 - 仍 fatal_dialog 但 hook 未捕获。
 - 下轮双 hook + 高频轮询。
+
+## 2026-10-22 zone 路径（本轮）
+
+- zone 要放 runtime 副本（launcher 不复制 Original Client 的 ff）。
+- 双 hook 未捕获 fatal（待查 patch 生效）。
+- 下轮：会话启动后复制 ff 到 runtime 再注入。
