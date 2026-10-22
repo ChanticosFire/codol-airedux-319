@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T11:55:00+00:00",
+  "scope": "compare the client's stored server address with the injected slot address",
+  "client_state": {
+    "raw_[0x331c0c8]": "0xc0968a23",
+    "decoded_ebx": "0xc0968a23 ^ 0xD362501F = 0x13F4DA3C",
+    "[ebx+0x109260] 6 dwords": "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 -- all zero"
+  },
+  "slot_address": {
+    "bytes": "02 00 00 00 | 00 00 00 00 | 71 2a | 00 00 | 00 00 00 00 | 00 00 00 00 | 9d 00 00 00",
+    "dwords": ["0x2 (type=LOOPBACK)", "0x0 (ip)", "0x2A71 (port field + padding)", "0", "0", "0x9D"]
+  },
+  "two_findings": {
+    "port_byte_order": "the port field decodes as 0x2A71 = 10865, while 28970 is 0x712A. The bridge applied socket.htons to a netadr port, but netadr_t.port is host order, so the injected address carries the byte-swapped port. Fixed: the bridge now writes port & 0xFFFF without htons.",
+    "client_address_zero": "the client's stored address at [ebx+0x109260] is all zeros -- it has not been populated. Even with the correct injected port the comparison would fail against a zero address."
+  },
+  "next": [
+    "re-test after the byte-order fix and check whether eax becomes 1 (if the client address is still zero, it will not)",
+    "figure out where [ebx+0x109260] is written (probably from the connect response or gamestate) and why it stays zero",
+    "that write is likely the same code that fills the server address used by NET_CompareAdr"
+  ],
+  "artifacts": []
+}

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【地址对比实证：端口 htons 错误 + 客户端地址全 0】** 活客户端读值：`[ebx+0x109260]` 6 dword 全 0；环 B 槽地址端口字段为 `0x2A71`(10865) 而非 `0x712A`(28970)——桥对 `netadr_t.port`（主机序）错误地做了 `socket.htons`，已改为 `port & 0xFFFF`。另有独立问题：客户端存储的服务器地址从未被写入。下一步：复测端口修正后的 `eax`，并定位 `[ebx+0x109260]` 的写入点。证据 [20261022-codex-adr-compare.json](evidence/experiments/20261022-codex-adr-compare.json)。
+
 > **2026-10-22【`--adr-type 0` 反证：阶段退回 4】** `forward --adr-type 0 --port 28970` 下客户端只到阶段 4、`eax` 仍 0——客户端本身走环回，netadr 类型就是 LOOPBACK(2)，**type=2 本来正确**，type 假设被推翻。桥的 IP 默认改为随类型（NA_IP→127.0.0.1、LOOPBACK→0.0.0.0）。正确组合：`--adr-type 2 --port 28970` + 持久 configstring 补丁。下一步：完整反汇编 `0x674EB0` 看它比较的两个地址来源。证据 [20261022-codex-adrtype-0.json](evidence/experiments/20261022-codex-adrtype-0.json)。
 
 > **2026-10-22【返回值 hook 成功：eax=0，失败点是 netadr TYPE】** 修正跳转目标为 `0x5C2388` 后客户端存活、`eax=0`。`0x674EB0` 归一化后“相等”应为 1，实测 0 说明 `NET_CompareAdr` 返回非 0；`0x674EA8`（type==2）是 `xor eax,eax`，LOOPBACK 必相等——所以失败在 **type 比较**：桥用 `adr_type=2`，客户端 127.0.0.1 连接的远端是 `NA_IP`(0)。已给桥加 IP 参数（默认 127.0.0.1）。下一步：`forward --adr-type 0 --port 28970` 复测 `eax` 是否为 1。证据 [20261022-codex-adr-type.json](evidence/experiments/20261022-codex-adr-type.json)。

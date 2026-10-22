@@ -765,7 +765,7 @@ def _adr_ip_bytes(args) -> bytes:
 
 def _inject_raw(self, data: bytes, adr_type: int = 2, port: int = 0,
                 ip: bytes = b"\0\0\0\0") -> dict:
-    adr = struct.pack("<I4sHHIII", adr_type, ip, socket.htons(port), 0, 0, 0, 0x9D)
+    adr = struct.pack("<I4sHHIII", adr_type, ip, port & 0xFFFF, 0, 0, 0, 0x9D)
     for _ in range(60):
         write = self.u32(RING_B_WRITE)
         read = self.u32(RING_B_READ)
