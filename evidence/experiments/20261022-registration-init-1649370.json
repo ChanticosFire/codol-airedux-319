@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:42:12.376098+00:00",
+  "claim": "找到 1649370 的资源注册表初始化：0x661A7C 起，checksum 常量 0x77DB834 写入全局 [0x77D8240]，并遍历 [0xE5701C] 资源组用 'ncs_%s_%s' 格式化",
+  "code": {
+    "0x661A43": "cmp [0x77DB42C],0（前置标志）",
+    "0x661A51": "call 0x662A50（校验/初始化）",
+    "0x661A5F": "失败路径：Com_Error(0xDBB5BC, 2)",
+    "0x661A7C": "mov eax,[0x77DB834]（checksum 常量）",
+    "0x661A82": "mov [0x77D8240],eax（checksum 全局）",
+    "0x661A90": "mov ecx,[esi+0xE5701C]（资源组数组）",
+    "0x661A9C": "push 0xDC99D4（\"ncs_%s_%s\"）",
+    "0x661AA4": "push 0x40（64 字节缓冲区）"
+  },
+  "globals": {
+    "checksum": "[0x77D8240]",
+    "groups": "[0xE5701C]"
+  },
+  "next": [
+    "运行时读 [0x77D8240] 与 [0xE5701C]",
+    "找到 12761 字节的 slot_types 数组地址",
+    "构造 InitialState 并在正确的时机注入"
+  ]
+}
