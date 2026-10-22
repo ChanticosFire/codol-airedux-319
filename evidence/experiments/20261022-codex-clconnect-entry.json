@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T17:10:00+00:00",
+  "scope": "CL_Connect is 0x5C05F0 -- the same function the bridge's state machine calls",
+  "entry": {
+    "0x5C05F0": "push ebp; mov ebp,esp; sub esp 0x11BC; stack cookie",
+    "0x5C0607": "mov eax,[0x76446B0] -- the phase",
+    "0x5C0611": "mov ecx,[0x331c0c8] (encoded pointer)",
+    "0x5C0617": "mov ebx,ecx; xor ebx,0xD362501F -- ebx = cl",
+    "0x5C0635..0x5C0647": "cmp eax,3 / 4 / 6 / 5; jne 0x5C0F1B -- the body only runs in phases 3,4,5,6",
+    "0x5C064D": "test ecx,ecx; je 0x5C0662; test ebx,ebx; je 0x5C0662; cmp [ebx+0x100260],1; je 0x5C0F1B -- returns early if already 'connected'",
+    "0x5C0662": "mov eax,[ebx+0x28]; call 0x7F4F10; cmp eax,3; ja 0x5C067A; jmp [eax*4+0x5C0F2C] -- dispatch on a sub-state read from cl+0x28"
+  },
+  "significance": "CL_Connect = 0x5C05F0 is exactly the function the bridge already knows as 'the 0x5C05F0 state machine which sends getchallenge'. The bridge comment says the game's own frame tick calls it for phases 3..6.",
+  "puzzle": "if the frame tick calls it for phases 3..6, and our run passes through those phases on the way to 8, then cl should have been touched. Yet at phase 8 cl is entirely zero. Either the early-return at 0x5C064D triggers (cl+0x100260 or ebx was already the 'connected' value), or the phases 3..6 were skipped by a direct phase write rather than by CL_Connect itself.",
+  "next": [
+    "read cl during phases 3..6 (sample cl+0x100260 and cl+0x109260 right after start-challenge) to see whether CL_Connect fills anything at all in our run",
+    "if it never fills, find who sets [0x76446B0] to 8: if the bridge writes it directly, CL_Connect is bypassed and must be driven instead"
+  ],
+  "artifacts": []
+}
