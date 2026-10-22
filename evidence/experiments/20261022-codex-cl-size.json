@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T14:35:00+00:00",
+  "scope": "does 0x331c0c8 really hold the client state?",
+  "disassembly": {
+    "0x5C85AD": "push 0x12A700; call 0x5C8330 (allocate); xor eax,0xD362501F; mov [0x331c0c8],eax",
+    "around": "random-number/timing code and a jump table (0x5C85A6 jmp [ebx*4+0x5C8A3C]) -- this looks like one branch of a larger init/patch routine"
+  },
+  "size_problem": {
+    "allocation": "0x12A700 = 1,222,400 bytes",
+    "iw4_clientState": "the classic clientState_t/cl is only a few kilobytes, so a 1.2 MB object is implausible as 'cl'",
+    "implication": "0x331c0c8 probably points at a large client-side container (cg/ui/view state) rather than cl; the parser field at +0x109260 fits that scale better"
+  },
+  "state_problem": {
+    "runtime": "[ebx] first 16 dwords are zero -- whatever this object is, it stays uninitialised in our run",
+    "but": "the server sees AdministraClient CS_ACTIVE, so the client did send connect/gamestate traffic; that traffic must be produced elsewhere, meaning the game's own connection state lives in another global"
+  },
+  "next": [
+    "stop assuming 0x331c0c8 is cl: identify it by what its fields do (1.2 MB, +0x100260 checked ==1, +0x109260 netadr) -- likely a render/UI client object",
+    "find the real clc.state neighbour by locating code that sets CA_CONNECTED/CA_ACTIVE and reading which global it writes",
+    "the receive helper's netadr partner may simply be that other global's field"
+  ],
+  "artifacts": []
+}
