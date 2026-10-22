@@ -1,0 +1,253 @@
+[patched] host arguments: --name natural-bh-20261022 --image E:\GAME\COD\1649370\bin\v1649370\codol1649370-offline.exe --client E:\GAME\COD\Original Client --patches E:\GAME\COD\1649370\resources\v1649370\offline-menu-patches.json --overlay E:\GAME\COD\1649370\resources\v1649370\offline-resources --queue-main-menu --offline-menu-preview --seconds 300 --local-profile --resource-library E:\GAME\COD\1649370\resources\v1649370\offline-image-library --loose-library E:\GAME\COD\1649370\resources\v1649370\offline-loose-library --breakpoint 0x4fd9b0:Com Init --breakpoint 0x4fcc00:Initial fastfiles --breakpoint 0x7ef0d0:Frontend tick --breakpoint 0x77f8b8:Engine init returned --breakpoint 0x4706d0:Switch to main menu --breakpoint 0x4f82e0:Com Error --breakpoint 0x77c930:Fatal error -- +set 2439 0
+[startup] private-runtime-files: 0.273s
+[startup] resources-iwi: 0.367s
+[startup] resources-loose_startup_resources: 0.202s
+[startup] settings-patches-acl-mounts: 0.471s
+[patched] copied extra root files: Game.dat,GameBabyConfig.dat,Tenparty.dat,tenslx.dat,stun.ini,BugTrace.ini,cacert.pem
+[patched] staged private Auth/LSG config on 127.0.0.1:28969
+[patched] fileSysCheck.cfg (77 bytes) placed in: .,main,client_shipretail,client_shipretail\chinese,players
+[startup] process-and-uac-guard: 0.256s
+[startup] engine-init: 5.548s
+{
+  "scope": "offline client startup diagnostic",
+  "main_menu_verified": false,
+  "started_at": 1792643626.0252686,
+  "input_image": {
+    "path": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+    "sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd"
+  },
+  "cef_locales": {
+    "count": 53,
+    "total_bytes": 3205438
+  },
+  "startup_timings": [
+    {
+      "phase": "private-runtime-files",
+      "seconds": 0.273
+    },
+    {
+      "phase": "resources-iwi",
+      "seconds": 0.367
+    },
+    {
+      "phase": "resources-loose_startup_resources",
+      "seconds": 0.202
+    },
+    {
+      "phase": "settings-patches-acl-mounts",
+      "seconds": 0.471
+    },
+    {
+      "phase": "process-and-uac-guard",
+      "seconds": 0.256
+    },
+    {
+      "phase": "engine-init",
+      "seconds": 5.548
+    }
+  ],
+  "resource_library": {
+    "path": "E:\\GAME\\COD\\1649370\\resources\\v1649370\\offline-image-library",
+    "cache_path": "E:\\GAME\\COD\\1649370\\workspaces\\offline-resource-cache\\548ac4faad2ae205e63a369e8bf5d54cc0217e545dc005d920a3c8b7c8eaf294",
+    "storage": "directory-junctions",
+    "validation": {
+      "validation": "unchanged-metadata",
+      "hashed_bytes": 0
+    },
+    "manifest_sha256": "548ac4faad2ae205e63a369e8bf5d54cc0217e545dc005d920a3c8b7c8eaf294",
+    "resource_count": 22719,
+    "total_bytes": 5256289556
+  },
+  "loose_library": {
+    "path": "E:\\GAME\\COD\\1649370\\resources\\v1649370\\offline-loose-library",
+    "cache_path": "E:\\GAME\\COD\\1649370\\workspaces\\offline-resource-cache\\f2ed57de4e9688d7c6393039300c124f8356d0dcb5749cd155a364bab58cfebb",
+    "storage": "directory-junctions",
+    "validation": {
+      "validation": "unchanged-metadata",
+      "hashed_bytes": 0
+    },
+    "manifest_sha256": "f2ed57de4e9688d7c6393039300c124f8356d0dcb5749cd155a364bab58cfebb",
+    "resource_count": 18154,
+    "total_bytes": 1915317538
+  },
+  "game_settings": {
+    "database": "E:\\GAME\\COD\\codol-airedux\\319\\data\\v1649370\\game-settings.sqlite3",
+    "restored_files": [
+      "config_mp.cfg",
+      "settings_c.zip.iw4",
+      "settings_m.zip.iw4"
+    ]
+  },
+  "runtime_image_sha256": "5ee297cc8b164f21b2baa569d2ba9f3118683c627dff21c1323a44ff7b77dfb5",
+  "arguments": [
+    "+set",
+    "2439",
+    "0"
+  ],
+  "extra_root_files": [
+    "Game.dat",
+    "GameBabyConfig.dat",
+    "Tenparty.dat",
+    "tenslx.dat",
+    "stun.ini",
+    "BugTrace.ini",
+    "cacert.pem"
+  ],
+  "local_auth_lsg": {
+    "dwauth_sha256": "6740217d7b361253d8d87f883f86a2caeaa298e2bc828d65a4ccb65fcf27d360",
+    "ca_sha256": "bcc427bb16251d1ff96183023b8a78561f54407c780234d69362a3c1ba14127d",
+    "runtime_only": true,
+    "port": 28969
+  },
+  "filesyscheck_placed": [
+    ".",
+    "main",
+    "client_shipretail",
+    "client_shipretail\\chinese",
+    "players"
+  ],
+  "filesyscheck_bytes": 77,
+  "command_line": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\natural-bh-20261022\\runtime\\codol1649370-offline.exe -q +set fs_basepath \\\"E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\natural-bh-20261022\\runtime\\\" +set fs_homepath \\\"E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\natural-bh-20261022\\runtime\\\" +set 2439 0",
+  "pid": 4260,
+  "launch_path": "CreateProcessW (patched token path, guarded)",
+  "token": {
+    "verified": false,
+    "reason": "patched launch bypasses low-token isolation"
+  },
+  "creation_time": 134371172273593427,
+  "guard_mode": "loopback-tcp-udp-28969",
+  "guard_sha256": "9db3d28f13cdd2aa9bebc39e7caf5cbc85929d46e85997d2282802cf27d7e926",
+  "guard": {
+    "guard_pid": 34820,
+    "child_pid": 4260,
+    "filter_ids": [
+      108251,
+      108252,
+      108253,
+      108254,
+      108255,
+      108256
+    ],
+    "dynamic": true,
+    "job_kill_on_close": true,
+    "max_processes": 1,
+    "bound_seconds": 360,
+    "scope": "loopback-127.0.0.1:28969"
+  },
+  "resumed": true,
+  "lifetime": "bounded_observation",
+  "local_viewer_adapter": {
+    "patch_va": "0x618a23",
+    "local_modes": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "body_va": "0x618a54",
+    "exit_va": "0x6193c8"
+  },
+  "local_playlist_adapter": {
+    "entry": "0xf200000",
+    "patches": [
+      "0x6a9ea8",
+      "0x5d0afe"
+    ],
+    "policy": "local ready offline, no season and zero configured playlist: UI ID -1; local -1 is invalid"
+  },
+  "offline_menu_preview": true,
+  "engine_init_returned": true,
+  "menu_command_queued": true,
+  "offline_menu_preview_activation_count": 1,
+  "offline_menu_preview_attempted": true,
+  "local_profile": {
+    "uid": 922154387090621709,
+    "revision": 214,
+    "new_account": false,
+    "unlock_report": {
+      "preserved": true
+    }
+  },
+  "local_account_initialization": {
+    "version": 1,
+    "owned_items": 7204,
+    "gp": 1999951600,
+    "cp": 1520
+  },
+  "local_inventory": {
+    "items": 7204,
+    "capacity": 24000,
+    "pool": "0x10c20010",
+    "weapon_experience": 121230,
+    "native_count": 7204,
+    "canaries_intact": true,
+    "selected_character_cache": 1902
+  },
+  "local_profile_capture": {
+    "catalog_count": 21741,
+    "tables": {
+      "mp/rankExpTable.csv": 70,
+      "mp/rankTable.csv": 72,
+      "mp/uiNotifications.csv": 177,
+      "mp/coStartingLoadoutSetting.csv": 3,
+      "mp/unlockFlags.csv": 894,
+      "mp/coWeaponPrimaryRankTable.csv": 31
+    }
+  },
+  "local_store": {
+    "provider": "local_empty_store",
+    "offer_counts": {
+      "0x82c4a90": 0,
+      "0x82c4a94": 0,
+      "0x82c4aa0": 0
+    },
+    "fetch_bits_before": 1,
+    "fetch_bits_after": 7,
+    "initial_data_fetch_performed": true,
+    "purchases_supported": true
+  },
+  "local_currency": {
+    "gp": 1999951600,
+    "cp": 1520
+  },
+  "local_profile_ui_stats_ready": true,
+  "local_profile_native_cache_returned": true,
+  "offline_menu_preview_returned": true,
+  "offline_menu_preview_invoke_result": 1,
+  "local_view_state": {
+    "frontend_allocated": 1,
+    "client_interface": 585646080,
+    "render_gate": 1,
+    "viewer_world": 340442734,
+    "viewer_model_count": 1,
+    "viewer_mode": 1,
+    "viewer_requested_mode": 0,
+    "viewer_requested_item": 0,
+    "viewer_requested_extra": 0,
+    "selected_character_index": 2,
+    "inventory_state": 0,
+    "inventory_count": 7204,
+    "weapon_definition_count": 1135,
+    "initial_fetch_bits": 7,
+    "store_state": 3,
+    "viewer_initialized": 1,
+    "viewer_draw_enabled": 1,
+    "viewer_scene_ready": 1,
+    "viewer_request_pending": 0
+  },
+  "stop_reason": "unhandled_exception",
+  "child_terminated": true,
+  "guard_cleanup": {
+    "closed": true,
+    "engine_close_status": 0,
+    "error": ""
+  },
+  "finished_at": 1792643676.4383795
+}
