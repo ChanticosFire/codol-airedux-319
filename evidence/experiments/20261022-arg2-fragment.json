@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:15:42.877531+00:00",
+  "claim": "arg2 = 0x454C4946 = 'FILE'（字符串值而非指针），说明参数是内联字符串片段或 dump 布局错位",
+  "capture": {
+    "code/arg1": "0x33e7958 → 'WIN_FILE_NOT_FOUND'",
+    "arg2": "0x454C4946 ('FILE')",
+    "ret": "0x544F4E5F ('_NOT')"
+  },
+  "interpretation": "dump 里的 +0x80/+0x84/+0x88 实际取到了连续的错误串片段（'FILE','_NOT'），说明 dump 布局与函数调用约定不完全一致；需要 dump 更深的栈参数",
+  "next": [
+    "hook 里 dump [esp+0x30]/[esp+0x34] 等更深参数",
+    "或直接在 hook 时 dump 整个栈帧（0x80 字节）",
+    "找到真正的文件名后补齐"
+  ]
+}
