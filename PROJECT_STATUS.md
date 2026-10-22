@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 1649370 任务完成线：错误回执同样不触发回调**：成功回执三种 task 字节均 0 命中后，再用 `error=4`（无记录）回执测试，回调仍 0 命中 → 不是记录解析问题，而是“响应→任务完成”整体未走通。`0x7FA800`（addTask）入口记录到 `action=38`、`ecx=0x4f65cde4`；`0xE56FFE0` 槽表首字段是消息类型，属于处理器注册表而非 pending 任务表。传输单例 `[0xE85C68]=0x23D7F5A8`（vtable `0xD5A9C8`，19704 字节）仍含 `0xBAADF00D` 填充。⚠️ 盲调 `0x7EF0D0`/`0x4A6470` 会使客户端崩溃。证据 [`20261022-task-completion-round9.json`](evidence/experiments/20261022-task-completion-round9.json)。
+
 > **2026-10-22 1649370 任务完成与回执 task 字节无关**：task 字节取 `0x0D` / `0x15` / `0x26`（action）三种，回调 `0x7F4330` 均 hits=0，记录均解码成功。已用 `tools/hook_task_ptr.py` 记录查询任务对象（`0x4de5ce08`，`vtable 0x00d59a08`），任务注册链为 `0x7FAA20 → 0x7FA800`（管理器 `0x6376F0`，action=38）。下一轮反汇编任务类虚表与 `0x7FA800` 找匹配键。证据 [`20261022-task-completion-analysis.json`](evidence/experiments/20261022-task-completion-analysis.json)。
 
 > **2026-10-22 1649370 房间查询回调定位：回调从不触发**：`send` IAT 环形 hook + EBP 链抓到 `21/13` 完整链 `0x62DD60 → 0x7F43C0 →（注册回调 0x7F4330）→ 0xBA3370 → 0xC739E0 → 0xC76DB0 → ws2_32!send`；查询条件结构在 `ebp-0x1C`。hook `0x7F4330` 后 hits=0（task 字节 13/21 两次会话均如此），而记录仍解码成功 → 结果解码与任务完成是两条路径。下一轮 hook 任务完成/出队函数。证据 [`20261022-room-query-chain.json`](evidence/experiments/20261022-room-query-chain.json)。

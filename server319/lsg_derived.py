@@ -597,6 +597,19 @@ class DerivedLsgServer(AuthServer):
                     if os.environ.get("ROOM_LIST_CYCLE", "0") == "1":
                         variant = getattr(self, "_room_list_variant", 0)
                         self._room_list_variant = variant + 1
+                    room_error = int(os.environ.get("ROOM_ERROR", "0") or 0)
+                    if room_error:
+                        body = _typed_u64(counter) + _typed_u32(room_error)
+                        frame = build_server_frame85(keys, body, counter=received_counter,
+                                                     iv=os.urandom(16))
+                        conn.sendall(frame)
+                        self.evidence.write("room_error_reply", session,
+                                            reason=f"svc21/task13 error={room_error}")
+                        counter += 1
+                        continue
+                    delay_ms = int(os.environ.get("ROOM_DELAY_MS", "0") or 0)
+                    if delay_ms > 0:
+                        time.sleep(delay_ms / 1000.0)
                     records, label = room_list_variant(
                         variant,
                         room_name=os.environ.get("ROOM_NAME", "AI-Room").encode("latin-1"),

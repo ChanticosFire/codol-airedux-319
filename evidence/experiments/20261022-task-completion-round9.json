@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:01:11.332344+00:00",
+  "claim": "回调不触发与 task 字节无关；错误回执同样不触发；addTask(action=38) 已被观测到",
+  "tests": [
+    {
+      "variant": "成功回执 task=0x0D/0x15/0x26",
+      "callback_hits": 0,
+      "record_decoded": true
+    },
+    {
+      "variant": "错误回执 error=4（无记录）",
+      "callback_hits": 0,
+      "record_decoded": false
+    }
+  ],
+  "add_task_observation": {
+    "hook": "0x7FA800 入口（由 0x7FAA20 转发）",
+    "hits": 1,
+    "action": 38,
+    "ecx": "0x4f65cde4",
+    "arg1": "0x4f65cde0",
+    "dump_head": "01000000 2e838d5f f9010000 0000c841 03000000 00000000 00687bd9 23000000 01000000 1e000000 01000000 09000000 00000000 04000000 c01e370e ff000000 08000000",
+    "note": "dump 仍像请求参数（pageSize=30、9 等），需确认 ecx 指向的是参数对象还是任务槽"
+  },
+  "transport": {
+    "singleton_global": "0xe85c68",
+    "object": "0x23d7f5a8",
+    "vtable": "0x00d5a9c8",
+    "size": 19704,
+    "state_helpers": {
+      "state": "0xbac370",
+      "pump": "0xbad810",
+      "result": "0xbac660",
+      "wait": "0x801960"
+    },
+    "address_set": false,
+    "note": "对象内仍有 0xBAADF00D 填充，未写入服务端地址/端口；0x801960 会循环 0xBAD810 直到 state!=1"
+  },
+  "safety": "盲调未知引擎函数（0x7EF0D0/0x4A6470）导致客户端崩溃；后续仅用带参数/前置检查的调用",
+  "next": [
+    "继续任务完成线：hook 接收路径中“取出/匹配 pending 任务”的函数（可在 0xBA3710 之后的分发里用 EBP 链定位）",
+    "或转游戏传输线：给 0x23D7f5a8 写入地址/端口/key 并驱动 0xBAD810，按 GAME_TRANSPORT_PROGRESS.md 实现 UDP 侧"
+  ],
+  "tools": [
+    "tools/hook_manager.py（0x7FA800 记录 ecx/action）",
+    "tools/dump_task_slots.py（0xE56FFE0 槽表转储）"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-querycb-error-read.json",
+    "evidence/experiments/20261022-manager-read3.json",
+    "evidence/experiments/20261022-slots-pending.json",
+    "evidence/experiments/20261022-slots-after.json"
+  ]
+}
