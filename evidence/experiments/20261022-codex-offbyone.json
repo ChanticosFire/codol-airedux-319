@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T12:05:00+00:00",
+  "scope": "attempt to count CL_Init invocations",
+  "attempt": {
+    "planned": "counter stub at 0x5C85C0 replacing mov [0x331C0C8],eax",
+    "actual_bytes_at_0x5C85C0": "c8 c0 31 03 e9",
+    "expected": "a3 c8 c0 31 03"
+  },
+  "finding": "the search reported the address of the DISPLACEMENT bytes, not of the instruction. The real 'mov [0x331C0C8],eax' starts one byte EARLIER at 0x5C85BF (the a3 opcode). Because of that off-by-one, the patch was not applied (the guard compared against the wrong bytes) and no counter was installed.",
+  "consequence": "no measurement this round, but the correct patch site is now known: 0x5C85BF (5 bytes a3 c8 c0 31 03).",
+  "next": [
+    "retry the counter stub at 0x5C85BF instead of 0x5C85C0",
+    "also verify the second writer 0x5C8AC1 the same way (likely its a3 is at 0x5C8AC0)",
+    "with the correct site, count how many times CL_Init runs during a 0x5B2C10 call"
+  ],
+  "artifacts": ["runs/codex-clinit-count-1-call.json"]
+}
