@@ -49,6 +49,10 @@ def main() -> int:
     parser.add_argument("--external-server", action="store_true",
                         help="Use an already running 127.0.0.1:28969 LSG server")
     parser.add_argument("--pump-seconds", type=float, default=0)
+    parser.add_argument("--recv-pump", action="store_true",
+                        help="Drive native BA41D0 receive state machine after connect tick")
+    parser.add_argument("--outer-pump", action="store_true",
+                        help="Drive native BA4430 receive and gate dispatch")
     args = parser.parse_args()
     result: dict = {"schema": 1, "build": 1649370,
                     "utc": datetime.now(timezone.utc).isoformat(),
@@ -143,6 +147,13 @@ def main() -> int:
         conn = sc.u32(handle, netobj + 0x4F4)
         result["conn"] = hex(conn)
         if conn:
+            outer_context = 0
+            if args.outer_pump:
+                outer_context = int(sc.k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x04))
+                if not outer_context:
+                    raise OSError("VirtualAllocEx outer context failed")
+                result["outer_context"] = {"state_out": hex(outer_context),
+                                           "crypto_holder": hex(outer_context + 0x10)}
             result["conn_state"] = {"socket": hex(sc.u32(handle, conn + 0xC4)),
                                     "c8": sc.u32(handle, conn + 0xC8),
                                     "constructor_type": sc.u32(handle, conn + 8),
@@ -160,20 +171,44 @@ def main() -> int:
                 "c8": sc.u32(handle, conn + 0xC8),
                 "c0": sc.u32(handle, conn + 0xC0),
                 "b8": sc.u32(handle, conn + 0xB8),
+                "9c": sc.u32(handle, conn + 0x9C),
+                "a4": sc.u32(handle, conn + 0xA4),
+                "ac": sc.u32(handle, conn + 0xAC),
+                "5e8": sc.u32(handle, conn + 0x5E8),
+                "640": sc.u32(handle, conn + 0x640),
                 "644": sc.u32(handle, conn + 0x644)}
             if args.pump_seconds > 0:
                 deadline = time.monotonic() + args.pump_seconds
                 samples = []
                 while time.monotonic() < deadline:
                     time.sleep(0.25)
-                    tick = invoke(handle, lambda cave:
-                        b"\xb9" + struct.pack("<I", conn) + b"\xe8" +
-                        struct.pack("<i", 0xBA24C0 - (cave + 10)) + b"\xc3")
+                    target = (0xBA4430 if args.outer_pump else
+                              0xBA41D0 if args.recv_pump else 0xBA24C0)
+                    def tick_code(cave: int) -> bytes:
+                        code = bytearray()
+                        if args.outer_pump:
+                            code += b"\x68" + struct.pack("<I", outer_context + 0x10)
+                            code += b"\x68" + struct.pack("<I", outer_context)
+                        code += b"\xb9" + struct.pack("<I", conn)
+                        call_at = len(code)
+                        code += b"\xe8\x00\x00\x00\x00\xc3"
+                        struct.pack_into("<i", code, call_at + 1,
+                                         target - (cave + call_at + 5))
+                        return bytes(code)
+                    tick = invoke(handle, tick_code)
                     samples.append({"elapsed_ms": round((args.pump_seconds - max(0, deadline - time.monotonic())) * 1000),
                                     "tick": tick, "c8": sc.u32(handle, conn + 0xC8),
                                     "c0": sc.u32(handle, conn + 0xC0),
                                     "b8": sc.u32(handle, conn + 0xB8),
+                                    "9c": sc.u32(handle, conn + 0x9C),
+                                    "a4": sc.u32(handle, conn + 0xA4),
+                                    "ac": sc.u32(handle, conn + 0xAC),
+                                    "5e8": sc.u32(handle, conn + 0x5E8),
+                                    "640": sc.u32(handle, conn + 0x640),
                                     "644": sc.u32(handle, conn + 0x644)})
+                    if args.outer_pump:
+                        samples[-1]["state_out"] = sc.u32(handle, outer_context)
+                        samples[-1]["crypto_holder"] = hex(sc.u32(handle, outer_context + 0x10))
                     if len(samples) >= 200:
                         break
                 result["pump_samples"] = samples

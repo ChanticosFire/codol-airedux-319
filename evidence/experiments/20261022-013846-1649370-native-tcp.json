@@ -1,0 +1,865 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T01:38:33.311093+00:00",
+  "exe": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+  "exe_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "listener": "127.0.0.1:28969",
+  "patches": [],
+  "pid": 35952,
+  "init_netobj": {
+    "cave": "0x41c60000",
+    "thread_id": 656,
+    "wait": 0,
+    "return": "0x24609f78"
+  },
+  "netobj": "0x24609f78",
+  "config": {
+    "remote": "0x41c60000",
+    "ip_hex": "7f000001",
+    "port_offset": "0x84",
+    "port_host_order": 28969,
+    "port_bytes_hex": "2971",
+    "tcp_address_remote": "0x41c70000",
+    "tcp_address_ip_hex": "7f000001"
+  },
+  "native_connect": {
+    "cave": "0x41c80000",
+    "thread_id": 20564,
+    "wait": 0,
+    "return": "0x24608f01"
+  },
+  "conn": "0x2460bb80",
+  "outer_context": {
+    "state_out": "0x41c80000",
+    "crypto_holder": "0x41c80010"
+  },
+  "conn_state": {
+    "socket": "0xcb4",
+    "c8": 1,
+    "constructor_type": 16777343,
+    "constructor_ip_hex": "00000000",
+    "constructor_port_bytes_hex": "2971",
+    "copied_port_bytes_hex": "2971"
+  },
+  "tick": {
+    "cave": "0x41c90000",
+    "thread_id": 36904,
+    "wait": 0,
+    "return": "0x1"
+  },
+  "conn_state_after_tick": {
+    "socket": "0xcb4",
+    "c8": 2,
+    "c0": 0,
+    "b8": 0,
+    "9c": 0,
+    "a4": 0,
+    "ac": 0,
+    "5e8": 1,
+    "640": 0,
+    "644": 0
+  },
+  "pump_samples": [
+    {
+      "elapsed_ms": 251,
+      "tick": {
+        "cave": "0x41c90000",
+        "thread_id": 15680,
+        "wait": 0,
+        "return": "0x2460d200"
+      },
+      "c8": 2,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 22,
+      "5e8": 2,
+      "640": 220,
+      "644": 0,
+      "state_out": 0,
+      "crypto_holder": "0x0"
+    },
+    {
+      "elapsed_ms": 506,
+      "tick": {
+        "cave": "0x41c90000",
+        "thread_id": 28576,
+        "wait": 0,
+        "return": "0x41c80001"
+      },
+      "c8": 2,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 10,
+      "5e8": 3,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 757,
+      "tick": {
+        "cave": "0x41c90000",
+        "thread_id": 22340,
+        "wait": 0,
+        "return": "0x0"
+      },
+      "c8": 2,
+      "c0": 0,
+      "b8": 0,
+      "9c": 1,
+      "a4": 0,
+      "ac": 0,
+      "5e8": 3,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 1009,
+      "tick": {
+        "cave": "0x41c90000",
+        "thread_id": 12136,
+        "wait": 0,
+        "return": "0x0"
+      },
+      "c8": 2,
+      "c0": 0,
+      "b8": 0,
+      "9c": 1,
+      "a4": 0,
+      "ac": 0,
+      "5e8": 3,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 1260,
+      "tick": {
+        "cave": "0x41c90000",
+        "thread_id": 28148,
+        "wait": 0,
+        "return": "0x0"
+      },
+      "c8": 2,
+      "c0": 0,
+      "b8": 0,
+      "9c": 1,
+      "a4": 0,
+      "ac": 0,
+      "5e8": 3,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 1512,
+      "tick": {
+        "cave": "0x41c90000",
+        "thread_id": 37144,
+        "wait": 0,
+        "return": "0x0"
+      },
+      "c8": 2,
+      "c0": 0,
+      "b8": 0,
+      "9c": 1,
+      "a4": 0,
+      "ac": 0,
+      "5e8": 3,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 1765,
+      "tick": {
+        "cave": "0x41c90000",
+        "thread_id": 31508,
+        "wait": 0,
+        "return": "0x0"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 2017,
+      "tick": {
+        "cave": "0x41c90000",
+        "thread_id": 31532,
+        "wait": 0,
+        "return": "0x42fdff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 2268,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 24680,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 2520,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 12940,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 2771,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 41344,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 3023,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 36564,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 3274,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 38452,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 3526,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 35480,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 3777,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 33176,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 4028,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 17504,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 4280,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 40280,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 4530,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 28520,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 4782,
+      "tick": {
+        "cave": "0x41d20000",
+        "thread_id": 32544,
+        "wait": 0,
+        "return": "0x43bfff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 5033,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 21252,
+        "wait": 0,
+        "return": "0x4684ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 5284,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 35912,
+        "wait": 0,
+        "return": "0x4684ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 5536,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 21356,
+        "wait": 0,
+        "return": "0x4684ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 5788,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 28076,
+        "wait": 0,
+        "return": "0x4684ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 6039,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 24392,
+        "wait": 0,
+        "return": "0x4684ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 6290,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 39460,
+        "wait": 0,
+        "return": "0x4684ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 6541,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 29640,
+        "wait": 0,
+        "return": "0x4781ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 6795,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 40052,
+        "wait": 0,
+        "return": "0x4781ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 7046,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 25716,
+        "wait": 0,
+        "return": "0x4781ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 7298,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 33412,
+        "wait": 0,
+        "return": "0x4781ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 7548,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 8060,
+        "wait": 0,
+        "return": "0x47a1ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 7800,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 32752,
+        "wait": 0,
+        "return": "0x47a1ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 8051,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 20300,
+        "wait": 0,
+        "return": "0x47a1ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 8302,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 15328,
+        "wait": 0,
+        "return": "0x47a1ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 8553,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 40412,
+        "wait": 0,
+        "return": "0x47a1ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 8804,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 6160,
+        "wait": 0,
+        "return": "0x47a1ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 9056,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 34060,
+        "wait": 0,
+        "return": "0x47a1ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 9308,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 20040,
+        "wait": 0,
+        "return": "0x4861ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 9559,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 38976,
+        "wait": 0,
+        "return": "0x4a5bff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 9810,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 30460,
+        "wait": 0,
+        "return": "0x4a5bff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    },
+    {
+      "elapsed_ms": 10000,
+      "tick": {
+        "cave": "0x41d30000",
+        "thread_id": 31128,
+        "wait": 0,
+        "return": "0x4b58ff00"
+      },
+      "c8": 4,
+      "c0": 0,
+      "b8": 0,
+      "9c": 0,
+      "a4": 4,
+      "ac": 138,
+      "5e8": 0,
+      "640": 220,
+      "644": 0,
+      "state_out": 4,
+      "crypto_holder": "0x2460d210"
+    }
+  ]
+}

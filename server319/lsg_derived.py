@@ -118,12 +118,16 @@ def terminal_unavailable_reply(transaction_id: int) -> bytes:
 
 class DerivedLsgServer(AuthServer):
     def __init__(self, *args, token_marker: int = 0x00,
-                 observed71_empty: bool = False, profile_store=None, **kwargs):
+                 observed71_empty: bool = False, profile_store=None,
+                 session_key: bytes = SESSION_KEY, **kwargs):
         super().__init__(*args, **kwargs)
         if token_marker not in (0x00, 0xAB):
             raise ValueError("token_marker")
         self.token_marker = token_marker
         self.observed71_empty = observed71_empty
+        if len(session_key) != 24:
+            raise ValueError("session_key must be 24 bytes")
+        self.session_key = session_key
         self.profile_store = profile_store or default_store()
         self.user_id = os.environ.get("LSG_USER_ID", "1")
         self.profile_store.get_or_create(self.user_id)
@@ -150,7 +154,7 @@ class DerivedLsgServer(AuthServer):
                                 body_len=len(client_auth),
                                 body_sha256=hashlib.sha256(client_auth).hexdigest(),
                                 body_hex=client_auth.hex())
-            keys = derive_keys(hello, gate, client_auth, SESSION_KEY)
+            keys = derive_keys(hello, gate, client_auth, self.session_key)
             key_dump_done = False
             self.evidence.write("session_derived", session,
                                 reason="challenge_verified; client-memory-read=false")
@@ -158,6 +162,21 @@ class DerivedLsgServer(AuthServer):
                      + keys.challenge[8:])
             conn.sendall(token)
             self.evidence.write("token_reply", session, reply_hex=token.hex())
+            frame87_delay = float(os.environ.get("LSG_PUSH_87_DELAY", "0"))
+            if frame87_delay > 0:
+                def _push_frame87() -> None:
+                    time.sleep(frame87_delay)
+                    body = b"\x01\x88" + bytes(136)
+                    frame87 = struct.pack("<I", len(body)) + b"\x87" + body
+                    try:
+                        conn.sendall(frame87)
+                        self.evidence.write("frame87_probe", session,
+                                            reply_hex=frame87.hex(),
+                                            reason=f"explicit diagnostic after {frame87_delay:g}s")
+                    except OSError as exc:
+                        self.evidence.write("frame87_probe_failed", session,
+                                            reason=type(exc).__name__)
+                threading.Thread(target=_push_frame87, daemon=True).start()
             counter = 1
             # PROGRESS.md: the reference server pushes a ZEROFRAME (bare u32 0)
             # every 30 s to keep the lobby alive. Send it from a helper thread so
