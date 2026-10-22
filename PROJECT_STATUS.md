@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【实测】preloadmap 触发加载**：`preloadmap mp_cross_fire 1` → 画面立刻全黑（加载过渡），约 20s 后进程退出。与 map/devmap/map_restart 无反应形成对比 → preloadmap 是真正驱动地图挂载的命令。下步试参数形式/反汇编 handler/补前置。证据 [`20261022-preloadmap-test.json`](evidence/experiments/20261022-preloadmap-test.json)。
+
 > **2026-10-22【正确顺序入口】官方 state=3 写入点 0x470467（前面 0x47045C call 0x7F85C0）+ preloadmap 脚本命令**：命令表 0x33303B0 中 unpausegame(0xDC0834)/preloadmap(0xDC0840)/switchtomainmenu(0xDC084C)；preloadmap 注册于 0x5C7879-0x5C7899，格式串 `preloadmap %s %s`（两参数）。下步用 Cbuf 注入 preloadmap。证据 [`20261022-preloadmap-command.json`](evidence/experiments/20261022-preloadmap-command.json)。
 
 > **2026-10-22【诊断】state=3 只是置状态字，游戏会话未初始化**：0x5C05F0（ecx=connection）调用后进程同样退出 → state=3 不能当捷径；蓝本顺序是先建 UDP/hook/patch UID → 0x621230（离开前端含 preload）→ connection init → 最后 state=3。下步：补齐 0x621E50 前置或找离开前端函数。证据 [`20261022-state3-call-crash.json`](evidence/experiments/20261022-state3-call-crash.json)。

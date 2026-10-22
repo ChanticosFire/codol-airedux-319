@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:40:04.125532+00:00",
+  "claim": "注入 preloadmap mp_cross_fire 1 触发加载路径：画面立刻变黑，约 20 秒后进程退出",
+  "test": {
+    "command": "preloadmap mp_cross_fire 1",
+    "injected": true,
+    "immediate": "全黑画面（截图 10143 字节纯黑）",
+    "after_20s": "进程消失（窗口不存在）"
+  },
+  "significance": "preloadmap 确实驱动了引擎的地图挂载路径（不同于之前无效果的 map/devmap），但参数或前置状态不足导致崩溃",
+  "next": [
+    "试 preloadmap 的不同参数形式（单参数、0、空第二参数）",
+    "反汇编 preloadmap 的 handler（0x5C7899 之后的注册节点）看它读几个参数、做什么",
+    "在 preloadmap 之前先补 state/connection 初始化"
+  ]
+}
