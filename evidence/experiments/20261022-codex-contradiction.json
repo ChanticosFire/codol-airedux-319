@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:25:00+00:00",
+  "scope": "a contradiction that narrows the fault",
+  "logic": [
+    "[0xE60B78] is a global constant (no stores anywhere, 261 references) -- so it does not change between runs",
+    "if cl were fully zero, edx at 0x66F206 would equal [0xE60B78] every time and the crash address would be IDENTICAL every run",
+    "yet the observed crash addresses differ every run: 0x5D1CF4C5, 0xB02BCC94, 0x29D986A6, 0x416B9304, 0x2AF65924, 0x2AF590A7"
+  ],
+  "conclusion": "cl is NOT fully zero by the time 0x66F170 runs. At least one of cl+0x2C / cl+0x30 holds a non-zero (and run-dependent) value, which XORs the constant key into a different garbage address each time. So the initialiser DID write those fields -- with something wrong, likely an uninitialised stack value or a partially-filled pointer.",
+  "next": [
+    "read cl+0x2C and cl+0x30 at runtime just before calling 0x5B2C10 and compare the XOR of them with the key against the crash address of the same run",
+    "if cl+0x2C == 0 and cl+0x30 != 0 (or vice versa), that tells which field is being written incorrectly",
+    "also dump cl+0x1C and cl+0x30 (the call's arguments are eax=cl+0x1C and ecx=&[ebp-0x18])"
+  ],
+  "artifacts": []
+}
