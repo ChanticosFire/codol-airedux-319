@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:41:26.191109+00:00",
+  "claim": "拿到 InitialState 与 Registration 的完整协议实现（Rust 源码），可直接照搬格式",
+  "initial_state_format": "3 || server_command_sequence:u32le || map_name:NUL || zone_name:NUL || registration.checksum:u32le || 4 || configstrings || 5 || client_number:u32le || checksum_feed:u32le || 5",
+  "limits": {
+    "map_name/zone_name": "<=31 bytes",
+    "client_number": "<=18"
+  },
+  "registration": {
+    "SLOT_COUNT": 12761,
+    "fields": [
+      "checksum:u32",
+      "slot_types:[u8;12761]"
+    ],
+    "text_slot_rule": "slot_types[i] >= 23 || slot_types[i] == 21"
+  },
+  "source": "codol_server/crates/protocol-1604220/src/{game_initial_state.rs,game_configstrings.rs}",
+  "next": [
+    "构造 12761 字节 slot_types + checksum",
+    "构造 InitialState 并注入客户端（或模拟服务器下发）",
+    "对照 1649370 的资源初始化函数（1604220: 661B90，checksum 77DB834）"
+  ]
+}
