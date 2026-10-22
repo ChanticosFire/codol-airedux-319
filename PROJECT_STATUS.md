@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【快照写入定位、去掉 base bit；客户端仍未消费】** 定位 `CODOL_WriteSnapshotDeltaNumber=0x4BE946`（svc 0x4BEA0B、server_time 0x4BEA1F、delta 0x4BEA31、flags 0x4BEA43、**base bit 0x4BEA69**）。`enterworld9`（`05724d8e…`）nop 掉 base bit 使前缀与 IW4 对齐；实测客户端仍停阶段 8（24 秒采样 `7→8→8…`），服务端持续快照。说明剩余差异在分节序列化。下一步：先发最小 IW4 形状快照验证接受度，再逐节加回或写完整翻译器。证据 [20261022-codex-base-bit-removed.json](evidence/experiments/20261022-codex-base-bit-removed.json)。
+
 > **2026-10-22【分片与 svc 编号兼容；只剩快照体】** 分片统计 stride=1162、满片 1172 字节；客户端已重组 3426 字节 gamestate 并回 `gamestateupdate`，说明重组器接受该 stride；它接受 `svc_gamestate=3` 并进入阶段 8，说明 svc 编号与 2697 服务层一致。故分片层与 svc 层均无问题，唯一差异是快照体（2697 自定义布局 vs IW4 位流）。下一步：反汇编客户端快照读取分支取精确字段序，再写翻译器或 patch 客户端。证据 [20261022-codex-fragment-stride-verified.json](evidence/experiments/20261022-codex-fragment-stride-verified.json)。
 
 > **2026-10-22【根因确认：快照体 bit 流不兼容】** `codol_snapshot.c` 的快照体顺序为 `svc_snapshot(0)` → `server_time(4B)` → `delta(1B)` → `flags(1B)` → `base-present(1 bit)` → player/anim/actors/entities/clients/glass 各节 → `5` 尾标记；dump 实测 `00 | 00 08 1a 01 | 00 | 0c | 96…` 与源码一致。IW4 读取端在同样位置期望 `serverCommandSequence`，且没有那 1 bit——整条位流错位，客户端中止/解出垃圾，故停在阶段 8。这是客户端不进世界的**根本原因**。下一步：反汇编 `CL_ParseSnapshot` 取精确顺序，然后写服务端翻译器或 patch 客户端。证据 [20261022-codex-snapshot-body-mismatch.json](evidence/experiments/20261022-codex-snapshot-body-mismatch.json)。

@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T23:40:00+00:00",
+  "scope": "field-by-field diff: standard IW4 snapshot writer vs the 2697 CoDOL writer",
+  "iw4_standard": {
+    "source": "sv_snapshot.c SV_WriteSnapshotToClient (non-CODOL branch)",
+    "order": [
+      "MSG_WriteByte(svc_snapshot)",
+      "MSG_WriteLong(svsHeader.time)",
+      "MSG_WriteByte(lastframe)",
+      "MSG_WriteByte(snapFlags)",
+      "MSG_WriteDeltaPlayerstate(...)  // bit stream",
+      "entity/client delta bit streams + EOF"
+    ]
+  },
+  "codol_2697": {
+    "source": "codol_snapshot.c CODOL_WriteSnapshotDeltaNumber",
+    "order": [
+      "WriteByte(0)                       // svc_snapshot",
+      "WriteLong(server_time)",
+      "WriteByte(delta)",
+      "WriteByte(flags)",
+      "WriteBits(base != NULL, 1)         // <-- extra bit IW4 does not write",
+      "player state (codol_* serializer)",
+      "anim commands",
+      "actors",
+      "entities",
+      "clients",
+      "glass",
+      "WriteByte(5)"
+    ]
+  },
+  "diff": {
+    "prefix": "svc byte, 4-byte time, delta, flags all line up",
+    "first_divergence": "the extra base-present bit before the player state",
+    "deeper_divergence": "the sections use codol_* serializers rather than the IW4 delta bit streams"
+  },
+  "smallest_test": "remove the base-present bit from the 2697 writer and see whether the 1649370 reader gets further (even if the player-state section still differs, the client should at least start consuming the bit stream instead of aborting)",
+  "next": [
+    "locate CODOL_WriteSnapshotDeltaNumber in dedrun and patch out the single WriteBits(base != NULL,1) call",
+    "if the client reacts, continue by making the sections IW4-shaped",
+    "a full fix needs either the IW4 serializer path enabled on the server (source-only, no compiler here) or a body translator"
+  ],
+  "artifacts": []
+}

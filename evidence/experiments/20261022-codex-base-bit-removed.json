@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T23:55:00+00:00",
+  "scope": "removing the extra base-present bit from the 2697 snapshot body",
+  "writer_location": {
+    "CODOL_WriteSnapshotDeltaNumber": "0x4BE946",
+    "svc_write": "0x4BEA0B call 0x499551 (WriteByte(0) = svc_snapshot)",
+    "server_time_write": "0x4BEA1F call 0x49957B (WriteLong(ctx->server_time))",
+    "delta_write": "0x4BEA31 call 0x499551",
+    "flags_write": "0x4BEA43 call 0x499551",
+    "base_bit_write": "0x4BEA69 call 0x499590 (WriteBits(m, base != NULL, 1))"
+  },
+  "patch": {
+    "file": "runs/2697-enterworld-patched/codol_dedrun_enterworld9.exe",
+    "sha256": "05724d8ea3e25dcee79bf6c379bd39d6716458e7ae439aca773b378066940949",
+    "change": "0x4BEA69 e8 22 ab fd ff -> 90 90 90 90 90 (skip the base-present bit)"
+  },
+  "result": {
+    "client": "still phase 8 for the whole 24 s sample (7 -> 8 -> 8 ...)",
+    "server": "AdministraClient state 4, out 288/409/531 (snapshots continue)",
+    "conclusion": "the prefix now matches IW4 (svc/time/delta/flags) but the client still does not consume the snapshot, so the remaining divergence is the section serialization after those four fields (CODOL_WritePlayerState / entities / clients are not the IW4 delta bit streams)"
+  },
+  "next": [
+    "disable the custom sections and emit a minimal IW4-shaped snapshot (playerstate delta + entity count 0) to prove the client accepts the frame at all",
+    "then add sections back one by one, or implement a full 2697->IW4 body translator",
+    "keep the base-bit removal in the patch stack either way"
+  ],
+  "artifacts": ["runs/20261022-ring-2697ad/main/qconsole.log", "runs/codex-ring-bridge-44-forward.json"]
+}
