@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:35:00+00:00",
+  "scope": "runtime patch of the two receive gates",
+  "setup": {
+    "client": "canonical exe (SHA 55F067AC...), started with a fresh session name",
+    "handshake": "reached phase 8 with the EOF=5 server (enterworld12)",
+    "patched_at_runtime": ["0x5C238A 6 bytes -> 90", "0x5C23AA 2 bytes -> 90"],
+    "verify": "both writes confirmed by reading back the process memory"
+  },
+  "result": {
+    "client": "dropped to state 0 shortly after the patch; ring_b read only 38 packets",
+    "events": "the last milestones include 'Com Error' (0x4F82E0) after menu/view exceptions",
+    "interpretation": "forcing the parse past the two receive checks makes the client parse garbage and hit Com_Error. So the checks are not the defect: they correctly reject an invalid/short message. The real question is why 0x674EB0 (receive) or 0x674740 (length) fails after the gamestate."
+  },
+  "conclusion": "gate patch proves the checks are healthy; the client genuinely has no valid packet to parse after the gamestate, which matches the earlier ring-B observation. The next target is the ring-B consumer / the receive helper 0x674EB0 rather than the parser.",
+  "next": [
+    "instrument 0x674EB0's return value on a live client to see whether it is 'no packet' or a failed validation",
+    "watch the client's ring-B read cursor (base 0x786DBC0, cursors around 0x7872C00) while the bridge injects: if the read cursor stalls, the client stopped polling the ring entirely",
+    "if the ring is polled but empty from the client's point of view, compare the slot layout/state the client expects with what the bridge writes"
+  ],
+  "artifacts": ["runs/codex-gate-test-1-launcher.out", "E:/GAME/COD/1649370/workspaces/offline-runs/codex-gate-test-1/events.jsonl"]
+}
