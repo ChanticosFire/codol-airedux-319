@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【进图】Cbuf 命令确实执行（qtalk.hal 与 quit 为证），地图命令无效**：抓到客户端自己写的 `qtalk.hal`；`quit` 40–60s 后进程退出；`g_gametype dm`/`map_restart`/`mapname`/`sv_mapname`/`fast_restart`/`map_rotate`/`devmap`/`room.startgame`/`room.create` 全部无变化。`mapname` cvar 在 0xDB0DA4（xrefs 0x43E12C/0x456637/0x515471）。证据 [`20261022-cbuf-activity.json`](evidence/experiments/20261022-cbuf-activity.json)。
+
 > **2026-10-22【进图】三个打桩/误导点**：`0x7FB310` 是空函数（xor al,al;ret）→ +devmap 成功检查永远失败；+devmap 用 argv[ebx]（仍是 devmap）格式化，地图名丢失；room.startgame 实际发 `"chat.room"`(0xDC6738) UI 事件，不是开局；0x62B870 读写 `g_gametype`/"spy"。devmap/map_restart/fast_restart/map_rotate/room.startgame/room.create 全部 injected 且无变化。证据 [`20261022-stubs-and-misleading-commands.json`](evidence/experiments/20261022-stubs-and-misleading-commands.json)。
 
 > **2026-10-22【进图】游戏有 UDP 通道但“准备”零发送**：导入 send(0xCA84E0)/recv(0xCA84E4)/**sendto(0xCA8518)**/recvfrom(0xCA851C)；新增 hook_sendto.py；装 hook 后点准备 → sendto 0 条、send 0 条 → 控件确实惰性，不是网络路径问题。证据 [`20261022-udp-channel.json`](evidence/experiments/20261022-udp-channel.json)。

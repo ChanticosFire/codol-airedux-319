@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:09:24.309898+00:00",
+  "claim": "Cbuf 命令确实被执行（客户端自己的 qtalk.hal 与延迟生效的 quit 为证），但地图类命令全部无效果",
+  "cbuf_activity": {
+    "sample_1": "len 1, text \\x00",
+    "sample_2": "len 23, text \\x00qtalk.hal 0 0 0 0 0 0\\n",
+    "note": "客户端自己往 Cbuf 写命令（qtalk.hal），证明缓冲被引擎消费"
+  },
+  "quit_test": "注入 quit 后进程在大约 40-60 秒后退出（不是立即，但确实执行）",
+  "mapname_cvar": {
+    "string": "mapname @ 0xDB0DA4",
+    "xrefs": [
+      "0x43E12C",
+      "0x456637",
+      "0x515471"
+    ],
+    "kind": "Cvar_FindVar 调用点"
+  },
+  "commands_tested": [
+    "g_gametype dm",
+    "map_restart",
+    "mapname mp_strike_sh",
+    "sv_mapname mp_strike_sh",
+    "fast_restart",
+    "map_rotate",
+    "devmap",
+    "room.startgame 1/0",
+    "room.create"
+  ],
+  "result": "全部 injected 且画面/ui_state 无变化",
+  "conclusion": "命令执行链路正常；地图加载相关命令在此离线构建里没有实际加载路径（或需要 in-game 上下文）",
+  "next": [
+    "直接定位并调用地图加载函数（不是命令路径）",
+    "或修改 ui_state 后执行 devmap（本次尝试因 quit 导致进程退出未完成）"
+  ]
+}

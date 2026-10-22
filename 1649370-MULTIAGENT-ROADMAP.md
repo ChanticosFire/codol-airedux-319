@@ -1045,3 +1045,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - 0x7FB310 空函数；+devmap 丢地图名；room.startgame 发 "chat.room" 事件。
 - 六条命令全部无效果。
 - 下轮：直找地图加载入口（SV_SpawnServer/Com_LoadMap）。
+
+## 2026-10-22 Cbuf 活动（本轮）
+
+- Cbuf 有客户端自己的 qtalk.hal；quit 40-60s 后退出 → 链路正常。
+- 九条地图/房间命令全部无效果。
+- 下轮：直接找地图加载函数，或改 ui_state 后 devmap。
