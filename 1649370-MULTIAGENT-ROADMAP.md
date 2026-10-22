@@ -1211,3 +1211,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 
 - 0x76F4826C → ntdll+0x7826C → NtWaitForSingleObject。
 - 引擎空闲等待；下轮找等待对象。
+
+## 2026-10-22【组合突破】preloadmap + state=3 进场景（本轮）
+
+- preloadmap 只预加载（stage 不变）；再写 state=3 → 场景+「无法连接主机」。
+- 地图资源已就绪，剩连接问题。
+- 下轮：伪造握手或 patch 连接检查。
