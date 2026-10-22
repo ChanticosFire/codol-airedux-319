@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:12:59.666820+00:00",
+  "claim": "闪退原因抓到：WIN_FILE_NOT_FOUND（文件未找到），第一个参数是文件名指针 0x33E7958",
+  "capture": {
+    "hook": "0x77C930",
+    "dump": "0x10ce1000",
+    "code": "0x33E7958",
+    "text": "WIN_FILE_NOT_FOUND"
+  },
+  "note": "code 字段是 arg1（文件名字符串指针），需要在下一次 hook 中同时 dump 其内容",
+  "meaning": "加载过程中确实有文件缺失导致 fatal；很可能是 gametype zone 或其配套 lf_* zone，或地图资源",
+  "next": [
+    "hook 时同时读取 arg1 指向的字符串（文件名）",
+    "按缺失文件名补齐资源",
+    "或 patch 掉该文件检查（风险）"
+  ]
+}
