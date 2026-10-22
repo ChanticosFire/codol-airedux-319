@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T17:30:00+00:00",
+  "scope": "inline world-entry patch and the secure-profile script failure",
+  "patch": {
+    "tool": "tools/patch_dedrun_enterworld.py",
+    "input": "runs/2697-defer-patched/codol_dedrun_deferpatch.exe (sha256 e928a55d...)",
+    "output": "runs/2697-enterworld-patched/codol_dedrun_enterworld2.exe (sha256 7be5c894...)",
+    "edits": [
+      "0x48AAB5 cmp eax,1 -> cmp eax,3 (accept CS_PRIMED)",
+      "0x48AABA mov eax,ebx; call 0x489081 -> jmp 0x48B80C (NOP cave stub)",
+      "0x48B80C stub: state==3 ? SV_ClientEnterWorld(client,NULL) : SV_BuildClientSnapshot(client), then jmp 0x48AAC1",
+      "0x4707C5 call SV_DropClient('Secure player profile unavailable') -> jmp 0x470728 (continue into ClientBegin)"
+    ]
+  },
+  "result": {
+    "server": "the client reached CS_PRIMED and the stub invoked SV_ClientEnterWorld on the main thread; the log then shows CS_ZOMBIE, EXE_LEFTGAME and 'Server Shutdown / Server disconnected'",
+    "script_error": "throwing script exception: getPlayerData: cannot read persistent data: 'totalShots' is stored in mp/playersecuredata.def and this player has no attached secure profile; ******* script runtime error ******* self waittill( 'begin' );",
+    "meaning": "skipping the C-level drop is not enough: the map GSC calls getPlayerData, which requires an attached secure profile; without it the script runtime error shuts the server down"
+  },
+  "secure_profile": {
+    "server_log": "CoDOL secure profile for client 0 (uid ...): no mpdata_s in codol_profilePath",
+    "files_searched": ["E:\\GAME\\COD\\使命召唤OL (no mpdata_s)", "E:\\GAME\\COD\\Original Client (no mpdata_s)", "runs/2697-server-test (no mpdata*)"],
+    "conclusion": "no ready-made mpdata_s exists in the workspace"
+  },
+  "next": [
+    "produce or synthesise mpdata_s for the 1649370 account and point codol_profilePath at it, or patch CODOL_AutoBindClientSecureProfile to build a minimal attached profile",
+    "alternatively patch the GSC persistent-data read path (getPlayerData) to return defaults when no secure profile is attached",
+    "then re-test the inline enter-world patch: expected CS_ACTIVE, real snapshots and the client leaving phase 8"
+  ],
+  "artifacts": ["runs/20261022-ring-2697q/main/qconsole.log", "runs/codex-ring-bridge-31-forward.json"]
+}

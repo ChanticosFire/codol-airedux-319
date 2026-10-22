@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【内联 enter world 触发；secure profile 脚本异常关闭服务端】** `patch_dedrun_enterworld.py` 用 NOP 洞 stub 让 `CS_PRIMED` 客户端在主线程调用 `SV_ClientEnterWorld`，并跳过 C 层 `SV_DropClient`。实跑触发 enter world（日志 `CS_ZOMBIE`/`EXE_LEFTGAME`/`Server Shutdown`），但 GSC 抛 `getPlayerData: cannot read persistent data: "totalShots" … no attached secure profile`，随后 `waittill("begin")` 运行时错误关闭服务端。工作区无现成 `mpdata_s`。下一步：合成/绑定 secure profile（或 patch `CODOL_AutoBindClientSecureProfile`），或让持久数据读取返回默认值，再复测。证据 [20261022-codex-enterworld-script-shutdown.json](evidence/experiments/20261022-codex-enterworld-script-shutdown.json)。
+
 > **2026-10-22【远程 enter world 崩溃；内联 patch 方案确定】** `SV_ClientEnterWorld` 入口 `0x4705F4`，client 指针 `0x5692650`（name 在 client+0x2B8）。远程线程调用后 dedrun 立即崩溃（ClientBegin 需要主线程/游戏上下文），日志停在 CS_PRIMED。已设计内联 patch：在 `SV_SendClientMessages` 的 0x48AAA9 段把 `cmp eax,1` 改为 `cmp eax,3`，并把 `call 0x489081` 改为 `call 0x4705F4`；需先核实调用约定（enter world 从栈读参数）。证据 [20261022-codex-enterworld-remote-crash.json](evidence/experiments/20261022-codex-enterworld-remote-crash.json)。
 
 > **2026-10-22【必须先让服务端进入世界】** `SV_BuildClientSnapshot` 在 `client->gentity == NULL` 时直接返回，因此只放宽 `SV_SendClientMessages` 的快照条件不会有效；只有 `SV_ClientEnterWorld` 会设置 gentity 并进入 `CS_ACTIVE`。已定位发送函数中的两处状态检查（`0x48AAA9`/`0x48AB8C`）、client 循环基址 `0x50E2650` 与步长 `0xC57AC`、`SV_ClientEnterWorld` 日志引用 `0x47068A`、`SV_SendClientGameState` 引用 `0x471038`。下一步：定位 `SV_ClientEnterWorld` 入口并在 dedrun 内调用（远程线程或 patch 内联），让服务端进入世界后发真实快照。证据 [20261022-codex-enterworld-locate.json](evidence/experiments/20261022-codex-enterworld-locate.json)。
