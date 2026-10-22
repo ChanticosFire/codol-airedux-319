@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:07:28.973419+00:00",
+  "claim": "客户端用 bcrypt.dll 做 RSA 验签：导入表出现 bcrypt 与 RSA 字符串，但未见 BCryptVerifySignature 直接导入（可能动态获取）",
+  "findings": {
+    "bcrypt": "0xD95219 (.rdata)",
+    "RSA": "0xD36C60 (.rdata)"
+  },
+  "strategy": "改为运行时 patch 验签函数（让它恒成功），避免改文件+改动信任根",
+  "next": [
+    "搜 BCryptVerifySignature / CryptVerifySignature 字符串(动态 GetProcAddress)",
+    "找 .text 里调用 bcrypt 的 import thunk",
+    "patch 返回成功"
+  ]
+}
