@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T00:05:00+00:00",
+  "scope": "test whether the client expects svc_snapshot=7 (standard IW4) instead of 0",
+  "patch": {
+    "file": "runs/2697-enterworld-patched/codol_dedrun_enterworld10.exe",
+    "sha256": "bbf7e30af0be7b005e090618dff5ae5ba5d790928031db2fb273b23527524e84",
+    "change": "0x4BEA00 mov [esp+4],0 -> mov [esp+4],7 (write svc_snapshot=7)"
+  },
+  "result": {
+    "client": "phase 8 for the whole 18 s sample, screenshot 10,800 bytes (black)",
+    "server": "AdministraClient state 4, out 286/409",
+    "conclusion": "svc_snapshot is not 7 for this client either; the svc numbering was never the blocker. The snapshot BODY serialization remains the only incompatible layer."
+  },
+  "state_of_knowledge": {
+    "compatible": ["fragment stride 1162", "svc_gamestate=3", "gamestate reassembly", "reliable command text"],
+    "incompatible": ["snapshot body sections (codol_* serializers vs IW4 delta bit streams)"],
+    "tried": ["base-present bit removed (no effect)", "svc_snapshot=7 (no effect)"]
+  },
+  "next": [
+    "build the minimal IW4 snapshot frame on the server (svc_snapshot + time + delta + flags + EOF, no sections) to test whether the client accepts any frame at all",
+    "if accepted, add playerstate/entity delta bit streams; otherwise locate the client reader dynamically"
+  ],
+  "artifacts": ["runs/20261022-ring-2697ae/main/qconsole.log", "runs/codex-ring-bridge-45-state.png"]
+}
