@@ -610,6 +610,77 @@ class DerivedLsgServer(AuthServer):
                     delay_ms = int(os.environ.get("ROOM_DELAY_MS", "0") or 0)
                     if delay_ms > 0:
                         time.sleep(delay_ms / 1000.0)
+                    if os.environ.get("ROOM_ENVELOPE_MATRIX") == "1":
+                        rec = make_room_listing_record(
+                            room_name=os.environ.get("ROOM_NAME", "AI-Room").encode("latin-1"),
+                            channel_id=int(os.environ.get("ROOM_CHANNEL", "1")),
+                            port=int(os.environ.get("FINDSESS_PORT", "28969")))
+                        frame_counter = received_counter
+                        sent = []
+                        shapes = []
+                        # no-transaction-id shapes first
+                        shapes.append(("notid_a", bytes([0x08]) + struct.pack("<I", 0)
+                                       + bytes([0x03, task]) + struct.pack("<II", 1, 1) + rec))
+                        shapes.append(("notid_b", bytes([0x03, task])
+                                       + struct.pack("<II", 1, 1) + rec))
+                        shapes.append(("notid_c", bytes([0x08]) + struct.pack("<I", 0)
+                                       + bytes([0x03, task]) + struct.pack("<I", 1) + rec))
+                        shapes.append(("taskfirst", bytes([0x03, task]) + struct.pack("<Q", counter)
+                                       + struct.pack("<II", 1, 1) + rec))
+                        for name, body in shapes:
+                            frame = build_server_frame85(keys, body, counter=frame_counter,
+                                                         iv=os.urandom(16))
+                            conn.sendall(frame)
+                            frame_counter += 1
+                            sent.append(name)
+                            time.sleep(0.15)
+                        for tid_tag in (0x0A, 0x0B):
+                            for err_tag in (0x08, 0x09):
+                                for task_tag in (0x03, 0x04):
+                                    body = (bytes([tid_tag]) + struct.pack("<Q", counter)
+                                            + bytes([err_tag]) + struct.pack("<I", 0)
+                                            + bytes([task_tag]) + bytes([task])
+                                            + struct.pack("<II", 1, 1) + rec)
+                                    frame = build_server_frame85(keys, body,
+                                                                 counter=frame_counter,
+                                                                 iv=os.urandom(16))
+                                    conn.sendall(frame)
+                                    frame_counter += 1
+                                    sent.append(f"{tid_tag:02x}/{err_tag:02x}/{task_tag:02x}")
+                                    time.sleep(0.15)
+                        self.evidence.write("room_envelope_matrix", session,
+                                            reason="tags=" + ",".join(sent))
+                        counter += 1
+                        continue
+                    if os.environ.get("ROOM_FRAME_MATRIX") == "1":
+                        base = room_listing_reply(counter, task_id=task)
+                        frame_counter = received_counter
+                        combos = [(0x85, 1), (0x85, 0x86), (0x84, 1), (0x85, 0)]
+                        for outer, inner in combos:
+                            frame = build_server_frame85(keys, base,
+                                                         counter=frame_counter,
+                                                         iv=os.urandom(16),
+                                                         inner_type=inner,
+                                                         frame_type=outer)
+                            conn.sendall(frame)
+                            frame_counter += 1
+                            time.sleep(0.2)
+                        self.evidence.write("room_frame_matrix", session,
+                                            reason="outer/inner=" + ",".join(
+                                                f"{o:02x}/{i:02x}" for o, i in combos))
+                        counter += 1
+                        continue
+                    if os.environ.get("ROOM_EMPTY") == "1":
+                        empty = room_listing_reply(counter, task_id=task, records=[],
+                                                   count_mode="single")
+                        frame = build_server_frame85(keys, empty,
+                                                     counter=received_counter,
+                                                     iv=os.urandom(16))
+                        conn.sendall(frame)
+                        self.evidence.write("room_empty_reply", session,
+                                            reason=f"svc21/task{task} count=0 no total")
+                        counter += 1
+                        continue
                     records, label = room_list_variant(
                         variant,
                         room_name=os.environ.get("ROOM_NAME", "AI-Room").encode("latin-1"),

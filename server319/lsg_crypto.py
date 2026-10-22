@@ -94,13 +94,14 @@ def parse_client_frame85(frame: bytes, keys: LsgKeys) -> tuple[int, int, bytes]:
 
 
 def build_server_frame85(keys: LsgKeys, payload: bytes, *, counter: int,
-                         iv: bytes, inner_type: int = 1) -> bytes:
+                         iv: bytes, inner_type: int = 1,
+                         frame_type: int = 0x85) -> bytes:
     if len(iv) != 16 or not 0 <= counter <= 0xFFFFFFFF or not 0 <= inner_type <= 255:
         raise LsgProtocolError("reply_parameters")
     plaintext = struct.pack("<I", len(payload)) + bytes([inner_type]) + payload
     plaintext += bytes((-len(plaintext)) % 16)
     cipher = AES.new(keys.server_aes, AES.MODE_CBC, iv).encrypt(plaintext)
-    body = b"\xab\x85" + struct.pack("<I", counter) + iv + cipher
+    body = b"\xab" + bytes([frame_type]) + struct.pack("<I", counter) + iv + cipher
     frame = struct.pack("<I", len(body) + 8) + body
     return frame + hmac.digest(keys.server_mac, frame, "sha1")[:8]
 

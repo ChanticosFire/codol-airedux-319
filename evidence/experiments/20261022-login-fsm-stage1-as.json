@@ -1,0 +1,1134 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:06:39.284934+00:00",
+  "pid": 6980,
+  "start_entry": null,
+  "dispatch_entry": "0x7f26c0",
+  "forced_ui_state": 1,
+  "ticks": 40,
+  "interval": 0.3,
+  "samples": [
+    {
+      "tick": 0,
+      "call": {
+        "cave": "0x42f70000",
+        "thread_id": 28300,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "ui_state": 1,
+      "login_step": 0,
+      "login_ready": 1,
+      "auth_state": 0,
+      "lsg_state": 0,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x0"
+      },
+      "netobj": "0x0",
+      "conn": "0x0",
+      "conn_c8": null,
+      "conn_5e8": null,
+      "conn_640": null,
+      "lsg_host_first16": "00ff00ff000000000000000000000000",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 1,
+      "call": {
+        "cave": "0x42f70000",
+        "thread_id": 20280,
+        "wait": 0,
+        "return": "0xde08e8"
+      },
+      "ui_state": 2,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 0,
+      "lsg_state": 0,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x0"
+      },
+      "netobj": "0x0",
+      "conn": "0x0",
+      "conn_c8": null,
+      "conn_5e8": null,
+      "conn_640": null,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 2,
+      "call": {
+        "cave": "0x42f70000",
+        "thread_id": 36472,
+        "wait": 0,
+        "return": "0x6"
+      },
+      "ui_state": 2,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 6,
+      "lsg_state": 0,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x0",
+      "conn": "0x0",
+      "conn_c8": null,
+      "conn_5e8": null,
+      "conn_640": null,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 3,
+      "call": {
+        "cave": "0x430b0000",
+        "thread_id": 41364,
+        "wait": 0,
+        "return": "0x6"
+      },
+      "ui_state": 2,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 6,
+      "lsg_state": 0,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x0",
+      "conn": "0x0",
+      "conn_c8": null,
+      "conn_5e8": null,
+      "conn_640": null,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 4,
+      "call": {
+        "cave": "0x430b0000",
+        "thread_id": 28704,
+        "wait": 0,
+        "return": "0x6"
+      },
+      "ui_state": 2,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 6,
+      "lsg_state": 0,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x0",
+      "conn": "0x0",
+      "conn_c8": null,
+      "conn_5e8": null,
+      "conn_640": null,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 5,
+      "call": {
+        "cave": "0x430b0000",
+        "thread_id": 8436,
+        "wait": 0,
+        "return": "0x6"
+      },
+      "ui_state": 2,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 6,
+      "lsg_state": 0,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x0",
+      "conn": "0x0",
+      "conn_c8": null,
+      "conn_5e8": null,
+      "conn_640": null,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 6,
+      "call": {
+        "cave": "0x430b0000",
+        "thread_id": 27440,
+        "wait": 0,
+        "return": "0xde090c"
+      },
+      "ui_state": 3,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 0,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x0",
+      "conn": "0x0",
+      "conn_c8": null,
+      "conn_5e8": null,
+      "conn_640": null,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 7,
+      "call": {
+        "cave": "0x430b0000",
+        "thread_id": 40852,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "ui_state": 3,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 1,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 1,
+      "conn_5e8": 0,
+      "conn_640": 0,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 8,
+      "call": {
+        "cave": "0x46150000",
+        "thread_id": 32136,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "ui_state": 3,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 1,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 1,
+      "conn_640": 0,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 9,
+      "call": {
+        "cave": "0x46150000",
+        "thread_id": 10072,
+        "wait": 0,
+        "return": "0x1"
+      },
+      "ui_state": 3,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 1,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 2,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 10,
+      "call": {
+        "cave": "0x46150000",
+        "thread_id": 35608,
+        "wait": 0,
+        "return": "0x2"
+      },
+      "ui_state": 4,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 11,
+      "call": {
+        "cave": "0x46150000",
+        "thread_id": 35112,
+        "wait": 0,
+        "return": "0xd08cc103"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 12,
+      "call": {
+        "cave": "0x46150000",
+        "thread_id": 38248,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 13,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 27288,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 14,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 37996,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 15,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 36320,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 16,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 35696,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 17,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 36804,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 18,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 40608,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 19,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 11272,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 20,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 36084,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 21,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 39680,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 22,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 41256,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 23,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 30472,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 24,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 29464,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 25,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 12052,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 26,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 25172,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 27,
+      "call": {
+        "cave": "0x47120000",
+        "thread_id": 31252,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 28,
+      "call": {
+        "cave": "0x471a0000",
+        "thread_id": 29808,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 29,
+      "call": {
+        "cave": "0x471a0000",
+        "thread_id": 27324,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 30,
+      "call": {
+        "cave": "0x471a0000",
+        "thread_id": 8172,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 31,
+      "call": {
+        "cave": "0x471a0000",
+        "thread_id": 41744,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 32,
+      "call": {
+        "cave": "0x471a0000",
+        "thread_id": 34216,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 33,
+      "call": {
+        "cave": "0x50cc0000",
+        "thread_id": 35048,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 34,
+      "call": {
+        "cave": "0x391e0000",
+        "thread_id": 21300,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 35,
+      "call": {
+        "cave": "0x391e0000",
+        "thread_id": 32268,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 36,
+      "call": {
+        "cave": "0x57a10000",
+        "thread_id": 30996,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 37,
+      "call": {
+        "cave": "0x57b30000",
+        "thread_id": 30824,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 38,
+      "call": {
+        "cave": "0x57be0000",
+        "thread_id": 34888,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    },
+    {
+      "tick": 39,
+      "call": {
+        "cave": "0x57c30000",
+        "thread_id": 29112,
+        "wait": 0,
+        "return": "0x5"
+      },
+      "ui_state": 5,
+      "login_step": 0,
+      "login_ready": 2,
+      "auth_state": 9,
+      "lsg_state": 2,
+      "auth_sources": {
+        "0x84abb08": "0x0",
+        "0x84abb0c": "0x0",
+        "0x84abb14": "0x2462ad50"
+      },
+      "netobj": "0x2465aef0",
+      "conn": "0x43313d40",
+      "conn_c8": 2,
+      "conn_5e8": 3,
+      "conn_640": 220,
+      "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+      "lsg_host_ascii": "",
+      "lsg_port": 28969
+    }
+  ],
+  "before": {
+    "ui_state": 0,
+    "login_step": 0,
+    "login_ready": 0,
+    "auth_state": 0,
+    "lsg_state": 0,
+    "auth_sources": {
+      "0x84abb08": "0x0",
+      "0x84abb0c": "0x0",
+      "0x84abb14": "0x0"
+    },
+    "netobj": "0x0",
+    "conn": "0x0",
+    "conn_c8": null,
+    "conn_5e8": null,
+    "conn_640": null,
+    "lsg_host_first16": "00ff00ff000000000000000000000000",
+    "lsg_host_ascii": "",
+    "lsg_port": 28969
+  },
+  "after_force": {
+    "ui_state": 1,
+    "login_step": 0,
+    "login_ready": 0,
+    "auth_state": 0,
+    "lsg_state": 0,
+    "auth_sources": {
+      "0x84abb08": "0x0",
+      "0x84abb0c": "0x0",
+      "0x84abb14": "0x0"
+    },
+    "netobj": "0x0",
+    "conn": "0x0",
+    "conn_c8": null,
+    "conn_5e8": null,
+    "conn_640": null,
+    "lsg_host_first16": "00ff00ff000000000000000000000000",
+    "lsg_host_ascii": "",
+    "lsg_port": 28969
+  },
+  "utc_end": "2026-10-22T04:06:54.345468+00:00"
+}
