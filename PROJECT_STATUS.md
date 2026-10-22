@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【`[esi+0x14]` 是取包长度】** 反汇编 `0x675140`：取槽、memcpy、**`mov [ebx+0x14], 包长度`**、推进读游标。故 `0x5C2260` 的 `[esi+0x14]` 是刚取到的包长度。新矛盾：游标在推进、长度被写，但 `0x674EB0` 从未进入——可能 pop 与 parse 不是同一 msg 对象。下一步：抓活客户端 msg 并比对 `ebx`/`eax` 指针。证据 [20261022-codex-readcount-gate.json](evidence/experiments/20261022-codex-readcount-gate.json)。
+
 > **2026-10-22【自旋测试证明 0x674EB0 从未被进入】** `0x674EB0` 写成 `EB FE` 后客户端不卡死、阶段恒 8、环 B 继续消费——该函数从未被调用。补齐 `0x5C24BC`（`mov al,1; ret`，无包短路径）后结论明确：游戏侧 msg `cursize` 恒 < 4，**游戏从未拿到桥注入的包**。下一步：dump `esi` 确认 cursize，并找出真正消费环 B 的侧路。证据 [20261022-codex-spin-test.json](evidence/experiments/20261022-codex-spin-test.json)。
 
 > **2026-10-22【跳过长度退出：不崩溃但不前进】** 修正位置（`jl` 在 `0x5C22B8`/`0x5C2318`）后运行时 nop，客户端不崩溃、环 B 继续消费（read 8579），但阶段仍 8。说明还有其他提前退出或解析后快照不足以推进。下一步：patch 剩余退出（`0x5C22FC`、`0x84abb08` 块）或用 stub 计数 `0x674EB0`。证据 [20261022-codex-length-exit-skip.json](evidence/experiments/20261022-codex-length-exit-skip.json)。

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:40:00+00:00",
+  "scope": "what [esi+0x14] actually is (readcount, not cursize)",
+  "msg_layout_at_0x4F8D70": {
+    "buffer": "[ebp-0x200e8], zeroed with memset(0x30) at 0x4F8DBA",
+    "+0x04 (ebp-0x200e4)": "0 (cursize)",
+    "+0x08 (ebp-0x200e0)": "data pointer (ebp-0x20080)",
+    "+0x10 (ebp-0x200d8)": "0x20000 (maxsize)",
+    "+0x14 (ebp-0x200d4)": "readcount, initialised via 0x4F8C50"
+  },
+  "parser_checks": {
+    "0x5C22AF": "mov eax,[esi+0x14] = msg->readcount",
+    "0x5C22B5/0x5C22B8": "cmp eax,4 / jl 0x5C22FC (readcount < 4)",
+    "0x5C2315/0x5C2318": "cmp eax,4 / jl 0x5C24BC (readcount < 4 -> return 1 immediately)"
+  },
+  "reading": "the parser only proceeds when the message header has already been read (readcount >= 4). The loop calls the parser at 0x4F8ED8 after the pop at 0x4F8EEA returned a packet, so the pop (0x675140) is expected to fill the message and set readcount. Since 0x674EB0 is never entered, readcount is still < 4 -- meaning 0x675140 does not fill this message object, or it fills a different one.",
+  "next": [
+    "capture the live msg at 0x4F8ED8: write a tiny runtime stub or read [ebp-0x200e8] after pausing the client in the loop",
+    "compare the pointer passed to 0x675140 (ebx) with the one passed to 0x5C2260 (eax)",
+    "that comparison settles whether the handoff is broken"
+  ],
+  "artifacts": [],
+  "pop_0x675140": {
+    "reads": "[0x7872C00] read, [0x7872C04] write; if write-read >= 0x10 it clamps read = write-0x10",
+    "empty": "if read >= write returns 0 (al=0)",
+    "pop": "slot = (read & 0xF)*0x504 + 0x786DBC0; memcpy([ebx+8], slot+0x18, [slot+0x500]) at 0x6751A1; then 0x6751AC mov [ebx+0x14],edx sets msg->readcount = packet length; copies 6 dwords (slot+0..slot+0x14) into [edi+0..0x14]; calls [0xca8128] to advance the read cursor",
+    "return": "non-zero when a packet was popped"
+  },
+  "so_readcount_is": "the parser's [esi+0x14] is the length that 0x675140 just stored, not a read cursor. So after a successful pop the parser should see length >= 4.",
+  "remaining_contradiction": "the ring read cursor does advance (packets are popped), and a successful pop sets length, yet 0x674EB0 is never entered. Either the pop and the parse operate on different message objects, or the parser is reached with length < 4 for another reason."
+}
