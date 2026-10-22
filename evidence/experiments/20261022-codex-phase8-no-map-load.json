@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T21:00:00+00:00",
+  "scope": "client behaviour at phase 8 with a live server world and snapshots",
+  "server": {
+    "state": "AdministraClient CS_ACTIVE, snapshots streaming (out 167/288/410, +121/122 per packet)",
+    "reliable_commands_seen": [
+      "C 0", "D 0", "f \"MP_CONNECTEDAdministraClient^7\"",
+      "s cg_drawSpectatorMessages \"1\" ...", "P \"thermal_mp\" 1000", "S 234",
+      "v", "H", "u 4", "U 3584 -596 35", "d 330 250"
+    ]
+  },
+  "client": {
+    "phase": 8,
+    "ring_b_packets": 6629,
+    "file_activity": {
+      "config_mp.cfg": 6,
+      "LoginQ.dat": 6,
+      "patch_ui_mp.ff": 6,
+      "patch_localized_ui_mp.ff": 4,
+      "ui_mp_const.ff": 2,
+      "video/default.bk2": 2
+    },
+    "map_load": "none: no mp_cross_fire / zone / image opens after the snapshots start",
+    "conclusion": "the client consumes the snapshots but never starts the map load, so it is still waiting for a precondition of phase 9/10 rather than for snapshot data"
+  },
+  "next": [
+    "find the code that transitions the client out of phase 8 (where 0x5BE030 is called with 9/10) and see which message/condition gates it",
+    "compare with a real 2.6.9.7 client against the same server build to see which message it receives before loading the map",
+    "consider that the client may need a local player/'spawn' server command or a completed 'MP_CONNECTED' game-side init"
+  ],
+  "artifacts": ["runs/20261022-ring-2697aa/main/qconsole.log", "runs/codex-ring-bridge-41-forward.json"]
+}

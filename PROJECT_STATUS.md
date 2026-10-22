@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【阶段 8 收包但未加载地图】** `--trace-files` 复跑显示客户端在服务端 CS_ACTIVE、快照持续投递（ring_b 6629、out 每包 +121/122）时，文件访问只有配置查找，**无任何 `mp_cross_fire`/zone/image 打开**；服务端已发 `f "MP_CONNECTED…"`、`d 330 250`、`U 3584 -596 35` 等命令。结论：客户端在等阶段 9/10 的前置条件，而非快照数据。下一步：定位阶段 8→9/10 的客户端门槛，并与真实 2.6.9.7 客户端对比收包序列。证据 [20261022-codex-phase8-no-map-load.json](evidence/experiments/20261022-codex-phase8-no-map-load.json)。
+
 > **2026-10-22【native frame 就绪；客户端仍超时】** `CODOL_ClientNativeFrame=0x4B4240`，`enterworld8` 忽略其 `frame->sequence` 比较。运行时（基址 0xFE0000）验证 `native_ready[0]=1`、`native_frames[0]=0x1799F020`、`snapshot_ready=1`、`ready_seq=0x22B`——服务端快照管线已就绪。客户端仍约 40 秒回 0、黑屏、`out` 每包 121/122 字节（可能是合法压缩快照）。下一步：解码实际投递的快照与可靠命令序列，确认客户端缺什么。证据 [20261022-codex-native-frame-ready.json](evidence/experiments/20261022-codex-native-frame-ready.json)。
 
 > **2026-10-22【builder 序列闸门放宽无效】** `enterworld7.exe` 把 `SV_BeginClientSnapshot` 的序列 `jne`（`0x486E06`）nop 后，快照仍空且无 `frame rejected` 日志——说明 `SV_WriteSnapshotToClient` 的 `CODOL_ClientNativeFrame` 自身还有序列检查，返回 NULL 导致空包。下一步：放宽该检查或在写入前同步 `codol_snapshot_sequence`。证据 [20261022-codex-builder-sequence-gate.json](evidence/experiments/20261022-codex-builder-sequence-gate.json)。
