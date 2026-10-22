@@ -27,5 +27,10 @@
   "evidence": [
     "evidence/experiments/20261022-room-vtable-call.png",
     "evidence/experiments/20261022-call-62f840.json"
-  ]
+  ],
+  "extra_call": {
+    "target": "0x6312E0 (vtable+0xC0, --ecx-room)",
+    "result": "进程存活、房间 UI 无变化"
+  },
+  "reflection": "两条 vtable 调用都不改变画面，怀疑引擎拒绝在前端态(ui_state=5)直接开局；下轮应聚焦 ui_state 5→3 的切换机制"
 }
