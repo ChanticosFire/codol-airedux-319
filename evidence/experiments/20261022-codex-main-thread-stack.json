@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:10:00+00:00",
+  "scope": "window thread identified; naive stack dword scan is too noisy",
+  "main_thread": {
+    "tid": 25812,
+    "found_by": "EnumWindows + GetWindowThreadProcessId(second out param is the pid)",
+    "eip": "0x76F4826C (ntdll wait)"
+  },
+  "stack_hits": {
+    "0xB3919C": "data-like bytes around it",
+    "0x902CB5": "inside a float/vector helper (fld dword [esi+0x14]) -- not a wait caller",
+    "0x60F3F4": "mid-instruction (0x60F3F2 starts a 6-byte xor), so not a real return address"
+  },
+  "assessment": "the raw dword scan surfaces mostly stale data and mid-instruction addresses. To find the real wait caller a frame-chain walk (EBP) or a proper unwinder is needed.",
+  "next": [
+    "walk the EBP chain from the main thread context (EBP is in the CONTEXT) and validate each candidate return address against instruction boundaries",
+    "or set a breakpoint on the wait call path and capture a live stack",
+    "then identify the waited object (event/handle) and who should signal it"
+  ],
+  "artifacts": []
+}

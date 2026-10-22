@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【主线程锁定为窗口线程 25812】** 修正 `GetWindowThreadProcessId` 用法（第二出参是 pid）后锁定主线程，EIP 在 ntdll 等待。裸 dword 栈扫噪声大（0x60F3F4 落在指令中间、0x902CB5 是浮点辅助函数）。下一步改沿 EBP 链做帧展开并校验指令边界。证据 [20261022-codex-main-thread-stack.json](evidence/experiments/20261022-codex-main-thread-stack.json)。
+
 > **2026-10-22【栈回溯工具就绪】** `client_eip.py --stack` 可对每个线程读栈并筛出客户端模块内的返回地址；修正了 `Wow64GetThreadContext`、`proc` 句柄、`--stack` 参数三处问题。采样得到候选：tid 32092 的 `0x41EA00`（.text 内）等，但多数命中是数据字。下一步：用窗口拥有者线程锁定主线程，再反汇编确认的返回地址。证据 [20261022-codex-stack-scan.json](evidence/experiments/20261022-codex-stack-scan.json)。
 
 > **2026-10-22【线程 EIP：全部等待】** 新工具 `tools/client_eip.py`（含 `Wow64GetThreadContext` 修正）采样 77 个线程：EIP 全部在 ntdll 等待例程，**无一在客户端模块内**——gamestate 后整体阻塞在等待上，与“只处理一条消息”一致。下一步：主线程栈回溯取客户端返回地址，定位等待对象后补信号或 patch。证据 [20261022-codex-thread-waits.json](evidence/experiments/20261022-codex-thread-waits.json)。

@@ -68,6 +68,23 @@ def module_base(pid: int) -> int:
     return arr[0] if need.value else 0
 
 
+def window_thread(pid: int) -> int:
+    """Return the thread id that owns a top-level window of the given process."""
+    user32 = C.WinDLL("user32")
+    found = []
+
+    @C.WINFUNCTYPE(W.BOOL, W.HWND, W.LPARAM)
+    def callback(hwnd, lparam):
+        owner = W.DWORD(0)
+        tid = user32.GetWindowThreadProcessId(hwnd, C.byref(owner))
+        if owner.value == pid and tid:
+            found.append(int(tid))
+        return True
+
+    user32.EnumWindows(callback, 0)
+    return found[0] if found else 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", default="codol1649370-offline")
@@ -115,6 +132,9 @@ def main() -> int:
         ok = k32.Thread32Next(snapshot, C.byref(entry))
     k32.CloseHandle(snapshot)
     print(f"pid={pid} base={base:#x} threads={len(rows)}")
+    wt = window_thread(pid)
+    if wt:
+        print(f"  window thread: {wt}")
     for row in rows:
         tid, eip, rva, stack_hits = row
         tag = f"file_va={rva:#x}" if rva is not None else "outside"
