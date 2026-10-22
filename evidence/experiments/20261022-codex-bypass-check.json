@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T22:15:00+00:00",
+  "scope": "patch the 0x5BE700 check to return 1, then call CL_Connect",
+  "patch": {
+    "0x5BE700": "a1 40 70 88 -> b0 01 c3 90 (mov al,1; ret; nop)",
+    "verified": "read back b0 01 c3 90"
+  },
+  "call": "call_main_thread --target 0x5C05F0 --ecx 0, cave 0x11210000, resumed, process_alive_after true",
+  "observation": {
+    "phase": "still 3",
+    "cl": "0x13D1D060",
+    "[cl]": "0x0",
+    "[cl+0x100260]": "0x0",
+    "[cl+0x109260]": "0x0",
+    "new_writes": "cl+0x30=0x9D, cl+0x34=0x849C, cl+0x38=3"
+  },
+  "conclusion": "bypassing the handle check is not enough either. CL_Connect advances a little further (now also writing cl+0x34/0x38) but still does not write clc.state and does not fill the netadr fields. The function's later stages need something else, or the state is written by a different function entirely.",
+  "next": [
+    "disassemble 0x5C0693 (the sub-state 2 target) and the rest of the function after 0x5C067A to see where clc.state is written",
+    "look for the instruction that stores a value into [cl] or [cl+0] anywhere in the 0x5C05F0 body",
+    "if the store exists, its guard is what still blocks; if it does not exist, another function owns the state write"
+  ],
+  "artifacts": ["runs/codex-bypass-1-call.json"]
+}

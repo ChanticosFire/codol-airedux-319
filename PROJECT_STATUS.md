@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【绕过 `0x5BE700` 后 `CL_Connect` 多走几步但仍不写 state】** patch `0x5BE700` → `b0 01 c3 90`（读回确认），`call_main_thread(0x5C05F0, ecx=0)` 进程存活；阶段仍 3、`[cl]`/`[cl+0x100260]`/`[cl+0x109260]` 仍 0，但 `cl+0x30=0x9D`、`cl+0x34=0x849C`、`cl+0x38=3` 为新写入。说明检查只是第一道门，设置状态/填地址还更靠后。下一步：完整反汇编 `0x5C0693` 与 `0x5C067A` 之后，找出写 `[cl]` 的指令；若不存在则该写入属于另一个函数。证据 [20261022-codex-bypass-check.json](evidence/experiments/20261022-codex-bypass-check.json)。
+
 > **2026-10-22【预热实验无效】** `start-challenge`→`inject-oob`（环 B 游标 read 1/write 1，payload 16）→阶段一度 5→`call_main_thread(0x5C05F0, ecx=0)` 后阶段回落 3，`[cl]`/`[cl+0x100260]`/`[cl+0x109260]` 仍全 0。**让接收路径有数据并不能绕过 `0x5BE700`**。下一步：运行时把 `0x5BE700` 改为 `mov al,1; ret` 再调用 `CL_Connect`（仅进程内 patch）。证据 [20261022-codex-prime2.json](evidence/experiments/20261022-codex-prime2.json)。
 
 > **2026-10-22【模块枚举只返回 7 个、目标不在任一模块内——放弃该识别路线】** 修正签名后重试：7 个模块，`0x74E0E9B0` 不在任何区间。7 个模块对运行中的客户端明显偏少，枚举本身可疑（很可能是 64 位 Python 枚举 32 位进程时列表不完整），或该地址属于 Wow64 侧。行为证据已足够（`fn(handle,0)`、只接受 0），直接进入预热实验：**先注入一个包 → 调用 `CL_Connect` → 观察 `0x5BE700` 是否放行、`cl` 是否被填充**。证据 [20261022-codex-modcheck.json](evidence/experiments/20261022-codex-modcheck.json)。
