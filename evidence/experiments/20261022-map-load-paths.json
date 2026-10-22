@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:20:09.773421+00:00",
+  "claim": "Cbuf 命令链路正常（quit 生效）；map/devmap 不是控制台命令，仅作启动参数，且 +devmap 会触发地图加载但前端仍挡着",
+  "verification": {
+    "quit_test": "注入 quit → 进程立即退出（命令被引擎执行）",
+    "static_analysis": "'map'(0xdbd248, len3)/'devmap'(0xdbd24c, len6) 只在 0x4f8b71 命令行参数解析循环中被比较；未在命令表找到注册",
+    "cnsole_map": "注入 map mp_strike_sh / devmap mp_strike_sh / devmap mp_strike 均无效果（仍在大厅）"
+  },
+  "cmdline_test": {
+    "args": [
+      "+devmap",
+      "mp_strike_sh"
+    ],
+    "observed": "启动后进入“选择角色”界面，背景出现地图加载进度条与小地图预览 → devmap 参数已触发加载，但前端未跳过",
+    "screenshot": "evidence/experiments/20261022-cmdline-devmap.png"
+  },
+  "next": [
+    "在 +devmap 启动的会话里完成“选择角色”确认，看是否进入地图",
+    "或找跳过前端/直接 in-game 的开关（如 ui_state 强制、或 0x7f25b0 stage selector 返回 3）",
+    "房间路径：准备/开始游戏需要服务器 mmrsv/mmbook，或主线程直调 0x62F840"
+  ]
+}
