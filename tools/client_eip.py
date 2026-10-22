@@ -89,6 +89,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", default="codol1649370-offline")
     parser.add_argument("--stack", action="store_true", help="scan each thread stack for client return addresses")
+    parser.add_argument("--frames", action="store_true", help="walk the EBP chain of the window thread")
     args = parser.parse_args()
     pid = find_pid(args.name)
     if not pid:
@@ -135,6 +136,33 @@ def main() -> int:
     wt = window_thread(pid)
     if wt:
         print(f"  window thread: {wt}")
+    if args.frames and wt:
+        handle = k32.OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, False, wt)
+        if handle:
+            k32.SuspendThread(handle)
+            ctx = CONTEXT(); ctx.ContextFlags = CONTEXT_CONTROL
+            getter = getattr(k32, "Wow64GetThreadContext", None) or k32.GetThreadContext
+            if getter(handle, C.byref(ctx)):
+                import struct as _st
+                ebp, esp = ctx.Ebp, ctx.Esp
+                print(f"  frame walk: eip={ctx.Eip:#x} esp={esp:#x} ebp={ebp:#x}")
+                for depth in range(12):
+                    if not ebp:
+                        break
+                    buf = C.create_string_buffer(8)
+                    got = C.c_size_t(0)
+                    if not k32.ReadProcessMemory(proc, C.c_void_p(ebp), buf, 8, C.byref(got)) or got.value < 8:
+                        print(f"    depth {depth}: unreadable ebp {ebp:#x}")
+                        break
+                    next_ebp, ret = _st.unpack("<II", buf.raw[:8])
+                    inside = base <= ret < base + 0x2000000
+                    where = f"file_va {ret - base:#x}" if inside else "outside"
+                    print(f"    depth {depth}: ebp={ebp:#x} ret={ret:#x} {where}")
+                    if next_ebp <= ebp:
+                        break
+                    ebp = next_ebp
+            k32.ResumeThread(handle)
+            k32.CloseHandle(handle)
     for row in rows:
         tid, eip, rva, stack_hits = row
         tag = f"file_va={rva:#x}" if rva is not None else "outside"

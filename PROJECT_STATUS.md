@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【EBP 帧展开不可靠；转向查询等待句柄】** `client_eip.py --frames`：主线程 20032、EIP `0x76F4826C`、ESP `0x11A3FEA4`；depth 1 返回 `0x27CBAE` 但反汇编是数据，链在 depth 1 后停止——该等待路径无经典帧链。下一步：读 `[ESP+4]` 的句柄并用 `NtQueryObject` 查类型/名字，对照 gamestate 路径预期（加载完成事件首要嫌疑），再决定发信号或 patch 等待点。证据 [20261022-codex-frame-walk.json](evidence/experiments/20261022-codex-frame-walk.json)。
+
 > **2026-10-22【主线程锁定为窗口线程 25812】** 修正 `GetWindowThreadProcessId` 用法（第二出参是 pid）后锁定主线程，EIP 在 ntdll 等待。裸 dword 栈扫噪声大（0x60F3F4 落在指令中间、0x902CB5 是浮点辅助函数）。下一步改沿 EBP 链做帧展开并校验指令边界。证据 [20261022-codex-main-thread-stack.json](evidence/experiments/20261022-codex-main-thread-stack.json)。
 
 > **2026-10-22【栈回溯工具就绪】** `client_eip.py --stack` 可对每个线程读栈并筛出客户端模块内的返回地址；修正了 `Wow64GetThreadContext`、`proc` 句柄、`--stack` 参数三处问题。采样得到候选：tid 32092 的 `0x41EA00`（.text 内）等，但多数命中是数据字。下一步：用窗口拥有者线程锁定主线程，再反汇编确认的返回地址。证据 [20261022-codex-stack-scan.json](evidence/experiments/20261022-codex-stack-scan.json)。

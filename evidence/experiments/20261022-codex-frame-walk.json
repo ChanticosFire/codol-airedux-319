@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:25:00+00:00",
+  "scope": "EBP frame walk of the main (window) thread",
+  "result": {
+    "window_thread": 20032,
+    "eip": "0x76F4826C (ntdll wait)",
+    "esp": "0x11A3FEA4",
+    "ebp": "0x11A3FF10",
+    "frames": [
+      "depth 0: ret 0x766FE772 (system dll)",
+      "depth 1: ret 0x67CBAE -> file_va 0x27CBAE (client module range but disassembles as data, not a call return point)"
+    ],
+    "walk_stopped": "next EBP was not increasing past depth 1"
+  },
+  "assessment": "the EBP-chain walk also lands in data at 0x27CBAE, so the client does not maintain a classic frame chain along this path (the wait goes through a hand-written/system trampoline). Neither naive dword scanning nor EBP walking is reliable here.",
+  "better_lead": "the main thread sits in an ntdll wait; the waited handle is the first argument on its stack (ESP+4 for NtWaitForSingleObject). Querying that handle with NtQueryObject(ObjectTypeInformation/ObjectNameInformation) would name the object (Event/Mutant/Pipe/...) and point straight at the missing signal.",
+  "next": [
+    "read the dword at ESP+4 of the main thread and, if it is a valid handle, call NtQueryObject to get the object type and name",
+    "match the object type against the gamestate path expectations (a load-completion event is the prime suspect)",
+    "then decide whether to signal it from the bridge or patch the wait"
+  ],
+  "artifacts": []
+}
