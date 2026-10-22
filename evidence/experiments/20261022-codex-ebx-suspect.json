@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T12:55:00+00:00",
+  "scope": "minimal 10-byte address write still crashes",
+  "observation": {
+    "wide_window": "0x80 bytes at [ebx+0x109250] are all zero -- the region is uninitialised",
+    "write": "type(4) + ip(4) + port(2) = 02 00 00 00 00 00 00 00 2a 71, read back identical",
+    "then": "installing the return-value hook made the process exit again"
+  },
+  "deduction": {
+    "not_a_size_problem": "a 10-byte write inside an all-zero 0x80 window cannot overrun a neighbour",
+    "possibilities": [
+      "ebx is not the client-state base: [0x331c0c8] ^ 0xD362501F may be a different object, so [ebx+0x109260] is some other structure that must stay zero",
+      "the field is not a netadr and writing a non-zero type makes later code take an invalid path",
+      "the crash is caused by the hook installation timing rather than the write (it only appeared after the hook)"
+    ]
+  },
+  "next": [
+    "validate ebx first: read [ebx+0] and compare against the client phase (should be 8 at that point); if it is not 8 the pointer is wrong",
+    "if ebx is wrong, find the real client-state pointer (scan for a structure whose +0 equals the phase byte)",
+    "if ebx is right, the field is not the server address -- revisit which six dwords 0x5C2260 actually passes to 0x674EB0"
+  ],
+  "artifacts": []
+}

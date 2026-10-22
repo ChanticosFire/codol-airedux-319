@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【最小 10 字节写入仍崩溃，`ebx` 疑点】** `[ebx+0x109250]` 0x80 窗口全 0；只写 10 字节（type/ip/port）读回一致后，装 hook 时进程又退出。10 字节不会越界 → 可能 `ebx` 不是客户端状态基址（XOR 后是别的对象），或该字段不是 netadr，或崩溃由 hook 时机引起。下一步：读 `[ebx+0]` 与阶段 8 比对验证 `ebx`，再决定。exe SHA 仍 `55F067AC…`。证据 [20261022-codex-ebx-suspect.json](evidence/experiments/20261022-codex-ebx-suspect.json)。
+
 > **2026-10-22【运行时补写地址导致崩溃】** 运行时向 `[ebx+0x109260]` 写 24 字节环回地址（读回一致），随后装返回 hook 时客户端进程退出。判断：24 字节是按 `0x5C2260` 拷贝的 6 个 dword 推的，实际结构可能更大/填充不同，整块覆盖踩掉相邻成员。下一步：先读 0x80 宽窗口确认边界，只改 `NET_CompareAdr` 读的 `+0/+4/+8`（约 10 字节），再复测 `eax`。exe SHA 仍 `55F067AC…`。证据 [20261022-codex-adrfill-crash.json](evidence/experiments/20261022-codex-adrfill-crash.json)。
 
 > **2026-10-22【端口修正已验证；失败原因收敛为客户端地址全 0】** 端口修正后槽地址端口为 `2a 71`（=0x712A=28970）✔，但 `[ebx+0x109260]` 仍 24 字节全 0，`eax` 仍 0。交叉引用 `0x109260` 只有 `0x5B2BAC`（读）、`0x5C231D`（读）等，无逐字段写入点——应为整块结构拷贝填充。下一步：(a) 追 connect 的整块写入；(b) 捷径——运行时把环回地址写入客户端状态，验证“地址补齐即可恢复解析”。证据 [20261022-codex-client-addr-zero.json](evidence/experiments/20261022-codex-client-addr-zero.json)。
