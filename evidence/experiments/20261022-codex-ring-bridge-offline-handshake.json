@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T10:47:00+00:00",
+  "scope": "ring-B consumption, stats upload format, offline 2697 admission and gamestate",
+  "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "findings": {
+    "engine_drains_ring_b_itself": {
+      "test": "wrote one OOB packet to ring B without calling 0x4F8D70",
+      "observation": "read cursor moved 131 -> 132 within 0.5 s, write cursor matched",
+      "conclusion": "the client frame loop already consumes ring B; external pump calls are unnecessary and were the source of the rendering stalls"
+    },
+    "flicker_root_cause": [
+      "per-packet 0x4F8D70 calls suspended/resumed the CODO window thread (tools call path), starving the render loop",
+      "the forward retry loop re-armed phase 3 every 8 s while the client bounced back to phase 0, toggling between lobby and loading UI",
+      "removing both (no pump, retry disabled) makes the lobby stable; writing [0x76446B0]=0 restores the native lobby immediately"
+    ],
+    "stats_layouts": {
+      "observed_1649370_single_block": "FFFFFFFF 'stats' 00 index=0 compressed=837 + zlib(32768) - only when the profile compresses well",
+      "observed_1649370_multi_block": "FFFFFFFF 'stats' 00 index=17 compressed=30722 bytes=528 - the client's block size is not the 1238 bytes the 2697 reader assumes",
+      "profiles": "the 1649370 profile header is not crc32(profile[4:]) (observed 0x86AC2088 vs 0xB2BFEF12) and word4/word8 are 233/0x4A6CC345, so the 2697 archive reader rejects it",
+      "bridge_workaround": "respond with a synthetic 2697-format upload (25 x 1238 blocks, 32768-byte zero profile with crc32 header and word4=220/word8=0xE4FD5218) and drop the client's own upload"
+    },
+    "offline_2697_admission": {
+      "tool": "tools/probe_2697_stats_gamestate.py",
+      "name_encoding": "the 2697 archive path requires the 1649370 base64 name (QWRtaW5pc3RyYUNsaWVudA==), not UTF-16LE hex",
+      "steps": [
+        "getchallenge -> challengeResponse -440473341",
+        "connect with base64 name -> connectResponse",
+        "synthetic stats 25 blocks -> server log 'CoDOL 2697 stats complete client=0 compressed=71'",
+        "statResponse received",
+        "first clc_move -> 'SV_SendClientGameState()' and 'Going from CS_CONNECTED to CS_PRIMED'",
+        "3 gamestate fragments captured (5233 bytes) and reassembled to 3426 bytes"
+      ],
+      "gamestate": {
+        "map": "mp_cross_fire",
+        "zone": "mp",
+        "netconst_checksum": "0x36e8f17b",
+        "configstrings": "\\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2",
+        "layout": "00 00 00 00 | 03 00 00 00 | map NUL | zone NUL | checksum | 04 | configstrings | ... matching the 1649370 initial-state parser"
+      }
+    }
+  },
+  "evidence_files": [
+    "runs/codex-2697-stats-probe2.json",
+    "runs/codex-2697-stats-packets2.bin",
+    "runs/codex-2697-gamestate.bin",
+    "runs/20261022-ring-2697c/main/qconsole.log",
+    "runs/codex-ring-bridge-3-afterstate0-b.png",
+    "runs/codex-ring-bridge-3-stable2.png"
+  ],
+  "conclusion": "The server side of G2 is now proven end-to-end offline: admission, stats completion, CS_PRIMED and a well-formed 1649370-compatible gamestate. The remaining work is client-side: inject the server replies into ring B (the engine drains it itself), send the synthetic stats right after connect, forward clc_move and then inject the gamestate fragments while watching for a real map/world signal.",
+  "next": [
+    "one clean client run: arm phase 3 once, no retry, no pump",
+    "forward getchallenge/connect and inject challengeResponse/connectResponse; send synthetic stats immediately after connect",
+    "inject statResponse, forward clc_move, then inject gamestate fragments (state >= 5)",
+    "verify the client opens mp_cross_fire resources and produces a movable world before claiming G2"
+  ]
+}

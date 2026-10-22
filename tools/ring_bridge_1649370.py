@@ -467,6 +467,90 @@ def _fix_stats_payload(payload: bytes) -> tuple[bytes, dict]:
                          "old_compressed": len(data), "new_compressed": len(rebuilt)}
 
 
+class StatsUploadAssembler:
+    """Rebuild a 1649370 stats upload into the 2697 archive format.
+
+    The client may send one compressed block or a whole run of 1238-byte
+    blocks whose `compressed` field is the total compressed length.  This
+    assembler buffers a run, restores the `crc32(profile[4:])` header, then
+    re-compresses and re-chunks so the server accepts it.
+    """
+
+    PREFIX = b"\xff\xff\xff\xffstats\0"
+
+    def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
+        self.length: int | None = None
+        self.chunks: dict[int, bytes] = {}
+
+    @staticmethod
+    def _count(length: int) -> int:
+        return (length + 1237) // 1238
+
+    def feed(self, payload: bytes) -> list[bytes] | None:
+        """Return rebuilt packets, an empty list while buffering, or None."""
+        import zlib as _zlib
+
+        if not payload.startswith(self.PREFIX) or len(payload) < 13:
+            return None
+        index = payload[10]
+        length = struct.unpack_from("<H", payload, 11)[0]
+        data = payload[13:]
+        if length == 0 or length > 32768:
+            return None
+        count = self._count(length)
+        if index >= count:
+            return None
+        if self.length is not None and (self.length != length or len(self.chunks) > count):
+            self.reset()
+        self.length = length
+        self.chunks[index] = data
+        if len(self.chunks) < count:
+            return []
+        stream = b"".join(self.chunks.get(i, b"") for i in range(count))
+        self.reset()
+        if len(stream) != length:
+            return None
+        try:
+            profile = _zlib.decompress(stream)
+        except Exception:
+            return None
+        if len(profile) != 32768:
+            return None
+        fixed = bytearray(profile)
+        struct.pack_into("<I", fixed, 0, _zlib.crc32(bytes(fixed[4:])) & 0xFFFFFFFF)
+        rebuilt = _zlib.compress(bytes(fixed), 6)
+        out = []
+        new_count = self._count(len(rebuilt))
+        for i in range(new_count):
+            part = rebuilt[i * 1238:(i + 1) * 1238]
+            out.append(b"\xff\xff\xff\xffstats\0" + bytes([i])
+                       + struct.pack("<H", len(rebuilt)) + part)
+        return out
+
+
+def build_fake_stats_packets() -> list[bytes]:
+    """Build a complete 2697-format stats upload (25 x 1238-byte blocks).
+
+    Build 1649370's own upload layout does not match the 2697 archive reader,
+    so the bridge supplies a syntactically valid profile once the connection
+    is established.  Only the 4-byte CRC, the two magic words and zeros are
+    present; this is protocol scaffolding, not a player profile claim.
+    """
+    import zlib as _zlib
+
+    profile = bytearray(32768)
+    struct.pack_into("<I", profile, 4, 220)
+    struct.pack_into("<I", profile, 8, 0xE4FD5218)
+    struct.pack_into("<I", profile, 0, _zlib.crc32(bytes(profile[4:])) & 0xFFFFFFFF)
+    stream = _zlib.compress(bytes(profile), 6)
+    count = (len(stream) + 1237) // 1238
+    return [b"\xff\xff\xff\xffstats\0" + bytes([i]) + struct.pack("<H", len(stream))
+            + stream[i * 1238:(i + 1) * 1238] for i in range(count)]
+
+
 def cmd_forward(client: Client, args) -> dict:
     host, port_text = args.target.rsplit(":", 1)
     target = (host, int(port_text))
@@ -476,6 +560,10 @@ def cmd_forward(client: Client, args) -> dict:
     sent = 0
     received = 0
     injected = 0
+    seen_out: set[bytes] = set()
+    stats_assembler = StatsUploadAssembler()
+    fake_packets = build_fake_stats_packets() if args.fake_stats else []
+    fake_stats_sent = False
     deadline = time.monotonic() + args.seconds
     last_status = None
     next_retry = 0.0
@@ -493,8 +581,33 @@ def cmd_forward(client: Client, args) -> dict:
             for packet in outbox:
                 payload = packet["payload"]
                 stats_note = None
-                if args.fix_stats and payload.startswith(b"\xff\xff\xff\xffstats\0"):
-                    payload, stats_note = _fix_stats_payload(payload)
+                if args.fake_stats and payload.startswith(StatsUploadAssembler.PREFIX):
+                    events.append({"t": round(time.monotonic(), 3), "dir": "drop_client_stats",
+                                   "length": len(payload)})
+                    progressed = True
+                    continue
+                if args.fix_stats and payload.startswith(StatsUploadAssembler.PREFIX):
+                    rebuilt = stats_assembler.feed(payload)
+                    if rebuilt is not None:
+                        if not rebuilt:
+                            events.append({"t": round(time.monotonic(), 3), "dir": "stats_buffer",
+                                           "have": len(stats_assembler.chunks),
+                                           "need": stats_assembler._count(stats_assembler.length or 1)})
+                            progressed = True
+                            continue
+                        for item in rebuilt:
+                            sock.sendto(item, target)
+                            sent += 1
+                            events.append({"t": round(time.monotonic(), 3), "dir": "out",
+                                           "length": len(item), "stats": "rebuilt"})
+                        progressed = True
+                        continue
+                if args.dedup:
+                    key = payload
+                    if key in seen_out:
+                        progressed = True
+                        continue
+                    seen_out.add(key)
                 sock.sendto(payload, target)
                 sent += 1
                 event = {"t": round(time.monotonic(), 3), "dir": "out",
@@ -503,6 +616,14 @@ def cmd_forward(client: Client, args) -> dict:
                 if stats_note is not None:
                     event["stats"] = stats_note
                 events.append(event)
+                if (args.fake_stats and not fake_stats_sent
+                        and payload.startswith(b"\xff\xff\xff\xffconnect ")):
+                    for item in fake_packets:
+                        sock.sendto(item, target)
+                        sent += 1
+                    fake_stats_sent = True
+                    events.append({"t": round(time.monotonic(), 3), "dir": "fake_stats",
+                                   "blocks": len(fake_packets)})
                 progressed = True
             for _ in range(64):
                 try:
@@ -527,14 +648,16 @@ def cmd_forward(client: Client, args) -> dict:
                                "ascii": data[:160].decode("latin-1", errors="replace")})
                 if result["status"] == "queued":
                     injected += 1
-                    client.invoke_sequence([{"target": PUMP_FN, "args": []}], settle=0.3)
+                    if args.pump:
+                        client.invoke_sequence([{"target": PUMP_FN, "args": []}], settle=0.3)
                 progressed = True
             state = client.status()
             if last_status != state["state"]:
                 events.append({"t": round(time.monotonic(), 3), "dir": "state",
                                "state": state["state"], "stage": state["stage"]})
                 last_status = state["state"]
-            if args.start_challenge and state["state"] == 0 and time.monotonic() >= next_retry:
+            if (args.start_challenge and args.retry_seconds > 0
+                    and state["state"] == 0 and time.monotonic() >= next_retry):
                 events.append({"t": round(time.monotonic(), 3), "dir": "rearm",
                                "result": client.start_challenge()})
                 next_retry = time.monotonic() + args.retry_seconds
@@ -608,13 +731,22 @@ def main() -> int:
                    help="put slot 0 into phase 3 and let the client send getchallenge")
     p.add_argument("--connect-address",
                    help="alternatively call the natural connect entry with this address")
-    p.add_argument("--retry-seconds", type=float, default=6.0)
+    p.add_argument("--retry-seconds", type=float, default=0.0,
+                   help="re-arm phase 3 after this many seconds in phase 0 (0 disables)")
+    p.add_argument("--pump", action="store_true",
+                   help="also call 0x4F8D70 on the window thread after each injection "
+                        "(the engine already drains ring B, so this is only for tests)")
     p.add_argument("--oob-only", action="store_true",
                    help="inject only OOB (FFFFFFFF) replies, drop netchan data for now")
     p.add_argument("--oob-until-state", type=int, default=0,
                    help="drop non-OOB replies while the client phase is below this value")
     p.add_argument("--fix-stats", action="store_true",
-                   help="rewrite the 32768-byte profile CRC to the 2697 archive format")
+                   help="rebuild the 32768-byte profile upload into the 2697 archive format")
+    p.add_argument("--fake-stats", action="store_true",
+                   help="send a complete 2697-format stats upload right after connect "
+                        "and drop the client's own upload")
+    p.add_argument("--dedup", action="store_true",
+                   help="forward each identical outgoing payload only once")
     p.add_argument("--max-events", type=int, default=300)
     p.set_defaults(func=cmd_forward)
 
