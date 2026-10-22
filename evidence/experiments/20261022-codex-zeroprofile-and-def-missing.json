@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T18:10:00+00:00",
+  "scope": "zero secure profile and getPlayerData error-path patches",
+  "patches": {
+    "enterworld3": {
+      "tool": "tools/patch_dedrun_zeroprofile.py",
+      "change": "0x57BE1A CODOL_ReadSecureProfile -> jmp 0x47320E stub: zero [esp+0x1C] for [esp+0x20] bytes, return 1",
+      "sha256": "bea282952fb8024025c1a29c17ddb023326f439a49f7120cc4aeaa261442176a"
+    },
+    "enterworld4": {
+      "change": "0x51C750 jne 0x51C768 (getPlayerData persistent-data error) -> 90 90",
+      "sha256": "fe101e464f23eb603a0a0f39782bb0ae95813186e74e7cb65665469c8ccc3a79"
+    }
+  },
+  "results": {
+    "enterworld3": "server still logs 'CoDOL secure profile ... schema/attach rejected'; the map GSC still throws getPlayerData and shuts the server down",
+    "enterworld4": "same script exception and shutdown; the runtime byte check could not be read after the shutdown (ReadProcessMemory returned None)",
+    "conclusion": "a zero profile is rejected because CODOL_LoadMountedStructuredSchema('mp/playersecuredata.def') itself fails: the schema file is not mounted on the server"
+  },
+  "schema_search": {
+    "workspace": "no playersecuredata.def anywhere under E:\\GAME\\COD",
+    "ifs_scan": "974 IFS packs: no member named playersecuredata.def",
+    "implication": "the def lives inside a client fastfile that the 2697 server does not mount"
+  },
+  "next": [
+    "extract playersecuredata.def from a client fastfile (common_mp/mp_common) and place it where CODOL_LoadMountedStructuredSchema can mount it",
+    "or patch CODOL_LoadMountedStructuredSchema to build a minimal schema when the file is missing",
+    "re-verify enterworld3/4 afterwards, then confirm CS_ACTIVE and real snapshots"
+  ],
+  "artifacts": ["runs/20261022-ring-2697s/main/qconsole.log", "runs/20261022-ring-2697t/main/qconsole.log"]
+}
