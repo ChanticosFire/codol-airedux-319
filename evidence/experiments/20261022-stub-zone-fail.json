@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:04:33.113097+00:00",
+  "claim": "用同版本小 zone（common_mp_reload.ff, ver461, 24853B）改名成 common_gametype_mp.ff 会崩溃：版本对但内容结构不对",
+  "experiment": {
+    "stub": "common_mp_reload.ff → common_gametype_mp.ff（ver 461, 24853B）",
+    "result": "完整配方后客户端退出（窗口消失）"
+  },
+  "analysis": "fastfile 解析会按 zone 名读取对应的资源表；内容不匹配 → 解析失败/崩溃",
+  "conclusion": "必须拿到真正的 ver461 common_gametype_mp.ff，不能靠改名顶替",
+  "next": [
+    "继续找 ver461 gametype zone（IIPS/备份/其它机器）",
+    "或在不加载 gametype 的前提下绕过（patch 掉对其的依赖）"
+  ]
+}
