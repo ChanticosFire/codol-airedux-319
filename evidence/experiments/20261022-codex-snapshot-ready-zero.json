@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T19:45:00+00:00",
+  "scope": "why snapshots are still empty after CS_ACTIVE",
+  "runtime_check": {
+    "client_pointer": "0x4E22650",
+    "state": 4,
+    "gentity": "0x1595E454 (non-null)",
+    "snapshot_ready": 0,
+    "log": "no native frame for sequence 1 (ready 0, ready sequence 0, builder: none); cursize 5 of 131072"
+  },
+  "analysis": {
+    "entry_world_ok": "SV_ClientEnterWorld ran and set gentity; CS_ACTIVE is real",
+    "build_call": "SV_SendClientMessages calls 0x489081 for ACTIVE/ZOMBIE clients, but 0x489081 starts with 'test eax,eax' and is not the SV_BuildClientSnapshot entry seen in sv_snapshot.c (which begins with frame = &client->frames[client->netchan.outgoingSequence & PACKET_MASK])",
+    "consequence": "codol_snapshot_ready[slot] is never set to 1, so CODOL_ClientNativeFrame returns NULL and SV_WriteSnapshotToClient marks msg overflowed (empty/recovery snapshot)",
+    "fat": "the NOP-cave stub kept the original call target for the build branch, so this is a pre-existing target mismatch, not a new regression"
+  },
+  "next": [
+    "locate the real SV_BuildClientSnapshot entry: prologue, then mov eax,[client+0x10]; and eax,0x1f; frame computation, and at its end the store codol_snapshot_ready[slot]=1",
+    "point the ACTIVE branch at that entry (the stub's build_cold call) and keep the PRIMED branch calling SV_ClientEnterWorld",
+    "re-test: ready should become 1 and cursize should grow past 5"
+  ],
+  "artifacts": ["runs/20261022-ring-2697w/main/qconsole.log"]
+}

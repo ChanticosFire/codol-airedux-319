@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【快照 ready=0 根因定位】** 人类 client `state=4`、`gentity=0x1595E454` 非空，但 `codol_snapshot_ready=0`、日志 `no native frame (builder: none); cursize 5`。原因：`SV_SendClientMessages` 对 ACTIVE 调用的 `0x489081` 不是 `SV_BuildClientSnapshot` 真入口（真入口以 `frame = &client->frames[outgoingSequence & 0x1f]` 开始、末尾写 `codol_snapshot_ready[slot]=1`），导致 ready 永远为 0、快照为空。下一步：定位真入口并修正 stub 的 build 分支，复测 `cursize` 增长。证据 [20261022-codex-snapshot-ready-zero.json](evidence/experiments/20261022-codex-snapshot-ready-zero.json)。
+
 > **2026-10-22【人类与 bot 均 CS_ACTIVE；快照仍空】** `enterworld6.exe` 把脚本错误函数 `0x58EECF` 改为 `xor eax,eax; ret` 后，服务端不再因 GSC 错误关闭：`AdministraClient state 4`（人类 CS_ACTIVE），`Training 5..11` 也全部 `CS_PRIMED → CS_ACTIVE`。但 `snapshot could not be prepared … no native frame (builder: none); cursize 5` 依旧，客户端仍 40 秒超时。下一步：补齐 CoDOL native frame/builder 或让 recovery 发送有效快照。证据 [20261022-codex-human-and-bots-active.json](evidence/experiments/20261022-codex-human-and-bots-active.json)。
 
 > **2026-10-22【CS_ACTIVE 后快照 no native frame】** 进入世界后日志：`snapshot could not be prepared … no native frame for sequence 32 (builder: none); cursize 5 of 131072`。说明 `SV_BuildClientSnapshot` 已调用但缺 native frame——`ClientBegin` 因 GSC `getPlayerData` definition 错误中断、客户端 spawn 未完成。下一步：patch `getPlayerData`（`0x5223C6`）在零 profile 时返回默认值，或合成匹配 profile，让 spawn 完成、native frame 出现。证据 [20261022-codex-snapshot-no-native-frame.json](evidence/experiments/20261022-codex-snapshot-no-native-frame.json)。
