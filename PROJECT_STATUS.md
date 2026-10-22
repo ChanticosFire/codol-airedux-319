@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【诊断】state=3 只是置状态字，游戏会话未初始化**：0x5C05F0（ecx=connection）调用后进程同样退出 → state=3 不能当捷径；蓝本顺序是先建 UDP/hook/patch UID → 0x621230（离开前端含 preload）→ connection init → 最后 state=3。下步：补齐 0x621E50 前置或找离开前端函数。证据 [`20261022-state3-call-crash.json`](evidence/experiments/20261022-state3-call-crash.json)。
+
 > **2026-10-22【state=3 后续】自绑 8466 但不发 UDP；直接调 0x621E50 导致进程退出**：hook_sendto 0 条；state=3 约 2 秒后被重置回 0；tools/transport_after_state.py --set-state 执行到 gate=1/called 后进程消失。下步：走 0x5C05F0 发 getchallenge 或反汇编 0x621E50 找前置条件。证据 [`20261022-state3-transport-attempt.json`](evidence/experiments/20261022-state3-transport-attempt.json)。
 
 > **2026-10-22【本地服务器模式】state=3 后自绑 UDP 127.0.0.1:8466**：进程 UDP 端点为 127.0.0.1:8466、0.0.0.0:53772、0.0.0.0:22011 → 走本地 listen server 路径；connect 阶段失败显示无法连接主机。新增 tools/udp_challenge.py（端口被占绑定失败）。launcher 的 --transport-connect/--init-transport 均导致客户端退出。下步：state=3 后手动调用 0x621E50 建通道。证据 [`20261022-local-server-mode.json`](evidence/experiments/20261022-local-server-mode.json)。

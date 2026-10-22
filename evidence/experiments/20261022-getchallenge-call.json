@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:36:34.484506+00:00",
+  "pid": 38540,
+  "set_state": 3,
+  "state": 3,
+  "connection": "0x13c9d824",
+  "host": "0x2458e498",
+  "biz": "0x245a6f80",
+  "gate_before": 0,
+  "gate_after": 1,
+  "status": "called",
+  "ret": null,
+  "adr_after": null,
+  "channel": null,
+  "t30": null
+}

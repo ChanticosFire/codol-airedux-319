@@ -65,6 +65,10 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=8466)
     parser.add_argument("--window", default="CODO")
     parser.add_argument("--wait", type=float, default=90)
+    parser.add_argument("--call", type=lambda v: int(v, 0), default=CHANNEL_CREATE,
+                        help="target function (default 0x621E50)")
+    parser.add_argument("--ecx-connection", action="store_true",
+                        help="set ECX=connection before the call (thiscall)")
     parser.add_argument("--set-state", action="store_true",
                         help="write state=3 first, then immediately create the channel")
     parser.add_argument("--output")
@@ -138,13 +142,20 @@ def main() -> int:
         if not write(adr, adr_bytes) or not write(buf, b"xx\x00"):
             row["status"] = "write_args_failed"
             return finish(row, args.output)
-        code = b"\x60\x6a\x02"
-        code += b"\x68" + struct.pack("<I", buf)
-        code += b"\x68" + struct.pack("<I", adr)
-        code += b"\xe8" + struct.pack("<I", (CHANNEL_CREATE - (cave + len(code) + 5)) & 0xFFFFFFFF)
-        code += b"\x83\xc4\x0c"
-        code += b"\xa3" + struct.pack("<I", cave + 0x200)
-        code += b"\x61\xc3"
+        if args.ecx_connection:
+            code = b"\x60"
+            code += b"\xb9" + struct.pack("<I", connection)
+            code += b"\xe8" + struct.pack("<I", (args.call - (cave + len(code) + 5)) & 0xFFFFFFFF)
+            code += b"\xa3" + struct.pack("<I", cave + 0x200)
+            code += b"\x61\xc3"
+        else:
+            code = b"\x60\x6a\x02"
+            code += b"\x68" + struct.pack("<I", buf)
+            code += b"\x68" + struct.pack("<I", adr)
+            code += b"\xe8" + struct.pack("<I", (args.call - (cave + len(code) + 5)) & 0xFFFFFFFF)
+            code += b"\x83\xc4\x0c"
+            code += b"\xa3" + struct.pack("<I", cave + 0x200)
+            code += b"\x61\xc3"
         if not write(cave, code):
             row["status"] = "cave_write_failed"
             return finish(row, args.output)
