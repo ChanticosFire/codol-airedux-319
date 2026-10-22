@@ -1361,3 +1361,8 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 
 - wpr 可用，计划抓 FileIO 失败路径。
 - 下轮执行。
+
+## 2026-10-22 ETW 录制（本轮）
+
+- etl 371MB/csv 1.2GB，需过滤 provider。
+- 下轮：按 Kernel-File 过滤。
