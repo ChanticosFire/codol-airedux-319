@@ -136,6 +136,133 @@ def _typed_string(text: bytes) -> bytes:
     return b"\x10" + text + b"\x00"
 
 
+def _typed_i32(value: int) -> bytes:
+    return b"\x07" + struct.pack("<i", value)
+
+
+def _typed_bool(value: bool) -> bytes:
+    return b"\x01" + (b"\x01" if value else b"\x00")
+
+
+def _typed_blob(data: bytes) -> bytes:
+    """0x13 blob tag, 0x08 length tag, LE32 length, payload."""
+    return b"\x13\x08" + struct.pack("<I", len(data)) + data
+
+
+def make_room_common_address(ip: bytes = b"\x7f\x00\x00\x01",
+                             port: int = 28969, layout: str = "v4") -> bytes:
+    """37-byte bdCommonAddr.
+
+    `v4`  = 1 byte kind + 32 byte address + LE32 port (IPv4 in bytes 0..3).
+    `v46` = 1 byte kind + 16 byte IPv6 + 16 byte IPv4 (in the last 4) + LE32
+            port, the classic dual-stack bdCommonAddr layout.  Kept switchable
+            because the listing record only carries the opaque 37-byte blob.
+    """
+    if layout == "v46":
+        address = bytearray(32)
+        address[28:32] = ip
+        return b"\x00" + bytes(address) + struct.pack("<I", port)
+    address = bytearray(32)
+    address[0:4] = ip
+    return b"\x00" + bytes(address) + struct.pack("<I", port)
+
+
+def make_room_listing_record(room_name: bytes = b"AI-Room", channel_id: int = 1,
+                             session_id: int = 1, max_players: int = 12,
+                             current_players: int = 1,
+                             owner_uid: int = 1, owner_name: bytes = b"Player",
+                             ip: bytes = b"\x7f\x00\x00\x01",
+                             port: int = 28969,
+                             security_key: bytes = bytes(16),
+                             addr_layout: str = "v4",
+                             session_kind: int = 0,
+                             int_override: int | None = None) -> bytes:
+    """One `21/13`/`21/5 query4` room listing record.
+
+    Field order follows 他人文件参考/codol3333服务端开发文档/
+    ROOM_BROWSER_PREPARATION.md "列表回包与身份": 37-byte common address,
+    8-byte session id, session kind, max/current players, room name, owner
+    uid/name, 3x int32, uint32, 3x int32, 16-byte security key, 11x int32,
+    uint64 channel id, 2x int32.  The record has no NoType terminator.
+
+    `addr_layout`/`session_kind`/`int_override` exist only to A/B the fields
+    the client filters on; the defaults keep the documented shape.
+    """
+    if len(room_name) > 24:
+        raise ValueError("room_name_too_long")
+    if len(security_key) != 16:
+        raise ValueError("security_key_must_be_16")
+    out = bytearray()
+    out += _typed_blob(make_room_common_address(ip, port, layout=addr_layout))
+    out += _typed_blob(struct.pack("<Q", session_id))
+    out += _typed_u32(session_kind)           # session kind: MP room = 0
+    out += _typed_u32(max_players)
+    out += _typed_u32(current_players)
+    out += _typed_string(room_name)
+    out += _typed_u64(owner_uid)
+    out += _typed_string(owner_name)
+    for _ in range(3):
+        out += _typed_i32(int_override if int_override is not None else 0)
+    out += _typed_u32(0)
+    for _ in range(3):
+        out += _typed_i32(int_override if int_override is not None else 0)
+    out += _typed_blob(security_key)
+    for _ in range(11):
+        out += _typed_i32(int_override if int_override is not None else 0)
+    out += _typed_u64(channel_id)
+    for _ in range(2):
+        out += _typed_i32(int_override if int_override is not None else 0)
+    return bytes(out)
+
+
+def room_listing_reply(transaction_id: int, task_id: int = 13,
+                       room_name: bytes = b"AI-Room", channel_id: int = 1,
+                       port: int = 28969, records: list[bytes] | None = None,
+                       count_mode: str = "double", **record_kwargs) -> bytes:
+    """bdService reply carrying room listing records (page-sized list allowed).
+
+    `count_mode="double"` mirrors the reference server's count/count quirk;
+    `"single"` writes the object count once, which is the other shape the
+    Demonware bdService envelope accepts.
+    """
+    if records is None:
+        records = [make_room_listing_record(room_name=room_name, channel_id=channel_id,
+                                            port=port, **record_kwargs)]
+    out = bytearray()
+    out += _typed_u64(transaction_id) + _typed_u32(0) + b"\x03" + bytes([task_id])
+    out += _typed_u32(len(records))
+    if count_mode != "single":
+        out += _typed_u32(len(records))
+    for record in records:
+        out += record
+    return bytes(out)
+
+
+def room_list_variant(index: int, room_name: bytes = b"AI-Room",
+                      channel_id: int = 1, port: int = 28969) -> tuple[list[bytes], str]:
+    """A/B variants for the room listing record.
+
+    0 baseline, 1 full page (pagination ack probe), 2 IPv4+IPv6 address block,
+    3 session kind 4, 4 documented build value in every int32, 5 zero-length
+    owner name.
+    """
+    def one(**kwargs):
+        return make_room_listing_record(room_name=room_name, channel_id=channel_id,
+                                        port=port, **kwargs)
+    variant = index % 6
+    if variant == 0:
+        return [one()], "baseline"
+    if variant == 1:
+        return [one() for _ in range(30)], "page_fill_30"
+    if variant == 2:
+        return [one(addr_layout="v46")], "addr_v46"
+    if variant == 3:
+        return [one(session_kind=4)], "session_kind_4"
+    if variant == 4:
+        return [one(int_override=-688906341)], "int_build"
+    return [one(owner_name=b"")], "owner_name_empty"
+
+
 def make_server_entry(ip: bytes = b"\x7f\x00\x00\x01", port: int = 8466,
                       name: bytes = b"TestServer") -> bytes:
     """bdMatchMaking server entry, byte-for-byte as bdsvc319.make_server_entry.
@@ -331,7 +458,7 @@ class DerivedLsgServer(AuthServer):
                             counter, int(os.environ.get("FINDSESS_PORT", "8466")))
                     else:
                         reply_payload = candidate_svc71_task4_reply(counter)
-                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                    reply = build_server_frame85(keys, reply_payload, counter=received_counter,
                                                  iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("candidate_task_reply", session,
@@ -349,7 +476,7 @@ class DerivedLsgServer(AuthServer):
                     reply_payload = (_typed_u64(counter) + _typed_u32(0)
                                      + b"\x03" + bytes([task & 0xFF])
                                      + _typed_u32(1) + _typed_u32(1) + body)
-                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                    reply = build_server_frame85(keys, reply_payload, counter=received_counter,
                                                  iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("candidate_task_reply", session,
@@ -366,7 +493,7 @@ class DerivedLsgServer(AuthServer):
                     reply_payload = (_typed_u64(counter) + _typed_u32(0) + b"\x03"
                                      + bytes([task & 0xFF])
                                      + _typed_u32(1) + _typed_u32(1) + body)
-                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                    reply = build_server_frame85(keys, reply_payload, counter=received_counter,
                                                  iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("candidate_task_reply", session,
@@ -386,7 +513,7 @@ class DerivedLsgServer(AuthServer):
                             counter, int(os.environ.get("FINDSESS_PORT", "8466")))
                     else:
                         reply_payload = terminal_unavailable_reply(counter)
-                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                    reply = build_server_frame85(keys, reply_payload, counter=received_counter,
                                                  iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("candidate_task_reply", session,
@@ -395,6 +522,40 @@ class DerivedLsgServer(AuthServer):
                                                f"bytes={len(reply_payload)}; "
                                                "client consumption unverified")
                     counter += 1
+                elif (service, task) == (21, 13) or (
+                        (service, task) == (21, 5) and payload[4:8] in (b"\x04\x00\x00\x00",
+                                                                       b"\x05\x00\x00\x00")):
+                    # Public room browser (ROOM_BROWSER_PREPARATION.md): 21/13 is
+                    # the paged query, 21/5 query=4/5 the plain one. Both answer
+                    # with bdMatchMaking room listing records; one record is
+                    # smaller than any observed page size, so the client marks
+                    # the query finished and renders the row.
+                    if os.environ.get("LSG_ROOM_LIST", "1") == "0":
+                        self.evidence.write("room_list_suppressed", session,
+                                            reason=f"svc{service}/task{task} room list disabled")
+                        continue
+                    variant = 0
+                    label = "baseline"
+                    if os.environ.get("ROOM_LIST_CYCLE", "0") == "1":
+                        variant = getattr(self, "_room_list_variant", 0)
+                        self._room_list_variant = variant + 1
+                    records, label = room_list_variant(
+                        variant,
+                        room_name=os.environ.get("ROOM_NAME", "AI-Room").encode("latin-1"),
+                        channel_id=int(os.environ.get("ROOM_CHANNEL", "1")),
+                        port=int(os.environ.get("FINDSESS_PORT", "28969")))
+                    reply_payload = room_listing_reply(
+                        counter, task_id=task, records=records,
+                        count_mode=os.environ.get("ROOM_COUNT_MODE", "double"))
+                    reply = build_server_frame85(keys, reply_payload, counter=received_counter,
+                                                 iv=os.urandom(16))
+                    conn.sendall(reply)
+                    self.evidence.write("room_list_reply", session,
+                                        reply_hex=reply.hex(),
+                                        reason=f"svc{service}/task{task} variant={variant} "
+                                               f"{label} records={len(records)} "
+                                               f"bytes={len(reply_payload)}")
+                    counter += 1
                 elif (service, task) == (21, 5):
                     # FindLobbiesByPlaylist. bdsvc319's default variant is one
                     # make_server_entry, the same 114-byte bdMatchMaking record
@@ -402,7 +563,7 @@ class DerivedLsgServer(AuthServer):
                     reply_payload = (candidate_svc71_task9_reply(
                         counter, int(os.environ.get("FINDSESS_PORT", "8466")))
                         .replace(b"\x03\x09", b"\x03\x05", 1))
-                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                    reply = build_server_frame85(keys, reply_payload, counter=received_counter,
                                                  iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("candidate_task_reply", session,
@@ -426,7 +587,7 @@ class DerivedLsgServer(AuthServer):
                         reply_payload = candidate_empty_success_reply(counter, task)
                     else:
                         reply_payload = terminal_unavailable_reply(counter)
-                    reply = build_server_frame85(keys, reply_payload, counter=counter,
+                    reply = build_server_frame85(keys, reply_payload, counter=received_counter,
                                                  iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("candidate_empty_task_reply", session,
@@ -436,7 +597,7 @@ class DerivedLsgServer(AuthServer):
                 elif self.observed71_empty and service == 71 and task in (3, 7, 9):
                     reply = build_server_frame85(
                         keys, candidate_empty_success_reply(counter, task),
-                        counter=counter, iv=os.urandom(16))
+                        counter=received_counter, iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("candidate_empty_task_reply", session,
                                         reason=f"service=71 task={task}; 1604220 fallback "
@@ -447,7 +608,7 @@ class DerivedLsgServer(AuthServer):
                                         reason=f"service={service} task={task}")
                     reply = build_server_frame85(
                         keys, terminal_unavailable_reply(counter),
-                        counter=counter, iv=os.urandom(16))
+                        counter=received_counter, iv=os.urandom(16))
                     conn.sendall(reply)
                     self.evidence.write("terminal_task_reply", session,
                                         reason=f"service={service} task={task} error=14; "

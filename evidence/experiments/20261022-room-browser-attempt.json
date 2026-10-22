@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:04:48.410190+00:00",
+  "trigger": "开始游戏 -> 自定义 -> 查找房间",
+  "request": {
+    "service": 21,
+    "task": 13,
+    "bytes": 63,
+    "hex": "15030d080500000001011308080000000101010101010101081e00000007abad92d6070000000007020000000731ed126c6b08040000000100000000000000",
+    "decoded": "u32(5)=query, bool(1)=initial, blob8(cursor), u32(30)=pageSize, 4xInt32 criteria (build=-688906341 等), NoType"
+  },
+  "protocol_reference": "他人文件参考/codol3333服务端开发文档/ROOM_BROWSER_PREPARATION.md（21/13 分页浏览、21/5 query4 普通查询、11/11 入房、6/14 mmrsv/mmbook、11/13 频道）",
+  "replies_tried": [
+    {
+      "shape": "double count + 1 record (v4 addr)",
+      "result": "empty"
+    },
+    {
+      "shape": "double count (counter echo) + 1 record",
+      "result": "empty"
+    },
+    {
+      "shape": "single count + 1 record",
+      "result": "empty"
+    },
+    {
+      "shape": "variant cycle (page_fill_30 / addr_v46 / kind4 / build ints / empty owner) 未全部实测",
+      "result": "v0 only"
+    }
+  ],
+  "client_state": "查找房间页面显示“未找到房间”；客户端只发一次 21/13，刷新按钮未再发请求",
+  "evidence": {
+    "screenshot": "evidence/experiments/20261022-room-browser-empty.png",
+    "sha256": "fd5bd2a29e5864fc6af3f458eeca3a4f60e2ff404c6298f44ef90311142ba4d3",
+    "logs": [
+      "evidence/experiments/20261022-room-list-probe.jsonl",
+      "evidence/experiments/20261022-room-variants2.jsonl",
+      "evidence/experiments/20261022-room-singlecount.jsonl"
+    ]
+  },
+  "conclusion": "21/13 请求确实由客户端发出，但服务端构造的 114/229 字节记录未被客户端采纳；下一步应反查客户端房间列表解码器（解码后对象 0x228 字节，session id +0x10、max +0x120、current +0x124、name +0x128、owner +0x168/+0x170、key +0x1cc、channel +0x208）以确定线上字段顺序。",
+  "next": "用该偏移做写断点定位解码函数，或在同一会话内用多记录/多形状批量尝试。"
+}
