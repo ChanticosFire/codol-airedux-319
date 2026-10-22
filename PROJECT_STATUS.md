@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【本地服务器模式】state=3 后自绑 UDP 127.0.0.1:8466**：进程 UDP 端点为 127.0.0.1:8466、0.0.0.0:53772、0.0.0.0:22011 → 走本地 listen server 路径；connect 阶段失败显示无法连接主机。新增 tools/udp_challenge.py（端口被占绑定失败）。launcher 的 --transport-connect/--init-transport 均导致客户端退出。下步：state=3 后手动调用 0x621E50 建通道。证据 [`20261022-local-server-mode.json`](evidence/experiments/20261022-local-server-mode.json)。
+
 > **2026-10-22【突破】写 [0x76446B0]=3 进入游戏场景**：写入前 state=0/ui_state=5/大厅；写入后立刻变成深色游戏场景 + 「错误/无法连接主机」+退出按钮，进程存活。→ [0x76446B0] 是游戏状态机开关（0=前端,3=游戏）。卡点转为游戏服务器 challenge。证据 [`20261022-gamestate-switch.json`](evidence/experiments/20261022-gamestate-switch.json)。
 
 > **2026-10-22【移植蓝本】LocalMatchBegin 全流程 + 1649370 映射**：蓝本 14 步（档案头→UDP→hook 0x5B1CF0/0x5B1C30→UID patch→**invoke 0x621230 离开前端**→preload 地图→重置时间缩放→0x49F5F0→connection 校验→0x499A00→state=3）。1649370 侧：transport init 0xBB2C40、connection [0x331C0C8]^0xD362501F、建通道 0x621E50、getchallenge 0x5C05F0、解析 0x5C0FD0。0x621E50 与 0x621230 同段，疑为前端过渡函数。`--transport-connect --inject-challenge` 启动即退出，需拆分。证据 [`20261022-match-begin-blueprint.json`](evidence/experiments/20261022-match-begin-blueprint.json)。
