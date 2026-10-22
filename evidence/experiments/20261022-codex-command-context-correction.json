@@ -4,6 +4,16 @@
   "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
   "method": "PE VA-to-RVA extraction and Capstone x86 disassembly of the exact target image",
   "global": "0x3306910",
+  "additional_correction": {
+    "global": "0x35053DC",
+    "verified_instructions": [
+      "0x4F83A2: mov [0x35053DC], eax immediately before formatting a Com_Error string",
+      "0x4F8460 and 0x4F84C2: dec [0x35053DC] on Com_Error unwind",
+      "0x4F8267: dec [0x35053DC] on another Com_Error return path",
+      "0x4F8333: read [0x35053DC] to handle reentrant errors"
+    ],
+    "conclusion": "0x35053DC is a Com_Error nesting/reentrancy counter, not a map or world state flag. Its zero value during black-screen loading is not world evidence."
+  },
   "verified_instructions": [
     "0x4F36C3: inc dword ptr [esi] where callers set esi=0x3306910; compare resulting value with 0x10",
     "0x4F36EF: set [esi+index*4+4] to 0xffffffff; 0x4F36F9 set [esi+index*4+0x44] to 0; 0x4F3709 set [esi+index*4+0xC4] to argument buffer",
@@ -13,5 +23,5 @@
     "0x5C2138: dec eax; 0x5C213C: mov [0x3306910], eax"
   ],
   "conclusion": "0x3306910 is the command parser nesting index, not the map or playlist index. -1 is its idle value and cannot establish whether a map world loaded. Earlier inferences identifying 0x5C206E/0x5C213C as playlist network parsing are invalid.",
-  "effect_on_gate": "G2 still unverified because the captured window is black with a loading spinner and no controllable player/world evidence, regardless of the parser index."
+  "effect_on_gate": "G2 still unverified because the captured window is black with a loading spinner and no controllable player/world evidence. Neither 0x3306910 nor 0x35053DC provides a world-loaded signal."
 }
