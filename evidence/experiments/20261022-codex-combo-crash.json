@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T23:35:00+00:00",
+  "scope": "combine the connected flag with a phase push",
+  "sequence": {
+    "start_challenge": "challenge_armed, connection 0x12FE02A8, state 3",
+    "flag_write": "cl+0x100260 = 1 (read back)",
+    "set_state": "state_written true, state 8",
+    "then": "the client process exited before the next read; launcher output ends with finished_at"
+  },
+  "interpretation": "with the flag set AND the phase at 8, the parser's success branch (0x5B2C02) is now taken instead of the skip, and that branch apparently touches a resource or pointer that is still uninitialised -- so the process dies. This is a different failure from before: the earlier runs never reached that branch.",
+  "significance": "the combination proves the flag actually steers execution: setting it changes which branch runs and leads to a crash rather than a silent skip. That is progress even though it ends in a crash.",
+  "next": [
+    "isolate the cause: run set-state 8 WITHOUT the flag to confirm phase 8 alone stays stable (as it did in earlier rounds)",
+    "then examine 0x5B2C02 to see which pointer/resource it dereferences, so the missing initialisation can be supplied",
+    "the crash location itself will name the field to populate"
+  ],
+  "artifacts": ["runs/codex-combo-1-launcher.out"]
+}
