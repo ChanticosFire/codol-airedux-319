@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:00:29.197593+00:00",
+  "claim": "state=3 闪退根因抓到：mp_cross_fire_load fastfile 版本不匹配(365 vs 461)",
+  "capture": {
+    "hook": "0x77C930",
+    "dump": "0x117a1000",
+    "text": "283 mp_cross_fire_load 365 461",
+    "meaning": "283=版本校验消息, 文件=mp_cross_fire_load, 实际365, 期望461"
+  },
+  "files": {
+    "overlay": 365,
+    "client_bak": 365,
+    "bak118": 365,
+    "all": 24853
+  },
+  "conclusion": "本机所有 mp_cross_fire_load.ff 都是 365 版本；1649370 需要 461。之前从 2.6.9.7 复制导致",
+  "next": [
+    "从 IIPS nifs 包提取 461 版 mp_cross_fire_load",
+    "或查 3.19.26.13/IIPS 里 ff_init_mp_cross_fire_load_*.ifs",
+    "替换后再测 state=3"
+  ]
+}
