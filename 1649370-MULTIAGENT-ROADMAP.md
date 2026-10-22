@@ -1027,3 +1027,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - 0x7F25B0 跳转表：ui_state 5→3，1..4→1。
 - +devmap：argv → "%s\n" → 0x4F2DE0 → 0x4F3890（参数表）。
 - 下轮：hook 0x4F3890 看实际命令串。
+
+## 2026-10-22 dispatcher 抓到 21/5（本轮）
+
+- room.startgame 1/0、room.create 都无效（ui_state 恒 5）。
+- hook_dispatch：hits=8、length=160、服务号 0x15 → 响应进入处理层。
+- 卡点在解析/分支；下轮追 21 的 handler。

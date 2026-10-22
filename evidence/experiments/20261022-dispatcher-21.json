@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:59:43.237337+00:00",
+  "claim": "21/5 响应确实进入 bdService dispatcher（hook 命中 8 次，服务号字段=0x15），卡点在其后的解析/分支",
+  "room_cmd_variants": {
+    "tested": [
+      "room.startgame 1",
+      "room.startgame 0",
+      "room.create"
+    ],
+    "result": "三条命令都 injected，ui_state 始终 5 → 脚本命令不启动比赛"
+  },
+  "dispatcher_hook": {
+    "site": "0xBA39E7",
+    "hits": 8,
+    "last_record": {
+      "length": 160,
+      "field_3a4": "0x15",
+      "field_3ac": "0x500D9AFE",
+      "dispatcher": "0x48F29948"
+    },
+    "message_head": "6a8bea679fdd231cae530952b6247d777a10faf8e8aba698af4724ab71a908c54bf0c381a55d21e30d0b8cfc40dd4187325c131cb2aa311e5de33cad04367ea2",
+    "note": "field_3a4=0x15 即服务 21 → 靶场响应进入了 dispatcher"
+  },
+  "implication": "响应到达处理层但客户端不前进 → 要么 payload 解析失败（结构/长度不符），要么 21 的处理分支有额外条件",
+  "next": [
+    "从 dispatcher 往下追 21 的具体 handler",
+    "对比 payload 长度/结构与解析器期望",
+    "在 0xBA3710 解析器出口看是否返回错误"
+  ]
+}

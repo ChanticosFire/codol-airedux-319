@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "utc": "2026-10-22T05:59:35.671149+00:00",
+  "pid": 28700,
+  "hits": 8,
+  "length": 160,
+  "pointer": "0x500d9b13",
+  "field_3a4": "0x15",
+  "field_3ac": "0x500d9afe",
+  "dispatcher": "0x48f29948",
+  "message_head": "6a8bea679fdd231cae530952b6247d777a10faf8e8aba698af4724ab71a908c54bf0c381a55d21e30d0b8cfc40dd4187325c131cb2aa311e5de33cad04367ea2"
+}
