@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T16:20:00+00:00",
+  "scope": "server-side world entry: why snapshot relaxation alone is not enough",
+  "snapshot_builder_guard": {
+    "function": "SV_BuildClientSnapshot",
+    "source": "runs/2697-native-src/src/sv_snapshot.c:1447",
+    "guard": "clent = client->gentity; if (!clent || client->state == CS_ZOMBIE || sv.state < SS_GAME) return;",
+    "consequence": "calling SV_BuildClientSnapshot for a CS_PRIMED client returns immediately because client->gentity is still NULL; only SV_ClientEnterWorld sets gentity (via SV_GentityNum + ClientBegin)"
+  },
+  "send_messages_locations": {
+    "function_hint": "the function containing 0x48AAFC (call CODOL_DeferredConfigstringsHoldSnapshot) is SV_SendClientMessages",
+    "build_snapshot_check": "0x48AAA9..0x48AAC1: cmp eax,4 / cmp eax,1 / jne skip / call 0x489081 (SV_BuildClientSnapshot)",
+    "write_snapshot_check": "0x48AB8C..0x48ABA4: state==4 or state==1 SETE/OR, je skip (0x48AB40), then jmp 0x48AB2D (write snapshot)",
+    "client_loop": "0x48AB21 mov ebx, 0x50E2650; 0x48AB5E add ebx, 0xC57AC -> client_t stride is 0xC57AC in this binary (not the 0x0A563C comment)"
+  },
+  "world_entry": {
+    "log_string": "Going from CS_PRIMED to CS_ACTIVE for %s",
+    "string_va": "0x7B2CD8",
+    "reference_va": "0x47068A",
+    "gamestate_log": "SV_SendClientGameState() @ 0x7B2EA0, reference 0x471038",
+    "next_step": "find the SV_ClientEnterWorld prologue before 0x47068A and call it with the live client_t* (slot base 0x50E2650 + slot*0xC57AC) plus a NULL usercmd"
+  },
+  "why_not_snapshot_patch_only": "without gentity the real snapshot is empty, so the client would still wait; the server must enter the world first",
+  "next": [
+    "locate SV_ClientEnterWorld entry (scan back from 0x47068A for the 55 8B EC/55 89 E5 prologue)",
+    "verify the client_t pointer by reading name at slot base + name_offset (find the offset by scanning the slot for 'AdministraClient')",
+    "call SV_ClientEnterWorld(client, NULL) from a remote thread in dedrun while the client is CS_PRIMED, then watch for CS_ACTIVE and real snapshots",
+    "if the remote call races the server thread, fall back to patching SV_SendClientGameState to call the entry inline"
+  ],
+  "artifacts": ["runs/20261022-ring-2697n/main/qconsole.log"]
+}

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【必须先让服务端进入世界】** `SV_BuildClientSnapshot` 在 `client->gentity == NULL` 时直接返回，因此只放宽 `SV_SendClientMessages` 的快照条件不会有效；只有 `SV_ClientEnterWorld` 会设置 gentity 并进入 `CS_ACTIVE`。已定位发送函数中的两处状态检查（`0x48AAA9`/`0x48AB8C`）、client 循环基址 `0x50E2650` 与步长 `0xC57AC`、`SV_ClientEnterWorld` 日志引用 `0x47068A`、`SV_SendClientGameState` 引用 `0x471038`。下一步：定位 `SV_ClientEnterWorld` 入口并在 dedrun 内调用（远程线程或 patch 内联），让服务端进入世界后发真实快照。证据 [20261022-codex-enterworld-locate.json](evidence/experiments/20261022-codex-enterworld-locate.json)。
+
 > **2026-10-22【ACK 不是瓶颈；CS_PRIMED 只发空快照】** forge 工具修正槽位选择后读取活跃 client：`reliableSequence=0`，说明服务端没有待确认的可靠命令，ACK 从来不是缺口（日志 `ack 1` 是 message acknowledgement）。`SV_SendClientMessages` 只在 `CS_ACTIVE || CS_ZOMBIE` 调用 `SV_BuildClientSnapshot`/`SV_WriteSnapshotToClient`，`CS_PRIMED` 只产生 122 字节空快照，客户端因此停在阶段 8 并约 32 秒超时。下一步：定位 `SV_SendClientMessages` 并放宽状态检查，让 `CS_PRIMED` 也收到真实快照。证据 [20261022-codex-primed-snapshot-blocker.json](evidence/experiments/20261022-codex-primed-snapshot-blocker.json)。
 
 > **2026-10-22【客户端包需要 qport，伪造 ACK 仍被拒】** 2697 客户端→服务端包格式为 `u32 sequence + u16 qport + 加密 body`；`SV_ReadPackets` 要求 IP 与 qport 同时匹配。此前伪造包缺 qport，被服务端当作 connectionless（`bad connectionless packet`）。forge 工具已加入 qport 扫描（client name 前扫 netadr），本次未命中；全内存按端口 60543 搜索也无结果。阶段 8 约 32 秒后超时。下一步：按两种字节序扫描端口定位 netchan_t，或 patch 服务端跳过 qport 比较，或让 CS_PRIMED 也构建真实快照。证据 [20261022-codex-qport-ack.json](evidence/experiments/20261022-codex-qport-ack.json)。
