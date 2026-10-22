@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:14:21.355902+00:00",
+  "claim": "arg1 指向的就是 WIN_FILE_NOT_FOUND 字符串本身；文件名在 arg2 或更后面的参数里",
+  "capture": {
+    "code": "0x33e7958",
+    "text": "WIN_FILE_NOT_FOUND",
+    "arg1_string": "WIN_FILE_NOT_FOUND"
+  },
+  "hook_layout": {
+    "dump+0x80": "arg1（=错误消息指针）",
+    "dump+0x84": "arg2（fmt 指针，可能含文件名）",
+    "dump+0x88": "返回地址"
+  },
+  "next": [
+    "下一次轮询读 dump+0x84 指向的字符串（arg2）",
+    "或读 [esp+0xC] 等更深参数",
+    "找到文件名后补齐资源"
+  ]
+}
