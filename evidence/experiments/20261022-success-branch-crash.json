@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:34:51.528390+00:00",
+  "claim": "窗口线程调用成功分支会崩溃：params+0x28 不是指针，说明响应处理器少做了一步“准备参数”",
+  "test": {
+    "call": "call_main_thread --target 0x7FAF50 --eax 0xE570210 --args 1",
+    "result": "stop_reason=unhandled_exception，客户端退出",
+    "reason": "0x7F4330 成功分支执行 mov ecx,[esi+0x28]; call 0xB83D20，而 params+0x28=30(pageSize) 不是指针"
+  },
+  "params_layout": {
+    "+0x00": "vtable 0xd59a08",
+    "+0x08": "0x8a5286ee",
+    "+0x1c": "解码记录指针",
+    "+0x28": "30 (pageSize) ← 成功分支把它当指针用",
+    "+0x40": "0 (应为 handler)",
+    "+0x44": "0 (应为 ctx)"
+  },
+  "slot_layout": {
+    "+0x40": "handler 0x6376f0",
+    "+0x44": "ctx 5"
+  },
+  "handler_chain": "0x6376F0 → 0x637590(room=[0x82E13FC], ...)：把 count×0x238 字节拷到 room+0x7470，count 写 room+0x7230（UI 列表模型）",
+  "conclusion": "真正缺失的一步是响应处理器在完成前把结果容器写进 params（并把 handler/ctx 落到 params），当前只写了 +0x1C 的记录指针",
+  "next": [
+    "找响应处理器里写 params+0x28/+0x40/+0x44 的代码（对比 0x7F4330 的读取位置）",
+    "或绕开 SDK：直接在窗口线程把 1 条 0x238 记录写入 room+0x7470、count 写 room+0x7230，再看 UI 是否出行"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-mainthread-call2.json",
+    "runs/natural-b/launch-bh.log"
+  ]
+}

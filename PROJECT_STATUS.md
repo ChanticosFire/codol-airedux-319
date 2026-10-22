@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 成功分支崩溃：响应处理器少做“准备参数”**：窗口线程 `0x7FAF50(EAX=slot, 1)` → `unhandled_exception`，因为 `0x7F4330` 成功分支 `mov ecx,[esi+0x28]; call 0xB83D20` 而 params+0x28=30（pageSize）不是指针。响应处理器只写了 `params+0x1C`（解码记录），没写 `+0x28`（结果容器）也没把 handler/ctx 落到 `+0x40/+0x44`。handler 链 `0x6376F0 → 0x637590(room=[0x82E13FC])` 把 count×0x238 字节拷到 `room+0x7470`、count 写 `room+0x7230`（UI 列表模型）。证据 [`20261022-success-branch-crash.json`](evidence/experiments/20261022-success-branch-crash.json)。
+
 > **2026-10-22【再进一步】回执已到达服务层，只差“成功完成”调用**：任务槽 `+0x40` handler=`0x6376F0`、`+0x44` context=5；params 对象（vtable `0xD59A08`）`+0x1C` 已写入解码记录指针（`0x24557BA8`）。完成函数：`0x7FAF50`（单槽，EAX=槽指针，栈参数=成功标志）与 `0x7FB240`（批量，标志硬编码 0）。远程线程直接调 `0x7F4330(params,1)` 会崩溃（UI 线程亲和）。下一轮在窗口线程调用 `0x7FAF50(EAX=slot, arg=1)`。证据 [`20261022-completion-path-found.json`](evidence/experiments/20261022-completion-path-found.json)。
 
 > **2026-10-22【突破】`0x7FB240(action)` 会完成该 action 的所有任务并调用回调**：遍历 `0xE56FFE0` 表，`[slot]==action` 时调用 `slot+0x30` 回调（push 0, push slot）并复位。实测远程调用 `0x7FB240(0x26)` 后回调立即命中（params=0xE570210、handler=0x6376F0、ctx=5）——完成机制正常；UI 仍空是因为强制路径不带结果。另发现监听器链表 `0xE5713EC`（通知码 5）与响应分发候选 `0x7FDFE0`/`0x8000B0`。证据 [`20261022-task-completion-breakthrough.json`](evidence/experiments/20261022-task-completion-breakthrough.json)。

@@ -901,3 +901,10 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - 0x7FAF50 是单槽完成（EAX=slot，栈参数=成功标志）；0x7FB240 批量但标志硬编码 0。
 - 远程线程直调 0x7F4330(params,1) 会崩溃 → 必须走窗口线程。
 - 下一轮：给 call_main_thread 加 EAX 支持，窗口线程调 0x7FAF50(slot,1)。
+
+## 2026-10-22 成功分支崩溃：少一步“准备参数”（本轮）
+
+- 窗口线程 0x7FAF50(slot,1) → unhandled_exception；成功分支把 params+0x28(30) 当指针。
+- 响应处理器只写了 params+0x1C（记录），未写 +0x28/+0x40/+0x44。
+- handler 链 0x6376F0→0x637590：count×0x238 拷到 room+0x7470，count 写 room+0x7230（UI 列表）。
+- 下一轮：补写 params 或直接写 room 列表模型验证。

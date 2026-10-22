@@ -50,6 +50,8 @@ def main() -> int:
     parser.add_argument("--ecx-room", action="store_true",
                         help="set ECX to [0x82E13FC] (frontend room object)")
     parser.add_argument("--ecx", type=lambda value: int(value, 0), default=None)
+    parser.add_argument("--eax", type=lambda value: int(value, 0), default=None,
+                        help="set EAX before the call (slot pointer for 0x7FAF50)")
     parser.add_argument("--args", nargs="*", type=lambda value: int(value, 0), default=[])
     parser.add_argument("--window", default="CODO")
     parser.add_argument("--settle", type=float, default=2.0)
@@ -102,11 +104,14 @@ def main() -> int:
         elif args.ecx is not None:
             ecx_value = args.ecx
         row["ecx"] = hex(ecx_value)
+        row["eax"] = hex(args.eax or 0)
 
         cave = int(k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40))
         if not cave:
             raise OSError("VirtualAllocEx failed")
         code = bytearray(b"\x60")                      # pushad
+        if args.eax:
+            code += b"\xb8" + struct.pack("<I", args.eax)   # mov eax, imm32
         if ecx_value:
             code += b"\xb9" + struct.pack("<I", ecx_value)   # mov ecx, imm32
         for value in reversed(args.args):
