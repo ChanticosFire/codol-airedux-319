@@ -1238,3 +1238,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - 写 netadr → 错误变 EXE_CLIENTFAILEDTOCHALLENGE。
 - 只差 UDP challenge 应答。
 - 下轮：抓请求格式并应答。
+
+## 2026-10-22 challenge 失败点（本轮）
+
+- 0x5C075A call 0x675260 失败 → EXE_CLIENTFAILEDTOCHALLENGE。
+- sendto 0 条说明未到网络层。
+- 下轮：分析 0x675260。
