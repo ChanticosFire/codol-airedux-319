@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "utc": "2026-10-22T03:46:14.903904+00:00",
+  "pid": 32060,
+  "total": 8,
+  "entries": [
+    {
+      "index": 0,
+      "ret": "0xb793cf",
+      "arg0": "0x4ffb8538",
+      "arg1": "0x1e",
+      "chain": [
+        "0xb79c09",
+        "0xb7a3de",
+        "0xb8806e",
+        "0x4a3e61",
+        "0x4a3f8c",
+        "0x5d41b5",
+        "0xa449d3",
+        "0xa384dd",
+        "0xa4282a",
+        "0xa43b39",
+        "0xa44b1a",
+        "0xa28f7b"
+      ]
+    },
+    {
+      "index": 1,
+      "ret": "0xb793cf",
+      "arg0": "0x4ffb8728",
+      "arg1": "0x22f",
+      "chain": [
+        "0xb799be",
+        "0xb8fa4a",
+        "0x4aa899",
+        "0x5d2d6a",
+        "0xa4be88",
+        "0xa449d3",
+        "0xa384dd",
+        "0xa4282a",
+        "0xa43b39",
+        "0xa44b1a",
+        "0x9b32cf",
+        "0x9b753e"
+      ]
+    },
+    {
+      "index": 2,
+      "ret": "0xb793cf",
+      "arg0": "0x4ffb8eb8",
+      "arg1": "0x19",
+      "chain": [
+        "0xb799be",
+        "0xb8f518",
+        "0x4aae76",
+        "0x4aac48",
+        "0x5d2d75",
+        "0xa449d3",
+        "0xa384dd",
+        "0xa4282a",
+        "0xa43b39",
+        "0xa44b1a",
+        "0x9b32cf",
+        "0x9b753e"
+      ]
+    },
+    {
+      "index": 3,
+      "ret": "0xb793cf",
+      "arg0": "0x4ffb8b28",
+      "arg1": "0x1b",
+      "chain": [
+        "0xb79c09",
+        "0xb7a3de",
+        "0xb93684",
+        "0x7ff824",
+        "0x7fc86a",
+        "0xa449d3",
+        "0xa384dd",
+        "0xa4282a",
+        "0xa43b39",
+        "0xa44b1a",
+        "0x9b32cf",
+        "0x9b753e"
+      ]
+    },
+    {
+      "index": 4,
+      "ret": "0xb793cf",
+      "arg0": "0x4ffb8b28",
+      "arg1": "0x20",
+      "chain": [
+        "0xb79c09",
+        "0xb7a3de",
+        "0xb9329d",
+        "0x7ffc2a",
+        "0x7fd4ef",
+        "0xa449d3",
+        "0xa384dd",
+        "0xa4282a",
+        "0xa43b39",
+        "0xa44b1a",
+        "0x9b32cf",
+        "0x9b753e"
+      ]
+    },
+    {
+      "index": 5,
+      "ret": "0xb793cf",
+      "arg0": "0x4ffb87d8",
+      "arg1": "0x6",
+      "chain": [
+        "0xb79c09",
+        "0xb7a3de",
+        "0xb8684d",
+        "0xb875ec",
+        "0x4a6e9b",
+        "0x6908c5",
+        "0xa449d3",
+        "0xa384dd",
+        "0xa4282a",
+        "0xa43b39",
+        "0xa44b1a",
+        "0x9b32cf"
+      ]
+    },
+    {
+      "index": 6,
+      "ret": "0xb793cf",
+      "arg0": "0x4ffb87d8",
+      "arg1": "0x9",
+      "chain": [
+        "0xb79c09",
+        "0xb7a3de",
+        "0xb84ea3",
+        "0x7ef9c6",
+        "0x72658e",
+        "0xa4be88",
+        "0xa449d3",
+        "0xa384dd",
+        "0xa4282a",
+        "0xa43b39",
+        "0xa44b1a",
+        "0xa28f7b"
+      ]
+    },
+    {
+      "index": 7,
+      "ret": "0xb793cf",
+      "arg0": "0x50137be0",
+      "arg1": "0x40",
+      "chain": [
+        "0xb79c09",
+        "0xb7a3de",
+        "0xb9b3b0",
+        "0x7f4416",
+        "0x62dd90",
+        "0x62dbf5",
+        "0x7c4cbf",
+        "0x7c4fdf",
+        "0x7423a8",
+        "0x7400a9",
+        "0x73ffeb",
+        "0x73fec8"
+      ]
+    }
+  ]
+}

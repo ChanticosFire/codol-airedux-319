@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 1649370 房间查询回调定位：回调从不触发**：`send` IAT 环形 hook + EBP 链抓到 `21/13` 完整链 `0x62DD60 → 0x7F43C0 →（注册回调 0x7F4330）→ 0xBA3370 → 0xC739E0 → 0xC76DB0 → ws2_32!send`；查询条件结构在 `ebp-0x1C`。hook `0x7F4330` 后 hits=0（task 字节 13/21 两次会话均如此），而记录仍解码成功 → 结果解码与任务完成是两条路径。下一轮 hook 任务完成/出队函数。证据 [`20261022-room-query-chain.json`](evidence/experiments/20261022-room-query-chain.json)。
+
 > **2026-10-22 1649370 房间记录已解码但 UI 不消费**：开泵后 `21/13` 回执稳定解码进内存（字段与文档一致），但全内存 `AI-Room` 始终只有 1 份副本，说明 UI/结果缓存从未消费；`查找房间` 仍为空。已排除 v4/v46 地址布局、未实现任务改空成功、刷新与模式点击重查（都不重发 21/13）。下一轮 hook 查询发送构建路径或 bdService 任务完成回调，确认结果为何未交给 UI。证据 [`20261022-room-ui-not-consuming.json`](evidence/experiments/20261022-room-ui-not-consuming.json)。
 
 > **2026-10-22【关键修正】1649370 大厅不读 LSG socket；房间列表记录本身正确**：在 `0xBA46C2`（`call 0xBA3710`）装计数 hook，正常 `查找房间` 命中 0；手动调用一次 `0xB838A0`（netobj 泵）后变为 8。即登录结束后客户端不再驱动 LSG 接收，服务端应答一直未被读取。用 `tools/pump_lsg.py` 持续泵后，内存中出现 `AI-Room`，解码对象字段与文档完全一致（`+0x120=12`、`+0x124=1`、`+0x128="AI-Room"`、`+0x168=1`、`+0x170="Player"`）。**上一轮“内层 HMAC 是根因”的结论被推翻**：基线 `room_listing_reply` 未加任何 HMAC、未打任何补丁即可解码。剩余问题是 UI 列表未刷新（结果到达时查询可能已被判超时）。证据 [`20261022-callcount-read.json`](evidence/experiments/20261022-callcount-read.json)、[`20261022-room-pumped.jsonl`](evidence/experiments/20261022-room-pumped.jsonl)。

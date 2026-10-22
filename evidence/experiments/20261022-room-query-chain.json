@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:49:06.948461+00:00",
+  "claim": "定位到房间查询的发送链与结果回调；回执被解码但任务回调从不触发",
+  "send_chain": [
+    "0x62DD60 房间浏览器刷新入口（加锁 this+0x106F0，调用 0x7F43C0）",
+    "0x7F43C0 查询派发：检查连接状态(0xB7A670==2)与 dvar 0xDAE091，0xB9B230 创建任务",
+    "0x7F445F 注册回调 0x7F4330，上下文为任务参数结构",
+    "0xBA3370 虚方法 send service message（push 0x86 → 0xBA2A60 建帧 → 0xBA2EC7/0xBA24C0 冲刷）",
+    "0xC739E0 连接发送方法 → 0xC76DB0 send_socket → ws2_32!send(0xCA84E0)"
+  ],
+  "query_builder": "0x62DBF3 通过对象 vtable+0x1C 发送，条件结构在 ebp-0x1C：build=([0x7ACE410+0xC]|0xD692ADA0)^0x800000(可选)，其余 0/0/[ebp+8]",
+  "callback": "0x7F4330([ebp+8]=params,[ebp+0xc]=success)；读取 handler=[params+0x40]、ctx=[params+0x44]，再以 (ctx, success?1:0, params[5], ...) 调用",
+  "observation": "hook 0x7F4330 后 hits=0（task 字节=13 与 =21 两次会话均是），而同一会话内存中仍能扫描到 AI-Room（解码成功）",
+  "implication": "结果解码与任务完成是两条路径；当前缺的是‘响应→任务完成→回调’这一步。下一轮应 hook 任务完成/出队函数，确认响应为何没有关联到 pending 任务",
+  "tools": [
+    "tools/hook_send.py（send IAT 环形记录+EBP 链）",
+    "tools/hook_sender.py（0xBA3370 发送方法入口环形记录）",
+    "tools/hook_query_cb.py（0x7F4330 查询回调计数）"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-send-ring3.json",
+    "evidence/experiments/20261022-sender-ring.json",
+    "evidence/experiments/20261022-querycb-read.json",
+    "evidence/experiments/20261022-querycb-service-read.json",
+    "evidence/experiments/20261022-room-name-scan16.json"
+  ]
+}
