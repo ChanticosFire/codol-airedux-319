@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【新入口】1649370 训练页“靶场”直接发 `21/5 query1`（游戏服分配）**：训练 → 靶场 → 进入靶场，客户端请求 `u32(1),u32(0),u32(10),tag(7)`。服务端已实现该分支回 114 字节 bdMatchMaking 条目（`127.0.0.1:8466`），客户端仍停在“正在搜寻服务器...”（同任务完成问题）。此路径不需要房间浏览器，任务完成一旦打通即可连我们的游戏服。证据 [`20261022-training-alloc-finding.json`](evidence/experiments/20261022-training-alloc-finding.json)。
+
 > **2026-10-22 1649370 信封/帧形态矩阵全部失败**：空结果、帧类型矩阵（`0x85/0x84` × `0x01/0x86/0x00`）、信封标签矩阵（tid/err/task 各两种 tag）与 4 种无 tid 形态，共 12 种回执，回调 `0x7F4330` 全部 0 命中。另 `0xB9B230` 返回对象回执前后 128 字节完全相同 → 是请求参数不是任务对象。结论：完成路径可能不由 `0x85` 业务帧驱动。下一轮检查 `0x84` 帧处理 `0xBA0E20` 与 functor 注册位置。证据 [`20261022-envelope-matrix-conclusion.json`](evidence/experiments/20261022-envelope-matrix-conclusion.json)。
 
 > **2026-10-22 1649370 任务完成线：错误回执同样不触发回调**：成功回执三种 task 字节均 0 命中后，再用 `error=4`（无记录）回执测试，回调仍 0 命中 → 不是记录解析问题，而是“响应→任务完成”整体未走通。`0x7FA800`（addTask）入口记录到 `action=38`、`ecx=0x4f65cde4`；`0xE56FFE0` 槽表首字段是消息类型，属于处理器注册表而非 pending 任务表。传输单例 `[0xE85C68]=0x23D7F5A8`（vtable `0xD5A9C8`，19704 字节）仍含 `0xBAADF00D` 填充。⚠️ 盲调 `0x7EF0D0`/`0x4A6470` 会使客户端崩溃。证据 [`20261022-task-completion-round9.json`](evidence/experiments/20261022-task-completion-round9.json)。

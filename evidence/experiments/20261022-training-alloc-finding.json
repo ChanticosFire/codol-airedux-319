@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:14:04.029613+00:00",
+  "claim": "训练页“靶场”会直接发 21/5 query1 请求游戏服分配，是比房间浏览器更短的入口",
+  "observations": [
+    "训练 -> 靶场 弹窗（截图 20261022-training-range-dialog.png）",
+    "点“进入靶场”后客户端发 service=21 task=5 args=u32(1),u32(0),u32(10),tag(7)",
+    "已实现回执：tid/error=0/task=5/count=1/total=1 + 114B bdMatchMaking 条目(127.0.0.1:8466)",
+    "客户端仍显示“正在搜寻服务器...”，未进入地图（与任务完成问题一致）",
+    "客户端 UDP 端口：22011、2008、51377（疑似语音/游戏传输）"
+  ],
+  "implementation": "server319/lsg_derived.py 新增 (21,5) query1 分支，GAME_PORT 环境变量控制端口",
+  "next": "若 21/5 的任务能完成，训练流程即可连到我们的游戏服；优先解决任务完成，或直接从客户端侧驱动 0x801960/传输对象",
+  "evidence": [
+    "evidence/experiments/20261022-training-range-dialog.png",
+    "evidence/experiments/20261022-training-alloc-waiting.png",
+    "evidence/experiments/20261022-training-alloc.jsonl"
+  ]
+}

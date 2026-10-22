@@ -580,6 +580,21 @@ class DerivedLsgServer(AuthServer):
                                                f"bytes={len(reply_payload)}; "
                                                "client consumption unverified")
                     counter += 1
+                elif (service, task) == (21, 5) and payload[4:8] == b"\x01\x00\x00\x00":
+                    # query1: hand out a game endpoint.  The training and
+                    # matchmaking flows ask for it right before "searching for
+                    # servers"; the result is the 114-byte bdMatchMaking entry.
+                    game_port = int(os.environ.get("GAME_PORT", "8466"))
+                    entry = make_server_entry(b"\x7f\x00\x00\x01", game_port)
+                    body = (_typed_u64(counter) + _typed_u32(0) + b"\x03" + bytes([task])
+                            + _typed_u32(1) + _typed_u32(1) + entry)
+                    frame = build_server_frame85(keys, body, counter=received_counter,
+                                                 iv=os.urandom(16))
+                    conn.sendall(frame)
+                    self.evidence.write("game_alloc_reply", session,
+                                        reason=f"svc21/task5 query1 -> 127.0.0.1:{game_port} "
+                                               f"entry={len(entry)}B")
+                    counter += 1
                 elif (service, task) == (21, 13) or (
                         (service, task) == (21, 5) and payload[4:8] in (b"\x04\x00\x00\x00",
                                                                        b"\x05\x00\x00\x00")):
