@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:05:30.445436+00:00",
+  "claim": "3.19.26.13 的 IIPS 目录含 gametype zone 的下载包（nifs 格式），可能是 ver461 数据的来源",
+  "found": {
+    "dir": "E:/GAME/COD/3.19.26.13/IIPS/IIPSDownload",
+    "gametype_packages": {
+      "ff_init_common_gametype_mp_V69.ifs": "34,819,339B",
+      "ff_init_common_gametype_survival_V72.ifs": "62,471,425B",
+      "ff_init_common_gametype_coop_V55.ifs": "33,130,036B",
+      "lf_init_common_gametype_mp_V25.ifs": "94,322,167B"
+    },
+    "header": "6e 69 66 73 = 'nifs' + 0xAC 头"
+  },
+  "significance": "这是 IIPS 下载的 zone 包，可能解出正确的 gametype fastfile；但来自 3.19.26.13，版本号(461)需验证",
+  "next": [
+    "解包 nifs 看是否含明文 IWff（版本461）",
+    "若为加密/压缩，需找解包方法",
+    "若版本匹配，替换 common_gametype_mp.ff 后重测加载"
+  ]
+}
