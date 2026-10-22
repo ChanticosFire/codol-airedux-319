@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T22:45:00+00:00",
+  "scope": "snapshot wire bytes from source vs the captured tail",
+  "source_facts": {
+    "codol_snapshot.c CODOL_WriteSnapshotDeltaNumber": [
+      "CODOL_WriteByte(m, 0)   // svc_snapshot",
+      "CODOL_WriteByte(m, delta)",
+      "CODOL_WriteByte(m, flags)",
+      "CODOL_WriteByte(m, 5)   // trailing marker written with the snapshot body"
+    ],
+    "codol_2697_service.h": {"SNAPSHOT": 0, "GAMESTATE": 3, "EOF": 6},
+    "sv_snapshot.c SV_EndClientSnapshot": "MSG_WriteByte(msg, SV_WIRE_EOF) when the snapshot was not prepared"
+  },
+  "captured_tail": "seq33..39 end with ... 18 ff 07 00 00 00 06 (last byte 06, preceded by 07 and three zeros)",
+  "open_question": "the source writes svc_snapshot=0 and a trailing 5, while the captured tail ends with 07 ... 06; either the 0x00 snapshot byte sits earlier in the message (before the binary block), or the 2697 service layer rewrites the values. The 0x06 at the very end matches CODOL2697_SVC_EOF=6.",
+  "next": [
+    "locate the exact offset of the svc_snapshot byte inside one decoded message (scan for the 00/blocks following the reliable command text)",
+    "disassemble the 1649370 CL_ParseServerMessage switch to pin its svc_snapshot/svc_EOF numeric values",
+    "then decide whether to patch the 2697 writer or the client"
+  ],
+  "artifacts": ["runs/ring-dump-43.jsonl"]
+}
