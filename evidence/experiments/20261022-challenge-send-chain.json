@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:42:04.708270+00:00",
+  "claim": "challenge 发送链：0x5C075A call 0x675260（组包）→ 0x6752EB call 0x6751F0（发送）；0x6751F0 对类型参数 ==0/==1 直接返回失败，==2 才走 0x6750A0",
+  "chain": {
+    "0x675260": "计算字符串长度；长度+4>0x800 返回 0；否则 0x6751F0",
+    "0x6751F0": "mov ecx,[ebp+0xC]；test ecx,ecx je 0x67524E（返回失败）；cmp ecx,1 je 0x67524E；cmp ecx,2 → 0x6750A0（发送）否则 0x77FB80",
+    "0x6750A0": "实际发送"
+  },
+  "meaning": "如果调用点传的“类型”不是 2，发送会直接失败返回 0 → 上层报 EXE_CLIENTFAILEDTOCHALLENGE，且不会产生任何 sendto",
+  "next": [
+    "运行时 hook 0x6751F0 记录 [ebp+0xC] 实际值（判断是否类型不匹配）",
+    "或 hook 0x675260 记录 edx 字符串与 6 个参数",
+    "若类型错，trace 0x5C0730 前的参数构造"
+  ]
+}
