@@ -1,5 +1,7 @@
 # CODOL Build 1649370 本地 bot 对战：多 agent 技术路线
 
+> **2026-10-22 G1/G2 最新门槛**：五个同版 IFS 散文件包共 3300 项和已验签 v461 FF 在私有 stage 下使 `preloadmap` 115 秒无致命文件错误；但地图索引仍为 `-1`、画面黑屏。补交 `devmap` 无状态推进；强写状态 3 会被引擎恢复，随后直接建通道导致异常。下一步优先核实 `room.startgame` 消费和真实状态转换守卫/连接对象，再接 G2。证据与运行细节见 [1649370-STATUS.md](1649370-STATUS.md)。
+
 > **2026-10-22 G2 资源门槛补充**：交叉火力 v461 FF 三件套已验签，原始同版本 `lf_init_mp_cross_fire_V10.ifs` 的 538 件 `main/` 松散资源已严格解码并能全部装进私有 stage。`preloadmap` 实机仍黑屏后 `fatal_dialog`，故 G2 不通过；下一步高频关联文件 API 返回、fatal 调用点与地图状态，不继续按单个文件名盲补。记录见 [20261022-codex-crossfire-resource-closure.json](evidence/experiments/20261022-codex-crossfire-resource-closure.json)。
 
 > **2026-10-22 新门槛**：人工 LSG 到 token；私有 `dwauth.ini` 已使配置端口读为 28969，但认证来源和登录状态仍是 0。社区 EXE 的静态写入点已定位：`0x7F28F0 → 0x7F2B90` 创建 Auth 来源，后续 `0x801A00`；下一步实测状态机触发与游戏自主 `/auth/`，随后验证 LSG 的首个 `0x85`。详见 [1649370-REASSESSMENT-20261022.md](1649370-REASSESSMENT-20261022.md)。
