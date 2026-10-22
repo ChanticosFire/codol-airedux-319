@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T11:02:00+00:00",
+  "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "scope": "client-side gamestate consumption, heartbeat crash and the new CS_PRIMED/configstring blocker",
+  "breakthrough": {
+    "client_consumed_gamestate": true,
+    "evidence": [
+      "server log: 'SV_SendClientGameState()' then 'Going from CS_CONNECTED to CS_PRIMED'",
+      "client sent 'gamestateupdate 1' back to the server",
+      "client phase [0x76446B0] advanced to 8 and stayed there",
+      "server kept emitting snapshots: 'state 3 ack 1 gamestate 31 out 161/283/404/... sent 1'",
+      "ring B read cursor advanced to 728 while the engine consumed the injected packets",
+      "screenshot shows the game scene (bullet trails/texture) with a server-timeout dialog overlay"
+    ],
+    "not_yet": "playable world, controllable player, bot, exit to lobby"
+  },
+  "heartbeat_crash": {
+    "first_crash": "0xc0000005 execute violation at 0xC652C1DA after phase 7",
+    "call_chain": ["0x5C2AF2", "0x5B31B9", "0x5B2C8A"],
+    "root_cause": "0x66F170 computes the heartbeat vtable target as [obj+0x2C] ^ [obj+0x30] ^ [0xE60B78]; the offline build never initializes that key/object field, so the first heartbeat after gamestate calls a garbage address",
+    "workaround": "patch 0x5B3160 to 'xor eax,eax; ret' (reversible via tools/ring_bridge_1649370.py heartbeat block/restore); the client then survives phase 7/8",
+    "stack_capture": "tools/crash_stack_patch.py wraps the host DebugLoop and adds page-tolerant stack/EBP/EIP bytes to the 0xc0000005 event"
+  },
+  "new_blocker": {
+    "server_state": "CS_PRIMED (internal state 3), ack 1, gamestate 31, snapshots continue",
+    "server_log": "CoDOL configstring 0 deferred for client 0 (1 pending)",
+    "client_state": "phase 8, waits for the deferred configstrings, then raises its own '服务器连接超时' (server connection timed out)",
+    "interpretation": "the server defers configstring delivery until a reliable acknowledgement it never receives from this client; the client never sends a clc_move with the expected acknowledgement, so both sides wait",
+    "next": [
+      "inspect the 2697 source for 'configstring %d deferred' and the exact acknowledgement field",
+      "send a crafted clc_move carrying the expected netchan acknowledgement / reliable ACK from the bridge",
+      "then verify the client leaves phase 8, renders the world and accepts movement input"
+    ]
+  },
+  "tools": {
+    "ring_bridge_1649370.py": "added heartbeat block/restore, keepalive clc_move sequence, clc_move trigger, fake stats",
+    "crash_stack_patch.py": "page-tolerant crash stack enrichment for the launcher host debug loop",
+    "launch_1649370.py": "installs the crash stack patch"
+  },
+  "evidence_files": [
+    "runs/codex-ring-bridge-7-state8.png",
+    "runs/codex-ring-bridge-8-world.png",
+    "runs/codex-ring-bridge-8-world2.png",
+    "runs/codex-ring-bridge-8-forward.json",
+    "runs/20261022-ring-2697e/main/qconsole.log"
+  ]
+}

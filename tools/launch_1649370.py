@@ -69,6 +69,14 @@ from codol_rebuild.adapters.game.v1649370 import session_bridge as bridge_mod  #
 from codol_rebuild.adapters.game.v1649370 import ui_movie as ui_movie_mod  # noqa: E402
 import codol_rebuild.bootstrap.launch as launch_mod  # noqa: E402
 
+# 崩溃栈补丁：host 的严格读栈在跨页时失败，这里为访问违例补充逐页栈/EBP 链/EIP 字节。
+try:
+    import crash_stack_patch  # noqa: E402
+
+    crash_stack_patch.install()
+except Exception:  # noqa: BLE001 - diagnostics must never block the launcher
+    pass
+
 _original_prepare = launch_mod.prepare
 
 # 社区 build_plan() 在参数末尾追加的游戏参数。补丁 0xDBCCF8 把 "set 2451" 改成 "set 2439"，

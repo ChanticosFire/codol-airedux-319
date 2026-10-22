@@ -111,6 +111,8 @@ CONNECT_FN = 0x5BE730
 PUMP_FN = 0x4F8D70
 RING_A_DRAIN_FN = 0x674F30
 RING_A_DRAIN_ORIGINAL = bytes.fromhex("558bec")
+HEARTBEAT_FN = 0x5B3160
+HEARTBEAT_ORIGINAL = bytes.fromhex("558bec")
 
 
 def now() -> str:
@@ -332,6 +334,28 @@ class Client:
             ok = self.write(RING_A_DRAIN_FN, RING_A_DRAIN_ORIGINAL)
             status = "drain_restored"
         after = self.read(RING_A_DRAIN_FN, 3)
+        return {"status": status if ok else "write_failed",
+                "before": before.hex(), "after": (after or b"").hex()}
+
+    def set_heartbeat(self, enabled: bool) -> dict:
+        """Patch/restore the encrypted heartbeat sender 0x5B3160.
+
+        Build 1649370 derives the heartbeat vtable call as
+        `[obj+0x2C] ^ [obj+0x30] ^ [0xE60B78]`; the offline build does not
+        initialize that key, so the first heartbeat after gamestate executes a
+        garbage address (observed 0xC652C1DA).  Skipping the sender keeps the
+        client alive; the bridge can send keepalive packets instead.
+        """
+        before = self.read(HEARTBEAT_FN, 3)
+        if before is None:
+            return {"status": "read_failed"}
+        if enabled:
+            ok = self.write(HEARTBEAT_FN, b"\x31\xc0\xc3")
+            status = "heartbeat_blocked"
+        else:
+            ok = self.write(HEARTBEAT_FN, HEARTBEAT_ORIGINAL)
+            status = "heartbeat_restored"
+        after = self.read(HEARTBEAT_FN, 3)
         return {"status": status if ok else "write_failed",
                 "before": before.hex(), "after": (after or b"").hex()}
 
@@ -564,9 +588,16 @@ def cmd_forward(client: Client, args) -> dict:
     stats_assembler = StatsUploadAssembler()
     fake_packets = build_fake_stats_packets() if args.fake_stats else []
     fake_stats_sent = False
+    move_due = 0.0
+    move_sent = False
+    last_keepalive = time.monotonic()
+    keepalive_seq = 2
     deadline = time.monotonic() + args.seconds
     last_status = None
     next_retry = 0.0
+    if args.block_heartbeat:
+        events.append({"t": 0.0, "dir": "heartbeat_patch",
+                       "result": client.set_heartbeat(True)})
     if args.start_challenge:
         events.append({"t": 0.0, "dir": "arm", "result": client.start_challenge()})
         next_retry = time.monotonic() + args.retry_seconds
@@ -622,9 +653,25 @@ def cmd_forward(client: Client, args) -> dict:
                         sock.sendto(item, target)
                         sent += 1
                     fake_stats_sent = True
+                    move_due = time.monotonic() + args.move_delay
                     events.append({"t": round(time.monotonic(), 3), "dir": "fake_stats",
                                    "blocks": len(fake_packets)})
                 progressed = True
+            if args.send_move and fake_stats_sent and not move_sent and time.monotonic() >= move_due:
+                move = struct.pack("<I", 1) + b"\x00" + bytes([1]) + bytes(200)
+                sock.sendto(move, target)
+                sent += 1
+                move_sent = True
+                events.append({"t": round(time.monotonic(), 3), "dir": "clc_move",
+                               "length": len(move), "seq": 1})
+            if args.keepalive and time.monotonic() - last_keepalive >= 2.0:
+                packet = struct.pack("<I", keepalive_seq) + b"\x00" + bytes([1]) + bytes(200)
+                sock.sendto(packet, target)
+                sent += 1
+                keepalive_seq += 1
+                last_keepalive = time.monotonic()
+                events.append({"t": round(time.monotonic(), 3), "dir": "keepalive",
+                               "seq": keepalive_seq - 1})
             for _ in range(64):
                 try:
                     data, source = sock.recvfrom(65535)
@@ -745,6 +792,13 @@ def main() -> int:
     p.add_argument("--fake-stats", action="store_true",
                    help="send a complete 2697-format stats upload right after connect "
                         "and drop the client's own upload")
+    p.add_argument("--send-move", action="store_true",
+                   help="send the first clc_move ourselves after the fake stats upload")
+    p.add_argument("--move-delay", type=float, default=1.5)
+    p.add_argument("--keepalive", action="store_true",
+                   help="send an OOB heartbeat every 12 s so the server does not time out")
+    p.add_argument("--block-heartbeat", action="store_true",
+                   help="patch the client's encrypted heartbeat sender (0x5B3160) before running")
     p.add_argument("--dedup", action="store_true",
                    help="forward each identical outgoing payload only once")
     p.add_argument("--max-events", type=int, default=300)
@@ -756,6 +810,10 @@ def main() -> int:
     p = sub.add_parser("ring-a-drain")
     p.add_argument("state", choices=("block", "restore"))
     p.set_defaults(func=lambda client, args: client.set_ring_a_drain(args.state == "block"))
+
+    p = sub.add_parser("heartbeat")
+    p.add_argument("state", choices=("block", "restore"))
+    p.set_defaults(func=lambda client, args: client.set_heartbeat(args.state == "block"))
 
     args = parser.parse_args()
     client = Client()
