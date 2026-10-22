@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【帧循环只调用读包一次】** 断点 `0x4F9428`（调读包）与 `0x4F8ED8`（调解析）各命中 1 次——帧循环没有持续调用读包路径。`0x4F9428` 所在函数入口 `0x4F9240`，调用者 `0x4FE312`/`0x4FE658`。下一步：反汇编调用点找 gamestate 后不再走读包分支的条件（总闸）。证据 [20261022-codex-loop-once.json](evidence/experiments/20261022-codex-loop-once.json)。
+
 > **2026-10-22【环 B 消费者 = 0x675140】** 环常量交叉引用集中在 `0x675140`（取包），它在 `0x4F8D70` 的循环里 `0x4F8EEA` 被调用；循环还调 `0x5C2260`（`0x4F8ED8`）。但 `0x674EB0` 断点 0 命中，说明帧循环未走到或 `0x5C2260` 提前返回。下一步：断点 `0x4F8ED8`/`0x4F9428` 区分。证据 [20261022-codex-ring-consumer.json](evidence/experiments/20261022-codex-ring-consumer.json)。
 
 > **2026-10-22【游戏侧收包助手 0x674EB0 从未被调用】** 断点 `0x674EB0:recv_helper` 在完整握手（环 B 约 280 包/秒被消费）中命中 **0** 次（milestone 只有启动/UI 项）。说明环 B 由另一个消费者排空，游戏 netchan 收包路径没有运行——游戏侧确实没有包。下一步：找出推进 `0x7872C00` 的消费者，若为侧路消费者则停掉，或让游戏帧循环成为消费者。证据 [20261022-codex-recv-never-called.json](evidence/experiments/20261022-codex-recv-never-called.json)。

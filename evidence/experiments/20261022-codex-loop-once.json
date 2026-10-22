@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:40:00+00:00",
+  "scope": "the frame loop only calls the read-packet path once",
+  "breakpoints": {
+    "0x4F9428:call_readpkt": 1,
+    "0x4F8ED8:call_parse": 1
+  },
+  "meaning": "both the read-packet call and the parse call fire exactly once in a full run. The frame loop does not keep invoking the read path, which explains every downstream symptom: ring B keeps filling, a side consumer drains it, the game receive helper 0x674EB0 never runs, and the parse never repeats.",
+  "root_question": "why does the frame loop stop calling 0x4F9428's function after one iteration?",
+  "next": [
+    "disassemble the two call sites 0x4FE312 and 0x4FE658 and their enclosing function to see the condition under which 0x4F9240 is invoked",
+    "that enclosing function is the frame driver; the one successful read comes from one branch, and after the gamestate the other branch (or none) runs"
+  ],
+  "artifacts": [
+    "E:/GAME/COD/1649370/workspaces/offline-runs/codex-loop-probe-1/events.jsonl"
+  ],
+  "function": {
+    "entry": "0x4F9240",
+    "contains": "0x4F9428 call 0x4F8D70 (read packets), then 0x4F942D call 0x4F9170, then epilogue",
+    "callers": [
+      "0x4FE312",
+      "0x4FE658"
+    ]
+  }
+}
