@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T18:55:00+00:00",
+  "scope": "breakpoint on the caller of CL_Connect",
+  "setup": "launcher --breakpoint 0x5BE5F0:connect_caller (one-shot)",
+  "result": {
+    "client_state": "8 (handshake completed)",
+    "caller_breakpoint": "no hit -- the function 0x5BE5F0 is never entered",
+    "events_jsonl": "52,393 bytes (the usual startup/system exceptions)"
+  },
+  "conclusion": "the whole UI flow that would drive CL_Connect never runs in the offline start path. Both the callee (0x5C05F0) and the caller (0x5BE5F0) are provably never entered, so no amount of phase manipulation will populate cl -- the connect sequence has to be invoked explicitly.",
+  "next": [
+    "invoke CL_Connect directly from the window thread with a real stack, using the bridge's existing call_main_thread cave primitive",
+    "CL_Connect has a 0x11BC-byte frame, so the cave must give it a large stack area and preserve the caller's state",
+    "then check whether cl+0x100260 / cl+0x109260 get filled and whether the receive helper starts returning 1"
+  ],
+  "artifacts": ["runs/codex-caller-1-launcher.out"]
+}

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【调用者 `0x5BE5F0` 也从未命中】** `--breakpoint 0x5BE5F0:connect_caller` 下握手到 8，启动器无命中记录（`events.jsonl` 52,393 字节仅为常规异常）。**被调用者 `0x5C05F0` 与调用者 `0x5BE5F0` 都被证明从未进入**——离线路径不经过该 UI 流程，阶段值摆弄不会填充 `cl`，connect 序列必须显式调用。下一步：用桥的 `call_main_thread` 原语在窗口线程上给 `CL_Connect`（栈帧 `0x11BC`）真实大栈调用，检查 `cl+0x100260`/`cl+0x109260` 是否填充、收包助手是否返回 1。证据 [20261022-codex-caller-never.json](evidence/experiments/20261022-codex-caller-never.json)。
+
 > **2026-10-22【门控假设被证伪：`[0xC7AF58C]` 运行时就是 1】** 登录后读 `[0xC7AF58C] = 0x1`（非 0），`start-challenge` 返回 `challenge_armed`/`state=3`。所以 `0x5BE618` 的 `je` 并未生效——跳过的不是这里。结合 `CL_Connect` 断点从未命中，只能是**调用者 `0x5BE5F0` 整个没执行**（属于离线路径不进入的 UI 流程）。下一步：(a) 断点 `0x5BE5F0` 确认；(b) 找它的上层调用与所属界面；(c) 备选：窗口线程真实栈上直接调用 `CL_Connect`。证据 [20261022-codex-gate-open.json](evidence/experiments/20261022-codex-gate-open.json)。
 
 > **2026-10-22【找到跳过 `CL_Connect` 的门控 `[0xC7AF58C]`】** 调用者入口 `0x5BE5F0`（帧时间门控 + 全局检查）中：`0x5BE612 cmp [0xC7AF58C],0; 0x5BE618 je 0x5BE6ED`——**该全局为 0 时整段 `0x5BEAEA call 0x5C05F0` 被跳过**。假设离线流程里它恒为 0，这正是断点从未命中的原因。下一步：运行时读该全局确认为 0，找出写入点（很可能是 UI“加入”动作），置位后观察 `0x5C05F0` 是否运行、`cl` 是否被填充。证据 [20261022-codex-clconnect-gate.json](evidence/experiments/20261022-codex-clconnect-gate.json)。
