@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T22:55:00+00:00",
+  "scope": "who writes clc.state / what cl+0x100260 means",
+  "decode_sites": {
+    "eax": 0, "ecx": 13, "edx": 4, "esi": 7, "ebx": 4,
+    "note": "28 places decode the encoded client pointer; none of the two inspected (0x5BE8C4, 0x5BE084) writes [cl]"
+  },
+  "inspected": {
+    "0x5BE8C4": "esi = cl; cmp edi,5; jne skip; call 0x7F9090; writes byte [eax+0x1112C]=1 -- eax is another structure, not cl",
+    "0x5BE084": "esi = cl; reads [esi+0x140] / [esi+0x144] and increments a counter -- not a state store"
+  },
+  "field_semantics": {
+    "cl+0x100260": "checked against 1 both in the parser path (0x5B2B85: cmp [eax+0x100260],1 / je 0x5B2C02) and inside CL_Connect (0x5C0655: cmp [ebx+0x100260],1 / je 0x5C0F1B). It reads as a 'connected' flag, not clc.state",
+    "cl+0x109260": "the dword the receive helper copies as the comparison netadr's first field"
+  },
+  "conclusion": "clc.state is not at [cl], or it is written outside the code we have inspected. The field that gates both paths is cl+0x100260.",
+  "next": [
+    "test the semantics directly: write 1 to cl+0x100260 at phase 3 and see whether the parser path (0x5B2B85) then takes its success branch",
+    "that is a one-dword write far from the offset that crashed before, so it should be safe"
+  ],
+  "artifacts": []
+}
