@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T18:45:00+00:00",
+  "scope": "post-CS_ACTIVE snapshot construction failure",
+  "log": "Warning: WARNING: snapshot could not be prepared for AdministraClient, trying to recover (no native frame for sequence 32 (ready 0, ready sequence 0, builder: none); cursize 5 of 131072) (repeats are counted and reported every 10 s)",
+  "meaning": {
+    "state": "CS_PRIMED -> CS_ACTIVE is real (the enter-world patch worked)",
+    "snapshot": "SV_BuildClientSnapshot cannot find a native client frame for the client; the 1649370 CoDOL snapshot path needs the game-side frame/player state that ClientBegin normally sets up",
+    "why": "ClientBegin ran, but the map GSC aborted at getPlayerData (definition mismatch) before spawning/finishing the client; the native frame capture therefore has builder='none'"
+  },
+  "conclusion": "CS_ACTIVE alone is not enough: the native snapshot frame requires a completed client spawn, which the GSC getPlayerData definition error still blocks",
+  "next": [
+    "make getPlayerData stop throwing on a zero profile (patch the built-in at 0x5223C6 / its definition match at 0x521F32/0x52205A) or synthesise a profile matching a definition",
+    "then re-check whether the native frame appears and 'cursize' grows beyond 5"
+  ],
+  "artifacts": ["runs/20261022-ring-2697u/main/qconsole.log"]
+}

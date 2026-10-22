@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【CS_ACTIVE 后快照 no native frame】** 进入世界后日志：`snapshot could not be prepared … no native frame for sequence 32 (builder: none); cursize 5 of 131072`。说明 `SV_BuildClientSnapshot` 已调用但缺 native frame——`ClientBegin` 因 GSC `getPlayerData` definition 错误中断、客户端 spawn 未完成。下一步：patch `getPlayerData`（`0x5223C6`）在零 profile 时返回默认值，或合成匹配 profile，让 spawn 完成、native frame 出现。证据 [20261022-codex-snapshot-no-native-frame.json](evidence/experiments/20261022-codex-snapshot-no-native-frame.json)。
+
 > **2026-10-22【里程碑：服务端首次 CS_ACTIVE】** `enterworld5.exe`（`0x579FBD je -> 90 90`）让零 profile 成功 attached，日志出现 `secure profile … attached from lobby file` 与 `Going from CS_PRIMED to CS_ACTIVE`——服务端首次进入世界。随后 GSC 仍因 `getPlayerData: this player's secure profile does not match any definition in mp/playersecuredata.def` 抛异常并关闭。下一步：跳过该 definition 匹配错误或构造匹配 profile，再验证真实快照与客户端阶段 8 退出。证据 [20261022-codex-cs-active-reached.json](evidence/experiments/20261022-codex-cs-active-reached.json)。
 
 > **2026-10-22【零 profile 仍被拒；playersecuredata.def 未挂载】** `patch_dedrun_zeroprofile.py` 让 `CODOL_ReadSecureProfile` 返回零 profile（`enterworld3`），并把 `getPlayerData` 异常分支 nop 掉（`enterworld4`）；两次实跑仍是 `schema/attach rejected` + 脚本异常 + 服务端关闭。根因是 `CODOL_LoadMountedStructuredSchema("mp/playersecuredata.def")` 失败——工作区与 974 个 IFS 都没有该 def，它在客户端 fastfile 中而未挂载到 2697 服务端。下一步：从客户端 FF 提取 def 并放到服务端可挂载路径，或 patch schema 加载构造最小 schema。证据 [20261022-codex-zeroprofile-and-def-missing.json](evidence/experiments/20261022-codex-zeroprofile-and-def-missing.json)。
