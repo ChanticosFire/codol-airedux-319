@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:26:54.157661+00:00",
+  "claim": "提前安装 CreateFileW hook 后仍 count=0：游戏可能用 CreateFileA/NtCreateFile，或文件访问在更早阶段",
+  "result": {
+    "hook": "CreateFileW IAT 0xCA8284",
+    "verified": true,
+    "count": 0
+  },
+  "suspects": [
+    "CreateFileA (0xCA8208)",
+    "NtCreateFile / NtOpenFile (ntdll)",
+    "文件访问发生在登录前的启动阶段"
+  ],
+  "next": [
+    "同时 hook CreateFileA",
+    "或 hook ReadFile(0xCA8254)",
+    "或用 wpr 只录 codol 进程 + 按 Process ID 过滤 csv"
+  ]
+}
