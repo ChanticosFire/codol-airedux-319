@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T10:45:00+00:00",
+  "scope": "reproduce the breakthrough and check whether the connected flag gets set",
+  "setup": {
+    "phase": 8,
+    "cl+0xA8F0": "repaired (alloc 0x180 @ 0x11790000 ^ key)",
+    "0x66F20E": "patched ff d2 -> 90 90 (verified 9090)",
+    "call": "call_main_thread --target 0x5B2C10 --settle 0.5"
+  },
+  "result": {
+    "client": "STILL ALIVE after the call (verified a second time minutes later)",
+    "phase": 8,
+    "cl+0x100260": "0",
+    "cl+0x109260": "0",
+    "cl_address_note": "cl changed from 0x13050DA4 (after start-challenge) to 0x130508F8 by the time of the final read -- the object is re-created during the sequence, so always re-read the pointer"
+  },
+  "conclusion": "the breakthrough is reproducible: with 0x66F20E neutralised (and cl+0xA8F0 repaired) 0x5B2C10 completes and the client survives. But 0x5B2C10 does NOT set cl+0x100260 -- that flag must be written elsewhere.",
+  "next": [
+    "find the writer of cl+0x100260 by static search (mov dword ptr [reg+0x100260], 1) and see under what conditions it runs",
+    "or set it manually now that 0x5B2C10 survives, then watch the frame tick and the parser (0x5B2B85) to see whether the connect sequence advances"
+  ],
+  "artifacts": ["runs/codex-init-pass-1-call.json"]
+}

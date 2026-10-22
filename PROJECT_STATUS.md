@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【突破可复现；但 `0x5B2C10` 不写连接标志】** 复现：阶段 8、补 `cl+0xA8F0`（alloc 0x180 @ `0x11790000` ^ key）、`0x66F20E`→`90 90`（读回校验 `9090`）、`call_main_thread(0x5B2C10)`：**客户端调用后仍存活**，阶段 8。但 **`cl+0x100260` 仍 0、`cl+0x109260` 仍 0**——`0x5B2C10` 本身不写该标志。另：**`cl` 地址在序列中会变**（`0x13050DA4`→`0x130508F8`），对象会被重建，取指针须每次重读。下一步：静态搜 `cl+0x100260` 写入者，或手工置 1 后观察帧 tick 与解析器是否推进。证据 [20261022-codex-init-pass.json](evidence/experiments/20261022-codex-init-pass.json)。
+
 > **2026-10-23【重大突破：nop 掉 `0x66F20E` 后 `0x5B2C10` 首次跑完、客户端稳定】** 阶段 8、补 `cl+0xA8F0`（alloc 0x180 @ `0x11780000` ^ key）、`0x66F20E` 的 `ff d2`→`90 90`、`call_main_thread(0x5B2C10)`：**客户端立刻存活、6 秒后仍存活**，阶段保持 8，异常仅旧的非致命 `0x4000001F`（64 条），最后 milestone `view:UIViewerSetMode`/`Com Error`。**`0x5B2C10` 第一次完整跑完而没杀客户端**——跳过回调即可越过该故障点。但 `cl+0x100260`（连接标志）仍为 0、`cl+0x109260` 也为 0——初始化器跑完≠标记已连接。下一步：确认 `0x5B2C10` 真的返回；找谁设置 `cl+0x100260`；带帧 tick 沿连接序列继续。证据 [20261022-codex-nopcall.json](evidence/experiments/20261022-codex-nopcall.json)。
 
 > **2026-10-23【编码回调受阻：`cl+0x30` 被帧 tick 覆盖】** 思路：`edx = (cl+0x2C) ^ [cl+0x30] ^ [0xE60B78]`，任选 `F` 令 `cl+0x30 = key ^ F` 即可让 `edx == F`。实测：`cl=0x13010BC0`、`key=0x9DD15D5A`、`ret` stub @ `0x11020000`，写入 `0x8CD35D5A` 但**读回 `0x5A5DD38C`**——值被覆盖。原因：写入与调用之间隔着桥的 `set-state`（数秒），帧 tick 改写了该字段。结论：不能“先写后调”地用。下一步：优先把 `0x66F20E` 的两字节 `call edx`（`ff d2`）换成 `nop nop` 让初始化器无视回调继续，或把补 `0xA8F0` + 写 `cl+0x30` + 调用合并为一次脚本执行。证据 [20261022-codex-retcb.json](evidence/experiments/20261022-codex-retcb.json)。
