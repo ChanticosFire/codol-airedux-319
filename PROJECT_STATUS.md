@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【锁定 `CL_Connect` 发包点 `0x5C071E`】** 字符串 `getchallenge`（`0xDBFD04`）只有一处 `push` 引用 `0x5C071E`：`push 0xDBFD04` → `lea ecx,[ebp-0x70]; push 0x40; push ecx; call 0x774900` → 压入 `[ebx+0x14]`..`[ebx+0x28]` 六个 dword（服务器 netadr）→ `push edi; lea edx,[ebp-0x70]; call 0x675260`（`NET_OutOfBandPrint`）→ `test al,al; jne 0x5C0F1B`。**下一步**：从该点回溯到函数序言，找写 `clc.state`/拷贝地址的指令及其调用者（UI“加入游戏”动作），让离线流程走进去。证据 [20261022-codex-clconnect-site.json](evidence/experiments/20261022-codex-clconnect-site.json)。
+
 > **2026-10-22【`cl` 完全空白：`+0x109260` 与 `+0x100260` 都是 0，`CL_Connect` 未运行是总闸】** 跟随指针：`cl=0x13D9CFA4`，`[cl+0x109260]=0`（空指针）、`[cl+0x100260]=0`（游戏拿它跟 1 比较的字段）。`CL_Init` 只分配、无人填充 → 解析器拿空指针当 netadr type 比较（永远失败），写入 2 时被当指针解引用（崩溃）。**逐字段补写是死路**；唯一忠实做法是让游戏自己跑 connect 流程。下一步：定位 `CL_Connect` 及触发它的 UI 动作。代码模式搜索 0 命中，后续改为搜 `0xD362501F` 异或点。证据 [20261022-codex-cl-empty.json](evidence/experiments/20261022-codex-cl-empty.json)。
 
 > **2026-10-22【分步写入：`cl+0x109260` 不是可写 netadr】** 同一次运行：`cl=0x13CDD810`，写 `cl+0`=`0x08` 后存活；写 `cl+0x109260` 的 dword 2 后客户端**立刻死亡**（port 写入未执行）。说明该偏移要么存指针（`NET_CompareAdr` 拿指针值当 type），要么解析器不以 `cl` 为基址。下一步：把 `[cl+0x109260]` 当指针跟随；若为空则解析器在比较空指针，真正修复是让游戏自己的 `CL_Connect` 序列分配并填充它。证据 [20261022-codex-clstate-step.json](evidence/experiments/20261022-codex-clstate-step.json)。

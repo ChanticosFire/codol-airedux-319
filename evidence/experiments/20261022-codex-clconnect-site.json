@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T16:45:00+00:00",
+  "scope": "locate CL_Connect through its getchallenge packet",
+  "strings": {
+    "getchallenge": "0xDBFD04 (one push reference at 0x5C071E)",
+    "connectResponse": "0xDBFF0C (no push reference)"
+  },
+  "code_at_0x5C071E": [
+    "push 0xDBFD04 ('getchallenge')",
+    "lea ecx,[ebp-0x70]; push 0x40; push ecx; call 0x774900  -- build the challenge request string",
+    "copy 6 dwords [ebx+0x14]..[ebx+0x28] onto the stack (the server netadr)",
+    "push edi (the message); lea edx,[ebp-0x70]; call 0x675260  -- NET_OutOfBandPrint",
+    "test al,al; jne 0x5C0F1B -- on success continue in the connect flow"
+  ],
+  "meaning": "this is the point in CL_Connect that sends the getchallenge. ebx holds the server address structure, and the six dwords copied from [ebx+0x14..0x28] are the netadr passed to the network print. Knowing this site pins down the connect function: it must be the function containing 0x5C071E, and inside it the code that writes clc.state and copies the address into cl.",
+  "next": [
+    "disassemble from the function entry (walk backwards from 0x5C071E to the prologue) to see the clc.state = CA_CONNECTING write and the address copy",
+    "find the callers of that entry -- one of them is the UI 'join game' action, and making the offline flow take it would initialise cl properly"
+  ],
+  "artifacts": []
+}
