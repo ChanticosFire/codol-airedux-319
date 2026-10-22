@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "method": "PE VA-to-RVA extraction and Capstone x86 disassembly of the exact target image",
+  "global": "0x3306910",
+  "verified_instructions": [
+    "0x4F36C3: inc dword ptr [esi] where callers set esi=0x3306910; compare resulting value with 0x10",
+    "0x4F36EF: set [esi+index*4+4] to 0xffffffff; 0x4F36F9 set [esi+index*4+0x44] to 0; 0x4F3709 set [esi+index*4+0xC4] to argument buffer",
+    "0x4F38AE: mov esi, 0x3306910; 0x4F38B3 call 0x4F36C0; 0x4F38B8 read [0x3306910]; 0x4F38C0 index [0x3306994]",
+    "0x4F377F: dec eax; 0x4F3780: mov [0x3306910], eax",
+    "0x5C206A: dec eax; 0x5C206E: mov [0x3306910], eax",
+    "0x5C2138: dec eax; 0x5C213C: mov [0x3306910], eax"
+  ],
+  "conclusion": "0x3306910 is the command parser nesting index, not the map or playlist index. -1 is its idle value and cannot establish whether a map world loaded. Earlier inferences identifying 0x5C206E/0x5C213C as playlist network parsing are invalid.",
+  "effect_on_gate": "G2 still unverified because the captured window is black with a loading spinner and no controllable player/world evidence, regardless of the parser index."
+}

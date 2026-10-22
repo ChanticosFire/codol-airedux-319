@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 Build 1649370 指标校正**：`[0x3306910]=-1` 是命令解析器空闲值，不能判为地图/赛单索引；相关旧解释已由同版 EXE 反汇编推翻。G2 未通过的有效证据是仅见黑屏加载、无可控世界或玩家；下一步寻找真实世界状态和房间转场条件。见 [静态校正](evidence/experiments/20261022-codex-command-context-correction.json)。
+
 > **2026-10-22 Build 1649370 G1/G2 更新**：五包资源下 `preloadmap` 和随后 `devmap mp_cross_fire` 均未触发文件致命错误，但地图索引仍为 `-1`；强写游戏状态 3 会被引擎恢复为 0，直接建传输通道触发 `unhandled_exception`，WFP 守卫正常关闭。当前转向追真实房间/连接状态转换的前置条件，尚无进图、bot 对战、退出回大厅的验收。详见 [1649370-STATUS.md](1649370-STATUS.md)。
 
 > **2026-10-22 Build 1649370 G2 更新**：五个同版 IFS 散文件包共 3300 项、已验签的 v461 Cross Fire/gametype FF 均只进入私有运行目录。自然登录 + `preloadmap` 后 115 秒内无致命错误，观察到 `stop_reason=observation_timeout`、WFP 守卫正常关闭；但画面仍黑屏转圈，地图索引为 `-1`，未达到可玩地图、bot 战斗或回大厅。G2–G4 仍未通过。下一步定位预加载完成/切换与本地对局状态。详见 [1649370-STATUS.md](1649370-STATUS.md)。

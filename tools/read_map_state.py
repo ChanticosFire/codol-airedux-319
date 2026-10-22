@@ -12,6 +12,8 @@ k32.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
 k32.OpenProcess.restype = W.HANDLE
 k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
 
+# 0x3306910 is the command parser nesting index (idle -1), NOT a map index.
+# Keep it for parser context, not as a G2 world-loaded signal.
 ADDRS = [0x35053DC, 0x766A20C, 0x7886BBC, 0x3306910, 0x337EAC0, 0x337EAC8,
          0x33E9990, 0x3306994, 0x76661A8, 0x76661AC, 0x76595A4, 0x76595A8, 0x76595AC]
 
