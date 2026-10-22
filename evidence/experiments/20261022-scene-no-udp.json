@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:36:32.971242+00:00",
+  "claim": "进入场景后（state=3）客户端不发送任何 UDP，错误框出现后进入空闲等待",
+  "observations": {
+    "eips": "全部在 0x76F4xxxx（ntdll NtWaitForSingleObject）——错误框显示后等待用户操作",
+    "sendto": "10 秒内 0 条",
+    "previous": "connection+0x14=2 也无法绕过"
+  },
+  "interpretation": "客户端从未真正发起连接（无 UDP 包），说明连接对象/服务器地址未初始化；错误框是本地判定失败的直接结果",
+  "next": [
+    "在 state=3 之前初始化连接对象：写 connection+0x14 的 netadr（127.0.0.1:port）并触发 connect",
+    "或找出显示错误框前的判定函数并 patch",
+    "参考 launcher 的 transport_connect（0x621E50）但需先补齐前置"
+  ]
+}
