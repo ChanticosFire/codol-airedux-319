@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【找到跳过 `CL_Connect` 的门控 `[0xC7AF58C]`】** 调用者入口 `0x5BE5F0`（帧时间门控 + 全局检查）中：`0x5BE612 cmp [0xC7AF58C],0; 0x5BE618 je 0x5BE6ED`——**该全局为 0 时整段 `0x5BEAEA call 0x5C05F0` 被跳过**。假设离线流程里它恒为 0，这正是断点从未命中的原因。下一步：运行时读该全局确认为 0，找出写入点（很可能是 UI“加入”动作），置位后观察 `0x5C05F0` 是否运行、`cl` 是否被填充。证据 [20261022-codex-clconnect-gate.json](evidence/experiments/20261022-codex-clconnect-gate.json)。
+
 > **2026-10-22【断点实证：`0x5C05F0` 从未命中】** launcher 一次性断点 `0x5C05F0:cl_connect` 下跑完整握手：阶段正常到 8，但启动器无命中记录、`events.jsonl` 0 字节。**定论：阶段到 3/8 都不会驱动 `CL_Connect`**，`cl` 始终未初始化。交叉引用找到两处 `call`：`0x5BEAEA`（`xor ecx,ecx; call`）与 `0x5C2AB9`（疑似误报）。下一步：对齐反汇编 `0x5BEAEA` 所在函数确认所属 UI 流程，再决定满足前置条件或运行时 stub 直接调用。证据 [20261022-codex-clconnect-never.json](evidence/experiments/20261022-codex-clconnect-never.json)。
 
 > **2026-10-22【阶段 3 停留 4 秒，`cl` 仍完全没被写——`0x5C05F0` 未运行】** 100ms 采样：`start-challenge` 返回 `challenge_armed`/`connection=0x136DB1F8`/`state=3`；阶段稳定 3 达 4 秒，`cl` 不变，`[cl+0x100260]`、`[cl+0x109260]` 每个采样都是 0。**只置 `[0x76446B0]=3` 不驱动 `CL_Connect`**——桥注释与实测不符，存在未满足的开关。下一步：在 `0x5C05F0` 下断点确认是否进入，并找出帧 tick 在阶段 3..6 的实际调用与缺失条件。证据 [20261022-codex-phase3-cl.json](evidence/experiments/20261022-codex-phase3-cl.json)。

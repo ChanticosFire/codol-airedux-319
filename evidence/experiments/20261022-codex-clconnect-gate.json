@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T18:15:00+00:00",
+  "scope": "the caller that would drive CL_Connect",
+  "function": {
+    "entry": "0x5BE5F0",
+    "contains_call": "0x5BEAEA call 0x5C05F0",
+    "shape": "frame-time gate (call [0xCA8164]; cmp [0x7886E6C]) then a series of global checks before reaching the CL_Connect call"
+  },
+  "gate": {
+    "instruction": "0x5BE612 cmp dword ptr [0xC7AF58C], ebx (ebx=0); 0x5BE618 je 0x5BE6ED",
+    "meaning": "if [0xC7AF58C] == 0 the function jumps past 0x5BEAEA, so CL_Connect is never called"
+  },
+  "hypothesis": "in the offline flow [0xC7AF58C] stays 0, which is exactly why the 0x5C05F0 breakpoint never fires and cl remains uninitialised. Setting this global (or the state it represents) may be the missing switch that makes the client run its own connect path.",
+  "next": [
+    "read [0xC7AF58C] at runtime during phase 3 and 8 to confirm it is 0",
+    "if it is 0, find its writers and what normally sets it (likely the server-browser 'join' action or a UI state flag)",
+    "then set it at runtime and watch whether 0x5C05F0 runs and cl becomes populated"
+  ],
+  "artifacts": []
+}
