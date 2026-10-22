@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T11:40:00+00:00",
+  "scope": "server-side ACK state at the phase-8 stall and the fake-ACK requirements",
+  "client_state": "phase 8 after gamestate; sends 'gamestateupdate 1' once; no clc_move; writing phase 9 is immediately reverted to 0",
+  "server_memory": {
+    "process": "codol_dedrun_deferpatch.exe",
+    "client_name_address": "0x4E52908",
+    "name_to_reliable_offset": 265420,
+    "layout": "client_t: name[36] + clantag[16] + commandWhitelist[128] + configDataAcknowledge + predictedOrigin[12] + time + delayDropMsg + userinfo[1024] + reliableCommands[256 * 1032] -> reliableSequence",
+    "values": {
+      "reliableSequence": 3,
+      "reliableAcknowledge": 0,
+      "reliableSent": 3,
+      "messageAcknowledge": 1,
+      "gamestateMessageNum": 31,
+      "challenge": -403656330
+    },
+    "server_log": "state 3 (CS_PRIMED); snapshots continue; 'configstring ... deferred' is gone after the patch"
+  },
+  "interpretation": [
+    "the client consumed the gamestate (it answered gamestateupdate 1) but never sent a netchan packet, so the server still counts reliableAcknowledge=0",
+    "only 3 reliable commands were ever queued: the gamestate itself; no post-gamestate configstring update entered the queue even with defer disabled, because the pump still requires CS_ACTIVE",
+    "the client appears to wait for either a snapshot/asset set or its own map load before emitting clc_move; the server waits for clc_move before CS_ACTIVE -> a second deadlock",
+    "a fake client packet cannot simply set an ack field: SV_Netchan_Decode derives the XOR key from challenge ^ serverId ^ messageAcknowledge and the current reliableCommands[reliableAcknowledge].command string"
+  ],
+  "next": [
+    "trace CreateFileA while the client sits at phase 8 to see whether mp_cross_fire assets are being opened (loader stalled?) or no map load starts at all",
+    "read challenge/serverId/messageAcknowledge/reliableCommands[0] from client_t and craft a correctly encoded clc_move carrying reliableAcknowledge=3",
+    "or find the client-side guard that withholds clc_move at phase 8 and lower it to phase 8"
+  ],
+  "tools": ["tools/read_dedrun_client.py"]
+}
