@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T05:45:00+00:00",
+  "scope": "bisect with a launcher one-shot breakpoint",
+  "setup": {
+    "breakpoint": "launcher --breakpoint 0x5B2F43:bisect",
+    "phase": 8,
+    "cl+0xA8F0": "repaired (alloc 0x180 @ 0x10EC0000 ^ 0x96B9DC91)",
+    "call": "call_main_thread --target 0x5B2C10 --settle 0.5"
+  },
+  "result": {
+    "bisect_hits": 0,
+    "client": "exited during the call",
+    "new_crash": "0xC0000005 at 0x416B9304 (ecx=0x11B3F5C8)"
+  },
+  "conclusion": "the fault occurs BEFORE 0x5B2F43. Combined with the earlier finding that it happens inside 0x5B2C10, the window is now 0x5B2C10..0x5B2F43 -- the first half of the function, which contains: the prologue/guards, 0x66F170, memset, 0x66E720, the two 0x66E840 branches, 0x66EA90, 0x769560 and the 0x66F410 loop.",
+  "next": [
+    "bisect again: --breakpoint 0x5B2EAB:bisect (the 0x769560 call site). Hit => the fault is after it; miss => before it",
+    "keep halving until the exact call is isolated",
+    "remember launcher breakpoints are one-shot, so each run answers one question"
+  ],
+  "artifacts": ["runs/codex-bp-bisect-1-call.json"]
+}
