@@ -71,12 +71,14 @@ def module_base(pid: int) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", default="codol1649370-offline")
+    parser.add_argument("--stack", action="store_true", help="scan each thread stack for client return addresses")
     args = parser.parse_args()
     pid = find_pid(args.name)
     if not pid:
         print("process not running")
         return 1
     base = module_base(pid)
+    proc = k32.OpenProcess(0x0410, False, pid)
     snapshot = k32.CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0)
     entry = THREADENTRY32()
     entry.dwSize = C.sizeof(THREADENTRY32)
@@ -94,15 +96,31 @@ def main() -> int:
                 if getter(handle, C.byref(ctx)):
                     eip = ctx.Eip
                     rva = eip - base if base and base <= eip < base + 0x2000000 else None
-                    rows.append((entry.th32ThreadID, eip, rva))
+                    stack_hits = []
+                    if args.stack and ctx.Esp:
+                        buf = C.create_string_buffer(0x1000)
+                        got = C.c_size_t(0)
+                        k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p,
+                                                          C.c_size_t, C.POINTER(C.c_size_t)]
+                        if k32.ReadProcessMemory(proc, C.c_void_p(ctx.Esp & ~0xFFF), buf, 0x1000, C.byref(got)):
+                            import struct as _st
+                            data = buf.raw[:got.value]
+                            for off in range(0, len(data) - 4, 4):
+                                val = _st.unpack_from("<I", data, off)[0]
+                                if base and base <= val < base + 0x2000000:
+                                    stack_hits.append(((ctx.Esp & ~0xFFF) + off, val))
+                    rows.append((entry.th32ThreadID, eip, rva, stack_hits[:6]))
                 k32.ResumeThread(handle)
                 k32.CloseHandle(handle)
         ok = k32.Thread32Next(snapshot, C.byref(entry))
     k32.CloseHandle(snapshot)
     print(f"pid={pid} base={base:#x} threads={len(rows)}")
-    for tid, eip, rva in rows:
+    for row in rows:
+        tid, eip, rva, stack_hits = row
         tag = f"file_va={rva:#x}" if rva is not None else "outside"
         print(f"  tid={tid:<6} eip={eip:#010x} {tag}")
+        for addr, val in stack_hits:
+            print(f"        stack {addr:#010x} -> file_va {val - base:#x}")
     return 0
 
 

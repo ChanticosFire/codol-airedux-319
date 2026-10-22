@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T02:55:00+00:00",
+  "scope": "stack scan for client-side return addresses in the blocked client",
+  "tool": "tools/client_eip.py --stack (reads the 4 KB page at each thread ESP and reports dwords that point into the client module)",
+  "sample": {
+    "pid": 37360,
+    "threads": 77,
+    "notable_hits": {
+      "tid 32092": ["file_va 0x41ea00 (inside .text)", "0xbc5d4d", "0x1850000"],
+      "tid 11504": ["0x7eb154", "0x114994", "0x35a62f"],
+      "others": "0xc40005/0xc00030/0x1c00012 style values, i.e. data words that merely fall in the module range"
+    }
+  },
+  "assessment": "the scan works but most hits are data; the clearest code candidate is 0x41ea00 on tid 32092. Identifying the actual main thread still needs a discriminator (creation order, start address, or window ownership).",
+  "next": [
+    "add a --main option that picks the thread whose EIP/wait is reached through a client return address, or use GetThreadId of the window owner (GetWindowThreadProcessId)",
+    "disassemble the confirmed return addresses to find the wait caller",
+    "then supply the missing signal or patch the wait"
+  ],
+  "artifacts": []
+}

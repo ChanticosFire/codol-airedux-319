@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【栈回溯工具就绪】** `client_eip.py --stack` 可对每个线程读栈并筛出客户端模块内的返回地址；修正了 `Wow64GetThreadContext`、`proc` 句柄、`--stack` 参数三处问题。采样得到候选：tid 32092 的 `0x41EA00`（.text 内）等，但多数命中是数据字。下一步：用窗口拥有者线程锁定主线程，再反汇编确认的返回地址。证据 [20261022-codex-stack-scan.json](evidence/experiments/20261022-codex-stack-scan.json)。
+
 > **2026-10-22【线程 EIP：全部等待】** 新工具 `tools/client_eip.py`（含 `Wow64GetThreadContext` 修正）采样 77 个线程：EIP 全部在 ntdll 等待例程，**无一在客户端模块内**——gamestate 后整体阻塞在等待上，与“只处理一条消息”一致。下一步：主线程栈回溯取客户端返回地址，定位等待对象后补信号或 patch。证据 [20261022-codex-thread-waits.json](evidence/experiments/20261022-codex-thread-waits.json)。
 
 > **2026-10-22【决定性：只处理 1 条消息（gamestate）后不再读网络】** 对照实验证明断点机制有效（`Com Init`/`Initial fastfiles`/`Engine init`/`Switch to main menu` 均有 milestone）。带三个读取循环断点的完整握手统计：`begin_reading` 1 次、`svc_dispatch` 1 次、`gamestate_call` 1 次；客户端 `state 8`、环 B 已收 6531 包但不再消费。结论：客户端分派 gamestate 后不再回到读取循环——**gamestate 后的地图加载路径卡住**，不是快照体格式问题。下一步：在 gamestate 尾段（`0x473260` 尾 / `0x5C0310`）找阻塞调用并追踪其后的文件打开。证据 [20261022-codex-one-message-only.json](evidence/experiments/20261022-codex-one-message-only.json)。
