@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:45:00+00:00",
+  "scope": "what the main thread is waiting on",
+  "tool": "tools/client_wait.py (reads dwords near the window thread ESP, NtQueryObject for type/name)",
+  "sample": {
+    "pid": 27284,
+    "tid": 32168,
+    "eip": "0x76F4826C",
+    "esp": "0x11A0FEA4",
+    "entries": [
+      "esp+0x04 = 0x48c -> INVALID_HANDLE (status 0xC0000008)",
+      "esp+0x20 = 0x24 -> IRTimer",
+      "esp+0x24 = 0x1 -> INVALID_HANDLE"
+    ]
+  },
+  "interpretation": {
+    "timer_wait": "the main thread is parked in a timer wait (IRTimer), which is the normal frame-rate sleep of the engine loop -- it is not deadlocked, it simply does not call the network read path any more",
+    "consequence": "the 'one message only' symptom is not a blocked thread: the upper layer stops invoking the message reader. The client's frame loop is alive but the game code that would read packets (the network pump inside CL_Frame/CL_ReadPacket) is no longer reached after the gamestate."
+  },
+  "next": [
+    "breakpoint the client frame loop (the caller of the read routine, e.g. the CL_Frame equivalent) and inspect the branch that skips CL_ReadPacket after the gamestate",
+    "or breakpoint the state machine that gated reading (a download/loading state that never clears)",
+    "a patch that forces the read path to run every frame would confirm the diagnosis"
+  ],
+  "artifacts": []
+}
