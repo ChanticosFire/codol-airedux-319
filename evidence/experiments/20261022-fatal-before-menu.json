@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:54:37.808750+00:00",
+  "claim": "裁剪后 fatal 发生在主菜单加载前：main_menu_verified=False，lifetime=bounded_observation，guard 无 fatal 细节",
+  "observations": {
+    "launch-fa": "main_menu_verified=False, stop_reason=fatal_dialog",
+    "launch-fc": "main_menu_verified=False, stop_reason=fatal_dialog",
+    "guard": "max_processes=1, bound_seconds=160, 无 fatal 文本"
+  },
+  "meaning": "引擎在初始化/主菜单加载阶段就 fatal，说明裁剪后的 overlay 缺少启动必需的资源（很可能是 ff）",
+  "next": [
+    "从 offline-resources.bak-118 恢复部分 ff（client_shipretail/chinese）但保留 manifest 裁剪",
+    "或用 launcher 的 --map-probe/--map-command-mode 观察资源装配",
+    "评估是否需要在 overlay 里保留启动 ff"
+  ]
+}
