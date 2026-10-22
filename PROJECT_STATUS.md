@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【预测落空：算出的 `edx` 与实际崩溃地址不符，故障不在 `0x66F20E`】** 实测 `cl=0x134CA82C`、`[0xE60B78]=0xC597B064`、`cl+0x1C=0`、`cl+0x2C=0`、**`cl+0x30=0x740C`（非 0）**；按公式预测 `edx=0xC597C468`，**实际崩溃 `0xD6C8FF3C`**——不匹配。后果：(1) 故障不是那次间接调用；(2) **`[0xE60B78]` 也每轮变化**（上一轮 `0x2AF590A7`、本轮 `0xC597B064`），不是固定常量。剩余可疑段：`0x66F1C6..0x66F1F8` 浮点循环、三个 `[edi+0x…]` 载入、`0x66F228` 清零循环、`0x66F233`/`0x66F251`。下一步：在 `0x66F1FA` 与 `0x66F20E` 下断点确认是否走到。证据 [20261022-codex-predicted-vs-actual.json](evidence/experiments/20261022-codex-predicted-vs-actual.json)。
+
 > **2026-10-23【修正：`0xE60B78` 是全局解码 key（261 处引用），缺失的是 `cl+0x2C`/`cl+0x30` 里的编码函数指针】** 搜索：`mov [0xE60B78],eax` 0、`mov [0xE60B78],imm` 0，但任意引用 **261 处**——它是被广泛使用的**全局常量 key**，不是对象字段。故 `xor edx,[0xE60B78]` 是解码函数指针：`真实目标 = [cl+0x2C] ^ [cl+0x30] ^ KEY`；`cl` 全 0 时 `edx = KEY`，`call edx` 就是把 key 当函数地址调用而崩溃。真正缺的是 `cl+0x2C`/`cl+0x30` 的编码函数指针。下一步：读 `[0xE60B78]` 与崩溃地址比对；找写 `cl+0x2C`/`cl+0x30` 的初始化器并复现。证据 [20261022-codex-global-key.json](evidence/experiments/20261022-codex-global-key.json)。
 
 > **2026-10-23【崩溃机理：`0x66F170` 末尾 `call edx`，`edx = (cl+0x2C) ^ [cl+0x30] ^ [0xE60B78]`】** 反汇编：`lea eax,[edi+0x10]`（edi=cl+0xC→eax=cl+0x1C）→ `lea edx,[eax+0x10]`（cl+0x2C）→ `xor edx,[eax+0x14]`（[cl+0x30]）→ `xor edx,[0xE60B78]` → **`0x66F20E call edx`**。`cl` 全 0 时 `edx = [0xE60B78]`——**崩溃地址应等于它**。所以是“解码函数指针再调用”，指针未初始化导致任意地址崩溃，解释“每轮地址不同”。下一步：读 `[0xE60B78]` 比对崩溃地址；找其写入者（很可能又是 `CL_Init` 分支）并按 `0xA8F0` 模式复现。证据 [20261022-codex-indirect-call.json](evidence/experiments/20261022-codex-indirect-call.json)。

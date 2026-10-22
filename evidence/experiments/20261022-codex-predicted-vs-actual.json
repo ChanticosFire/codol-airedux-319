@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:45:00+00:00",
+  "scope": "measure the pointer fields and test the predicted crash address",
+  "measurements": {
+    "cl": "0x134CA82C",
+    "[0xE60B78]": "0xC597B064",
+    "cl+0x1C": "0x0",
+    "cl+0x2C": "0x0",
+    "cl+0x30": "0x740C (NON-zero -- so cl is not fully zero)",
+    "predicted edx at 0x66F206": "0x0 ^ 0x740C ^ 0xC597B064 = 0xC597C468"
+  },
+  "actual_crash": "0xC0000005 at 0xD6C8FF3C",
+  "verdict": "the prediction does NOT match. Two consequences: (a) the fault is not the indirect call at 0x66F20E -- execution either never reaches it or the register is set differently; (b) [0xE60B78] itself changed between runs (0x2AF590A7 earlier, 0xC597B064 now), so it is not a fixed constant either.",
+  "remaining_candidates_inside_0x66F170": [
+    "the float loop 0x66F1C6..0x66F1F8 reads [eax+0xAC], [eax], [eax+4] with eax = cl+0xD0 -- all inside cl, but the fld/fistp sequence writes to [ecx] = esi+8 = stack",
+    "the three [edi+0x3F8]/[edi+0x3FC]/[edi+0x3E4] loads (edi = cl+0xC) -- inside cl",
+    "the store loop at 0x66F228..0x66F22D writes 4 bytes at [ebp-0x1C]",
+    "0x66F233 mov eax,[edi+0x104]; 0x66F251 fld [edi+0x404] -- inside cl"
+  ],
+  "next": [
+    "place a breakpoint at 0x66F1FA (the start of the pointer-decode block) to learn whether execution even reaches it",
+    "and another at 0x66F20E (the indirect call) to see whether the call executes",
+    "if neither is reached, the fault is in the earlier float/load section"
+  ],
+  "artifacts": ["runs/codex-ptr-fields-1-call.json"]
+}
