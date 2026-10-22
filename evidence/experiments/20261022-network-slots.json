@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:49:24.118344+00:00",
+  "claim": "raw send 0x622040 依赖网络槽位表 0xE3F4DB0（type*24），大厅态下所有槽位为空 → 发送必然失败",
+  "code": {
+    "0x6220B6": "test esi,esi; js fail",
+    "0x6220BA": "cmp esi,0x9D; jge fail",
+    "0x6220C2": "lea eax,[esi+esi*2]; lea ecx,[eax*8+0xE3F4DB0]（slot = base + type*24）",
+    "0x6220D3": "call 0x7F5E40（按槽位发送）"
+  },
+  "observed_slots": {
+    "base": "0xE3F4DB0",
+    "slot0..5": "全 0（未初始化）"
+  },
+  "conclusion": "网络槽位表未初始化，任何 raw send 都失败；需要先初始化传输层（但 --init-transport 会让客户端退出，需找更安全的方式）",
+  "next": [
+    "找写入 0xE3F4DB0 槽位的函数（传输初始化路径）",
+    "或手动构造最小槽位对象",
+    "或改为 type=2 路径（0x6750A0）看是否绕过槽位表"
+  ]
+}
