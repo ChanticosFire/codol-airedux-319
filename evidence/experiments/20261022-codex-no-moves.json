@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T00:35:00+00:00",
+  "scope": "why the client never starts sending moves",
+  "observation": {
+    "client_phase": "8 (stable)",
+    "move_packets": "the dedicated server log only shows the bridge's forged ack lines ('on stale serverId 0 ... ack 1 gamestate 31'); the client itself never sends clc_move",
+    "meaning": "the client treats the connection as established but not in-game; it waits for a usable snapshot before it initialises the game and starts the command stream"
+  },
+  "tested_frames": {
+    "custom_body_svc0": "ignored",
+    "custom_body_without_base_bit": "ignored",
+    "svc_snapshot_7": "ignored",
+    "minimal_empty_frame": "ignored"
+  },
+  "deduction": "the client drops the message before or during snapshot parsing. The likely gate is the reassembled message length/format (11338 bytes, 10 fragments) or a field check in CL_ParseSnapshot that the 2697 body cannot satisfy; either way the client never reaches 'in game'.",
+  "next": [
+    "instrument the client: patch a small logging stub or use a hardware breakpoint near the svc switch to learn where parsing stops",
+    "alternatively send a short snapshot message (single fragment) with the minimal frame to rule out a message-length limit",
+    "then fix the first gate found"
+  ],
+  "artifacts": ["runs/20261022-ring-2697af/main/qconsole.log"]
+}

@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T00:55:00+00:00",
+  "scope": "clearing the reliable command window and what the server actually sends per frame",
+  "facts": {
+    "client_structure": "reliableSequence at name+0x40C6C, reliableSent at name+0x40C74",
+    "observed": "reliableSequence=0, reliableSent=0 (all reliable commands already acknowledged)",
+    "clearing": "20 forced writes of reliableSent=reliableSequence changed nothing because the window was already empty",
+    "server_out": "out grows by ~122 bytes per frame (164->288->410->532) even though the reassembled messages are 11-17 KB"
+  },
+  "interpretation": {
+    "message_size": "the 11-17 KB figure comes from reassembling all fragments of one netchan sequence; the per-frame 'out' counter only reflects newly queued bytes, so both numbers describe different things",
+    "state": "the reliable window is empty, so the big messages are dominated by the snapshot body itself; the client still ignores them"
+  },
+  "next": [
+    "dump a single frame's packets with --dump-in while the client is active and inspect one complete message end to end",
+    "measure the snapshot-only length by watching a frame where reliable commands are empty",
+    "then decide between a server-side frame translator and a client-side parser patch"
+  ],
+  "artifacts": ["runs/20261022-ring-2697ag/main/qconsole.log"]
+}
