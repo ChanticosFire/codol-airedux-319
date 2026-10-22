@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【从断点栈恢复解析调用点 0x5C2434】** `--breakpoint 0x473A50:parse_msg` 命中 1 次，stack 字段解出返回地址 0x5C2439；对齐反汇编（起点 0x5C2430）显示 `call 0x473A50` → `add esp,0xc` → `cmp [esi],0` → `je`。解析调用只发生一次，随后对状态位判断。下一步：向前找函数入口（`CL_ReadPackets`？）及其调用者/停止分支并 patch。证据 [20261022-codex-parse-caller.json](evidence/experiments/20261022-codex-parse-caller.json)。
+
 > **2026-10-22【静态扫描在客户端二进制上不可靠】** 三种尝试均受挫：capstone 线性扫 `0x76446B0` 引用得 0 条（错位）；字节搜索 240 候选多为巧合；`E8` 找 `0x473A50` 调用者得 `0x5AAB40`/`0x5C2434` 但反汇编是数据（误报）。教训：需从已知入口（`0x473A50`、`0x5BE030`）做**递归反汇编**。下一步：找“是否读包”的帧循环分支与 `clc.state` 比较并 patch。证据 [20261022-codex-phase-gate-scan.json](evidence/experiments/20261022-codex-phase-gate-scan.json)。
 
 > **2026-10-22【主线程在定时器等待，无死锁】** `client_wait.py` 查询窗口线程栈：`esp+0x20` 是 IRTimer（帧率睡眠），其余是无效句柄。说明主线程帧循环正常运行，**只是 gamestate 后不再调用网络读取路径**——“只处理一条消息”是上层逻辑不再触发读取，而非线程阻塞。下一步：断点帧循环/读取例程调用者，找跳过 `CL_ReadPacket` 的分支，或写“每帧强制读取”的补丁验证。证据 [20261022-codex-timer-wait.json](evidence/experiments/20261022-codex-timer-wait.json)。
