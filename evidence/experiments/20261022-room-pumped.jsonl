@@ -52,3 +52,6 @@
 {"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T03:30:47Z"}
 {"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T03:31:10Z"}
 {"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T03:31:17Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T03:31:40Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T03:31:47Z"}
+{"connection_id": 3, "event": "raw_session_end", "reason": "EOFError:peer_closed", "requests": 0, "utc": "2026-10-22T03:31:56Z"}
