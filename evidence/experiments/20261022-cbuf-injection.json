@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:16:22.608148+00:00",
+  "claim": "新增运行时 Cbuf 命令注入工具；map/devmap 注入成功但大厅不加载地图",
+  "tool": {
+    "name": "tools/cbuf_command.py",
+    "buffer": "0x33821B0 (cap 0x20000)",
+    "descriptor": "0x76595A4",
+    "lock": "0x81A55A0",
+    "method": "挂起窗口线程 → 追加 payload → 更新长度 → 恢复"
+  },
+  "results": [
+    {
+      "session": "离线菜单(mp_strike_sh cbuf)",
+      "stage": 5,
+      "status": "injected",
+      "effect": "停在选择角色，未进图"
+    },
+    {
+      "session": "本地登录大厅 map mp_strike_sh",
+      "stage": 5,
+      "status": "injected",
+      "effect": "仍在大厅"
+    },
+    {
+      "session": "本地登录大厅 devmap mp_strike_sh",
+      "stage": 5,
+      "status": "injected",
+      "effect": "仍在大厅"
+    },
+    {
+      "session": "房间内准备按钮（点击+回车）",
+      "effect": "房间无变化（1/12）"
+    }
+  ],
+  "implication": "cbuf 注入链路可用，但前端不执行 map/devmap（可能命令被前端消费或需要 in-game 上下文）",
+  "next": [
+    "hook 命令执行（Cbuf_Execute/Cmd_ExecuteString）确认命令是否被识别/拒绝",
+    "尝试其它命令族：map_restart、ui_map、loadzone、startmatch，或 devmap 的完整地图名（mp_strike_sh 资源已存在）",
+    "或绕过前端：主线程调用 0x62F840（room startgame）/ 0x6398A0",
+    "房间进图也可从服务器侧补 mmrsv/mmbook（6/14）"
+  ],
+  "evidence": [
+    "tools/cbuf_command.py",
+    "evidence/experiments/20261022-cbuf-map2.json",
+    "evidence/experiments/20261022-cbuf-devmap.json",
+    "evidence/experiments/20261022-cbuf-devmap-lobby.png"
+  ]
+}

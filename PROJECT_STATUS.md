@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【新工具】运行时 Cbuf 命令注入；map/devmap 不加载地图**：`tools/cbuf_command.py` 挂起窗口线程后向 `0x33821B0`（cap 0x20000，描述符 0x76595A4）追加命令并更新长度。三组实测均 `injected`（长度 0→19/22）但画面停在大厅/选择角色 → 前端不执行 map/devmap。房间“准备”（点击+回车）也无效。证据 [`20261022-cbuf-injection.json`](evidence/experiments/20261022-cbuf-injection.json)。
+
 > **2026-10-22【突破】个人竞技房间 AI 开关已打开并应用**：`(287,505)`→`Esc`→`(287,536)` 打开高级选项；点 `(1180,818)`（命中区比渲染高 72px）打开 AI 下拉，键盘 `Up`+`Enter` 选“打开”，再点 `(1245,917)` 应用（按钮区无偏移）。点“准备”后房间无变化（1/12），未开局。证据 [`20261022-ffa-ai-enabled.json`](evidence/experiments/20261022-ffa-ai-enabled.json)、[`20261022-ffa-ai-on.png`](evidence/experiments/20261022-ffa-ai-on.png)。
 
 > **2026-10-22 个人竞技房间 + 弹窗点击偏移 72px**：创建页选“个人竞技模式”(620,470) 后键盘序列建房成功（化学工厂/个人竞技/得分 30/1-12）；高级选项在个人竞技下无“友军伤害”行，含 **AI开关**。对话框内点击 (1136,746) 实际命中上一行“阵亡回放”(y≈674) → **命中区比渲染位置高约 72px**，点 AI 开关需请求 y≈818。证据 [`20261022-ffa-room-ai.json`](evidence/experiments/20261022-ffa-room-ai.json)、[`20261022-ffa-advanced-options.png`](evidence/experiments/20261022-ffa-advanced-options.png)。
