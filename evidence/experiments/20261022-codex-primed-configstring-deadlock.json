@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T11:06:00+00:00",
+  "scope": "why the client stalls after consuming the gamestate (CS_PRIMED vs deferred configstrings)",
+  "server_source": "runs/2697-native-src/src/sv_main.c and sv_client.c",
+  "deadlock": {
+    "server_side": [
+      "SV_SendServerCommand: when type != 0 and (state == CS_PRIMED && gamestateSent), every 'd <index> <value>' configstring command is recorded by CODOL_DeferConfigstringCommand instead of queued",
+      "CODOL_PumpDeferredConfigstrings only sends the backlog when client->state == CS_ACTIVE; for CS_PRIMED it returns without sending",
+      "SV_ClientEnterWorld (the only CS_PRIMED -> CS_ACTIVE transition) runs only when SV_ExecuteClientMessage processes the first usercmd at sv_client.c:1552"
+    ],
+    "client_side": [
+      "the 1649370 client stops at phase 8 after consuming the gamestate and waits for the deferred configstrings before emitting usercmds",
+      "observed: ring A only carried challenge/connect/gamestateupdate; no clc_move from the client",
+      "after ~60 s the client raises its own '服务器连接超时' dialog while the server still logs state 3 (CS_PRIMED)"
+    ],
+    "conclusion": "both sides wait on each other: the server withholds configstrings until CS_ACTIVE, the client withholds usercmds until it has the configstrings"
+  },
+  "break_options": [
+    {
+      "option": "patch the dedrun binary: CODOL_DeferConfigstringCommand -> xor eax,eax; ret",
+      "effect": "configstring commands are queued normally and sent while still CS_PRIMED; SV_QueueTranslatedCommand keeps type!=0 commands in the reliable window",
+      "risk": "many 'd' commands could approach MAX_RELIABLE_COMMANDS/2; the map load has far fewer than the 86-command incident"
+    },
+    {
+      "option": "send a correctly encoded clc_move from the bridge",
+      "effect": "SV_ClientEnterWorld runs immediately and the deferred pump starts",
+      "risk": "usercmd wire encoding uses MSG_ReadDeltaUsercmdKey with the netchan key; recreating it in the bridge is fragile"
+    },
+    {
+      "option": "patch the client to emit usercmds at phase 8",
+      "effect": "same as above without server changes",
+      "risk": "needs the 1649370 usercmd send path and phase guard"
+    }
+  ],
+  "toolchain": "no gcc/mingw/clang found on the machine, so the dedrun side must be binary-patched or rebuilt elsewhere; the source has no build script in CODOL2697",
+  "immediate_patch_plan": [
+    "map 'CoDOL configstring %lu deferred for client %u (%d pending)' file offset 0x3B36EC to a VA through the PE sections",
+    "scan backwards from its xref for the 55 8B EC prologue preceded by CC padding to find CODOL_DeferConfigstringCommand",
+    "copy codol_dedrun.exe into the private runs/ area, write 31 C0 C3 at that entry, verify the bytes and record SHA-256",
+    "rerun the phase-8 bridge recipe and look for 'configstring ... sent' / CS_ACTIVE / world rendering"
+  ]
+}
