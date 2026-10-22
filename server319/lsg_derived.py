@@ -779,6 +779,14 @@ class DerivedLsgServer(AuthServer):
                                                             for plen, covers in combos))
                         counter += 1
                         continue
+                    tid_file = os.environ.get("ROOM_TID_FILE")
+                    if tid_file and os.path.exists(tid_file):
+                        try:
+                            counter = int(open(tid_file).read().strip(), 0)
+                            self.evidence.write("room_tid_override", session,
+                                                reason=f"tid={counter}")
+                        except (OSError, ValueError):
+                            pass
                     reply_payload = room_listing_reply(
                         counter,
                         task_id=_room_task_id(service, task),

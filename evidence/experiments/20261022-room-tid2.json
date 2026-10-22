@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "utc": "2026-10-22T04:24:43.379071+00:00",
+  "pid": 37796,
+  "action": "0x26",
+  "tasks": [
+    {
+      "index": 7,
+      "address": "0xe570210",
+      "tid": 40896,
+      "tid_hex": "0x9fc0",
+      "params": "0x4dfa9fd0",
+      "callback": "0x7f4330"
+    }
+  ]
+}

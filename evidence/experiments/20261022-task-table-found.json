@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:26:06.569399+00:00",
+  "claim": "找到 bdService 的 pending 任务表，并确认回执从未让任务完成",
+  "task_table": {
+    "base": "0xe56ffe0",
+    "stride": "0x50",
+    "slots": 40,
+    "end": "0xe5713e0",
+    "fields": {
+      "+0x00": "action（房间查询=0x26=38）",
+      "+0x08": "客户端分配的 transaction id（单调递增，如 39525/40896/37253）",
+      "+0x14": "超时（0x61A8=25000ms）",
+      "+0x24": "槽位序号",
+      "+0x28": "请求参数对象指针",
+      "+0x2c": "0x7FADC0（服务层函数）",
+      "+0x30": "完成回调（房间查询=0x7F4330）",
+      "+0x34": "错误处理 0x8435D0"
+    }
+  },
+  "observations": [
+    "查询前任务表有 8 个槽；点击查找房间后新增第 9 个槽（index 7，action=0x26）",
+    "回执到达后该槽 action 仍为 0x26、内容逐字节不变 → 任务从未完成",
+    "把回执 tid 设为该槽 +0x08 的真实值（闭环：先读槽写文件，延迟服务端读取后回执）→ 仍 0 命中",
+    "task 字节 0x26（action）+ 真实 tid 组合 → 仍 0 命中"
+  ],
+  "tools": [
+    "tools/read_room_task_tid.py（扫描任务表读取 action/tid/回调）",
+    "tools/find_objects_by_vtable.py（按虚表扫描对象）"
+  ],
+  "next": [
+    "反汇编表引用点（0x7E79C9/0x7EF997/0x7EFB25 等 30 处）中“比较 +0x08 并清零 +0x00”的函数，定位响应匹配逻辑",
+    "或对任务槽页设 PAGE_GUARD 捕获第一次写，直接拿完成函数地址"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-room-tid.json",
+    "evidence/experiments/20261022-room-tid2.json",
+    "evidence/experiments/20261022-tasks-pending.json",
+    "evidence/experiments/20261022-tasks-after.json",
+    "evidence/experiments/20261022-tidmatch2.jsonl",
+    "evidence/experiments/20261022-actiontid.jsonl"
+  ]
+}

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【定位到 pending 任务表】`0xE56FFE0`（步长 0x50，40 槽）**：`+0x00` action（房间查询=0x26）、`+0x08` 客户端 transaction id、`+0x28` 请求参数、`+0x30` 完成回调（=0x7F4330）、`+0x34` 错误处理。点击 `查找房间` 后新增 index 7 的槽；回执到达后该槽逐字节不变（action 仍 0x26）→ 任务从未完成。闭环实验：读槽内真实 tid 让延迟服务端回执（40896）仍 0 命中；action 字节 0x26 + 真实 tid（37253）也 0 命中。结论：响应没有进入“匹配任务槽”的路径。证据 [`20261022-task-table-found.json`](evidence/experiments/20261022-task-table-found.json)。
+
 > **2026-10-22 1649370 记录解码与 task 字节无关；0x84 帧会断开连接**：task 字节改成 99 后记录仍解码 → 记录解析走 service 级处理器，与 task 字节无关。`LSG_TID_START=0` 仍 0 命中。0x85 结果后补发 3 个 0x84 帧导致客户端中止连接（10053）。结论：任务完成 functor 从未被调用。下一轮用对比法（`svc71/task4`）定位真正的任务表与完成条件。证据 [`20261022-completion-round12.json`](evidence/experiments/20261022-completion-round12.json)。
 
 > **2026-10-22【新入口】1649370 训练页“靶场”直接发 `21/5 query1`（游戏服分配）**：训练 → 靶场 → 进入靶场，客户端请求 `u32(1),u32(0),u32(10),tag(7)`。服务端已实现该分支回 114 字节 bdMatchMaking 条目（`127.0.0.1:8466`），客户端仍停在“正在搜寻服务器...”（同任务完成问题）。此路径不需要房间浏览器，任务完成一旦打通即可连我们的游戏服。证据 [`20261022-training-alloc-finding.json`](evidence/experiments/20261022-training-alloc-finding.json)。
