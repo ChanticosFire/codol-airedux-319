@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:38:13.353617+00:00",
+  "claim": "找到官方 state=3 写入点与 preloadmap 脚本命令，可作为“正确顺序”的入口",
+  "state3_writer": {
+    "address": "0x470467",
+    "insn": "mov dword [0x76446B0], 3",
+    "context": "0x47045C call 0x7F85C0 之后"
+  },
+  "script_commands": {
+    "table": "链表头 0x33303B0，节点 {next,name,handler}",
+    "names": {
+      "unpausegame": "0xDC0834",
+      "preloadmap": "0xDC0840",
+      "switchtomainmenu": "0xDC084C"
+    },
+    "preloadmap_registration": "0x5C7879-0x5C7899（节点 0xE9C6918/1C/20）",
+    "neighbour_handler": "0x5C6450 (unpausegame)"
+  },
+  "format_strings": [
+    "preloadmap %s %s\\n @ 0xDC6696 / 0xDC66B2"
+  ],
+  "next": [
+    "起会话后注入 `preloadmap mp_cross_fire 1` 观察是否加载地图",
+    "若无效试其它参数组合或先 switchtomainmenu",
+    "或从 0x470467 所在函数入口反推完整启动序列"
+  ]
+}

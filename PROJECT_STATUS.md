@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【正确顺序入口】官方 state=3 写入点 0x470467（前面 0x47045C call 0x7F85C0）+ preloadmap 脚本命令**：命令表 0x33303B0 中 unpausegame(0xDC0834)/preloadmap(0xDC0840)/switchtomainmenu(0xDC084C)；preloadmap 注册于 0x5C7879-0x5C7899，格式串 `preloadmap %s %s`（两参数）。下步用 Cbuf 注入 preloadmap。证据 [`20261022-preloadmap-command.json`](evidence/experiments/20261022-preloadmap-command.json)。
+
 > **2026-10-22【诊断】state=3 只是置状态字，游戏会话未初始化**：0x5C05F0（ecx=connection）调用后进程同样退出 → state=3 不能当捷径；蓝本顺序是先建 UDP/hook/patch UID → 0x621230（离开前端含 preload）→ connection init → 最后 state=3。下步：补齐 0x621E50 前置或找离开前端函数。证据 [`20261022-state3-call-crash.json`](evidence/experiments/20261022-state3-call-crash.json)。
 
 > **2026-10-22【state=3 后续】自绑 8466 但不发 UDP；直接调 0x621E50 导致进程退出**：hook_sendto 0 条；state=3 约 2 秒后被重置回 0；tools/transport_after_state.py --set-state 执行到 gate=1/called 后进程消失。下步：走 0x5C05F0 发 getchallenge 或反汇编 0x621E50 找前置条件。证据 [`20261022-state3-transport-attempt.json`](evidence/experiments/20261022-state3-transport-attempt.json)。

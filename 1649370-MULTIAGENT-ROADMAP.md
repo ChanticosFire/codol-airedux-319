@@ -1104,3 +1104,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - 0x621E50 与 0x5C05F0 调用都导致退出。
 - state=3 不是捷径；需按蓝本先初始化再置状态。
 - 下轮：补齐前置或找离开前端函数。
+
+## 2026-10-22 preloadmap 命令发现（本轮）
+
+- state=3 官方写入点 0x470467，前面有初始化调用 0x7F85C0。
+- 逆出 unpausegame/preloadmap/switchtomainmenu 三个脚本命令，preloadmap 收两个参数。
+- 下轮：注入 preloadmap 验证地图挂载。
