@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:44:07.181152+00:00",
+  "claim": "challenge 发送 hook 首次安装因 prologue 只覆盖 3 字节（jmp 需 5 字节）导致客户端退出；已修正为 6 字节",
+  "bug": {
+    "before": "PROLOGUE=55 8B EC (3 bytes)",
+    "effect": "jmp 5 字节覆盖到 sub esp,0x18 的前 2 字节 → 崩溃",
+    "after": "PROLOGUE=55 8B EC 83 EC 18 (6 bytes)"
+  },
+  "hook_design": {
+    "target": "0x6751F0",
+    "dump": {
+      "+0x00": "[esp+0x2C] 类型参数",
+      "+0x04": "[esp+0x28] arg1",
+      "+0x08": "[esp+0x20] 返回地址"
+    }
+  },
+  "next": [
+    "用修正后的工具重跑：install → netadr → state3 → read 类型值"
+  ]
+}
