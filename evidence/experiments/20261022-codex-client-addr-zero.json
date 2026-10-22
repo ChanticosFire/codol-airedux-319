@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T12:15:00+00:00",
+  "scope": "port byte order fixed; the client address is still zero",
+  "after_the_port_fix": {
+    "slot_address": "02 00 00 00 | 00 00 00 00 | 2a 71 | 00 00 | ... -- the port field now decodes as 0x712A = 28970, correct",
+    "client_address": "[ebx+0x109260] is still 24 zero bytes",
+    "retval": "eax = 0 on every sample, phase 8",
+    "conclusion": "the injected netadr is now correct, but the comparison partner on the client side is all zeros, so NET_CompareAdr still reports inequality"
+  },
+  "xrefs_to_0x109260": {
+    "0x5B2BAC": "cmp dword ptr [eax+0x109260], 2 -- a read (checks the type equals 2)",
+    "0x5B2BAB": "coincidental ret byte",
+    "0x5C231D": "the parser's read of the same field"
+  },
+  "next": [
+    "find how the client fills this address: it is probably copied as a whole struct (memcpy) during the connect/connectionless-packet handling, not stored field by field",
+    "trace CL_Connect / CL_ConnectionlessPacket writes into the client state around +0x109260",
+    "or, as a shortcut, write the loopback address into the client state at runtime (type=2, ip=0, port=28970 in host order) and see whether the parser then accepts the stream"
+  ],
+  "artifacts": []
+}

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【端口修正已验证；失败原因收敛为客户端地址全 0】** 端口修正后槽地址端口为 `2a 71`（=0x712A=28970）✔，但 `[ebx+0x109260]` 仍 24 字节全 0，`eax` 仍 0。交叉引用 `0x109260` 只有 `0x5B2BAC`（读）、`0x5C231D`（读）等，无逐字段写入点——应为整块结构拷贝填充。下一步：(a) 追 connect 的整块写入；(b) 捷径——运行时把环回地址写入客户端状态，验证“地址补齐即可恢复解析”。证据 [20261022-codex-client-addr-zero.json](evidence/experiments/20261022-codex-client-addr-zero.json)。
+
 > **2026-10-22【地址对比实证：端口 htons 错误 + 客户端地址全 0】** 活客户端读值：`[ebx+0x109260]` 6 dword 全 0；环 B 槽地址端口字段为 `0x2A71`(10865) 而非 `0x712A`(28970)——桥对 `netadr_t.port`（主机序）错误地做了 `socket.htons`，已改为 `port & 0xFFFF`。另有独立问题：客户端存储的服务器地址从未被写入。下一步：复测端口修正后的 `eax`，并定位 `[ebx+0x109260]` 的写入点。证据 [20261022-codex-adr-compare.json](evidence/experiments/20261022-codex-adr-compare.json)。
 
 > **2026-10-22【`--adr-type 0` 反证：阶段退回 4】** `forward --adr-type 0 --port 28970` 下客户端只到阶段 4、`eax` 仍 0——客户端本身走环回，netadr 类型就是 LOOPBACK(2)，**type=2 本来正确**，type 假设被推翻。桥的 IP 默认改为随类型（NA_IP→127.0.0.1、LOOPBACK→0.0.0.0）。正确组合：`--adr-type 2 --port 28970` + 持久 configstring 补丁。下一步：完整反汇编 `0x674EB0` 看它比较的两个地址来源。证据 [20261022-codex-adrtype-0.json](evidence/experiments/20261022-codex-adrtype-0.json)。
