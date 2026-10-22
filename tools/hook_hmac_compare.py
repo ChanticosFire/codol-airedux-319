@@ -85,8 +85,9 @@ def main() -> int:
     try:
         if args.install:
             state = json.loads(state_path.read_text()) if state_path.is_file() else {}
-            cave = state.get("cave") or alloc(handle, 0x400, 0x40)
-            record = state.get("record") or alloc(handle, 0x100, 0x04)
+            same_process = state.get("pid") == pid
+            cave = (state.get("cave") if same_process else None) or alloc(handle, 0x400, 0x40)
+            record = (state.get("record") if same_process else None) or alloc(handle, 0x100, 0x04)
             sc.w(handle, record, bytes(0x40))
             code = build_cave(int(cave), int(record))
             sc.w(handle, int(cave), code)

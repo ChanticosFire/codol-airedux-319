@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:26:53.632977+00:00",
+  "pid": 8012,
+  "address": "0xba38e5",
+  "original_hex": "6a008d45c0",
+  "patched_hex": "e9fd000000",
+  "readback_hex": "e9fd000000",
+  "verified": true,
+  "runtime_only": true,
+  "revert_hex": "6a008d45c0"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:29:03.311229+00:00",
+  "pid": 25952,
+  "needles": {
+    "ascii": "AI-Room",
+    "utf16": "AI-Room"
+  },
+  "scanned_bytes": 958980096,
+  "hits": [
+    {
+      "kind": "ascii",
+      "address": "0x245d7d18",
+      "region": "0x245a0000",
+      "offset": 228632
+    }
+  ]
+}

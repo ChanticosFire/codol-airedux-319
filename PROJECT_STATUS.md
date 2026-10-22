@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【关键修正】1649370 大厅不读 LSG socket；房间列表记录本身正确**：在 `0xBA46C2`（`call 0xBA3710`）装计数 hook，正常 `查找房间` 命中 0；手动调用一次 `0xB838A0`（netobj 泵）后变为 8。即登录结束后客户端不再驱动 LSG 接收，服务端应答一直未被读取。用 `tools/pump_lsg.py` 持续泵后，内存中出现 `AI-Room`，解码对象字段与文档完全一致（`+0x120=12`、`+0x124=1`、`+0x128="AI-Room"`、`+0x168=1`、`+0x170="Player"`）。**上一轮“内层 HMAC 是根因”的结论被推翻**：基线 `room_listing_reply` 未加任何 HMAC、未打任何补丁即可解码。剩余问题是 UI 列表未刷新（结果到达时查询可能已被判超时）。证据 [`20261022-callcount-read.json`](evidence/experiments/20261022-callcount-read.json)、[`20261022-room-pumped.jsonl`](evidence/experiments/20261022-room-pumped.jsonl)。
+
 > **2026-10-22 1649370 内层 HMAC 已定位密钥、旁路仍不足**：运行时从客户端 `0xBA02A0` 取出的 20 字节密钥与 LSG 派生 `server_mac` 完全一致；6 种 HMAC 覆盖均未被接受；比较点 `0xBA398D` 的记录 hook 命中数为 0（说明在比较点之前就被拒）；把 `0xBA38E5` 整段 HMAC 处理跳过（`E9 FD 00 00 00`）后，房间列表仍为空、内存扫描也无 `AI-Room`。结论：缺口已收敛到明文/消息布局或 bdService 信封字段。新工具 `tools/patch_client_bytes.py`、`tools/hook_hmac_compare.py`。证据 [`20261022-room-hmac-bypass-result.json`](evidence/experiments/20261022-room-hmac-bypass-result.json)。
 
 > **2026-10-22 1649370 bdService 内层 HMAC 门槛**：所有业务回执都被客户端 `0xBA3710` 的 16 字节 HMAC 校验丢弃（字符串 `0xD5A4FC "HMAC mismatch"`、`0xD5A520 "Bad recv counter"`、`0xD5A50C "HMAC calculation"` 均在该函数内）。内存扫描（约 958MB）找不到我们记录中的 `AI-Room`，证明记录从未进入解码，而不是 UI 过滤；已排除序号起始值、回执顺序、单/双 count 与地址块布局。下一步在 `0xBA3710` 比较点下断点确定 HMAC 字段位置/覆盖范围/密钥。证据 [`20261022-bdservice-hmac-gate.json`](evidence/experiments/20261022-bdservice-hmac-gate.json)。
