@@ -688,6 +688,17 @@ def cmd_forward(client: Client, args) -> dict:
                                    "ascii": data[:32].hex()})
                     progressed = True
                     continue
+                # While the client is still priming, empty snapshots would fill
+                # the 16-slot ring and push reliable commands out.  Packets
+                # carrying the netchan FRAGMENT_BIT are reliable commands or
+                # fragments, so only those are injected below the threshold.
+                fragment = len(data) >= 4 and (struct.unpack_from("<I", data)[0] & 0x80000000) != 0
+                if (not data.startswith(b"\xff\xff\xff\xff") and not fragment
+                        and state_now < args.reliable_until_state):
+                    events.append({"t": round(time.monotonic(), 3), "dir": "drop_snapshot",
+                                   "length": len(data), "state": state_now})
+                    progressed = True
+                    continue
                 result = client.inject_oob_raw(data, args.adr_type, args.port)
                 events.append({"t": round(time.monotonic(), 3), "dir": "in",
                                "length": len(data), "source": f"{source[0]}:{source[1]}",
@@ -720,9 +731,13 @@ def cmd_forward(client: Client, args) -> dict:
 
 def _inject_raw(self, data: bytes, adr_type: int = 2, port: int = 0) -> dict:
     adr = struct.pack("<I4sHHIII", adr_type, b"\0\0\0\0", socket.htons(port), 0, 0, 0, 0x9D)
-    write = self.u32(RING_B_WRITE)
-    read = self.u32(RING_B_READ)
-    if write - read >= RING_B_SLOTS:
+    for _ in range(60):
+        write = self.u32(RING_B_WRITE)
+        read = self.u32(RING_B_READ)
+        if write - read < RING_B_SLOTS:
+            break
+        time.sleep(0.01)
+    else:
         return {"status": "ring_b_full"}
     slot = RING_B_BASE + (write & (RING_B_SLOTS - 1)) * RING_B_STRIDE
     ok = (self.write(slot, adr) and self.write(slot + RING_B_PAYLOAD, data)
@@ -787,6 +802,9 @@ def main() -> int:
                    help="inject only OOB (FFFFFFFF) replies, drop netchan data for now")
     p.add_argument("--oob-until-state", type=int, default=0,
                    help="drop non-OOB replies while the client phase is below this value")
+    p.add_argument("--reliable-until-state", type=int, default=9,
+                   help="below this phase, drop non-fragment packets so reliable "
+                        "commands are not crowded out of the 16-slot ring")
     p.add_argument("--fix-stats", action="store_true",
                    help="rebuild the 32768-byte profile upload into the 2697 archive format")
     p.add_argument("--fake-stats", action="store_true",
