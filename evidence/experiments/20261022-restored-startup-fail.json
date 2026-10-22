@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:37:09.666931+00:00",
+  "claim": "overlay 恢复后启动仍失败（stop_reason=None）；当前 352 文件+20ff，可能仍缺 client_shipretail 的非 ff 文件",
+  "overlay": {
+    "files": 352,
+    "ff": 20,
+    "original_before_incident": 542
+  },
+  "log": "launch-ev.log stop_reason=None，含非法字符编码错误",
+  "next": [
+    "对比 client 备份与当前 overlay 差异",
+    "从原始 542 文件状态恢复（若另有备份）",
+    "或用 launcher 的 --resource-library 指向 client 备份而非 overlay"
+  ]
+}
