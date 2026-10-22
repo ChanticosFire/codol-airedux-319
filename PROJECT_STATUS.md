@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【崩溃链还原：`[cl+0xA8F0]` 是编码指针，`cl`=0 时解码成 `0x96B9DC91` 后立即解引用崩溃】** `0x5B2DFD..0x5B2E1F`：`dec eax` → `and eax,[ebx+0xA8DC]`（0）→ `xor edx,0x96B9DC91`（`edx` 原为 `[cl+0xA8F0]`=0）→ `lea ecx,[eax+eax*2]`（0）→ `sub eax,[edx+ecx*4]` = `[0x96B9DC91]` → 崩溃。**缺失的初始化就是往 `cl+0xA8F0` 写入有效编码指针的那段代码**。下一步：按“解码后存入 `[reg+0xA8F0]`”与常量 `0x96B9DC91` 两路搜索它的写入者。证据 [20261022-codex-5b2de8.json](evidence/experiments/20261022-codex-5b2de8.json)。
+
 > **2026-10-23【`0x5B2C10` 的 memset 之后都是安全操作】** `0x5B2C8A..0x5B2D21`：memset → `0x66E720`（填 0x800 缓冲）→ 取 `[ebp-0x860]`/`[ebp-0x864]`/`[ebp-0x86C]` → `mov cl,[ebx+0x3BE8]` 写 `[edi+eax]` → `mov edx,[esi+0x80148]` 写 `[edi+eax]`。`0x3BE8`/`0x80148` 都在 1.2MB 的 `cl` 内且 `cl` 全 0，故读 0、写栈缓冲，不会崩。`0x66E720` 只是 memset(0x30)+存两个参数，不调用 API，也不可能产生系统 DLL 崩溃。下一步：继续反汇编 `0x5B2D21..0x5B2E20` 找第一处把指针交给系统 DLL 的调用（`ecx=0x840112CA` 像部分解码的指针）。证据 [20261022-codex-5b2c8a.json](evidence/experiments/20261022-codex-5b2c8a.json)。
 
 > **2026-10-23【再修正：`0x66F170` 不用传入 `ecx`（参数是 `esi`/`edi`）；崩溃在系统 DLL】** `0x66F170`：`sub esp,0x24`+cookie → `push 0x2C; push 0; push esi; call 0xC42DE0`（memset 类）→ 从 `[edi+0x3F8]`/`[edi+0x3FC]`/`[edi+0x3E4]` 写入 `[esi+0x14]`/`[esi+0x16]`/`[esi+0x18]` → `lea ecx,[esi+8]`（`ecx` 之后才设）。故 `mov eax,[ecx+0x218]` 不在其入口。**崩溃地址 `0x5D1CF4C5` 在 exe 映像外（系统 DLL）**，`ecx=0x840112CA` 是把垃圾指针传给系统调用。帧链经过 cave 的 pushad/popad，不可靠。下一步：反汇编 `0x5B2C8A`..`0x5B2D20`，看 memset 之后紧跟的调用（很可能是对未设置字段的 free/realloc）。证据 [20261022-codex-66f170.json](evidence/experiments/20261022-codex-66f170.json)。

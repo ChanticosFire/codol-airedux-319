@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T02:00:00+00:00",
+  "scope": "the loop and what follows in 0x5B2C10",
+  "disassembly": {
+    "0x5B2D43": "eax=[esi+0x144]+1; cmp eax,[esi+0x140]; jg 0x5B2DE8 -- a loop over esi's counters (esi = cl)",
+    "0x5B2D60": "loop body: push 2; edx=3; edi=[ebp-0x874]; call 0x66E840; then bounds-checked writes into [ebp-0x86C]",
+    "0x5B2DA7": "eax=[ebp-0x838] & 0x1FF << 0xA; ecx = eax+esi+0x148; esi=[ebp-0x874]; call 0x66EA90 -- copies into a per-slot block inside cl",
+    "0x5B2DDC": "cmp eax,[ecx+0x140]; jle loop -- cl+0x140 is the counter bound (0 in our run, so the loop exits immediately)",
+    "0x5B2DE8": "edx=[0x3401E48]; eax=[esi+0x109250]; sub eax,[edx+0xC]; edx=[ebx+0xA8F0]; dec eax ..."
+  },
+  "suspicious": "0x5B2DF7: mov edx,[ebx+0xA8F0] with ebx = cl. cl is zero, so edx becomes 0 and any later [edx+...] dereference will fault. 0xA8F0 is inside the 1.2 MB object.",
+  "next": [
+    "find the writer of cl+0xA8F0 (search for stores to [reg+0xA8F0] after a decode, and for the constant 0x96B9DC91)",
+    "that writer is the prerequisite initialiser we need to run before 0x5B2C10"
+  ],
+  "artifacts": [],
+  "crash_chain": {
+    "0x5B2DFE": "and eax,[ebx+0xA8DC] -- cl+0xA8DC is 0, so eax becomes 0",
+    "0x5B2E04": "xor edx,0x96B9DC91 -- edx was [cl+0xA8F0] = 0, so edx becomes 0x96B9DC91 (garbage)",
+    "0x5B2E0A": "lea ecx,[eax+eax*2] -- ecx = 0",
+    "0x5B2E13": "sub eax,[edx+ecx*4] -- dereferences 0x96B9DC91, an unmapped address -> fault"
+  },
+  "conclusion": "cl+0xA8F0 holds an ENCODED pointer (key 0x96B9DC91). With cl zero the decode yields the raw key and the very next dereference faults. So the real missing initialisation is whatever stores a valid encoded pointer at cl+0xA8F0."
+}
