@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:05:00+00:00",
+  "scope": "what [0xE60B78] really is",
+  "search": {
+    "mov [0xE60B78],eax": 0,
+    "mov [0xE60B78],imm": 0,
+    "any reference to 0xE60B78": 261
+  },
+  "refined_conclusion": "0xE60B78 is not a per-object field -- it is a widely used GLOBAL KEY (261 references). The xor at 0x66F206 decodes a function pointer: real_target = [cl+0x2C] ^ [cl+0x30] ^ KEY. With cl zeroed the two cl terms vanish and edx becomes the KEY ITSELF, so the code calls the key as if it were a function address and faults there.",
+  "correction": "my earlier phrasing 'uninitialised pointer at 0xE60B78' was wrong. The key is presumably a normal constant; what is missing is the ENCODED FUNCTION POINTER stored in cl+0x2C / cl+0x30.",
+  "next": [
+    "read [0xE60B78] at runtime to confirm it equals the crash address (e.g. 0x2AF590A7 in the last run)",
+    "then find which initialiser stores the encoded function pointer at cl+0x2C/cl+0x30 (search for stores to [reg+0x2C] or [reg+0x30] near a xor with 0xE60B78)",
+    "reproduce that step the same way the 0xA8F0 repair was done"
+  ],
+  "artifacts": []
+}
