@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:00:00+00:00",
+  "scope": "static search for the phase-8 read-path gate",
+  "attempts": {
+    "capstone_full_text": "disassembling .text in one pass yields 0 references to 0x76446B0 because the linear sweep desynchronises on embedded data",
+    "byte_pattern": "searching the little-endian immediate finds 240 candidate sites, but most are coincidental bytes (e.g. 0x4442F1 decodes as inc ebp); only sites on real instruction boundaries are useful"
+  },
+  "lesson": "a linear capstone sweep over the whole section is not reliable for this binary; either walk from known function entries or validate each candidate against its surrounding instruction boundaries",
+  "next": [
+    "start from known entries (CL_ParseServerMessage 0x473A50, the phase setter 0x5BE030) and disassemble per function instead of sweeping",
+    "focus on the frame loop that decides whether to read packets: find the caller of the read path and its clc.state comparison",
+    "then patch that gate so the client keeps reading at phase 8"
+  ],
+  "artifacts": [],
+  "caller_probe": {
+    "0x473A50": {
+      "callers": [
+        "0x5AAB40",
+        "0x5C2434"
+      ],
+      "note": "disassembly around these addresses shows data, so the E8 matches are coincidental in embedded data"
+    },
+    "0x473180": {
+      "callers": [
+        "0x473409"
+      ],
+      "note": "real (inside 0x473260)"
+    }
+  },
+  "conclusion": "caller discovery by raw E8 scanning also lands in data on this binary; use recursive disassembly from known entries instead"
+}

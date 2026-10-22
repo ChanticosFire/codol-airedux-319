@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【静态扫描在客户端二进制上不可靠】** 三种尝试均受挫：capstone 线性扫 `0x76446B0` 引用得 0 条（错位）；字节搜索 240 候选多为巧合；`E8` 找 `0x473A50` 调用者得 `0x5AAB40`/`0x5C2434` 但反汇编是数据（误报）。教训：需从已知入口（`0x473A50`、`0x5BE030`）做**递归反汇编**。下一步：找“是否读包”的帧循环分支与 `clc.state` 比较并 patch。证据 [20261022-codex-phase-gate-scan.json](evidence/experiments/20261022-codex-phase-gate-scan.json)。
+
 > **2026-10-22【主线程在定时器等待，无死锁】** `client_wait.py` 查询窗口线程栈：`esp+0x20` 是 IRTimer（帧率睡眠），其余是无效句柄。说明主线程帧循环正常运行，**只是 gamestate 后不再调用网络读取路径**——“只处理一条消息”是上层逻辑不再触发读取，而非线程阻塞。下一步：断点帧循环/读取例程调用者，找跳过 `CL_ReadPacket` 的分支，或写“每帧强制读取”的补丁验证。证据 [20261022-codex-timer-wait.json](evidence/experiments/20261022-codex-timer-wait.json)。
 
 > **2026-10-22【EBP 帧展开不可靠；转向查询等待句柄】** `client_eip.py --frames`：主线程 20032、EIP `0x76F4826C`、ESP `0x11A3FEA4`；depth 1 返回 `0x27CBAE` 但反汇编是数据，链在 depth 1 后停止——该等待路径无经典帧链。下一步：读 `[ESP+4]` 的句柄并用 `NtQueryObject` 查类型/名字，对照 gamestate 路径预期（加载完成事件首要嫌疑），再决定发信号或 patch 等待点。证据 [20261022-codex-frame-walk.json](evidence/experiments/20261022-codex-frame-walk.json)。
