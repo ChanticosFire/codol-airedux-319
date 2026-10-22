@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:40:00+00:00",
+  "scope": "live byte dump plus a repeat of the spin test",
+  "live_bytes": {
+    "0x5C2380": "e8 2b 2b 0b 00 83 c4 30 85 c0 0f 84 83 00 00 00",
+    "0x5C2260": "55 8b ec 8b 0d 08 bb 4a 08 83 ec 14 53 56 57 8b",
+    "0x674EB0": "55 8b ec 83 ec 34 a1 40"
+  },
+  "spin_test_repeat": {
+    "patch": "0x674EB0 first two bytes -> EB FE",
+    "result": "phase stayed 8 for 5 samples, client alive for the whole test"
+  },
+  "side_by_side": {
+    "force_success_at_0x5C2380": "client exited with two 0x2 (invalid EIP) exceptions -- so the line was reached",
+    "spin_at_0x674EB0": "client never froze -- so the callee was never entered"
+  },
+  "logical_problem": "a reached call instruction must enter its callee. Both observations cannot hold unless: (a) the crash in the first test came from something other than the patched line, or (b) there are two different code paths / two different mappings of this address, or (c) the first test's crash was a delayed effect of the preceding state, not of the patch.",
+  "next": [
+    "repeat the force-success test in isolation right after a fresh handshake and confirm the crash reproduces; if it does not, the earlier crash was unrelated",
+    "instrument with an incrementing scratch counter at 0x674EB0 (write EB FE is too coarse: it freezes only if entered, but nothing records the fact)",
+    "use a proper stub: pushad; inc [scratch]; popad; original bytes; jmp back -- that settles 'entered or not' without ambiguity"
+  ],
+  "artifacts": []
+}
