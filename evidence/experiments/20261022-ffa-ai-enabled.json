@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T05:07:14.370616+00:00",
+  "claim": "突破：个人竞技房间内把 AI开关 从“关闭”改为“打开”并应用",
+  "steps": [
+    "创建个人竞技房间（储油站/得分30/1-12）",
+    "点 (287,505) 开下拉 → Esc → 点 (287,536) 打开高级选项",
+    "对话框内命中区比渲染高约 72px：点 (1180,818) 命中 AI 行下拉按钮（视觉 y≈746）",
+    "下拉弹出后用键盘 Up + Enter 选择“打开” → AI 开关变为“打开”",
+    "点 (1245,917) 应用（按钮区无偏移）→ 对话框关闭回到房间"
+  ],
+  "evidence_images": {
+    "ai_off_before": "runs/natural-bp-ui/adv.png",
+    "dropdown_open": "runs/natural-bp-ui/ai-dd5.png",
+    "ai_on": "evidence/experiments/20261022-ffa-ai-on.png",
+    "after_apply": "evidence/experiments/20261022-ffa-ai-applied.png",
+    "after_ready": "runs/natural-bp-ui/ready.png"
+  },
+  "status": "AI 开关已设为“打开”并应用；点击“准备”后房间无变化（仍 1/12），未开局",
+  "next": [
+    "验证 AI 值是否持久（重开高级选项；本次重开序列失败）",
+    "研究“准备”无效原因：可能需要服务器 mmrsv/mmbook（6/14）或主线程调用 0x62F840/0x6398A0",
+    "或准备按钮的点击有效性（键盘 Enter 聚焦后触发）"
+  ]
+}
