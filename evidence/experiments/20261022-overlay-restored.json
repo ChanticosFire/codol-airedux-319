@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:34:19.302716+00:00",
+  "claim": "误删 overlay 后从 client/resources 备份恢复；并发现备份里有完整 ff（含 common_gametype_mp.ff 34MB、mp_cross_fire.ff 41MB）",
+  "incident": "删除 main/images 时连带清掉了 client_shipretail 的 ff",
+  "recovery": {
+    "src": "E:/GAME/COD/client/resources/v1649370/offline-resources",
+    "ff_count": 20,
+    "total_files": 352
+  },
+  "key_find": "备份中已有 common_gametype_mp.ff(34783232) 与 mp_cross_fire.ff(41648405) —— 说明正确的资源早已存在，之前不需要从 nifs 提取",
+  "next": [
+    "用恢复后的 overlay 重测 preloadmap/state3",
+    "若仍闪退，用 CreateFileA hook 查下一个缺失文件"
+  ]
+}
