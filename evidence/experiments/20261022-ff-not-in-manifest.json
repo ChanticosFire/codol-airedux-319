@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:49:25.253186+00:00",
+  "claim": "两个 manifest 都不含 .ff；overlay 里的 20 个 ff 属于“多余文件”，可能由 runtime 提供而非 overlay",
+  "libraries": {
+    "offline-loose-library": {
+      "kind": "loose_startup_resources",
+      "total": 18154,
+      "ff": 0,
+      "models": 15083
+    },
+    "offline-image-library": {
+      "kind": null,
+      "total": 22719,
+      "ff": 0,
+      "models": 0
+    }
+  },
+  "overlay": {
+    "files": 352,
+    "extra_vs_manifest": 220,
+    "missing": 18022,
+    "extra_includes": "client_shipretail/chinese/*.ff (20)"
+  },
+  "hypothesis": "overlay 只应包含 manifest 列出的资源；ff 由 launcher 的 runtime 副本或其它机制装配，不该放在 overlay",
+  "next": [
+    "尝试删除 overlay 中所有不在 manifest 的文件（含 20 个 ff），只保留 manifest 子集",
+    "启动验证；若仍失败则说明 overlay 必须由 launcher 从 archive 重新生成"
+  ]
+}
