@@ -1217,3 +1217,8 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - preloadmap 只预加载（stage 不变）；再写 state=3 → 场景+「无法连接主机」。
 - 地图资源已就绪，剩连接问题。
 - 下轮：伪造握手或 patch 连接检查。
+
+## 2026-10-22 连接错误串（本轮）
+
+- Could not connect to server. Error %d（0xD8E2E8）→ 742 候选。
+- 下轮：定位连接检查并 patch/伪造。
