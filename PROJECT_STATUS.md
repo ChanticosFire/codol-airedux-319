@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【`CL_Connect` 前段即退：`0x5BE700` 句柄校验返回 0】** 子状态表 `0x5C0F2C`：0/3→`0x5C067A`、1→返回、2→`0x5C0693`。`0x5C067A` 调 `0x5BE700`，后者校验 `[0x7887040]` 与 `[0x7886E64]` 两个句柄（经 `[0xCA8168]` 间接调用），任一缺失/失败即返回 0 → `CL_Connect` 跳到出口 `0x5C0F1B`，故只写了 `cl+0x30/0x34`。下一步：阶段 3 读这两个句柄找出缺失项，并查清 `[0xCA8168]` 的语义。证据 [20261022-codex-clconnect-check.json](evidence/experiments/20261022-codex-clconnect-check.json)。
+
 > **2026-10-22【`CL_Connect` 实调成功但只走了前段】** `call_main_thread.py --target 0x5C05F0 --ecx 0`：cave `0x10CE0000`、resumed、进程存活。调用后阶段仍 3、`[cl]` 仍 0、`cl+0x100260`/`+0x109260` 仍 0；但 `cl+0x30=0x9D`、`cl+0x34=0x920D0000` 为**新写入**。说明 `CL_Connect` 执行了，但只走前段/未设置 state 的分支。下一步：看清 `0x5C064D`/`0x5C0662` 走了哪个跳转表项，必要时先写 `[cl+0x28]`。证据 [20261022-codex-clconnect-called.json](evidence/experiments/20261022-codex-clconnect-called.json)。
 
 > **2026-10-22【`cl+0x14` 是 `CL_Connect` 读的 netadr，且可安全写入】** 阶段 3 实测：`cl+0x14` 原本已是 `02 00 00 00 …`（桥的 `start-challenge` 已写 type=2），补端口 28970 后为 `02…2a 71`，客户端存活并停在阶段 3。**调用 `CL_Connect` 的前置条件现在可满足**。下一步：窗口线程 + 大栈（`0x11BC`）调用 `0x5C05F0`，验证 `clc.state`、`cl+0x100260`、快照接受情况。证据 [20261022-codex-cl-addr-writable.json](evidence/experiments/20261022-codex-cl-addr-writable.json)。

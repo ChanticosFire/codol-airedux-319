@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T20:15:00+00:00",
+  "scope": "why CL_Connect only ran its front half",
+  "sub_state_table": {
+    "0x5C0F2C": ["0x5C067A", "0x5C0F1B (return)", "0x5C0693", "0x5C067A"],
+    "source": "jmp [eax*4+0x5C0F2C] at 0x5C0673 where eax comes from call 0x7F4F10([cl+0x28])",
+    "reading": "sub-states 0 and 3 go to 0x5C067A (which calls 0x5BE700 and bails if it returns 0), sub-state 1 returns immediately, sub-state 2 goes to 0x5C0693"
+  },
+  "check_function": {
+    "addr": "0x5BE700",
+    "logic": [
+      "mov eax,[0x7887040]; call [0xCA8168](eax,0); test eax,eax; jne return0",
+      "mov eax,[0x7886E64]; test eax,eax; je return0",
+      "call [0xCA8168](eax,0); test eax,eax; jne return0",
+      "otherwise mov al,1; ret"
+    ],
+    "meaning": "it validates two handles ([0x7887040] and [0x7886E64]) through an indirect function; if either is missing or the call reports failure it returns 0"
+  },
+  "consequence": "CL_Connect calls 0x5BE700 right after the sub-state dispatch (0x5C067A). A 0 return jumps to 0x5C0F1B, the function exit -- which explains why only cl+0x30/0x34 were touched and clc.state was never written.",
+  "next": [
+    "read [0x7887040] and [0x7886E64] at runtime during phase 3 to see which one fails",
+    "identify what [0xCA8168] is (an indirect validator, probably a socket/transport check)",
+    "if a handle is simply missing, populating it before calling CL_Connect may let the function proceed"
+  ],
+  "artifacts": []
+}
