@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【进图】游戏有 UDP 通道但“准备”零发送**：导入 send(0xCA84E0)/recv(0xCA84E4)/**sendto(0xCA8518)**/recvfrom(0xCA851C)；新增 hook_sendto.py；装 hook 后点准备 → sendto 0 条、send 0 条 → 控件确实惰性，不是网络路径问题。证据 [`20261022-udp-channel.json`](evidence/experiments/20261022-udp-channel.json)。
+
 > **2026-10-22【进图】21/5 响应进入 dispatcher（hits=8，服务号 0x15）**：房间脚本命令 room.startgame 1/0、room.create 全部 injected 但 ui_state 恒 5；hook_dispatch 在靶场后读到 hits=8、length=160、field_3a4=0x15 → 响应到达处理层，卡点在解析/分支。证据 [`20261022-dispatcher-21.json`](evidence/experiments/20261022-dispatcher-21.json)。
 
 > **2026-10-22【进图】ui_state→stage 映射与 +devmap 处理链逆出**：`0x7F25B0` 跳转表 `0x7F25DC`：ui_state 0→4、1..4→1、**5→3**。`+map/+devmap`：0x4F8B80 遍历 argv → 比较 "map"/"devmap" → 0x4F8BBE 调 0x4F8AD0+0x7FB310(1)+0x7F25B0 → 0x4F8BEF `"%s\n"` 格式化 argv[ebx] → 0x4F2DE0 命令执行包装 → 逐段回调 0x4F3890（写 0x3306910/0x3306914 参数表）。下步 hook 0x4F3890 记录实际命令串。证据 [`20261022-devmap-path.json`](evidence/experiments/20261022-devmap-path.json)。

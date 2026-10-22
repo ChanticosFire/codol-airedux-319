@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:03:03.537766+00:00",
+  "claim": "游戏确有 UDP 通道（sendto/recvfrom 导入），但房间里点“准备”没有任何 UDP/TCP 发送",
+  "imports": {
+    "send": "0xCA84E0",
+    "recv": "0xCA84E4",
+    "sendto": "0xCA8518",
+    "recvfrom": "0xCA851C"
+  },
+  "new_tool": {
+    "name": "tools/hook_sendto.py",
+    "method": "复制 hook_send.py 的 cave（记录返回地址/buf/len/16B payload/6 层 EBP 链），IAT 改为 0xCA8518"
+  },
+  "test": {
+    "action": "安装 sendto hook → 进房间 → 点准备 (1755,993)",
+    "sendto_total": 0,
+    "entries": []
+  },
+  "conclusion": "准备点击既不产生 TCP 也不产生 UDP 流量 → 控件确实惰性（与社区注释一致），不是网络路径问题",
+  "next": [
+    "进图必须绕过房间 UI：命令/主线程调用路线（已证 room.startgame 空操作）",
+    "或找 native 房间对象里真正的“开始比赛”入口（不在 vtable+0x3C/0x4C）",
+    "或让服务器主动推送房间状态把本地房间变成“真实房间”"
+  ],
+  "evidence": [
+    "tools/hook_sendto.py",
+    "evidence/experiments/20261022-sendto-ring.json"
+  ]
+}

@@ -1033,3 +1033,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - room.startgame 1/0、room.create 都无效（ui_state 恒 5）。
 - hook_dispatch：hits=8、length=160、服务号 0x15 → 响应进入处理层。
 - 卡点在解析/分支；下轮追 21 的 handler。
+
+## 2026-10-22 UDP 通道探测（本轮）
+
+- 游戏有 sendto/recvfrom；新建 hook_sendto.py。
+- 点准备 sendto 0 条、send 0 条 → 控件惰性确认。
+- 下轮：绕过房间 UI 找真正开始入口。
