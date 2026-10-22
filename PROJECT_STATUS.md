@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【进图】房间控件整体无响应**：准备/回车/Tab+回车/地图下拉（含 +72px 偏移假设）全部无效，`ui_state` 恒 5、`stage` 恒 5 → 房间 UI 处于不可交互或等待同步状态。下步转训练模式 21/5 任务完成或服务器侧房间同步。证据 [`20261022-room-controls-inert.json`](evidence/experiments/20261022-room-controls-inert.json)。
+
 > **2026-10-22【进图】“准备”无网络请求；运行时快照与 ui_state 写入点**：准备点击（双击/空格/回车）后请求数 8→8。快照：`playlist_count=1`、`ui_state=5`、`stage=5`、`room=0x245b7848`（+0x7230=0）。静态：`0x7F2651` 设 `ui_state=1`、`0x7F28B5` 清零 ui_state 组 → 状态机驱动，进图=5→3。证据 [`20261022-ready-probe.json`](evidence/experiments/20261022-ready-probe.json)。
 
 > **2026-10-22【进图】Cbuf 链路正常（quit 生效）；map/devmap 仅启动参数，+devmap 触发加载但前端未跳过**：`quit` 注入后进程立即退出；静态分析显示 `map`/`devmap` 只在 0x4f8b71 参数解析循环里比较，不是控制台命令；`+devmap mp_strike_sh` 启动后进入选择角色界面但背景已有加载进度条与小地图预览。证据 [`20261022-map-load-paths.json`](evidence/experiments/20261022-map-load-paths.json)、[`20261022-cmdline-devmap.png`](evidence/experiments/20261022-cmdline-devmap.png)。
