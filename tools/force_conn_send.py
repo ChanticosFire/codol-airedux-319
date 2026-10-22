@@ -53,7 +53,7 @@ def main() -> int:
         return 1
     w(h, c + 0xC8, struct.pack("<I", 2))
     cave = int(k32.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x40))
-    code = (b"\x6a\x01" +
+    code = (b"\x6a\x00" +
             b"\xb9" + struct.pack("<I", c) +
             b"\xe8" + struct.pack("<i", 0xBA32A0 - (cave + 12)) + b"\xc3")
     w(h, cave, code)

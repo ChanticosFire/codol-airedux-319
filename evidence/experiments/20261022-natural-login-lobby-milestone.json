@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T02:31:51.117013+00:00",
+  "claim": "natural Auth -> LSG -> token -> encrypted lobby frame -> native lobby UI",
+  "server_log": {
+    "path": "evidence\\experiments\\20261022-natural-auth-lsg-c.jsonl",
+    "sha256": "7b9ce9dd2934cba3d61a12a75582dadceea2358a4de40ae85695d9cea7847395",
+    "events": 47
+  },
+  "server_event_counts": {
+    "auth_request": 1,
+    "auth_response": 1,
+    "plaintext_frame": 1,
+    "gate_reply": 1,
+    "plaintext_frame2": 1,
+    "session_derived": 1,
+    "token_reply": 1,
+    "client_frame": 8,
+    "client_frame_verified": 8,
+    "task_request": 8,
+    "candidate_task_reply": 1,
+    "svc28_silent": 1,
+    "unhandled_task": 6,
+    "terminal_task_reply": 6,
+    "zero_frame": 1,
+    "idle_control": 1
+  },
+  "driver": {
+    "tool": "tools/drive_login_state_machine.py",
+    "forced_ui_state": 1,
+    "ticks": 30,
+    "interval_s": 0.3,
+    "dispatch_entry": "0x7f26c0",
+    "stage_functions": {
+      "0x7f3600": "session setup",
+      "0x7f28f0": "auth",
+      "0x7f3800": "lsg"
+    }
+  },
+  "gates_after_drive": {
+    "tick": 29,
+    "call": {
+      "cave": "0x4dc50000",
+      "thread_id": 22612,
+      "wait": 0,
+      "return": "0x5"
+    },
+    "ui_state": 5,
+    "login_step": 0,
+    "login_ready": 2,
+    "auth_state": 9,
+    "lsg_state": 2,
+    "auth_sources": {
+      "0x84abb08": "0x0",
+      "0x84abb0c": "0x0",
+      "0x84abb14": "0x2460ad40"
+    },
+    "netobj": "0x4333dec8",
+    "conn": "0x4332be30",
+    "conn_c8": 2,
+    "conn_5e8": 3,
+    "conn_640": 220,
+    "lsg_host_first16": "7f0000010df0adba0df0adba0df0adba",
+    "lsg_host_ascii": "",
+    "lsg_port": 28969
+  },
+  "screenshot": {
+    "path": "evidence\\experiments\\20261022-natural-lobby-ui.png",
+    "sha256": "826f1a6c12fd2f10d7f067b9b99b76e153cee784758705094a47b0e1763ee801",
+    "runtime_copy": "runs/natural-c-ui/after-task4.png",
+    "width": 1920,
+    "height": 1080
+  },
+  "verified": [
+    "client sent POST /auth/ itself and accepted the local 200 response",
+    "native LSG TCP session derived keys from the real transcript (session_derived)",
+    "client accepted the 0x83 token and sent encrypted 0x85 frames",
+    "client issued svc71/task4 then keepalives; session stayed open",
+    "native lobby UI rendered with the private profile"
+  ],
+  "not_verified": [
+    "server list rendering",
+    "room creation",
+    "map load",
+    "bot spawn",
+    "exit to lobby"
+  ]
+}

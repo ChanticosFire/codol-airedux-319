@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 1649370 自然登录链打通到原生大厅**：不再需要人工强置认证状态。游戏自身的分派器 `0x7F26C0`（按 `[0x84ABA50]` 分阶段调用 `0x7F3600`/`0x7F28F0`/`0x7F3800`）被驱动后，客户端自主完成 `POST /auth/` → LSG 握手 → `0x83` token → 加密 `0x85` → `svc71/task4`，并渲染出原生大厅 UI（截图 `[`evidence/experiments/20261022-natural-lobby-ui.png`](evidence/experiments/20261022-natural-lobby-ui.png)`）。关键纠错：`0xE3EC988` 是 **0x88 字节 netadr 块**（由 `0x7F3600 → 0xBAEBB0 → 0xB76F10` 写入），不是主机名；直接写字符串必然导致 `conn+0xC8=4`。里程碑摘要与判据见 [1649370-STATUS.md](1649370-STATUS.md) 顶部与 [`20261022-natural-login-lobby-milestone.json`](evidence/experiments/20261022-natural-login-lobby-milestone.json)。后续：补齐 `svc71/task4`、`svc80/task232`、`svc9/task5` 业务应答，再做房间/地图/bot；地图、Bot、退出回大厅均未验证。
+
 > **2026-10-22 Build 1649370 本地配置与认证入口实验**：包装层已在私有副本配置本地 Auth/LSG 和实验 CA，同端口 TLS Auth 的合成客户端检查通过；游戏读到 LSG 端口 28969，但认证来源与登录状态仍为空，调用 `0x7F3800` 也未建连接。静态扫描已在社区离线 EXE 中定位认证对象创建链 `0x7F28F0 → 0x7F2B90`、`0x801A00`；下一门槛是实测原生 Auth 状态机和游戏自主 `/auth/`，再继续 LSG。地图/Bot/退出闭环未完成。证据见 [1649370-REASSESSMENT-20261022.md](1649370-REASSESSMENT-20261022.md)。
 
 > **2026-10-22 Build 1649370 可行性复评**：昨天的负面结果只覆盖冷调解析器、强置状态、伪造房间 start 等路径。真实 `netobj/conn` 与进程内 UDP 往返已实证，解析器正常调用链尚未跟踪，因此目标仍开放；先以游戏自身发出 `connect` 为下一里程碑。`HANDOFF-CURRENT.md` 末尾的 socket `11648`/代号页阻断属于已归档的 **1604220**，不作为 1649370 结论。新研究与三路线判定门槛见 [1649370-REASSESSMENT-20261022.md](1649370-REASSESSMENT-20261022.md)。

@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T01:54:19.562588+00:00",
+  "pid": 41316,
+  "before": {
+    "auth_port": 28969,
+    "lsg_port": 28969,
+    "account_state": 6,
+    "ui_state": 0,
+    "lsg_state": 0,
+    "auth_sources": {
+      "0x84abb08": "0x0",
+      "0x84abb0c": "0x0",
+      "0x84abb14": "0x2460c698"
+    },
+    "netobj": "0x4ec79a40"
+  },
+  "invoke": {
+    "cave": "0x11110000",
+    "thread_id": 30884,
+    "wait": 0,
+    "return": "0x9"
+  },
+  "immediate": {
+    "auth_port": 28969,
+    "lsg_port": 28969,
+    "account_state": 9,
+    "ui_state": 0,
+    "lsg_state": 0,
+    "auth_sources": {
+      "0x84abb08": "0x0",
+      "0x84abb0c": "0x0",
+      "0x84abb14": "0x2460c698"
+    },
+    "netobj": "0x4ec79a40"
+  },
+  "after_3s": {
+    "auth_port": 28969,
+    "lsg_port": 28969,
+    "account_state": 9,
+    "ui_state": 0,
+    "lsg_state": 0,
+    "auth_sources": {
+      "0x84abb08": "0x0",
+      "0x84abb0c": "0x0",
+      "0x84abb14": "0x2460c698"
+    },
+    "netobj": "0x4ec79a40"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T01:54:03.223547+00:00",
+  "pid": 41316,
+  "netobj": "0x0",
+  "owner": "0x0",
+  "owner_vtable": null,
+  "conn": "0x0",
+  "conn_state": null,
+  "global_state_0x84aba7c": 0,
+  "auth_sources_present": {
+    "0x84abb08": false,
+    "0x84abb0c": false,
+    "0x84abb14": true
+  },
+  "configured_lsg_port": 28969,
+  "netobj_flag_0x4f8": null
+}

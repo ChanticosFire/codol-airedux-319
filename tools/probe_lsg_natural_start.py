@@ -5,6 +5,7 @@ Does not patch game code or the community sources.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import struct
 from datetime import datetime, timezone
@@ -17,6 +18,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--expect-state", type=int, choices=(0, 1, 2), default=0)
+    args = parser.parse_args()
     pid = sc.find_pid()
     handle = sc.k32.OpenProcess(0x1F0FFF, False, pid)
     if not handle:
@@ -29,8 +33,8 @@ def main() -> int:
                          "netobj": hex(sc.u32(handle, 0x8269774))}
         if row["before"]["port"] != 28969:
             raise RuntimeError("local LSG config was not loaded")
-        if row["before"]["global_state"] != 0:
-            raise RuntimeError("LSG state is not at the initial gate")
+        if row["before"]["global_state"] != args.expect_state:
+            raise RuntimeError("LSG state is not at the expected gate")
         row["invoke"] = probe.invoke(handle, lambda cave:
             b"\xe8" + struct.pack("<i", 0x7F3800 - (cave + 5)) + b"\xc3")
         netobj = sc.u32(handle, 0x8269774)

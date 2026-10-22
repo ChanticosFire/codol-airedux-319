@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T02:28:51.015796+00:00",
+  "pid": 32172,
+  "before": {
+    "global_state": 1,
+    "port": 28969,
+    "netobj": "0x4fa944f0"
+  },
+  "invoke": {
+    "cave": "0x117a0000",
+    "thread_id": 32232,
+    "wait": 0,
+    "return": "0x0"
+  },
+  "after": {
+    "global_state": 0,
+    "netobj": "0x4fa944f0",
+    "conn": "0x4fdc3e90",
+    "conn_c8": 4,
+    "auth_source_present": true
+  }
+}

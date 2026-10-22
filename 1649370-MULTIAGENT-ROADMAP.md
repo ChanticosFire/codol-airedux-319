@@ -786,3 +786,20 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 ## 2026-10-21 UI 资源里也搜不到 room_ready/“准备”
 
 在 `1649370\resources` 和 `bin\v1649370` 下遍历文件搜 `room_ready`/`roomReady`/UTF-8/GBK“准备”，零命中；客户端 exe 也没有 `room_ready`/`room_start` 字符串。说明 ready 按钮逻辑在 CEF 二进制/加密资源里，或走 native UI 事件而不是文本命令。下一步只能从窗口消息/辅助功能（MSAA/UIA）或 native 事件表反查，无法再靠字符串定位。
+
+## 2026-10-22 自然登录链打通：Auth → LSG → 原生大厅（本轮）
+
+本轮门槛（已通过）：**不修改代码、不伪造连接状态，由游戏自身状态机完成登录并进入原生大厅**。
+
+- 入口：`0x7F26C0` 按 `[0x84ABA50]` 分派 `0x7F3600`（会话准备）/`0x7F28F0`（Auth）/`0x7F3800`（LSG）/`0x7F27B0`（收尾）。
+- 会话准备用 `dwauth.ini` 的 Auth 主机 `0x81A76A8` 与 LSG 主机 `0x81A7F34` 建对象；LSG netadr 由 `0xBAEBB0 → 0xB76F10` 写入 `0xE3EC988`（0x88 字节块，不是主机名）。
+- 把 `[0x84ABA50]` 置 1 后 tick `0x7F26C0`，客户端自主完成 `/auth/`、LSG 握手、token、加密 `0x85`，并请求 `svc71/task4`。
+- 现场：`ui_state=5, login_ready=2, auth_state=9, lsg_state=2, conn+0xC8=2, conn+0x5E8=3`；服务端日志见 `evidence/experiments/20261022-natural-auth-lsg-c.jsonl`，大厅截图 `evidence/experiments/20261022-natural-lobby-ui.png`。
+- 工具：`tools/drive_login_state_machine.py`（状态机驱动）、`tools/read_lsg_config.py`（配置块读取）、`tools/set_lsg_host.py`（反证用，已证明不可写字符串）。
+
+**下一门槛（G2 服务层）**：
+
+1. 用真实 bdService 应答替换 `svc71/task4`（服务器列表）候选形状，参考 `server319/lsg_derived.py` 的 `make_server_entry` 与 `codol-node/lsg.js` 的 task4/task9 实现，判据是客户端接受应答并继续请求 task9/房间列表。
+2. 解析并回答 `svc80/task232`、`svc9/task5`（当前 `error=14`），避免客户端把大厅业务当失败。
+3. 让客户端显示服务器条目后，走原生“开始游戏 → 多人竞技/自定义房间”路径，抓取 `mmstart`/房间请求，再由本地服务返回可加入的 dedicated 结果，进入 1649370 的 UDP 游戏通道；地图装载与 bot 生成在此之后。
+4. 每次只改一个服务应答，记录客户端下一帧请求作为判据；连续三轮无新请求则换服务或换入口。

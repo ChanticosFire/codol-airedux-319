@@ -11,7 +11,7 @@ from pathlib import Path
 
 import capstone
 import pefile
-from capstone.x86 import X86_OP_MEM
+from capstone.x86 import X86_OP_IMM, X86_OP_MEM
 
 TARGETS = (0x84ABB08, 0x84ABB0C, 0x84ABB14, 0x84ABA7C)
 
@@ -20,7 +20,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("image", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--target", type=lambda value: int(value, 0), action="append",
+                        help="override the default Auth/LSG globals with explicit addresses")
     args = parser.parse_args()
+    targets = tuple(args.target) if args.target else TARGETS
     pe = pefile.PE(str(args.image), fast_load=True)
     md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
     md.detail = True
@@ -34,9 +37,10 @@ def main() -> int:
         for ins in md.disasm(code, start):
             if ins.id == 0:
                 continue
-            hits = [target for target in TARGETS if any(
-                operand.type == X86_OP_MEM and operand.mem.base == 0
-                and operand.mem.index == 0 and operand.mem.disp == target
+            hits = [target for target in targets if any(
+                (operand.type == X86_OP_MEM and operand.mem.base == 0
+                 and operand.mem.index == 0 and operand.mem.disp == target)
+                or (operand.type == X86_OP_IMM and operand.imm == target)
                 for operand in ins.operands)]
             if not hits:
                 continue

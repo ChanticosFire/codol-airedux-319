@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "image": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\auth-fsm-20261022\\runtime\\codol1649370-offline.exe",
+  "image_sha256": "5ee297cc8b164f21b2baa569d2ba9f3118683c627dff21c1323a44ff7b77dfb5",
+  "coverage": "linear disassembly of PE executable sections; packed or runtime generated code excluded",
+  "references": []
+}
