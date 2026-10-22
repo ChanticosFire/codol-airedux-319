@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【环 B 槽内容有效】** read=4095/write=4096，槽内是真实 687/1172 字节包（`5d010080…`）——`0x675140` 在运行并写 readcount，但 `0x674EB0` 从未进入。剩余可能：指针不同、另有早期返回、或 0x4F8ED8 非每帧路径。下一步：在 `0x5C2260` 入口用运行时 stub 记录 msg 指针/长度到 scratch 由桥读取。证据 [20261022-codex-slot-valid.json](evidence/experiments/20261022-codex-slot-valid.json)。
+
 > **2026-10-22【`[esi+0x14]` 是取包长度】** 反汇编 `0x675140`：取槽、memcpy、**`mov [ebx+0x14], 包长度`**、推进读游标。故 `0x5C2260` 的 `[esi+0x14]` 是刚取到的包长度。新矛盾：游标在推进、长度被写，但 `0x674EB0` 从未进入——可能 pop 与 parse 不是同一 msg 对象。下一步：抓活客户端 msg 并比对 `ebx`/`eax` 指针。证据 [20261022-codex-readcount-gate.json](evidence/experiments/20261022-codex-readcount-gate.json)。
 
 > **2026-10-22【自旋测试证明 0x674EB0 从未被进入】** `0x674EB0` 写成 `EB FE` 后客户端不卡死、阶段恒 8、环 B 继续消费——该函数从未被调用。补齐 `0x5C24BC`（`mov al,1; ret`，无包短路径）后结论明确：游戏侧 msg `cursize` 恒 < 4，**游戏从未拿到桥注入的包**。下一步：dump `esi` 确认 cursize，并找出真正消费环 B 的侧路。证据 [20261022-codex-spin-test.json](evidence/experiments/20261022-codex-spin-test.json)。

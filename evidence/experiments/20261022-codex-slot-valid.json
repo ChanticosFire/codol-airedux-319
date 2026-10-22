@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:55:00+00:00",
+  "scope": "ring slots carry valid packets while the parser still sees nothing",
+  "sample": {
+    "pid": 23996,
+    "read_cursor": 4095,
+    "write_cursor": 4096,
+    "slots": {
+      "14": {"length": 687, "head": "5d0100800d0d8a04a502e5ede5e4454f4f4f4f4f4f9aedcc"},
+      "13": {"length": 1172, "head": "5d0100800c0d8a048a0417891c4010e5e5e5e5e4bae5e5e5"},
+      "12": {"length": 1172, "head": "5d0100800b0d8a048a04e5e5e5e7a5e54dba1ad2e5e5e5e5"}
+    }
+  },
+  "meaning": "the ring holds real 687/1172-byte packets (the 0x5d010080 header matches the server's fragment packet). The client has popped 4095 of 4096, so 0x675140 is definitely running and writing msg->readcount = packet length. Yet 0x674EB0 (the parser's receive helper) is never entered.",
+  "remaining_possibilities": [
+    "the parser's esi is not the same msg that 0x675140 filled (contrary to the static reading of 0x4F8ED8)",
+    "or the parser is entered but returns before 0x5C2380 for a different reason (the 0x84abb08/0x84abb14 block)",
+    "or the parse call site 0x4F8ED8 is not the one that runs each frame (another call path may be involved)"
+  ],
+  "next": [
+    "write the msg pointer and length to a known scratch address from a runtime stub at 0x5C2260's entry, then read it from the bridge",
+    "or pause the client inside the loop (breakpoint 0x5C22AF) and read ebp/esi directly",
+    "the scratch-stub route avoids breakpoint one-shot behaviour and gives a real counter"
+  ],
+  "artifacts": []
+}
