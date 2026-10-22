@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T03:05:00+00:00",
+  "scope": "continue past the repaired fault",
+  "disassembly": {
+    "0x5B2E53": "edx=3; edi=[ebp-0x874]; call 0x66E840; bounds-checked byte store",
+    "0x5B2E96": "eax=[esi+0x8014C] & 0x1FF << 0xA; esi = eax+esi+0x80154 -- inside cl",
+    "0x5B2EAB": "call 0x769560",
+    "0x5B2EB6": "xor eax,[ecx+0x80148] -- cl+0x80148 is 0, so eax unchanged",
+    "0x5B2EC6": "xor eax,[ecx+0x13C] -- cl+0x13C is 0",
+    "0x5B2EE6": "ecx=[ebx+0x68D0]; sub ecx,[ebp-0x840] -- cl+0x68D0 is inside cl"
+  },
+  "assessment": "these steps only read fields inside the 1.2 MB cl object (0x13C, 0x68D0, 0x80148, 0x8014C, 0x80154) and are safe while cl is zero. The new crash 0xB02BCC94 is therefore further along, past 0x5B2F43.",
+  "next": [
+    "disassemble 0x5B2EE6..0x5B3040 to find the call that faults",
+    "also check what 0x769560 returns (a random/timer helper) and whether its result indexes anything without a bound"
+  ],
+  "artifacts": []
+}
