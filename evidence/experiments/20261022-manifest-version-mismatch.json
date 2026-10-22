@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:44:55.092276+00:00",
+  "claim": "overlay 对应的 manifest 的 source_exe_sha256=36997674...（另一版本），与 1649370 的 55f067ac 不符 —— 可能是 overlay 冲突的来源",
+  "manifest": {
+    "offline-loose-library": {
+      "source_exe_sha256": "36997674b18f2896de5e...",
+      "requirements": 3
+    }
+  },
+  "target_exe_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "meaning": "loose-library 的 manifest 绑定的是 36997674 版本的资源，不是 1649370；overlay 目录内容可能因此与 1649370 期望不一致",
+  "next": [
+    "查 offline-image-library 的 manifest 是否对应 1649370",
+    "若都对应 36997674，说明 1649370 的 overlay 应该用别的来源重建",
+    "评估是否可用 launcher 的资源重建命令"
+  ]
+}
