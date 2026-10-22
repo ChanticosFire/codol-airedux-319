@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T11:35:00+00:00",
+  "scope": "try adr-type 0 (NA_IP) instead of 2 (LOOPBACK)",
+  "result": {
+    "phase": "4 (the handshake no longer reaches 8)",
+    "retval": "still 0",
+    "client": "alive"
+  },
+  "conclusion": "adr-type 0 is worse: it stalls the handshake at phase 4. The client's own endpoint is LOOPBACK-typed (it connects over 127.0.0.1 loopback), so type 2 was correct all along. The type theory is refuted as the receive-failure cause.",
+  "bridge_fix": "the ip default now depends on the type: 127.0.0.1 for NA_IP (0) and 0.0.0.0 for LOOPBACK (2), so the earlier unconditional 127.0.0.1 cannot perturb LOOPBACK comparisons",
+  "next": [
+    "keep --adr-type 2 --port 28970 (the combination that reaches phase 8)",
+    "the eax=0 failure must come from another field: disassemble 0x674EB0 completely to see which NET_CompareAdr call it makes and with which arguments",
+    "the 8 dwords on its stack suggest it builds two netadr copies from the client state and compares them"
+  ],
+  "artifacts": []
+}

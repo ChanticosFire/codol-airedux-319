@@ -755,7 +755,8 @@ def cmd_forward(client: Client, args) -> dict:
 
 
 def _adr_ip_bytes(args) -> bytes:
-    text = getattr(args, "adr_ip", None) or "127.0.0.1"
+    adr_type = getattr(args, "adr_type", 2)
+    text = getattr(args, "adr_ip", None) or ("127.0.0.1" if adr_type == 0 else "0.0.0.0")
     try:
         return socket.inet_aton(text)
     except OSError:

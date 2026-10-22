@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【`--adr-type 0` 反证：阶段退回 4】** `forward --adr-type 0 --port 28970` 下客户端只到阶段 4、`eax` 仍 0——客户端本身走环回，netadr 类型就是 LOOPBACK(2)，**type=2 本来正确**，type 假设被推翻。桥的 IP 默认改为随类型（NA_IP→127.0.0.1、LOOPBACK→0.0.0.0）。正确组合：`--adr-type 2 --port 28970` + 持久 configstring 补丁。下一步：完整反汇编 `0x674EB0` 看它比较的两个地址来源。证据 [20261022-codex-adrtype-0.json](evidence/experiments/20261022-codex-adrtype-0.json)。
+
 > **2026-10-22【返回值 hook 成功：eax=0，失败点是 netadr TYPE】** 修正跳转目标为 `0x5C2388` 后客户端存活、`eax=0`。`0x674EB0` 归一化后“相等”应为 1，实测 0 说明 `NET_CompareAdr` 返回非 0；`0x674EA8`（type==2）是 `xor eax,eax`，LOOPBACK 必相等——所以失败在 **type 比较**：桥用 `adr_type=2`，客户端 127.0.0.1 连接的远端是 `NA_IP`(0)。已给桥加 IP 参数（默认 127.0.0.1）。下一步：`forward --adr-type 0 --port 28970` 复测 `eax` 是否为 1。证据 [20261022-codex-adr-type.json](evidence/experiments/20261022-codex-adr-type.json)。
 
 > **2026-10-22【返回值 hook 首版 bug：跳转目标错导致栈双重调整】** `0x5C2380` hook stub 为 `call 0x674EB0; mov [scratch],eax; add esp,0x30; jmp 0x5C2385`，但 `0x5C2385` 正是 `add esp,0x30` 本身，导致二次调整栈、客户端立刻退出。正确目标应为 `0x5C2388`。下一步：修正后重跑，scratch 将记录收包路径的 `eax`（0/1）。证据 [20261022-codex-retval-hook.json](evidence/experiments/20261022-codex-retval-hook.json)。
