@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【跳过长度退出：不崩溃但不前进】** 修正位置（`jl` 在 `0x5C22B8`/`0x5C2318`）后运行时 nop，客户端不崩溃、环 B 继续消费（read 8579），但阶段仍 8。说明还有其他提前退出或解析后快照不足以推进。下一步：patch 剩余退出（`0x5C22FC`、`0x84abb08` 块）或用 stub 计数 `0x674EB0`。证据 [20261022-codex-length-exit-skip.json](evidence/experiments/20261022-codex-length-exit-skip.json)。
+
 > **2026-10-22【调用链闭环：0x5C2260 每帧调用但提前返回】** 帧驱动 `0x4FEA20`（唯一调用者 `0x77FA64`，位于顶层主循环）每帧无条件调用 `0x4FE220`→`0x4F9240`→`0x4F8D70`→`0x5C2260`。launcher 断点可能一次性，故“1 次”只证明至少一次；但 `0x674EB0` **0 命中**可靠，说明 `0x5C2260` 每帧在 `0x5C2380` 前提前返回（候选：`0x5C22B5`/`0x5C22FC`/`0x5C2315`）。下一步：断点这三处或读活客户端 msg `cursize`。证据 [20261022-codex-frame-driver-once.json](evidence/experiments/20261022-codex-frame-driver-once.json)。
 
 > **2026-10-22【帧循环只调用读包一次】** 断点 `0x4F9428`（调读包）与 `0x4F8ED8`（调解析）各命中 1 次——帧循环没有持续调用读包路径。`0x4F9428` 所在函数入口 `0x4F9240`，调用者 `0x4FE312`/`0x4FE658`。下一步：反汇编调用点找 gamestate 后不再走读包分支的条件（总闸）。证据 [20261022-codex-loop-once.json](evidence/experiments/20261022-codex-loop-once.json)。
