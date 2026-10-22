@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T01:25:00+00:00",
+  "scope": "client svc dispatch table decoded",
+  "top_level_parser": {
+    "entry": "0x473A50 (allocates 0x20044 stack = MAX_MSGLEN+68, loop at 0x473B61)",
+    "dispatch": "0x473BAA cmp eax,5 / je 0x473C3E ; 0x473BB3 cmp eax,3 / ja 0x473C1C ; 0x473BB8 jmp [eax*4+0x473C50]",
+    "table_0x473C50": ["0x473BF7 -> call 0x471E90", "0x473BBF -> call 0x4737E0", "0x473BCC -> call 0x4738A0", "0x473BD9 -> call 0x473260"],
+    "unknown_values": "svc>3 and svc!=5 falls to 0x473C1C which just skips the rest of the message"
+  },
+  "client_svc_map": {
+    "0": "snapshot parser 0x471E90",
+    "1": "0x4737E0",
+    "2": "0x4738A0",
+    "3": "gamestate parser 0x473260 (calls CL_ParseGamestate 0x473180)",
+    "5": "EOF -- jumps straight to the function epilogue at 0x473C3E"
+  },
+  "server_mismatch": {
+    "snapshot": "0 matches",
+    "gamestate": "3 matches",
+    "eof": "the 2697 writer emits 6, but the client treats 6 as unknown and silently skips the rest of the message; it should be 5"
+  },
+  "impact": "an unknown EOF does not stop the iteration, so the client keeps reading into the next bytes/garbage instead of finishing the message cleanly; combined with any snapshot-body drift this can explain why the snapshot never takes effect",
+  "next": [
+    "patch SV_EndClientSnapshot's MSG_WriteByte(6) to 5 and re-test",
+    "also verify svc=1/2 handlers, in case the client expects other message types after gamestate",
+    "if the EOF fix moves the client, the remaining work is the snapshot body"
+  ],
+  "artifacts": []
+}

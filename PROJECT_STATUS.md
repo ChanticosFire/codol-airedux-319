@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【重大发现：客户端 svc 分派表解码；EOF 应为 5 而非 6】** 顶层解析器 `0x473A50`：`cmp eax,5 → 0x473C3E`（EOF）、`cmp eax,3 / ja`（未知值跳过剩余）、`jmp [eax*4+0x473C50]`。表 = `[0x473BF7(snapshot→0x471E90), 0x473BBF, 0x473BCC, 0x473BD9(gamestate→0x473260)]`。客户端映射：**0=snapshot、3=gamestate、5=EOF**。2697 的 snapshot=0/gamestate=3 正确，**EOF=6 错误**（客户端当未知值跳过）。下一步：把 EOF 改为 5 并复测。证据 [20261022-codex-client-svc-map.json](evidence/experiments/20261022-codex-client-svc-map.json)。
+
 > **2026-10-22【可靠窗口已空；大消息是快照体】** 服务端 `client_t` 的 `reliableSequence=0`、`reliableSent=0`，强制同步 20 次无变化。日志 `out` 每帧约 +122 字节（本帧新入队），而重组消息 11–17KB（整条消息）——两个口径不同。可靠窗口为空说明大消息主要是快照体本身。下一步：单帧完整抓包端到端核对，并测纯快照长度，再选服务端翻译器或客户端补丁。证据 [20261022-codex-reliable-window-clear.json](evidence/experiments/20261022-codex-reliable-window-clear.json)。
 
 > **2026-10-22【最小空帧无效；需要真实 playerstate】** `enterworld11`（`eba573ce…`）让两条路径直接跳到尾部，快照体只剩 `svc + time + delta + flags + 5`。实测客户端仍 18 秒停阶段 8（黑屏 10,723 字节），服务端 `state 4 / out 286/408`。结论：客户端要的是真实 playerstate（本地玩家），不是帧头结构。下一步：生成 IW4 形状的 client 0 playerstate，或先塞 dummy 玩家实体验证解析路径。证据 [20261022-codex-minimal-frame.json](evidence/experiments/20261022-codex-minimal-frame.json)。
