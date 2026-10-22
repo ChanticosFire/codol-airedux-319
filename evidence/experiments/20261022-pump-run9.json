@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T03:53:32.773111+00:00",
+  "pid": 33308,
+  "pump": "0xb838a0",
+  "interval": 0.08,
+  "once": false,
+  "calls": 578,
+  "errors": 660,
+  "elapsed_s": 100.029
+}
