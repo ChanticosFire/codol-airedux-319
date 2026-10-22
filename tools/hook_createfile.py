@@ -20,7 +20,7 @@ import start_conn as sc
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / "runs" / "createfile_hook_state.json"
-CREATE_IAT = 0xCA8284
+DEFAULT_IAT = 0xCA8284
 RING_ENTRIES = 16
 ENTRY_SIZE = 0x10
 
@@ -78,6 +78,7 @@ def patch_iat(handle, address: int, value: int) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--iat", type=lambda v: int(v, 0), default=DEFAULT_IAT)
     parser.add_argument("--install", action="store_true")
     parser.add_argument("--read", action="store_true")
     parser.add_argument("--output")
@@ -93,14 +94,14 @@ def main() -> int:
             record = (state.get("record") if same else None) or alloc(handle, 0x400, 0x04)
             slot = (state.get("slot") if same else None) or alloc(handle, 0x40, 0x04)
             sc.w(handle, record, bytes(0x400))
-            original = struct.unpack("<I", read(handle, CREATE_IAT, 4))[0]
+            original = struct.unpack("<I", read(handle, args.iat, 4))[0]
             sc.w(handle, int(slot), struct.pack("<I", original))
             code = build_cave(int(cave), int(record), int(slot))
             sc.w(handle, int(cave), code)
             sc.k32.FlushInstructionCache(handle, C.c_void_p(int(cave)), len(code))
-            ok = patch_iat(handle, CREATE_IAT, int(cave))
-            readback = struct.unpack("<I", read(handle, CREATE_IAT, 4))[0]
-            row.update(cave=int(cave), record=int(record), slot=int(slot),
+            ok = patch_iat(handle, args.iat, int(cave))
+            readback = struct.unpack("<I", read(handle, args.iat, 4))[0]
+            row.update(iat=hex(args.iat), cave=int(cave), record=int(record), slot=int(slot),
                        original=hex(original), iat_readback=hex(readback),
                        verified=readback == int(cave), patched=ok,
                        status="installed" if ok else "patch_failed")

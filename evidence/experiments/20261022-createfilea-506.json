@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:28:31.828202+00:00",
+  "claim": "游戏使用 CreateFileA（不是 W）：hook 0xCA8208 记录到 506 次调用；但解码用了 UTF-16 导致文件名为空",
+  "iat": "0xCA8208 (CreateFileA)",
+  "count": 506,
+  "bug": "CreateFileA 的 lpFileName 是 ANSI 字符串，工具按 UTF-16 解码 → name 全为空",
+  "next": [
+    "工具改为按 ANSI(latin-1/gbk) 解码 CreateFileA 的文件名",
+    "重跑并读取 506 条记录的文件名",
+    "对比缺失项补齐资源"
+  ]
+}
