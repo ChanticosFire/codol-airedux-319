@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:10:43.345653+00:00",
+  "claim": "定位 WIN_ZONE_ERROR fatal 分支并可 patch 绕过：0x49EEA3 的 jne 改 jmp",
+  "code": {
+    "0x49EEA1": "test eax,eax（zone 加载结果）",
+    "0x49EEA3": "0F 85 B7 02 00 00 = jne 0x49F160（成功路径）",
+    "fatal_path": "0x49EEA9 lea ecx,[ebp-0x108]; push ecx; push 0xDB6588(fmt); call sprintf; push eax; push 0xDB659C(\"WIN_ZONE_ERROR\"); call 0x77C930(fatal)"
+  },
+  "patch": {
+    "at": "0x49EEA3",
+    "from": "0f85b7020000",
+    "to": "e9b802000090",
+    "reason": "jmp rel32 to 0x49F160；rel = 0x49F160-(0x49EEA3+5) = 0x2B8",
+    "tool": "tools/patch_client_bytes.py --at 0x49EEA3 --bytes e9b802000090"
+  },
+  "status": "patch 尚未实测（本轮会话启动失败，进程未运行）",
+  "next": [
+    "起会话（服务器与会话分开启动）→ 登录 → patch → 注入 preloadmap 观察"
+  ]
+}
