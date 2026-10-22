@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T00:20:00+00:00",
+  "scope": "minimal snapshot frame test (no sections)",
+  "patch": {
+    "file": "runs/2697-enterworld-patched/codol_dedrun_enterworld11.exe",
+    "sha256": "eba573cee9ae1561fcdb2854c5d432694ff12bb534a1122ce2db484f82dbe014",
+    "changes": [
+      "0x4BEA48 -> jmp 0x4BECBF (path A skips base bit and all sections)",
+      "0x4BED85 -> jmp 0x4BECBF (path B same)"
+    ],
+    "resulting_body": "svc_snapshot + server_time(4) + delta(1) + flags(1) + 5 (trailer only, no player state, no entities)"
+  },
+  "result": {
+    "client": "phase 8 for the whole 18 s sample, screenshot 10,723 bytes (black)",
+    "server": "AdministraClient state 4, out 286/408",
+    "conclusion": "the client does not leave phase 8 even with a structurally valid but empty snapshot. It needs actual player state (the local player entity/playerstate) before it enters the world, so the next step is to emit the IW4 playerstate delta for the local client, not just a header."
+  },
+  "next": [
+    "emit an IW4-shaped playerstate block for client 0 (local player) — either from the 2697 player state data or by patching the client to accept an empty playerstate",
+    "the client likely waits for its own client entity in the snapshot; confirm by logging the client's parse result or by including one dummy player entity",
+    "keep the minimal-frame patch as a diagnostic tool"
+  ],
+  "artifacts": ["runs/20261022-ring-2697af/main/qconsole.log", "runs/codex-ring-bridge-46-state.png"]
+}

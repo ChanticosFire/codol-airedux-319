@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【最小空帧无效；需要真实 playerstate】** `enterworld11`（`eba573ce…`）让两条路径直接跳到尾部，快照体只剩 `svc + time + delta + flags + 5`。实测客户端仍 18 秒停阶段 8（黑屏 10,723 字节），服务端 `state 4 / out 286/408`。结论：客户端要的是真实 playerstate（本地玩家），不是帧头结构。下一步：生成 IW4 形状的 client 0 playerstate，或先塞 dummy 玩家实体验证解析路径。证据 [20261022-codex-minimal-frame.json](evidence/experiments/20261022-codex-minimal-frame.json)。
+
 > **2026-10-22【svc_snapshot=7 无效；快照体是唯一不兼容层】** `enterworld10`（`bbf7e30a…`）写 `svc_snapshot=7` 后客户端仍 18 秒停在阶段 8（黑屏 10,800 字节），服务端 `state 4 / out 286/409`。结合 svc=0 同样无效，确认 svc 编号不是阻断。已兼容：分片 stride 1162、gamestate svc=3、可靠命令文本；不兼容：快照体分节序列化。已试：去 base bit、svc=7，均无效。下一步：构造最小 IW4 快照帧验证客户端接受度，再逐步加 delta 位流。证据 [20261022-codex-svc7-test.json](evidence/experiments/20261022-codex-svc7-test.json)。
 
 > **2026-10-22【快照写入定位、去掉 base bit；客户端仍未消费】** 定位 `CODOL_WriteSnapshotDeltaNumber=0x4BE946`（svc 0x4BEA0B、server_time 0x4BEA1F、delta 0x4BEA31、flags 0x4BEA43、**base bit 0x4BEA69**）。`enterworld9`（`05724d8e…`）nop 掉 base bit 使前缀与 IW4 对齐；实测客户端仍停阶段 8（24 秒采样 `7→8→8…`），服务端持续快照。说明剩余差异在分节序列化。下一步：先发最小 IW4 形状快照验证接受度，再逐节加回或写完整翻译器。证据 [20261022-codex-base-bit-removed.json](evidence/experiments/20261022-codex-base-bit-removed.json)。
