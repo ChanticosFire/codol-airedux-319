@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T22:30:00+00:00",
+  "scope": "snapshot data is present at the end of the big messages; suspected svc_snapshot/svc_EOF swap",
+  "decoded_tail": {
+    "seq33..39": "identical tail bytes ... 00 80 5a a8 00 0a 00 01 20 00 54 55 ... 18 ff 07 00 00 00 06",
+    "last_byte": "0x06",
+    "second_last_group": "0x07 followed by 00 00 00"
+  },
+  "interpretation": {
+    "server_side_values": "codol_2697_service.h: CODOL2697_SVC_SNAPSHOT=0, GAMESTATE=3, EOF=6 -- but the captured tail ends with 07 ... 06, so the writer used snapshot=7 and EOF=6 on the wire",
+    "client_side_values": "net_game_conf.h enum (nop0 gamestate1 configstring2 baseline3 serverCommand4 download5 snapshot6 EOF7) would expect snapshot=6 and EOF=7",
+    "hypothesis": "the two servers disagree by one: the 1649370 client reads 0x07 (the server's snapshot) as svc_EOF and stops parsing before the snapshot; then it reads 0x06 as an unknown/garbage command. That would explain why the client consumes packets but never processes a snapshot and stays at phase 8"
+  },
+  "next": [
+    "disassemble the 1649370 CL_ParseServerMessage switch (or CL_ParseSnapshot call site) and confirm the numeric svc_snapshot/svc_EOF values",
+    "if confirmed, swap the emitted bytes in the 2697 writer (snapshot->6, EOF->7) and re-test; the client should then parse the snapshot and leave phase 8"
+  ],
+  "artifacts": ["runs/ring-dump-43.jsonl", "tools/decode_ring_dump.py"]
+}
