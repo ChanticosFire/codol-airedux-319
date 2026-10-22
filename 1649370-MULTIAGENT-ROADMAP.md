@@ -1081,3 +1081,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - LocalMatchBegin 14 步全流程读出；1649370 对应函数已定位（0x621E50/0x5C05F0/0x5C0FD0/0xBB2C40）。
 - --transport-connect --inject-challenge 启动即退出，需拆分。
 - 下轮：拆分验证 + 反汇编对比。
+
+## 2026-10-22【突破】state=3 进游戏场景（本轮）
+
+- 写 [0x76446B0]=3 → 离开前端、进游戏画面、报「无法连接主机」。
+- 新卡点：游戏服务器 challenge。
+- 下轮：配 netadr + UDP challenge 响应，或进程内注入。

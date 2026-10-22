@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:27:43.109579+00:00",
+  "claim": "状态全局 [0x76446B0]=3 是进入游戏场景的开关：写入后客户端离开前端、切到游戏画面并尝试连接主机",
+  "observation": {
+    "before": {
+      "[0x76446B0]": 0,
+      "ui_state": 5,
+      "stage": 5,
+      "screen": "大厅"
+    },
+    "action": "写 [0x76446B0]=3",
+    "after": {
+      "[0x76446B0]": 3,
+      "ui_state": 5,
+      "stage": 5,
+      "screen": "深色游戏场景 + 错误框『无法连接主机』+ 退出按钮"
+    },
+    "process": "存活、Responding"
+  },
+  "significance": "这是 45 轮以来第一次让 1649370 离开前端进入游戏场景；错误框说明后续卡在游戏服务器连接(challenge)",
+  "next": [
+    "写 state=3 之前把 connection+0x14 的 netadr 指向本地游戏端口，并启动 UDP challenge 响应",
+    "或复用 launcher 的 --inject-challenge 在进程内注入 challengeResponse",
+    "随后按 2.6.9.7 蓝本继续：preload 地图 → connection init → 地图加载"
+  ],
+  "screens": [
+    "evidence/experiments/20261022-gstate3-connect.png",
+    "evidence/experiments/20261022-gstate3-error.png"
+  ]
+}
