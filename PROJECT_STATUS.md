@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【根因：注入包端口为 0，NET_CompareAdr 不匹配】** 计数 stub 证明 `0x674EB0` 每秒被调用约 280 次（此前"从未调用"结论错误）；反汇编其依赖 `0x674E10 = NET_CompareAdr`：type==5 时比较 `+8` 的端口。桥 `--port` 默认 0，注入包源端口为 0，而客户端期望 127.0.0.1:28970 → 地址不匹配 → 返回 0 → 解析器直接返回 → 所有快照被丢弃。**修复：forward 传 `--port 28970`**。证据 [20261022-codex-counter-proof.json](evidence/experiments/20261022-codex-counter-proof.json)。
+
 > **2026-10-22【字节一致但两观测冲突】** 活进程 dump 证实 `0x5C2380=call 0x674EB0` 等三条指令与静态一致；自旋测试复跑仍不卡死（未进入），而强制成功测试曾导致退出（被到达）。两者逻辑冲突，需单独复现并用真正的计数 stub 判定。证据 [20261022-codex-bytes-and-spin.json](evidence/experiments/20261022-codex-bytes-and-spin.json)。
 
 > **2026-10-22【强制收包成功导致崩溃，证明 0x5C2380 被到达】** 把 `0x5C2380`（`call 0x674EB0`）改为 `push 1; pop eax; ret` 后客户端退出（`engine_close_status 0`，`0x2` 非法 EIP 异常 2 条）。说明解析路径活跃、`0x5C2380` 被到达，但助手调用从未发生——`call` 在运行时被跳过。下一步：重跑自旋测试并从活进程 dump `0x5C2380` 字节。证据 [20261022-codex-recv-force-crash.json](evidence/experiments/20261022-codex-recv-force-crash.json)。
