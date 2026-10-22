@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T21:55:00+00:00",
+  "scope": "prime the socket then call CL_Connect",
+  "steps": {
+    "start_challenge": "challenge_armed, connection 0x13050490, state 3",
+    "inject_oob": "queued, slot 0x786DBC0, payload 16 bytes; the pump ran and the ring-B cursors moved (read 1, write 1)",
+    "stage_after_pump": "5",
+    "call_main_thread": "target 0x5C05F0, ecx 0, process_alive_after true"
+  },
+  "observation_after": {
+    "phase": "back to 3",
+    "cl": "0x13050490",
+    "[cl]": "0x0",
+    "[cl+0x100260]": "0x0",
+    "[cl+0x109260]": "0x0"
+  },
+  "conclusion": "priming the receive path does not unblock CL_Connect. The signalled-handle check at 0x5BE700 still returns 0 (or the function still exits early), so cl stays empty even with a packet already consumed.",
+  "next": [
+    "stop trying to satisfy the check indirectly: patch 0x5BE700 to return 1 at runtime (mov al,1; ret) and then call CL_Connect",
+    "if that lets CL_Connect proceed, we will see clc.state / cl+0x100260 change and can judge the rest",
+    "the patch is per-process only, so the client image stays pristine"
+  ],
+  "artifacts": ["runs/codex-prime2-1-call.json"]
+}
