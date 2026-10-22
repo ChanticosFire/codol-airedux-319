@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T13:15:00+00:00",
+  "scope": "validate the ebx base",
+  "reading": {
+    "global_phase": 8,
+    "raw_[0x331c0c8]": "0xC02CE127",
+    "decoded_ebx": "0x134EB138",
+    "[ebx]": "0x00000000 (expected 8 if ebx were the client state)",
+    "first_16_dwords_at_ebx": "all zero",
+    "[ebx+0x109260]": "24 zero bytes"
+  },
+  "conclusion": "ebx is NOT the client-state base. The XOR-decoded pointer references an all-zero region, so the earlier 'all zero address' finding was an artefact of using the wrong base -- not evidence that the client never fills its server address. The runtime writes to [ebx+0x109260] therefore also wrote into an unrelated zero page, which explains why they had no useful effect (and why the process still crashed for another reason).",
+  "next": [
+    "find the real client-state pointer: it must have [base] == 8 (the phase) while the game is connected, and a plausible netadr somewhere near +0x109260",
+    "the parser's own access path (0x5C2309: mov ebx,[0x331c0c8]; xor ebx,0xD362501F) uses the same decode, so either that path is not the parser's real one, or 0x331c0c8 is written later than my read",
+    "scan the process for a structure whose first dword equals 8 and whose +0x109260 region holds a plausible netadr"
+  ],
+  "artifacts": []
+}
