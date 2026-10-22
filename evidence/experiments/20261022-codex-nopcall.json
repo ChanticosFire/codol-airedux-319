@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T10:25:00+00:00",
+  "scope": "skip the faulting indirect call and see whether 0x5B2C10 completes",
+  "setup": {
+    "phase": 8,
+    "cl+0xA8F0": "repaired (alloc 0x180 @ 0x11780000 ^ key)",
+    "patch": "0x66F20E: ff d2 (call edx) -> 90 90 (nop nop)",
+    "call": "call_main_thread --target 0x5B2C10 --settle 0.5"
+  },
+  "result": {
+    "client_alive_immediately": true,
+    "client_alive_after_6s": true,
+    "phase": "8",
+    "cl+0x100260": "0",
+    "cl+0x109260": "0",
+    "exceptions": "64 (only the old non-fatal 0x4000001F ones)",
+    "last_milestones": ["view:UIViewerSetMode", "Com Error"]
+  },
+  "breakthrough": "0x5B2C10 now RUNS TO COMPLETION without killing the client. This is the first time that has happened. Skipping the callback is enough to get past the fault.",
+  "caveat": "cl+0x100260 (the 'connected' flag the parser checks) remains 0, so the initialiser completing did not by itself mark the client connected. That flag must be set by a later step or by a different routine.",
+  "next": [
+    "now that 0x5B2C10 survives, verify it really returned: hook its return address or simply re-read state a few seconds later",
+    "look for who sets cl+0x100260 -- with 0x5B2C10 no longer crashing, the normal path may now reach it",
+    "then continue along the connect sequence (0x5C05F0 / the parser) with the frame tick running"
+  ],
+  "artifacts": ["runs/codex-nopcall-1-call.json"]
+}
