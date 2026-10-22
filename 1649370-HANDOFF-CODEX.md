@@ -1,5 +1,7 @@
 # 1649370 阶段性交接（给 codex）
 
+> **2026-10-22 复核纠偏**：本文件的“缺 461 版 `mp_cross_fire_load.ff`”已过时。`ff_init_mp_cross_fire_V70.ifs` 内含 `mp_cross_fire.ff`、`_load.ff`、`_const.ff` 三件套，均为 v461 且发行签名/哈希链通过；仓库原有 `runs/20261021-1649370-crossfire-base` 与本轮独立提取 SHA-256 一致。使用 `--map-probe mp_cross_fire_native --map-command-mode none` 的私有 stage 已确认覆盖三件套。自然登录到大厅后注入 `preloadmap mp_cross_fire 1` 仍报 `WIN_FILE_NOT_FOUND`，所以 G2 尚未通过。现有 CreateFileA 钩子只记录打开尝试，不能凭 `loadscreen_*` 名称断定缺件。复核见 [本轮证据](evidence/experiments/20261022-codex-map461-assessment.json)；下轮抓 CreateFileA 返回值/错误码并关联 `0x4F4D30`/`0x4F5120`。旧的手写 `state=3` 配方仅作历史对照，当前以自然 Auth/LSG 登录链为基线。
+
 > 生成时间：2026-10-22
 > 目标：在 `E:\GAME\COD\codol-airedux\319` 推进 CODOL Build **1649370**，实现玩家与 AI 的本地 bot 对战、可退出回大厅。
 > 约束：坚持 1649370 版本；其它版本（2.6.9.7、3.19.26.13、1604220）只能作参考实现，不能切换目标。

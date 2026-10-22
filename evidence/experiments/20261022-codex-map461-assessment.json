@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "session": "codex-map461-live",
+  "hypothesis": "A publisher-signed version-461 mp_cross_fire triplet in the private stage removes the map preload failure seen with the shared overlay copies.",
+  "source_pack_sha256": "3ba43cf2c0d1944a9941debb9878781c1d58f99d264cd0f357493088365b28c8",
+  "input_image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "map_files": {
+    "mp_cross_fire.ff": "45b964b1386479d7e86ee8bcff30ed72bbbfbcbeb76dc5cb4b2b8e22b4fb9c7e",
+    "mp_cross_fire_load.ff": "dd9caec41616cf1edd6a0320fc3d4bb5887028292f45c9cad798e98c782e5be5",
+    "mp_cross_fire_const.ff": "0ca264e7480c48ac61a6a4b1a8c8880654762cdbef62dc7eb631b105f56c8673"
+  },
+  "observations": {
+    "prepare_only_staged_all_three": true,
+    "publisher_signature_verified_all_three": true,
+    "natural_login_ui_state": 5,
+    "natural_login_auth_state": 9,
+    "natural_login_lsg_state": 2,
+    "preloadmap_cbuf_injected": true,
+    "fatal_text": "WIN_FILE_NOT_FOUND",
+    "launcher_stop_reason": "fatal_dialog",
+    "guard_cleanup_closed": true,
+    "guard_engine_close_status": 0,
+    "sqlite_integrity": "ok"
+  },
+  "limits": [
+    "CreateFileA hook records attempted names, not return handles or GetLastError; repeated loadscreen names do not establish the missing file.",
+    "No map-world, bot, or return-to-lobby acceptance evidence was obtained.",
+    "The shared overlay's three FF files have version bytes 461 but different SHA-256 digests; this run used the verified private-stage copies."
+  ],
+  "references": [
+    "runs/20261022-1649370-crossfire-ifs-verified/ff_init_mp_cross_fire_V70.json",
+    "evidence/experiments/20261022-codex-map461-login.json",
+    "evidence/experiments/20261022-codex-map461-cbuf.json",
+    "evidence/experiments/20261022-codex-map461-fatal-read5.json",
+    "evidence/experiments/20261022-codex-map461-file-read5.json",
+    "runs/codex-map461-client.out"
+  ],
+  "next_experiment": "Capture CreateFileA return value and GetLastError with the attempted ANSI path, then correlate the last failed call and 0x4F4D30/0x4F5120 with the fatal event in one private guarded run."
+}

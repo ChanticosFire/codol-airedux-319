@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 Build 1649370 本轮**：复核交叉火力 v461 发行签名 FF 三件套，私有 stage 装配通过；原生 Auth/LSG 登录、大厅态通过后 `preloadmap mp_cross_fire 1` 仍触发 `WIN_FILE_NOT_FOUND`。当前门槛保持 G0 已验证、G1 路径研究中、G2–G4 未通过。已有文件钩子缺少 CreateFileA 返回值，下一实验追实际失败句柄/错误码与 `0x4F4D30`/`0x4F5120`；不再重复查找 `_load.ff`。证据：[20261022-codex-map461-assessment.json](evidence/experiments/20261022-codex-map461-assessment.json)。
+
 > **2026-10-22【链路逆出】preloadmap→0x470750→0x5C7C70**：handler 需 ≥3 参数；0x5C7C70 内含 0x81DF20 加载、[0x827606C]=1.0、0x5C80E0、检查核心全局 [0xC7AF690]（10 处引用）。崩溃更像发生在 0x5C80E0 之后依赖该全局的初始化。下步：进房间注入并读该全局。证据 [`20261022-preloadmap-chain.json`](evidence/experiments/20261022-preloadmap-chain.json)。
 
 > **2026-10-22【实测】preloadmap 触发加载**：`preloadmap mp_cross_fire 1` → 画面立刻全黑（加载过渡），约 20s 后进程退出。与 map/devmap/map_restart 无反应形成对比 → preloadmap 是真正驱动地图挂载的命令。下步试参数形式/反汇编 handler/补前置。证据 [`20261022-preloadmap-test.json`](evidence/experiments/20261022-preloadmap-test.json)。
