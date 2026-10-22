@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T05:25:00+00:00",
+  "scope": "bisect inside 0x5B2C10 with a second counter",
+  "setup": {
+    "0x5B2C10": "counter stub installed (counts entries)",
+    "0x5B2F43": "second counter stub installed (counts how far execution gets)",
+    "cl+0xA8F0": "repaired",
+    "phase": 8,
+    "call": "call_main_thread --settle 0.3"
+  },
+  "result": "the client died during the call again, and BOTH counters live in process memory -- they vanished with the process, so nothing could be read.",
+  "lesson": "in-memory counters are useless when the target process dies. Bisecting inside 0x5B2C10 must use a mechanism that survives the death: either the launcher's one-shot breakpoints (which record hits outside the process) or a stub that writes progress to a file/pipe.",
+  "next": [
+    "use the launcher's --breakpoint 0x5B2F43:bisect with a fresh session; one-shot means 'reached at least once'",
+    "if it hits, execution passes 0x5B2F43 and the fault is later; if it does not hit, the fault is earlier",
+    "repeat with 0x5B30DE / 0x5B3116 to narrow the window"
+  ],
+  "artifacts": []
+}
