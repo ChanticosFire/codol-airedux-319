@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:06:05.030469+00:00",
+  "claim": "找到 2.6.9.7 launcher 的解密工具 decode_loose_resources.py，可能是解开 ff 的现成实现",
+  "tool": "CODOL-2.6.9.7-Launcher/runtime/game/decode_loose_resources.py",
+  "next": [
+    "读该脚本，确认是否处理 IWff/ff 解密",
+    "若含 RSA 私钥或 AES 密钥，可直接用于解密 1649370 的 ff",
+    "否则评估可用性"
+  ]
+}

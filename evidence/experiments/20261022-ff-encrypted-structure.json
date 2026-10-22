@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:05:28.509466+00:00",
+  "claim": "1649370 的 ff 全部加密：0x15 起 256B 签名、0x115 起 8192B AES-CTR 头、0x2115 段表、0x4115 数据块；解密需原私钥解出的 40B 材料",
+  "structure": {
+    "prefix_0x00_0x15": "明文(IWff0100+461+1+0+0)",
+    "0x15": "256B RSA signature",
+    "0x115": "8192B encrypted header (not IWffs100 plaintext)",
+    "0x2115": "8192B segment table",
+    "0x4115": "data blocks"
+  },
+  "key_issue": "AES-192 密钥在 40B 材料里，需原私钥解 RSA 块；我们无原私钥",
+  "lead": "launcher 的 decoded-resources / training-resources 说明已有解密流程；同版本所有 ff 共用同一 24B AES 密钥，只要拿到一个即可",
+  "next": [
+    "在 2.6.9.7-Launcher 里找解密工具/密钥",
+    "或找已解密的 ff 样本推导密钥",
+    "再评估是否可行重签"
+  ]
+}
