@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:32:24.153858+00:00",
+  "claim": "把 362MB/1321文件 的地图资源复制进 overlay 后（542→1861 文件），客户端启动失败（launch 日志为空）",
+  "copy": {
+    "src": "training-resources/mp_cross_fire/decoded",
+    "dst": "offline-resources",
+    "files_before": 542,
+    "files_after": 1861
+  },
+  "result": {
+    "stop_reason": null,
+    "log_empty": true,
+    "process": "未启动"
+  },
+  "analysis": "1861 个松散文件可能让 launcher 的资源处理超时/中断，或复制破坏 overlay 结构",
+  "next": [
+    "查看 launcher 启动日志（可能超时）",
+    "尝试只复制 main/images（缺失的 dpad 文件所在目录）",
+    "或把资源放进 runtime 副本而非 overlay"
+  ]
+}
