@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T02:45:00+00:00",
+  "scope": "reproduce the CL_Init step for cl+0xA8F0, then call 0x5B2C10",
+  "actions": {
+    "phase": "8 (set-state)",
+    "flag": "cl+0x100260 left at 0",
+    "alloc": "VirtualAllocEx 0x180 bytes at 0x11790000",
+    "write": "cl+0xA8F0 = 0x11790000 ^ 0x96B9DC91 = 0x87C0DC91 (read back 91 dc c0 87)",
+    "call": "call_main_thread --target 0x5B2C10, cave 0x117A0000, process_alive_after true"
+  },
+  "outcome": {
+    "client": "exited shortly after",
+    "new_crash": "0xC0000005 at 0xB02BCC94 (ecx=0x11A3F5C8, a stack address)",
+    "previous_crash": "0xC0000005 at 0x5D1CF4C5"
+  },
+  "meaning": "the crash MOVED. Supplying the encoded pointer unblocked the 0x5B2E13 fault and the initialiser advanced to a new failure at 0xB02BCC94. That confirms both the diagnosis and the repair technique: reproducing CL_Init's individual steps by hand works.",
+  "next": [
+    "0xB02BCC94 is outside the exe image; identify the API/module and the argument that faults",
+    "then repeat the pattern: find the next uninitialised encoded pointer (there are several 0x96B9DC91-class fields) and reproduce its CL_Init step",
+    "iterate until 0x5B2C10 completes"
+  ],
+  "artifacts": ["runs/codex-fix-a8f0-1-call.json"]
+}

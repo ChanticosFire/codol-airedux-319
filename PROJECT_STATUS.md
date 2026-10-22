@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【修复技巧验证：手工补 `cl+0xA8F0` 后崩溃点前移】** 阶段 8、标志 0；`VirtualAllocEx` 分配 0x180 @ `0x11790000`；写 `[cl+0xA8F0]=0x11790000^0x96B9DC91=0x87C0DC91`；`call_main_thread(0x5B2C10)` 后客户端仍退出，**但新崩溃点为 `0xC0000005 @ 0xB02BCC94`**（`ecx=0x11A3F5C8` 栈地址），不再是 `0x5D1CF4C5`。**说明补编码指针确实解除了 `0x5B2E13` 的故障，初始化器前进到下一个失败点**。下一步：确认 `0xB02BCC94` 的模块/参数，按同一模式逐个复现其余 `0x96B9DC91` 类编码指针的 `CL_Init` 步骤。证据 [20261022-codex-fix-a8f0.json](evidence/experiments/20261022-codex-fix-a8f0.json)。
+
 > **2026-10-23【`cl+0xA8F0` 的唯一写入者是 `CL_Init` 的 `0x5C8660` 分支】** 交叉引用 `0xA8F0` 与 key `0x96B9DC91` 共 9 处：写入者 `0x5C8660`（`push 0x180; call 0x5C8330; xor eax,0x96B9DC91; mov [esi+0xA8F0],eax`），读者含崩溃点 `0x5B2E04`、`0x472796`、`0x5B3060`/`0x5B3078`/`0x5B308E`、`0x5BEC03`/`0x5BED05`。因 `CL_Init` 不可对活客户端调用，可行路子是只复现这一步：`VirtualAllocEx` 分配 `0x180` 字节，把 `[cl+0xA8F0]` 写成 `分配地址 ^ 0x96B9DC91`；然后再以（阶段 8、标志 0）调 `0x5B2C10`，看能否越过 `0x5B2E13`。证据 [20261022-codex-a8f0-writer.json](evidence/experiments/20261022-codex-a8f0-writer.json)。
 
 > **2026-10-23【崩溃链还原：`[cl+0xA8F0]` 是编码指针，`cl`=0 时解码成 `0x96B9DC91` 后立即解引用崩溃】** `0x5B2DFD..0x5B2E1F`：`dec eax` → `and eax,[ebx+0xA8DC]`（0）→ `xor edx,0x96B9DC91`（`edx` 原为 `[cl+0xA8F0]`=0）→ `lea ecx,[eax+eax*2]`（0）→ `sub eax,[edx+ecx*4]` = `[0x96B9DC91]` → 崩溃。**缺失的初始化就是往 `cl+0xA8F0` 写入有效编码指针的那段代码**。下一步：按“解码后存入 `[reg+0xA8F0]`”与常量 `0x96B9DC91` 两路搜索它的写入者。证据 [20261022-codex-5b2de8.json](evidence/experiments/20261022-codex-5b2de8.json)。
