@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:44:26.799140+00:00",
+  "at": [
+    310,
+    250
+  ],
+  "region": [
+    120,
+    220,
+    520,
+    290
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "diff": 2,
+      "changed": false
+    },
+    {
+      "attempt": 2,
+      "diff": 0,
+      "changed": false
+    },
+    {
+      "attempt": 3,
+      "diff": 0,
+      "changed": false
+    }
+  ],
+  "changed": false
+}

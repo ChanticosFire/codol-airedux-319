@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 点击可靠性：post 方式解决标签页，创建按钮仍无响应**：新增 `tools/click_verified.py`（点击后截图比对目标区域，未变化重试）。开始游戏/自定义用 `mouse` 即可命中；创建房间标签必须用 `--method post`；创建按钮两种方式、多个位置点击都无新请求。下一步网格扫描按钮区域或检查 disabled 状态。证据 [`20261022-click-reliability.json`](evidence/experiments/20261022-click-reliability.json)。
+
 > **2026-10-22 “创建房间”先发 `21/13`，创建停滞**：点击创建按钮后服务端只收到 `21/13`（无 `21/1`），`room+0x7238` 仍是默认对象（count=0）。推断创建前用 `21/13` 检查重名/可创建性，任务不完成则停滞。另发现点击命中率不稳（第二次会话点击序列未生效）。下一轮：带校验的点击助手 + 空 `21/13` 回执下重试创建。证据 [`20261022-create-room-flow.json`](evidence/experiments/20261022-create-room-flow.json)。
 
 > **2026-10-22 列表模型写入点与注入失败**：`0x62CD30`（显示单个房间：`room+0x7238` → `room+0x7470`，count=1，通知监听器）、`0x637720`（批量列表，EAX=count）、`0x637590`（通知分发）。实测直接写 `room+0x7470`+count=1 不渲染；窗口线程调 `0x637720` 不渲染；写 `room+0x7238` 后调 `0x62CD30` → `unhandled_exception`（条目 +0/+8 是智能指针，伪造指针非法）。下一轮观察客户端自建房间时 `room+0x7238` 的填充方式。证据 [`20261022-list-model-injection.json`](evidence/experiments/20261022-list-model-injection.json)。

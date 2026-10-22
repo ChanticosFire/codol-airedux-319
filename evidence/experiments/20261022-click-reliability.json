@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T04:45:50.089498+00:00",
+  "claim": "点击命中率问题定位：标签页需要 WM_MOUSE(post) 方式；创建按钮对两种方式都无响应",
+  "findings": [
+    "新增 tools/click_verified.py：点击后截图比对目标区域，未变化则重试（解决了“点了没反应”无法判断的问题）",
+    "开始游戏/自定义两处 mouse 方式即可命中（region changed=true）",
+    "创建房间标签 mouse 方式三次都不变化，改用 --method post（WM_MOUSE 消息）一次命中",
+    "创建房间页的橙色“创建房间”按钮，mouse 与 post 两种方式、多个位置点击后均无任何新请求（日志仍只有登录期请求）"
+  ],
+  "implication": "按钮未响应，可能是控件状态/坐标偏移，或客户端在发 21/13 前有其他前置条件；需要进一步定位按钮的实际命中区域",
+  "next": [
+    "用 click_verified 对按钮区域做扫描（网格点击+区域变化检测），找到真正的可点区域",
+    "或检查按钮是否处于 disabled 状态（对比可点按钮的像素）",
+    "确认创建请求（21/1）出现后再继续房间流程"
+  ],
+  "evidence": [
+    "evidence/experiments/20261022-click-start.json",
+    "evidence/experiments/20261022-click-custom.json",
+    "evidence/experiments/20261022-click-create-tab.json"
+  ]
+}
