@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【`0x66F20E` 命中：间接调用确实执行，崩溃在 `edx` 指向处】** `--breakpoint 0x66F20E:hit20e` + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`0x66F20E hits: 1`**，客户端调用中退出。结论：`call edx` 真的执行，控制流跳到 `edx` 持有的地址并死亡——吻合“崩溃地址每轮都变”；`0x66F1FA..0x66F20E` 之间 11 条指令排除。遗留：算出的 `edx=0xC597C468` 与崩溃 `0xD6C8FF3C` 不符（`[0xE60B78]` 时序或 `edx` 另被修改）。下一步：把 `edx` 存进 `cl` 内部的 stub 拿真实目标，或直接找设置 `cl+0x2C`/`cl+0x30` 的初始化器。证据 [20261022-codex-66f20e-hit.json](evidence/experiments/20261022-codex-66f20e-hit.json)。
+
 > **2026-10-23【`0x66F1FA` 命中：执行走到指针解码块，故障在其后】** `--breakpoint 0x66F1FA:hit1fa` + 阶段 8 + 补 `0xA8F0` + `call_main_thread(0x5B2C10)`：**`0x66F1FA hits: 1`**，客户端调用中退出。结论：执行确实到达 `0x66F1FA`，故障在 `0x66F1FA..0x66F20E` 之间或 `0x66F20E` 间接调用内部/之后；`0x66F170` 前面的浮点/载入段排除。下一步：在 `0x66F20E` 下断点——命中则故障在调用内部，未命中则在那 11 条指令里。证据 [20261022-codex-66f1fa-hit.json](evidence/experiments/20261022-codex-66f1fa-hit.json)。
 
 > **2026-10-23【预测落空：算出的 `edx` 与实际崩溃地址不符，故障不在 `0x66F20E`】** 实测 `cl=0x134CA82C`、`[0xE60B78]=0xC597B064`、`cl+0x1C=0`、`cl+0x2C=0`、**`cl+0x30=0x740C`（非 0）**；按公式预测 `edx=0xC597C468`，**实际崩溃 `0xD6C8FF3C`**——不匹配。后果：(1) 故障不是那次间接调用；(2) **`[0xE60B78]` 也每轮变化**（上一轮 `0x2AF590A7`、本轮 `0xC597B064`），不是固定常量。剩余可疑段：`0x66F1C6..0x66F1F8` 浮点循环、三个 `[edi+0x…]` 载入、`0x66F228` 清零循环、`0x66F233`/`0x66F251`。下一步：在 `0x66F1FA` 与 `0x66F20E` 下断点确认是否走到。证据 [20261022-codex-predicted-vs-actual.json](evidence/experiments/20261022-codex-predicted-vs-actual.json)。

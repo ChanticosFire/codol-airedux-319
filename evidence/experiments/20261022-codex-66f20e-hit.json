@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:25:00+00:00",
+  "scope": "is the indirect call executed?",
+  "setup": {
+    "breakpoint": "launcher --breakpoint 0x66F20E:hit20e",
+    "phase": 8,
+    "cl+0xA8F0": "repaired (alloc 0x180 @ 0x11770000 ^ key)",
+    "call": "call_main_thread --target 0x5B2C10 --settle 0.5"
+  },
+  "result": {
+    "0x66F20E_hits": 1,
+    "client": "exited during the call"
+  },
+  "conclusion": "the indirect call IS executed (breakpoint hit). So the fault takes place at or after the CALL -- i.e. control transfers to whatever address edx holds and dies there. This matches the observed 'crash address changes every run' pattern. The 11 instructions between 0x66F1FA and 0x66F20E are exonerated.",
+  "remaining_puzzle": "the arithmetic predicted edx = 0xC597C468 in an earlier run but the crash was 0xD6C8FF3C. Either [0xE60B78] changed between my read and the call, or edx is modified by something else. Dumping edx immediately at 0x66F20E would settle it -- that needs a stub, since launcher breakpoints do not record registers.",
+  "next": [
+    "install a stub at 0x66F20E that saves edx to a scratch location, restores, then jumps back -- but the counter will die with the process",
+    "better: use the launcher's breakpoint only to confirm, and instead patch the CALL SITE 0x66F20E to a stub that writes edx into the client's own cl object (which survives long enough to be read during the call window)",
+    "or accept the current state: the fault is the indirect call with a garbage target; the fix is to make cl+0x2C/cl+0x30 hold a valid encoded pointer, which means finding the initialiser that sets them"
+  ],
+  "artifacts": ["runs/codex-66f20e-1-call.json"]
+}
