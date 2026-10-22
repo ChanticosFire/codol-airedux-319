@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:05:00+00:00",
+  "scope": "did execution reach the pointer-decode block?",
+  "setup": {
+    "breakpoint": "launcher --breakpoint 0x66F1FA:hit1fa",
+    "phase": 8,
+    "cl+0xA8F0": "repaired (alloc 0x180 @ 0x10CE0000 ^ key)",
+    "call": "call_main_thread --target 0x5B2C10 --settle 0.5"
+  },
+  "result": {
+    "0x66F1FA_hits": 1,
+    "client": "exited during the call"
+  },
+  "conclusion": "execution DOES reach 0x66F1FA (the start of the pointer-decode block). The fault is therefore in 0x66F1FA..0x66F20E or after the indirect call. The earlier float/load section of 0x66F170 is exonerated.",
+  "next": [
+    "next breakpoint: 0x66F20E (the indirect call itself). Hit => the call executes and the fault is inside it; miss => the fault is in the 11 instructions between 0x66F1FA and 0x66F20E (the two lea, the xor pair, the lea ecx, and the two pushes)"
+  ],
+  "artifacts": ["runs/codex-66f1fa-1-call.json"]
+}
