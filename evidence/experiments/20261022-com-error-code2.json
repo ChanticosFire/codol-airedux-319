@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:15:52.217739+00:00",
+  "claim": "zone 失败分支 patch 后，fatal 从 WIN_ZONE_ERROR 变为 Com_Error(code=2, 空消息)",
+  "sequence": [
+    "patch 0x49EEA3 => E9（verified）",
+    "hook 0x4F82E0(Com_Error) + 0x77C930(Fatal)",
+    "注入 preloadmap mp_cross_fire 1",
+    "抓到 Com_Error(code=0x2, text=\"\") ；0x77C930 未触发"
+  ],
+  "meaning": "zone 加载失败已被绕过（不再走 WIN_ZONE_ERROR），但引擎随后调用 Com_Error(2) —— 需要确认 code 2 的语义并继续处理",
+  "next": [
+    "查 COD 错误码语义（0/1/2/3）与 code 2 的调用点",
+    "hook 时同时记录 Com_Error 的调用返回地址（dump+0x88）以定位代码位置",
+    "继续逐个绕过/补齐后续失败点"
+  ]
+}
