@@ -831,6 +831,17 @@ def main() -> int:
                                               "value": client.w32(STATE, args.value),
                                               "state": client.u32(STATE)})
 
+    p = sub.add_parser("patch-bytes")
+    p.add_argument("address", type=lambda value: int(value, 0))
+    p.add_argument("hex", type=str)
+    p.set_defaults(func=lambda client, args: {
+        "status": "patched",
+        "address": hex(args.address),
+        "before": client.read(args.address, len(bytes.fromhex(args.hex))).hex(),
+        "after": (client.write(args.address, bytes.fromhex(args.hex)) and
+                  client.read(args.address, len(bytes.fromhex(args.hex))).hex()),
+    })
+
     p = sub.add_parser("ring-a-drain")
     p.add_argument("state", choices=("block", "restore"))
     p.set_defaults(func=lambda client, args: client.set_ring_a_drain(args.state == "block"))

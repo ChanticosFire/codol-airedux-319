@@ -28,7 +28,7 @@ EXTRACTOR_SHA = "82aa733ab9fa97e1ad551d7d6b1e44772a65793d2e50cdb7adcce6e0749e338
 CODEC = LEGACY / "decode_loose_resources.py"
 CODEC_SHA = "43a03053bf0ab693c5a3c3697b7522a32ec28737de2719394cb92fef12f9da54"
 PACKS = {
-    "common_gfx": ("lf_init_common_gfx_V63.ifs", ("main/",)),
+    "common_gfx": ("lf_init_common_gfx_V63.ifs", ("main/images/", "main/sound/music/ui/")),
     "hi_gfx": ("lf_hi_init_common_gfx_V8.ifs", ("hires/",)),
 }
 
@@ -74,7 +74,7 @@ def main() -> int:
                  listings[0].read_text(encoding="utf-8-sig").splitlines()]
         selected = [name for name in names
                     if any(name.lower().startswith(prefix) for prefix in prefixes)
-                    and name.lower().endswith(".iwi")]
+                    and name.lower().endswith((".iwi", ".mp3"))]
         print(f"{pack_name}: members={len(names)} selected={len(selected)}")
         for member in sorted(selected):
             rel = Path(member)
@@ -86,7 +86,7 @@ def main() -> int:
                 continue
             raw = encoded.read_bytes()
             data = raw if raw.startswith(b"IWff") else decode(raw, rel.name)
-            if len(data) < 32 or data[:4] != b"IWi\x09":
+            if rel.suffix.lower() == ".iwi" and (len(data) < 32 or data[:4] != b"IWi\x09"):
                 raise ValueError(f"decoded IWI header invalid: {member}")
             destination = out / rel
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -98,7 +98,7 @@ def main() -> int:
                               "decoded_size": len(data)})
     report = {
         "schema": 1, "build": 1649370, "source": str(source), "source_sha256": sha_file(source),
-        "pack": args.pack, "scope": [f"{p}*.iwi" for p in prefixes],
+        "pack": args.pack, "scope": [f"{p}*.iwi|*.mp3" for p in prefixes],
         "decoded": sum(bool(r.get("present")) for r in resources),
         "missing": [r["member"] for r in resources if not r.get("present")],
         "resources": resources,

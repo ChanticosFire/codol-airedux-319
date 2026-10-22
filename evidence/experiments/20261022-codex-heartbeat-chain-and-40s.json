@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T12:20:00+00:00",
+  "scope": "phase 7/8 keepalive chain and the failed heartbeat restoration",
+  "client_state_machine": {
+    "0x5C05F0": "only handles phases 3, 4, 5, 6; every other phase jumps to the epilogue, so phases 7/8 are driven elsewhere"
+  },
+  "phase78_keepalive_chain": {
+    "0x5B3160": "if phase in [7,9] and (now - [conn+8]) >= 500ms: [0xC7AF6AC]=1, call 0xBE5930, call 0x5B2B00, call 0x5B2B70; if non-zero call 0x5B2C10",
+    "0x5B2B00": "records a usercmd ring entry only when phase >= 9; skipped at 7/8",
+    "0x5B2B70": "returns 1 for phases 7..9, so 0x5B2C10 runs at 7/8",
+    "0x5B2C10": "builds and sends the phase-7/8 keepalive; calls 0x66F170 at 0x5B2C85",
+    "0x66F170": "builds the usercmd/entity state; at 0x66F20E does 'call edx' where edx = [edi+0x24] ^ [0xE60B78]"
+  },
+  "experiment": {
+    "change": "restored 0x5B3160 and patched only 0x66F20E ff d2 -> 90 90",
+    "client": "reached phase 8, then showed '服务器连接错误' and fell to phase 0 within about 2 seconds",
+    "server": "logged 'bad connectionless packet from 127.0.0.1:58070' after gamestateupdate; remained CS_PRIMED",
+    "conclusion": "the keepalive body depends on the missing key/object field; skipping the callback produces an invalid packet that the server rejects, so simply re-enabling the heartbeat is not viable"
+  },
+  "reverted": {
+    "0x66F20E": "ff d2 restored",
+    "0x5B3160": "31 c0 c3 (heartbeat disabled again; the bridge keeps the client alive with its own packets)"
+  },
+  "next": [
+    "find who initialises [0xE60B78] and [edi+0x24] (the key and the object vtable field); initialising them would make the native heartbeat produce valid packets",
+    "otherwise craft the encoded clc_move ack from client_t (challenge ^ serverId ^ messageAcknowledge plus reliableCommands[0])",
+    "and locate the client-side 40 s connect timeout that fires at phase 8"
+  ],
+  "artifacts": [
+    "runs/codex-ring-bridge-24-state.png (server connection error)",
+    "runs/20261022-ring-2697k/main/qconsole.log (bad connectionless packet)"
+  ]
+}

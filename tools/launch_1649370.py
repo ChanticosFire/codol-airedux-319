@@ -81,7 +81,7 @@ _original_prepare = launch_mod.prepare
 
 # 社区 build_plan() 在参数末尾追加的游戏参数。补丁 0xDBCCF8 把 "set 2451" 改成 "set 2439"，
 # 这条 +set 是配套的 —— 少了它客户端会在普通文件打开处报 WIN_FILE_NOT_FOUND（文件名为空）。
-GAME_ARGUMENTS = ("+set", "2439", "0")
+GAME_ARGUMENTS = ("+set", "2439", "0", "+set", "cl_timeout", "600")
 
 CREATION_FLAGS = 1030  # CREATE_SUSPENDED | CREATE_NEW_PROCESS_GROUP | CREATE_UNICODE_ENVIRONMENT
 
@@ -2301,27 +2301,30 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
     # 资源只覆盖 main/images；CODOL_EXTRA_GFX 用分号分隔若干根目录。
     extra_gfx = [Path(p) for p in os.environ.get("CODOL_EXTRA_GFX", "").split(";") if p]
     if extra_gfx:
-        staged_gfx = {"main": 0, "hires": 0}
-        destination_dir = stage / "hires" / "images"
+        staged_gfx = {"hires": 0, "main": 0}
+        destination_root = stage / "hires"
         if stage.is_junction() or stage.is_symlink():
             raise ValueError("refusing to stage extra gfx through a shared mount")
-        if destination_dir.exists() and (destination_dir.is_junction() or destination_dir.is_symlink()):
+        if destination_root.exists() and (destination_root.is_junction() or destination_root.is_symlink()):
             raise ValueError("refusing to write extra gfx through a shared mount")
-        destination_dir.mkdir(parents=True, exist_ok=True)
         for root in extra_gfx:
-            # The client searches hires/images directly; stage/main is the
-            # shared overlay mount, so every extra image goes to the private
+            # The client searches hires/ first; stage/main is the shared
+            # overlay mount, so every extra image/sound goes into the private
             # hires tree (hi-resolution copies first, main copies fill gaps).
             for kind in ("hires", "main"):
-                source_dir = root / kind / "images"
-                if not source_dir.is_dir():
+                source_kind = root / kind
+                if not source_kind.is_dir():
                     continue
-                for source in source_dir.glob("*.iwi"):
-                    destination = destination_dir / source.name
+                for source in source_kind.rglob("*"):
+                    if not source.is_file():
+                        continue
+                    relative = source.relative_to(source_kind)
+                    destination = destination_root / relative
                     if destination.exists():
                         continue
+                    destination.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(source, destination)
-                    staged_gfx["hires"] += 1
+                    staged_gfx[kind] += 1
         log["extra_gfx"] = staged_gfx
         print("[patched] staged extra gfx:", staged_gfx, flush=True)
 
