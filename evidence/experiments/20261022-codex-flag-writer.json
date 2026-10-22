@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T11:05:00+00:00",
+  "scope": "static search for the writer of cl+0x100260",
+  "search": {
+    "disp 0x100260 (bytes 60 02 01 00)": 0,
+    "disp 0x100000 (bytes 00 00 10 00)": 1827
+  },
+  "finding": "there is no instruction with the literal 0x100260 displacement. The field is reached indirectly: the code computes cl+0x100260 at runtime (e.g. mov eax,[cl]; add eax,0x100260) or uses a base register already advanced. So a static byte search cannot find the writer; a runtime watchpoint is required.",
+  "next": [
+    "set a hardware write breakpoint (DR7) on cl+0x100260 after the client is connected, and log what instruction writes it",
+    "alternative: dump a window around cl+0x100260 to see whether it is written by the 0x5B2C10 path at all",
+    "the 1827 hits for 0x100000 are almost certainly unrelated constants; do not chase them"
+  ],
+  "artifacts": []
+}
