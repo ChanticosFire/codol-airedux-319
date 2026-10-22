@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T23:15:00+00:00",
+  "scope": "write the 'connected' flag cl+0x100260",
+  "steps": {
+    "start_challenge": "challenge_armed, connection 0x13050AC0, state 3",
+    "write": "cl+0x100260 = 1 (single dword)",
+    "read_back": "0x1",
+    "samples": "three consecutive reads, client alive, phase stayed 3, cl+0x109260 stayed 0"
+  },
+  "result": "the write is safe -- no crash, the value holds. But nothing advances on its own: the phase stays at 3 and the netadr field remains zero.",
+  "meaning": "cl+0x100260 behaves like a flag the code reads rather than a trigger. Setting it alone will not move the state machine. With it set, however, the parser-side check at 0x5B2B85 should now take its success branch -- which makes it worth combining with a phase push and the return-value hook.",
+  "next": [
+    "in one run: write cl+0x100260=1, push the phase to 8 (bridge set-state), hook 0x5C2380's return, and see whether eax becomes 1",
+    "if the parser now accepts packets, the remaining work moves to the snapshot body"
+  ],
+  "artifacts": []
+}

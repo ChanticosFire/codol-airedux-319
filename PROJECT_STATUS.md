@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【写 `cl+0x100260=1` 安全但不推进】** 阶段 3 写入单 dword 1 后读回 `0x1`，三次采样客户端存活、阶段仍 3、`cl+0x109260` 仍 0。它是“被读取的标志”而非触发器。下一步：同一运行内组合——写标志 → `set-state` 推阶段到 8 → 挂 `0x5C2380` 返回 hook，看 `eax` 是否变 1。证据 [20261022-codex-conn-flag.json](evidence/experiments/20261022-codex-conn-flag.json)。
+
 > **2026-10-22【门控字段是 `cl+0x100260`，不是 `[cl]`】** 全量解码点：eax 0、ecx 13、edx 4、esi 7、ebx 4（共 28 处）；检查的 `0x5BE8C4`（写 `[eax+0x1112C]`）、`0x5BE084`（读 `[esi+0x140]`/`[esi+0x144]`）都不是 `[cl]` 写。`cl+0x100260` 被解析器（`0x5B2B85`）与 `CL_Connect`（`0x5C0655`）都当作“已连接”标志检查，`cl+0x109260` 是收包助手比较的 netadr 首字段。下一步：阶段 3 把 `cl+0x100260` 写成 1（单 dword，安全），看解析器是否走成功分支。证据 [20261022-codex-field-semantics.json](evidence/experiments/20261022-codex-field-semantics.json)。
 
 > **2026-10-22【扫描定论：`CL_Connect` 内没有写 `[cl]` 的指令】** 扫 `0x5C05F0..0x5C0F1B` 全部对 `[ebx]`/`[ebx+X]`（`ebx=cl`）的写入，只命中 3 条：`0x5C06F2 mov [ebx+0x30],ecx`、`0x5C0E5B mov [ebx+8],ecx`、`0x5C0EC0 mov [ebx+8],edx`——**没有写 `[cl]` 的**。`cl+8` 的两处实测也没生效（`cl+8` 仍 0），`cl+0x30=0x9D` 也与 `ecx=0` 不符，说明来自别的路径。**`clc.state` 由另一个函数负责**。下一步：找真正写 `[cl]` 的函数，`0x5BE5F0`（调用者）是强候选。证据 [20261022-codex-state-writer.json](evidence/experiments/20261022-codex-state-writer.json)。
