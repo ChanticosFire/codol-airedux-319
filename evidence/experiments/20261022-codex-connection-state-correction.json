@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "method": "PE/Capstone disassembly of the exact target image plus five-pack live probe",
+  "global": "0x76446B0",
+  "static_observations": [
+    "0x470467 sets [0x76446B0]=3 while preparing a network address structure",
+    "0x5BEA8B sets [0x76446B0]=4 immediately before initializing the encoded connection object at [0x331C0C8]",
+    "0x5BE90A sets [0x76446B0]=7 in a connection transition function",
+    "0x77C343 sets [0x76446B0]=0 on disconnect/cleanup path",
+    "many client paths compare the same global to 7, 8, 9, or 10"
+  ],
+  "runtime_observations": [
+    "During five-pack preload the external write of value 3 succeeded but later returned to 0 without a world rendering",
+    "Calling 0x621E50 after a second forced state 3 and direct gate write produced unhandled_exception; dynamic WFP guard cleanup succeeded"
+  ],
+  "conclusion": "The global is a client connection phase, not a standalone switch proving that a map world exists. Exact enumeration labels beyond the observed transitions require further tracing.",
+  "next": "Drive the authentic connect/challenge/gamestate path and independently measure a real world/player state before accepting G2."
+}

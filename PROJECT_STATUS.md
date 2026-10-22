@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22 Build 1649370 连接状态校正**：`[0x76446B0]` 的 0/3/4/7 等值属于客户端连接阶段；强写 3 不等于进图。G2 需真实连接和 gamestate 路径，再以世界画面和可控玩家验收。见 [静态/运行证据](evidence/experiments/20261022-codex-connection-state-correction.json)。
+
 > **2026-10-22 Build 1649370 指标校正**：`[0x3306910]=-1` 是命令解析器空闲值，`[0x35053DC]=0` 是错误处理重入计数，两者都不能判定地图/世界；相关旧解释已由同版 EXE 反汇编推翻。G2 未通过的有效证据是仅见黑屏加载、无可控世界或玩家；下一步寻找真实世界状态和房间转场条件。见 [静态校正](evidence/experiments/20261022-codex-command-context-correction.json)。
 
 > **2026-10-22 Build 1649370 G1/G2 更新**：五包资源下 `preloadmap` 和随后 `devmap mp_cross_fire` 均未触发文件致命错误，但地图索引仍为 `-1`；强写游戏状态 3 会被引擎恢复为 0，直接建传输通道触发 `unhandled_exception`，WFP 守卫正常关闭。当前转向追真实房间/连接状态转换的前置条件，尚无进图、bot 对战、退出回大厅的验收。详见 [1649370-STATUS.md](1649370-STATUS.md)。
