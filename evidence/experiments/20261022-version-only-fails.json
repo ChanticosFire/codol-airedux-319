@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T09:04:07.740535+00:00",
+  "claim": "只改 ff 版本号注定失败：exe 有 RSA 验签，必须同时替换信任根",
+  "community_feedback": {
+    "author": "Ri1o",
+    "time": "2026-10-22 09:39",
+    "quote": "如果你要动Fastfile，你只动ff，这辈子都进不去游戏，除非你启动的exe没有校验"
+  },
+  "our_test": {
+    "action": "把 3 个 365 版本 ff 全改成 461（mp_cross_fire_load/ff/const）",
+    "result": "state=3 后 t=5/10s 画面(554/597KB)，t=15s 退出"
+  },
+  "conclusion": "改版本号不够，签名校验仍会失败；必须按社区文档做：生成 RSA-2048 密钥对 → 替换 exe 内嵌 270B DER 公钥 → 用自建私钥重签所有 ff",
+  "next": [
+    "在 1649370 exe 里搜 270B DER 公钥 (30 82 01 0A 02 82 01 01 00 ...)",
+    "替换为自建公钥",
+    "重签 20 个 ff 的头部签名",
+    "再测 state=3"
+  ]
+}
