@@ -1,0 +1,57 @@
+{
+  "pid": 21448,
+  "shell32": "0x755b0000",
+  "patches": [
+    {
+      "name": "ShellExecuteA",
+      "va": "0x7573b390",
+      "rva": "0x18b390",
+      "original": "ff25c0b2bb75cccc",
+      "patched": "b821000000c21800",
+      "status": "ok"
+    },
+    {
+      "name": "ShellExecuteW",
+      "va": "0x7573b3f0",
+      "rva": "0x18b3f0",
+      "original": "ff25b4b2bb75cccc",
+      "patched": "b821000000c21800",
+      "status": "ok"
+    },
+    {
+      "name": "ShellExecuteExA",
+      "va": "0x7573b3b0",
+      "rva": "0x18b3b0",
+      "original": "ff25bcb2bb75cccc",
+      "patched": "b801000000c20400",
+      "status": "ok"
+    },
+    {
+      "name": "ShellExecuteExW",
+      "va": "0x7573b3d0",
+      "rva": "0x18b3d0",
+      "original": "ff25b8b2bb75cccc",
+      "patched": "b801000000c20400",
+      "status": "ok"
+    },
+    {
+      "name": "CreateProcessA",
+      "va": "0x74e20b50",
+      "rva": "0x30b50",
+      "cave": "0x12250000",
+      "original": "8bff558bec",
+      "stub": "8b74240885f67424b9000400008a0684c074193c677511813e67616d657509817e0473616665740e464975e18bff558bece91f0bbd6231c0c22800",
+      "status": "ok"
+    },
+    {
+      "name": "CreateProcessW",
+      "va": "0x74e0d570",
+      "rva": "0x1d570",
+      "cave": "0x141a0000",
+      "original": "8bff558bec",
+      "stub": "8b74240885f67424b9000400008a0684c074193c677511813e67616d657509817e0473616665740e464975e18bff558bece93fd5c66031c0c22800",
+      "status": "ok"
+    }
+  ],
+  "time": 1792593817.6790786
+}

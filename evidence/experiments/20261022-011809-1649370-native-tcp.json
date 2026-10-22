@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T01:18:05.499407+00:00",
+  "exe": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+  "exe_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "listener": "127.0.0.1:28969",
+  "patches": [],
+  "pid": 10356,
+  "init_netobj": {
+    "cave": "0x407c0000",
+    "thread_id": 33732,
+    "wait": 0,
+    "return": "0x24629f80"
+  },
+  "netobj": "0x24629f80",
+  "config": {
+    "remote": "0x407d0000",
+    "ip_hex": "7f000001",
+    "port_offset": "0x84",
+    "port_host_order": 28969,
+    "port_bytes_hex": "2971"
+  },
+  "native_connect": {
+    "cave": "0x407e0000",
+    "thread_id": 36380,
+    "wait": 0,
+    "return": "0x24628f00"
+  },
+  "conn": "0x2462bb88",
+  "conn_state": {
+    "socket": "0xffffffff",
+    "c8": 4,
+    "copied_port_bytes_hex": "2971"
+  },
+  "accepted": {
+    "error": "OSError(10038, '在一个非套接字上尝试了一个操作。', None, 10038, None)"
+  }
+}

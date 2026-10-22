@@ -1,0 +1,20 @@
+{
+  "pid": 33908,
+  "needle": "?a=%d&b=%d&c=%d&game_id=%d&reason_id=%d",
+  "hits": [
+    {
+      "module": "codomp_client_shipretailbase.dll",
+      "address": "0x61e56b98"
+    }
+  ],
+  "guard_set": true,
+  "guard_error": null,
+  "page": "0x61e56000",
+  "cave": "0x11230000",
+  "handler": "0x11230000",
+  "addveh": "0x74e8a442",
+  "exception_address": "0x0",
+  "eip": "0x0",
+  "module_base": null,
+  "module_offset": null
+}

@@ -1,0 +1,755 @@
+{
+  "build": 1649370,
+  "mode": "tgp-sign",
+  "root": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\full-client-private",
+  "command_line": "\"E:\\GAME\\COD\\codol-airedux\\319\\runs\\full-client-private\\codoMP_client_shipRetail.exe\" -src=tgp +set fs_basepath \"E:\\GAME\\COD\\codol-airedux\\319\\runs\\full-client-private\" +set fs_homepath \"E:\\GAME\\COD\\codol-airedux\\319\\runs\\full-client-private\"",
+  "anchors": [],
+  "started_utc": "2026-10-21T14:41:02Z",
+  "seconds": 60,
+  "mapping": {
+    "name": "TCLS_SHAREDMEMEMORY22024",
+    "view_size": 200,
+    "created": true,
+    "record_offset_field": 16,
+    "record_offset": 20,
+    "marker_offset": 24,
+    "marker_length": 30,
+    "marker_sha256": "11b7a0aaeeaca8362a08c6d8975b4b990f745d8ea98c3ffd307ecdb2051b4268",
+    "marker_hex": "434f444f4c3331394c41422d48414e444f46462d4d41524b45522d333042",
+    "layout_source": "1604220 reference; unverified on Build 1649370"
+  },
+  "events": [
+    {
+      "event": "created_suspended",
+      "pid": 22024,
+      "utc": "2026-10-21T14:41:02Z"
+    },
+    {
+      "event": "mapping_written",
+      "name": "TCLS_SHAREDMEMEMORY22024",
+      "view_size": 200,
+      "created": true,
+      "record_offset_field": 16,
+      "record_offset": 20,
+      "marker_offset": 24,
+      "marker_length": 30,
+      "marker_sha256": "11b7a0aaeeaca8362a08c6d8975b4b990f745d8ea98c3ffd307ecdb2051b4268",
+      "marker_hex": "434f444f4c3331394c41422d48414e444f46462d4d41524b45522d333042",
+      "layout_source": "1604220 reference; unverified on Build 1649370"
+    },
+    {
+      "event": "resumed",
+      "pid": 22024
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 1039,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 2049,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": [
+        {
+          "pid": 22024,
+          "state": 5,
+          "local": "127.0.0.1:6292",
+          "remote": "127.0.0.1:6293"
+        },
+        {
+          "pid": 22024,
+          "state": 5,
+          "local": "127.0.0.1:6293",
+          "remote": "127.0.0.1:6292"
+        },
+        {
+          "pid": 22024,
+          "state": 5,
+          "local": "192.168.10.108:6296",
+          "remote": "120.234.70.109:443"
+        }
+      ]
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 3060,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": [
+        {
+          "pid": 22024,
+          "state": 5,
+          "local": "127.0.0.1:6303",
+          "remote": "127.0.0.1:6304"
+        },
+        {
+          "pid": 22024,
+          "state": 5,
+          "local": "127.0.0.1:6304",
+          "remote": "127.0.0.1:6303"
+        },
+        {
+          "pid": 22024,
+          "state": 5,
+          "local": "192.168.10.108:6307",
+          "remote": "120.234.70.109:443"
+        }
+      ]
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 4073,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 5085,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 6096,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 7109,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 8121,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 9131,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 10143,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 11153,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 12163,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 13175,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 14185,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 15196,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 16207,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 17218,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 18228,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 19240,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 20251,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 21262,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 22274,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 23284,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 24295,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 25306,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 26318,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 27330,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 28341,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 29353,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 30365,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 31375,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 32386,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 33398,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 34409,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 35420,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 36430,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 37441,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 38453,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 39464,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 40474,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 41484,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 42495,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 43505,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 44516,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 45526,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 46537,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 47547,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 48558,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 49569,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 50580,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 51591,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 52601,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 53612,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 54623,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 55633,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 56644,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 57654,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 58665,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 59677,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 60689,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        22024
+      ],
+      "windows": [],
+      "tcp": []
+    },
+    {
+      "event": "terminated_owned",
+      "pid": 22024
+    },
+    {
+      "event": "final",
+      "remaining_owned": [
+        22024
+      ],
+      "utc": "2026-10-21T14:42:03Z"
+    }
+  ],
+  "ended_utc": "2026-10-21T14:42:03Z"
+}

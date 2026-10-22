@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "date": "2026-10-22T01:23:00.993107+00:00",
+  "purpose": "raw TCP from client process to 127.0.0.1:28969",
+  "pid": 31332,
+  "thread_wait": 0,
+  "socket": "0xe34",
+  "connect_return": -1,
+  "wsa_error": 10013,
+  "accepted": {
+    "error": "TimeoutError('timed out')"
+  }
+}

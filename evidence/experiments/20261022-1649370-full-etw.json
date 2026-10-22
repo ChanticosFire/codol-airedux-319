@@ -1,0 +1,688 @@
+{
+  "build": 1649370,
+  "mode": "tgp-sign",
+  "root": "E:\\GAME\\COD\\使命召唤OL",
+  "command_line": "\"E:\\GAME\\COD\\使命召唤OL\\codoMP_client_shipRetail.exe\" -src=tgp",
+  "anchors": [],
+  "started_utc": "2026-10-21T17:32:35Z",
+  "seconds": 30,
+  "mapping": {
+    "name": "TCLS_SHAREDMEMEMORY31296",
+    "view_size": 200,
+    "created": true,
+    "record_offset_field": 16,
+    "record_offset": 20,
+    "marker_offset": 24,
+    "marker_length": 30,
+    "marker_sha256": "11b7a0aaeeaca8362a08c6d8975b4b990f745d8ea98c3ffd307ecdb2051b4268",
+    "marker_hex": "434f444f4c3331394c41422d48414e444f46462d4d41524b45522d333042",
+    "layout_source": "1604220 reference; unverified on Build 1649370"
+  },
+  "events": [
+    {
+      "event": "created_suspended",
+      "pid": 31296,
+      "utc": "2026-10-21T17:32:35Z"
+    },
+    {
+      "event": "mapping_written",
+      "name": "TCLS_SHAREDMEMEMORY31296",
+      "view_size": 200,
+      "created": true,
+      "record_offset_field": 16,
+      "record_offset": 20,
+      "marker_offset": 24,
+      "marker_length": 30,
+      "marker_sha256": "11b7a0aaeeaca8362a08c6d8975b4b990f745d8ea98c3ffd307ecdb2051b4268",
+      "marker_hex": "434f444f4c3331394c41422d48414e444f46462d4d41524b45522d333042",
+      "layout_source": "1604220 reference; unverified on Build 1649370"
+    },
+    {
+      "event": "resumed",
+      "pid": 31296
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 1044,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        31296,
+        26432
+      ],
+      "windows": [
+        {
+          "pid": 26432,
+          "hwnd": 19203414,
+          "visible": true,
+          "children": [],
+          "title_w": "",
+          "title_a_hex": "",
+          "class": "#32770"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 8457692,
+          "visible": false,
+          "children": [],
+          "title_w": "G",
+          "title_a_hex": "4744492b2057696e646f77202854503348656c7065722e65786529",
+          "class": "GDI+ Hook Window Class"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 12719138,
+          "visible": false,
+          "children": [],
+          "title_w": "M",
+          "title_a_hex": "4d53435446494d45205549",
+          "class": "MSCTFIME UI"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 14356316,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 3870398,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        }
+      ],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 2057,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        31296,
+        26432
+      ],
+      "windows": [
+        {
+          "pid": 26432,
+          "hwnd": 19203414,
+          "visible": true,
+          "children": [],
+          "title_w": "",
+          "title_a_hex": "",
+          "class": "#32770"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 8457692,
+          "visible": false,
+          "children": [],
+          "title_w": "G",
+          "title_a_hex": "4744492b2057696e646f77202854503348656c7065722e65786529",
+          "class": "GDI+ Hook Window Class"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 12719138,
+          "visible": false,
+          "children": [],
+          "title_w": "M",
+          "title_a_hex": "4d53435446494d45205549",
+          "class": "MSCTFIME UI"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 14356316,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 3870398,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        }
+      ],
+      "tcp": [
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "127.0.0.1:10875",
+          "remote": "127.0.0.1:10876"
+        },
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "127.0.0.1:10876",
+          "remote": "127.0.0.1:10875"
+        },
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:10879",
+          "remote": "36.131.222.111:443"
+        }
+      ]
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 3072,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        31296,
+        26432
+      ],
+      "windows": [
+        {
+          "pid": 26432,
+          "hwnd": 19203414,
+          "visible": true,
+          "children": [],
+          "title_w": "",
+          "title_a_hex": "",
+          "class": "#32770"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 8457692,
+          "visible": false,
+          "children": [],
+          "title_w": "G",
+          "title_a_hex": "4744492b2057696e646f77202854503348656c7065722e65786529",
+          "class": "GDI+ Hook Window Class"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 12719138,
+          "visible": false,
+          "children": [],
+          "title_w": "M",
+          "title_a_hex": "4d53435446494d45205549",
+          "class": "MSCTFIME UI"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 14356316,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 3870398,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        }
+      ],
+      "tcp": [
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "127.0.0.1:10885",
+          "remote": "127.0.0.1:10886"
+        },
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "127.0.0.1:10886",
+          "remote": "127.0.0.1:10885"
+        },
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:10889",
+          "remote": "36.131.222.111:443"
+        }
+      ]
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 4085,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        31296,
+        26432
+      ],
+      "windows": [
+        {
+          "pid": 26432,
+          "hwnd": 19203414,
+          "visible": true,
+          "children": [],
+          "title_w": "",
+          "title_a_hex": "",
+          "class": "#32770"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 8457692,
+          "visible": false,
+          "children": [],
+          "title_w": "G",
+          "title_a_hex": "4744492b2057696e646f77202854503348656c7065722e65786529",
+          "class": "GDI+ Hook Window Class"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 12719138,
+          "visible": false,
+          "children": [],
+          "title_w": "M",
+          "title_a_hex": "4d53435446494d45205549",
+          "class": "MSCTFIME UI"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 14356316,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 3870398,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        }
+      ],
+      "tcp": []
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 5097,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        31296,
+        26432
+      ],
+      "windows": [
+        {
+          "pid": 26432,
+          "hwnd": 19203414,
+          "visible": true,
+          "children": [],
+          "title_w": "",
+          "title_a_hex": "",
+          "class": "#32770"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 8457692,
+          "visible": false,
+          "children": [],
+          "title_w": "G",
+          "title_a_hex": "4744492b2057696e646f77202854503348656c7065722e65786529",
+          "class": "GDI+ Hook Window Class"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 12719138,
+          "visible": false,
+          "children": [],
+          "title_w": "M",
+          "title_a_hex": "4d53435446494d45205549",
+          "class": "MSCTFIME UI"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 14356316,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 3870398,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        }
+      ],
+      "tcp": [
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:9631",
+          "remote": "223.111.191.70:443"
+        }
+      ]
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 6110,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        31296,
+        26432
+      ],
+      "windows": [
+        {
+          "pid": 26432,
+          "hwnd": 19203414,
+          "visible": true,
+          "children": [],
+          "title_w": "",
+          "title_a_hex": "",
+          "class": "#32770"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 8457692,
+          "visible": false,
+          "children": [],
+          "title_w": "G",
+          "title_a_hex": "4744492b2057696e646f77202854503348656c7065722e65786529",
+          "class": "GDI+ Hook Window Class"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 12719138,
+          "visible": false,
+          "children": [],
+          "title_w": "M",
+          "title_a_hex": "4d53435446494d45205549",
+          "class": "MSCTFIME UI"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 14356316,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 3870398,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        }
+      ],
+      "tcp": [
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:9632",
+          "remote": "223.111.191.70:80"
+        }
+      ]
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 7124,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        31296,
+        26432
+      ],
+      "windows": [
+        {
+          "pid": 26432,
+          "hwnd": 19203414,
+          "visible": true,
+          "children": [],
+          "title_w": "",
+          "title_a_hex": "",
+          "class": "#32770"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 8457692,
+          "visible": false,
+          "children": [],
+          "title_w": "G",
+          "title_a_hex": "4744492b2057696e646f77202854503348656c7065722e65786529",
+          "class": "GDI+ Hook Window Class"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 12719138,
+          "visible": false,
+          "children": [],
+          "title_w": "M",
+          "title_a_hex": "4d53435446494d45205549",
+          "class": "MSCTFIME UI"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 14356316,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        },
+        {
+          "pid": 26432,
+          "hwnd": 3870398,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        }
+      ],
+      "tcp": [
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:9632",
+          "remote": "223.111.191.70:80"
+        },
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:12255",
+          "remote": "223.111.191.70:443"
+        },
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:12256",
+          "remote": "36.150.3.27:49155"
+        },
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:12257",
+          "remote": "223.106.72.37:49156"
+        }
+      ]
+    },
+    {
+      "event": "dismissed_dialog",
+      "hwnd": 3935934,
+      "button": 14421852,
+      "title_hex": "d6c2c3fcb4edcef3",
+      "pid": 31296
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 8148,
+      "alive": true,
+      "exit_code": 259,
+      "owned_pids": [
+        31296,
+        26432,
+        31228
+      ],
+      "windows": [
+        {
+          "pid": 31296,
+          "hwnd": 3935934,
+          "visible": false,
+          "children": [
+            {
+              "hwnd": 14421852,
+              "title_w": "确",
+              "title_a_hex": "c8b7b6a8",
+              "class": "Button",
+              "text_a_hex": "c8b7b6a8",
+              "visible": false
+            },
+            {
+              "hwnd": 8193410,
+              "title_w": "",
+              "title_a_hex": "",
+              "class": "Static",
+              "text_a_hex": "",
+              "visible": false
+            },
+            {
+              "hwnd": 11210038,
+              "title_w": "请",
+              "title_a_hex": "c7ebcab9d3c3ccdad1b6d3cecfb7b5c7c2bcc6f72854434c53cec4bcfebcd0c4dab5c4436c69656e742e65786529c6f4b6afd3cecfb7a1a3",
+              "class": "Static",
+              "text_a_hex": "c7ebcab9d3c3ccdad1b6d3cecfb7b5c7c2bcc6f72854434c53cec4bcfebcd0c4dab5c4436c69656e742e65786529c6f4b6afd3cecfb7a1a3",
+              "visible": false
+            }
+          ],
+          "title_w": "致",
+          "title_a_hex": "d6c2c3fcb4edcef3",
+          "class": "#32770"
+        },
+        {
+          "pid": 31228,
+          "hwnd": 8521022,
+          "visible": false,
+          "children": [],
+          "title_w": "G",
+          "title_a_hex": "47624c6f67696e57696e646f77",
+          "class": "GbLoginClass"
+        },
+        {
+          "pid": 31296,
+          "hwnd": 13374180,
+          "visible": false,
+          "children": [],
+          "title_w": "M",
+          "title_a_hex": "4d53435446494d45205549",
+          "class": "MSCTFIME UI"
+        },
+        {
+          "pid": 31296,
+          "hwnd": 19268950,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        },
+        {
+          "pid": 31228,
+          "hwnd": 8719354,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        }
+      ],
+      "tcp": [
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:9632",
+          "remote": "223.111.191.70:80"
+        },
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:12255",
+          "remote": "223.111.191.70:443"
+        },
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:12256",
+          "remote": "36.150.3.27:49155"
+        },
+        {
+          "pid": 31296,
+          "state": 5,
+          "local": "192.168.10.108:12257",
+          "remote": "223.106.72.37:49156"
+        }
+      ]
+    },
+    {
+      "event": "sample",
+      "elapsed_ms": 9165,
+      "alive": false,
+      "exit_code": 0,
+      "owned_pids": [
+        31296,
+        26432,
+        31228
+      ],
+      "windows": [
+        {
+          "pid": 31228,
+          "hwnd": 8521022,
+          "visible": false,
+          "children": [],
+          "title_w": "G",
+          "title_a_hex": "47624c6f67696e57696e646f77",
+          "class": "GbLoginClass"
+        },
+        {
+          "pid": 31228,
+          "hwnd": 8719354,
+          "visible": false,
+          "children": [],
+          "title_w": "D",
+          "title_a_hex": "44656661756c7420494d45",
+          "class": "IME"
+        }
+      ],
+      "tcp": []
+    },
+    {
+      "event": "terminated_owned",
+      "pid": 31228
+    },
+    {
+      "event": "final",
+      "remaining_owned": [
+        31228
+      ],
+      "utc": "2026-10-21T17:32:44Z"
+    }
+  ],
+  "ended_utc": "2026-10-21T17:32:44Z"
+}

@@ -49,3 +49,14 @@
 {"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T02:32:06Z"}
 {"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T02:32:23Z"}
 {"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T02:32:36Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T02:32:53Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T02:33:06Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T02:33:23Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T02:33:36Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T02:33:53Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T02:34:06Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T02:34:23Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T02:34:36Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T02:34:53Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T02:35:06Z"}
+{"connection_id": 3, "event": "raw_session_end", "reason": "ConnectionResetError:[WinError 10054] 远程主机强迫关闭了一个现有的连接。", "requests": 0, "utc": "2026-10-22T02:35:15Z"}

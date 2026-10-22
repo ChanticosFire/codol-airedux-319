@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T01:16:34.616746+00:00",
+  "exe": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+  "exe_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "listener": "127.0.0.1:28969",
+  "patches": []
+}

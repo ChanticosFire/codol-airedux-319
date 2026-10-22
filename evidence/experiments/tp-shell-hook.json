@@ -1,0 +1,39 @@
+{
+  "pid": 6896,
+  "shell32": "0x755b0000",
+  "patches": [
+    {
+      "name": "ShellExecuteA",
+      "va": "0x7573b390",
+      "rva": "0x18b390",
+      "original": "ff25c0b2bb75cccc",
+      "patched": "b821000000c21800",
+      "status": "ok"
+    },
+    {
+      "name": "ShellExecuteW",
+      "va": "0x7573b3f0",
+      "rva": "0x18b3f0",
+      "original": "ff25b4b2bb75cccc",
+      "patched": "b821000000c21800",
+      "status": "ok"
+    },
+    {
+      "name": "ShellExecuteExA",
+      "va": "0x7573b3b0",
+      "rva": "0x18b3b0",
+      "original": "ff25bcb2bb75cccc",
+      "patched": "b801000000c20400",
+      "status": "ok"
+    },
+    {
+      "name": "ShellExecuteExW",
+      "va": "0x7573b3d0",
+      "rva": "0x18b3d0",
+      "original": "ff25b8b2bb75cccc",
+      "patched": "b801000000c20400",
+      "status": "ok"
+    }
+  ],
+  "time": 1792593633.1138875
+}

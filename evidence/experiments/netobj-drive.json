@@ -1,0 +1,44 @@
+{
+  "pid": 41492,
+  "calls": [
+    {
+      "label": "create_netobj",
+      "cave": "0x40150000",
+      "thread": 552,
+      "tid": 20800
+    },
+    {
+      "label": "lobby_tick_803780",
+      "cave": "0x40160000",
+      "thread": 496,
+      "tid": 36088
+    },
+    {
+      "label": "lobby_connect_B838A0",
+      "cave": "0x40170000",
+      "thread": 516,
+      "tid": 13016
+    },
+    {
+      "label": "state_B7A670",
+      "cave": "0x40180000",
+      "thread": 540,
+      "tid": 24156
+    }
+  ],
+  "netobj_initial": "0x23e39fe0",
+  "after_tick": {
+    "conn": "0x0",
+    "state": "0xbaadf000"
+  },
+  "lobby_connect_B838A0": {
+    "conn": "0x0",
+    "state": "0xbaadf000",
+    "field_0x1F0": "0x4"
+  },
+  "state_B7A670": {
+    "conn": "0x0",
+    "state": "0xbaadf000",
+    "field_0x1F0": "0x4"
+  }
+}

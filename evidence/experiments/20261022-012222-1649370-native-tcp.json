@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T01:22:07.062583+00:00",
+  "exe": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+  "exe_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "listener": "127.0.0.1:28969",
+  "patches": [],
+  "pid": 31332,
+  "init_netobj": {
+    "cave": "0x417b0000",
+    "thread_id": 36476,
+    "wait": 0,
+    "return": "0x24609f68"
+  },
+  "netobj": "0x24609f68",
+  "config": {
+    "remote": "0x417c0000",
+    "ip_hex": "7f000001",
+    "port_offset": "0x84",
+    "port_host_order": 28969,
+    "port_bytes_hex": "2971",
+    "tcp_address_remote": "0x417d0000",
+    "tcp_address_ip_hex": "7f000001"
+  },
+  "native_connect": {
+    "cave": "0x417e0000",
+    "thread_id": 34540,
+    "wait": 0,
+    "return": "0x24608f01"
+  },
+  "conn": "0x2460bb70",
+  "conn_state": {
+    "socket": "0xca8",
+    "c8": 1,
+    "constructor_type": 16777343,
+    "constructor_ip_hex": "00000000",
+    "constructor_port_bytes_hex": "2971",
+    "copied_port_bytes_hex": "2971"
+  },
+  "accepted": {
+    "error": "OSError(10038, '在一个非套接字上尝试了一个操作。', None, 10038, None)"
+  }
+}
