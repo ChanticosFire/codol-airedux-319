@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T20:10:00+00:00",
+  "scope": "critical runtime fact: dedrun is ASLR-relocated",
+  "finding": {
+    "image_base_file": "0x400000",
+    "actual_load_base": "0x140000",
+    "delta": "-0x2C0000",
+    "evidence": "EnumProcessModules returns 0x140000 and the MZ header is there; file VA 0x48AAB0 maps to process VA 0x1CAAB0",
+    "impact": "every earlier runtime read/write that used file VAs against the dedrun process hit the wrong address"
+  },
+  "verified_correct_base": {
+    "0x48AAB0 -> 0x1CAAB0": "83 f8 04 74 05 83 f8 03 75 a9 e9 4d 0d 00 00 90 (enterworld patch present)",
+    "0x48B80C -> 0x1CB80C": "nop-cave stub present",
+    "0x489081 -> 0x1C9081": "55 89 e5 57 56 53 83 e4 (SV_BuildClientSnapshot prologue)",
+    "sv.state 0x4BBFEC0 -> 0x48FFEC0": "2 (SS_GAME, not 0)",
+    "codol_snapshot_ready 0xF6DBA60 -> 0x10EDA60": "1 for the human client",
+    "codol_snapshot_sequence 0xF6DB960 -> 0x10ED960": "1677"
+  },
+  "remaining_snapshot_gap": {
+    "human_outgoingSequence": 1693,
+    "ready_sequence": 1677,
+    "delta": 16,
+    "meaning": "CODOL_ClientNativeFrame(slot, current outgoingSequence) does not match the stored ready sequence, so SV_WriteSnapshotToClient still emits the empty recovery packet (+121/122 bytes per 'out' step)",
+    "todo": "find why the builder's sequence is 16 frames behind (SV_BuildClientSnapshot may not run every send, or the outgoingSequence advances between build and write)"
+  },
+  "implications_for_earlier_work": [
+    "the remote SV_ClientEnterWorld call in round 11 used 0x4705F4 instead of 0x1B05F4 and crashed dedrun",
+    "the 'sv.state write' this round targeted 0x4BBFEC0 and changed unrelated memory",
+    "bridge patch-bytes / heartbeat experiments that used file VAs need re-checking with base 0x140000",
+    "the client-side exe base must also be verified (set-state may have used the wrong address if the client is relocated)"
+  ],
+  "next": [
+    "add a base-aware accessor to tools (read module base via EnumProcessModules, translate file VA -> runtime VA)",
+    "re-verify heartbeat/set-state/patch-bytes behaviour with the correct base",
+    "resolve the builder sequence lag and re-test real snapshots"
+  ],
+  "artifacts": ["runs/20261022-ring-2697x/main/qconsole.log"]
+}
