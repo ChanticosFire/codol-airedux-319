@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【突破】高级选项含“AI开关”，待切到个人竞技模式启用**：复刻键盘序列再次进入房间（滨海镇/战术团队竞技/1/12），Esc 关下拉后点 (287,536) 打开高级选项：比赛选项页有 时间/得分/重生延迟/定时重生/生命值/回血延迟/血量回升/友军伤害/旁观/阵亡回放/只能爆头/**AI开关**/限制武器/真实模式，底部 取消/恢复默认/应用。AI 开关在战术团队竞技下点击无反应（与既有结论一致）。证据 [`20261022-ai-option-found.json`](evidence/experiments/20261022-ai-option-found.json)。
+
 > **2026-10-22【突破】键盘 Tab+Enter 触发“创建房间”，已进入本地房间场景**：鼠标在创建按钮上网格扫描 15 点无反应；改为点击名字框 → Tab×2 → Enter 后客户端立刻建房并切入房间场景（战术团队竞技/迷你战争/1/12/高级选项/准备/返回大厅）。服务端无新请求 → 纯本地离线流程。证据 [`20261022-room-local-create.json`](evidence/experiments/20261022-room-local-create.json)、[`20261022-room-entered.png`](evidence/experiments/20261022-room-entered.png)。
 
 > **2026-10-22【新工具】游戏内光标模板点击校准**：`tools/find_cursor.py` + `tools/cursor_template.png`，FFT 互相关 SSD 定位光标。实测请求点击 `(1447,877)` → 光标热点 `(1448,883)`，误差约 6px；按钮区域 205×65 完全覆盖 → 按钮无响应不是坐标问题，而是控件状态/客户端逻辑。工具依赖 numpy，用 DSH 自带 Python 运行。证据 [`20261022-cursor-calibration.json`](evidence/experiments/20261022-cursor-calibration.json)。
