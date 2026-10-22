@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T07:05:00+00:00",
+  "scope": "fifth bisect step",
+  "setup": {
+    "breakpoint": "launcher --breakpoint 0x5B2C9D:bisect5 (the memset site)",
+    "phase": 8,
+    "cl+0xA8F0": "repaired (alloc 0x180 @ 0x117C0000 ^ key)",
+    "call": "call_main_thread --target 0x5B2C10 --settle 0.5"
+  },
+  "result": {
+    "bisect5_hits": 0,
+    "client": "exited during the call"
+  },
+  "conclusion": "the fault is BEFORE the memset at 0x5B2C9D. The window is now 0x5B2C10..0x5B2C9D and contains only: the prologue/guards (phase, flag, cl pointer checks) and the call to 0x66F170 at 0x5B2C85.",
+  "next": [
+    "final split: --breakpoint 0x5B2C85:bisect6 (the 0x66F170 call)",
+    "hit => the fault is inside 0x66F170 (or the prologue completes and 0x66F170 faults)",
+    "miss => the fault is inside the prologue guard chain itself (0x5B2C10..0x5B2C84), which would point at one of the guard loads"
+  ],
+  "artifacts": ["runs/codex-bp-bisect-5-call.json"]
+}
