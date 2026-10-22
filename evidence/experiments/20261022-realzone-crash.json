@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:07:50.476676+00:00",
+  "claim": "从 nifs 提取的 ver461 fastfile（34,819,011B）放进 overlay 后，完整配方在 15 秒内闪退",
+  "extract": {
+    "src": "3.19.26.13/IIPS/IIPSDownload/ff_init_common_gametype_mp_V69.ifs",
+    "offset": 328,
+    "size": 34819011,
+    "head": "4957666630313030cd01000001000000",
+    "ver": 461,
+    "dst": "1649370/resources/.../chinese/common_gametype_mp.ff"
+  },
+  "result": {
+    "t5": "png 83066（加载态）",
+    "t10": "png 83066",
+    "t15": "进程退出"
+  },
+  "analysis": "提取的 ff 头部版本正确；闪退可能是 nifs 包内 ff 带额外封装（未完全剥离）或加载完成后的后续依赖缺失",
+  "next": [
+    "检查 nifs 头里的 size 字段与实际 ff 长度的关系（可能需要截断到 size）",
+    "或对比 nifs 内 ff 与标准 ff 的尾部结构",
+    "继续用 hook 抓闪退前的错误"
+  ]
+}
