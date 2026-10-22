@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-22【EOF 修复：三种标记与客户端分派表一致】** `enterworld12`（`e2ba5a6c…`）把 `SV_EndClientSnapshot` 的 EOF 字节从 6 改成 5（`0x4A4CA4`，由前置 `call 0x4B6010` 定位）。现在 `svc_snapshot=0`、`svc_gamestate=3`、`svc_EOF=5` 与客户端映射完全一致。实测客户端仍 21 秒停阶段 8、黑屏。框架层已正确，剩余差异在快照体字段。下一步：断点 `0x471E90` 确认解析器是否被调用，再逐字段对照。证据 [20261022-codex-eof-fix.json](evidence/experiments/20261022-codex-eof-fix.json)。
+
 > **2026-10-22【重大发现：客户端 svc 分派表解码；EOF 应为 5 而非 6】** 顶层解析器 `0x473A50`：`cmp eax,5 → 0x473C3E`（EOF）、`cmp eax,3 / ja`（未知值跳过剩余）、`jmp [eax*4+0x473C50]`。表 = `[0x473BF7(snapshot→0x471E90), 0x473BBF, 0x473BCC, 0x473BD9(gamestate→0x473260)]`。客户端映射：**0=snapshot、3=gamestate、5=EOF**。2697 的 snapshot=0/gamestate=3 正确，**EOF=6 错误**（客户端当未知值跳过）。下一步：把 EOF 改为 5 并复测。证据 [20261022-codex-client-svc-map.json](evidence/experiments/20261022-codex-client-svc-map.json)。
 
 > **2026-10-22【可靠窗口已空；大消息是快照体】** 服务端 `client_t` 的 `reliableSequence=0`、`reliableSent=0`，强制同步 20 次无变化。日志 `out` 每帧约 +122 字节（本帧新入队），而重组消息 11–17KB（整条消息）——两个口径不同。可靠窗口为空说明大消息主要是快照体本身。下一步：单帧完整抓包端到端核对，并测纯快照长度，再选服务端翻译器或客户端补丁。证据 [20261022-codex-reliable-window-clear.json](evidence/experiments/20261022-codex-reliable-window-clear.json)。

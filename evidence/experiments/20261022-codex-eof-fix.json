@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T01:45:00+00:00",
+  "scope": "EOF byte fix (6 -> 5)",
+  "patch": {
+    "file": "runs/2697-enterworld-patched/codol_dedrun_enterworld12.exe",
+    "sha256": "e2ba5a6cd7f7282e9d2bb146d376cf635e91d973448096766459ff3824c7037d",
+    "change": "0x4A4CA4 mov [esp+4],6 -> mov [esp+4],5 in SV_EndClientSnapshot (identified by the preceding call 0x4B6010 CODOL_ClientSnapshotPrepared)"
+  },
+  "result": {
+    "client": "phase 8 for the whole 21 s sample after 7, screenshot 10,670 bytes (black)",
+    "server": "state 4, snapshots continue",
+    "conclusion": "with svc_snapshot=0, svc_gamestate=3 and now svc_EOF=5 the three message markers match the client dispatch table exactly, yet the client still does not enter the world: the remaining difference is inside the snapshot body (player state / entity sections)."
+  },
+  "value_of_the_fix": "the message framing is now exactly what the client expects; any further investigation is about the body fields, not the framing",
+  "next": [
+    "instrument the client snapshot parser 0x471E90 (e.g. breakpoint on entry) to see whether it is called at all after this fix",
+    "if it is called, follow its first reads and compare against the 2697 body",
+    "if it is never called, the message still fails before dispatch (check msg->overflowed / badread state)"
+  ],
+  "artifacts": ["runs/20261022-ring-2697ah/main/qconsole.log", "runs/codex-ring-bridge-48-state.png"]
+}
