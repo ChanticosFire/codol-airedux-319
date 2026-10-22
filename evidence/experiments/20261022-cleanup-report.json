@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "utc": "2026-10-22T11:35:00+00:00",
+  "scope": "project-directory cleanup after repeated offline runs",
+  "before": {
+    "319_total_gb": 58.1,
+    "1649370_workspaces_gb": 137.8,
+    "combined_gb": 195.9
+  },
+  "after": {
+    "319_total_gb": 30.13,
+    "1649370_workspaces_gb": 15.36,
+    "combined_gb": 45.49
+  },
+  "removed": [
+    {
+      "path": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\<447 old sessions>\\runtime",
+      "gb": 122.44,
+      "reason": "per-session private runtime stages; all reproducible from the command/addon manifests; session-root events.jsonl/result.json/screenshots were kept",
+      "kept": ["codex-ring-bridge-14/runtime", "codex-ring-bridge-13/runtime"]
+    },
+    {
+      "path": "E:\\GAME\\COD\\codol-airedux\\319\\runtime\\client-1604220",
+      "gb": 24.09,
+      "reason": "Build 1604220 client copy, not the 1649370 target and unused by the current launcher; historical 1604220 scripts reference it but that line is no longer active"
+    },
+    {
+      "path": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\<365 old experiment directories>",
+      "gb": 3.33,
+      "reason": "old map/UI/ETW/experiment outputs (20261019-20261023), superseded by the 1649370 resource handoff and recent evidence",
+      "examples": ["20261021-1649370-allmaps", "20261021-1649370-map", "full-client-private", "etw", "codex-gametype-v25-input"]
+    }
+  ],
+  "kept": [
+    "319/runtime/client-1649370 (24.94 GB): multiple static-analysis tools bind to this exact client copy; same exe hash as E:\\GAME\\COD\\使命召唤OL",
+    "319/runs/20261020-live-derived01 (TLS cert/key used by the launcher)",
+    "319/runs/20261021-1649370-crossfire-base, 20261022-gametype-ff-v461 (verified v461 fastfiles)",
+    "319/runs/20261022-{gametype,crossfire,crash-tropical,survival,dmz}-loose-v461 (3300 verified loose resources)",
+    "319/runs/2697-native-src, 2697-server-test, 2697-defer-patched, guard-build",
+    "319/runs/ref-offline-runtime (1.0 GB reference runtime)",
+    "all evidence/ and tools/ files; session-root events/result/screenshots of every offline-run"
+  ],
+  "verification": [
+    "client-1649370 exe sha256 36997674b18f2896de5e9d755686f6922af10708f355175714058d0a0172b537 matches E:\\GAME\\COD\\使命召唤OL",
+    "git tree clean before cleanup; only runs/ and workspaces/ (git-ignored) were touched",
+    "no test process, guard, LSG or dedrun remained after the cleanup"
+  ],
+  "reports": [
+    "319/runs/cleanup-offline-runs-20261022.json",
+    "319/runs/cleanup-runs-20261022.json"
+  ]
+}
