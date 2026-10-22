@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T07:12:37.018903+00:00",
+  "claim": "zone 失败分支 patch 生效（进程存活显著延长），但仍有新的 fatal",
+  "patch": {
+    "at": "0x49EEA3",
+    "from": "0f85b7020000",
+    "to": "e9b802000090",
+    "verified": true,
+    "runtime_only": true
+  },
+  "observation": {
+    "before_patch": "preloadmap 后 5-14 秒 fatal_dialog",
+    "after_patch": "注入后 12 秒仍存活（Responding=True, CPU 39s），随后仍 fatal_dialog（窗口消失）"
+  },
+  "conclusion": "绕过 zone 加载失败后引擎继续走了一段，说明 patch 方向正确；新的 fatal 需要再抓（很可能还是某个缺失/不兼容的 zone 或后续初始化）",
+  "next": [
+    "patch 后立即装 0x77C930 hook 抓新的错误文本",
+    "逐个补齐/绕过后续失败点"
+  ]
+}

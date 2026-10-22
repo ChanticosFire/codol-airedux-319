@@ -1178,3 +1178,8 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - 1649370 ff = ver 461；2.6.9.7 ff = ver 365 → 不兼容。
 - preloadmap 第二参数 0 让进程多活 ~10s，但仍 fatal。
 - 下轮：找 ver461 的 gametype zone 或跳过加载。
+
+## 2026-10-22 zone 绕过 patch 生效（本轮）
+
+- 0x49EEA3 patch 验证通过，进程存活显著延长。
+- 仍有新 fatal；下轮 patch 后立即 hook 0x77C930 抓文本。
