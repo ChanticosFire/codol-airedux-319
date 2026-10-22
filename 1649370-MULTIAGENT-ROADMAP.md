@@ -1154,3 +1154,9 @@ TP3Helper/#32770 对话框的子控件文本是：“请使用腾讯游戏登录
 - Fatal hook 命中：text=WIN_ZONE_ERROR:[common_gametype_mp.ff]，ret=0x49EEC8。
 - 根因是 zone 资源缺失，不是服务异常。
 - 2.6.9.7 有 20MB 现成文件；下轮复制到 1649370 zone 路径并重试。
+
+## 2026-10-22 补 zone 重试（本轮）
+
+- 复制 common_gametype_mp.ff（20MB）到 loose-library/main；启动变慢验证被处理。
+- 仍 fatal_dialog 但 hook 未捕获。
+- 下轮双 hook + 高频轮询。

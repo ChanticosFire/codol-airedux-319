@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T06:58:20.918830+00:00",
+  "claim": "把 2.6.9.7 的 common_gametype_mp.ff 复制进 1649370 资源库后，启动变慢(32s)且仍 fatal_dialog，但 hook 未捕获错误",
+  "actions": {
+    "copy": {
+      "src": "2.6.9.7 .../decoded-resources/client_shipretail/chinese/common_gametype_mp.ff",
+      "dst": "1649370/resources/v1649370/offline-loose-library/main/common_gametype_mp.ff",
+      "size": 20594965
+    },
+    "startup": "resources-loose_startup_resources 从 0.2s 变为 32.456s（说明该 ff 被处理）",
+    "retry": "hook 装到 0x77C930 后注入 preloadmap，轮询 150 次未捕获非零 → 可能 fatal 走 0x4F82E0，或轮询因进程死亡提前 break"
+  },
+  "stop_reason": "fatal_dialog（仍存在）",
+  "next": [
+    "同时 hook 0x4F82E0 与 0x77C930",
+    "轮询改为高频且不 break，最后一刻抓取",
+    "确认复制后是否换成了别的 zone 缺失（比如下一个 ff）"
+  ]
+}
