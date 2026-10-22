@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T08:23:11.916328+00:00",
+  "claim": "wpr FileIO 录制成功（371MB etl → 1.2GB csv），但直接搜 NOT FOUND 命中的是 DotNET 事件，需要按 FileIO 状态列过滤",
+  "files": {
+    "etl": "runs/etw/trace.etl (371MB)",
+    "csv": "runs/etw/trace.csv (1.2GB)"
+  },
+  "issue": "tracerpt CSV 混合多个 provider；需要过滤 Microsoft-Windows-Kernel-File 的 Name/Status 列",
+  "next": [
+    "按 provider=Kernel-File 过滤，找 Status=NAME NOT FOUND/PATH NOT FOUND 的行",
+    "或改用 xperf/wpa 分析",
+    "或缩小录制范围（只录 codol1649370-offline 进程）"
+  ]
+}
