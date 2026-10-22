@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-22T12:35:00+00:00",
+  "scope": "write the loopback address into the client state at runtime",
+  "action": {
+    "decoded_ebx": "0x1345B160",
+    "before": "24 zero bytes at [ebx+0x109260]",
+    "written": "02 00 00 00 00 00 00 00 2a 71 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+    "after": "read back identical",
+    "then": "the return-value hook was installed and the client process died immediately"
+  },
+  "assessment": {
+    "address_layout": "the bytes I wrote may not match the client's netadr layout for this field; a wrong size/field set can overwrite adjacent client-state members (pointers/callbacks) and crash the process",
+    "size_assumption": "24 bytes was inferred from the six dwords that 0x5C2260 copies, but the client struct at [ebx+0x109260] may be larger or have different padding"
+  },
+  "next": [
+    "determine the exact struct at [ebx+0x109260]: read a wider window (e.g. 0x80 bytes) before writing, to see which bytes are already non-zero and where the safe boundary is",
+    "or only overwrite the fields NET_CompareAdr reads (type at +0, ip at +4, port at +8) and leave the rest untouched -- 10 bytes instead of 24",
+    "then re-hook and observe eax"
+  ],
+  "artifacts": []
+}
