@@ -95,6 +95,10 @@ MAP_PROBE = None
 MAP_LOADSCREEN_PLACEHOLDER = False
 MAP_COMPASS_PROBE = False
 MAP_LOOSE_CROSSFIRE = False
+MAP_LOOSE_GAMETYPE = False
+MAP_GAMETYPE_FF = False
+MAP_SUNFLARE = False
+MAP_LOOSE_CRASH_TROPICAL = False
 MAP_COMMAND_MODE = "startup"
 ROOM_COMMAND = None
 CBUF_COMMAND = None
@@ -2312,6 +2316,26 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
             staged.append({"name": name, "sha256": expected, "size": destination.stat().st_size})
         log["map_probe_resources"] = staged
 
+    if MAP_GAMETYPE_FF:
+        source_dir = Path(__file__).resolve().parents[1] / "runs/20261022-gametype-ff-v461"
+        expected_files = {
+            "common_gametype_mp.ff": "13e7ec159501c5e20796b058fe56491fca14117f3d291b0f9f27e5bc050e7be8",
+            "localized_common_gametype_mp.ff": "1698ca866e8e711bd7306cbfa856368c6dae60d7b707b0ef38428c07e90e7006",
+        }
+        destination_dir = stage / "client_shipretail/chinese"
+        if destination_dir.is_junction() or destination_dir.is_symlink():
+            raise ValueError("refusing to stage gametype FF through a shared mount")
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        gametype_staged = []
+        for name, expected in expected_files.items():
+            source = source_dir / name
+            if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != expected:
+                raise ValueError(f"same-build gametype FF missing or fingerprint mismatch: {source}")
+            destination = destination_dir / name
+            shutil.copyfile(source, destination)
+            gametype_staged.append({"name": name, "sha256": expected})
+        log["map_gametype_ff"] = gametype_staged
+
     if MAP_LOADSCREEN_PLACEHOLDER:
         # Diagnostic only: use this build's own fallback image to satisfy the
         # map loadscreen lookup without touching the shared image-library mount.
@@ -2348,17 +2372,30 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
         shutil.copyfile(source, destination)
         log["map_compass_probe"] = {"destination": str(destination), "sha256": expected}
 
+    loose_packs = []
     if MAP_LOOSE_CROSSFIRE:
-        root = Path(__file__).resolve().parents[1] / "runs/20261022-crossfire-loose-v461"
+        loose_packs.append(("crossfire", "20261022-crossfire-loose-v461",
+                            "78c0e517fd854d32b35d32bc8d966b3c57b36721f5b6cfa67e3e72fac928bd67",
+                            "c340793c2ea18e6e37cde3b94b9475aa6b7f91bd89c2c111eb54b8b119634386", 538))
+    if MAP_LOOSE_GAMETYPE:
+        loose_packs.append(("gametype", "20261022-gametype-loose-v461",
+                            "c96a9b20470ce8c2c8328ab0f8b4cc6b68fa80fcc16789abbfe33d90cc44466f",
+                            "3f27b8b4f6fb9392d7340b8f491c10dc46616b35df4e2f63756bb4e10dae768d", 1037))
+    if MAP_LOOSE_CRASH_TROPICAL:
+        loose_packs.append(("crash_tropical", "20261022-crash-tropical-loose-v461",
+                            "da610e1fab1bc7397c68153092c0b5efcae43716d4d02f0744ad453400312cad",
+                            "5605bd43ed2dd5ef5000e4f4ca1de977a350df16ce1a55d23eabf5d1304a2d6d", 1099))
+    for label, folder, expected_receipt, expected_source, expected_count in loose_packs:
+        root = Path(__file__).resolve().parents[1] / "runs" / folder
         receipt = root / "receipt.json"
         receipt_sha = hashlib.sha256(receipt.read_bytes()).hexdigest()
-        if receipt_sha != "78c0e517fd854d32b35d32bc8d966b3c57b36721f5b6cfa67e3e72fac928bd67":
-            raise ValueError("Cross Fire loose receipt fingerprint mismatch")
+        if receipt_sha != expected_receipt:
+            raise ValueError(f"{label} loose receipt fingerprint mismatch")
         report = json.loads(receipt.read_text(encoding="utf-8"))
         if (report.get("build") != 1649370 or report.get("scope") != "all_main"
-                or report.get("source_sha256") != "c340793c2ea18e6e37cde3b94b9475aa6b7f91bd89c2c111eb54b8b119634386"
-                or report.get("decoded") != 538 or report.get("missing")):
-            raise ValueError("Cross Fire loose resource receipt mismatch")
+                or report.get("source_sha256") != expected_source
+                or report.get("decoded") != expected_count or report.get("missing")):
+            raise ValueError(f"{label} loose resource receipt mismatch")
         mount = stage / "devraw_shared"
         if stage.is_junction() or stage.is_symlink() or (mount.exists() and (mount.is_junction() or mount.is_symlink())):
             raise ValueError("refusing to write through a shared mount")
@@ -2366,19 +2403,35 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
         for item in report["resources"]:
             parts = Path(item["member"]).parts
             if len(parts) < 3 or parts[0].lower() != "main" or ".." in parts:
-                raise ValueError("invalid Cross Fire loose member path")
+                raise ValueError(f"invalid {label} loose member path")
             source = root.joinpath(*parts)
             if hashlib.sha256(source.read_bytes()).hexdigest() != item["decoded_sha256"]:
-                raise ValueError(f"Cross Fire loose resource fingerprint mismatch: {source}")
+                raise ValueError(f"{label} loose resource fingerprint mismatch: {source}")
             destination = mount.joinpath(*parts[1:])
             destination.parent.mkdir(parents=True, exist_ok=True)
             if destination.parent.is_junction() or destination.parent.is_symlink() or destination.exists():
-                raise ValueError(f"unsafe Cross Fire loose destination: {destination}")
+                raise ValueError(f"unsafe {label} loose destination: {destination}")
             shutil.copyfile(source, destination)
             staged_loose += 1
-        log["map_loose_crossfire"] = {"count": staged_loose,
-                                      "receipt_sha256": receipt_sha,
-                                      "destination_root": str(mount)}
+        log[f"map_loose_{label}"] = {"count": staged_loose,
+                                     "receipt_sha256": receipt_sha,
+                                     "destination_root": str(mount)}
+
+    if MAP_SUNFLARE and not MAP_LOOSE_CRASH_TROPICAL:
+        root = Path(__file__).resolve().parents[1] / "runs/20261022-crash-tropical-sunflare-v461"
+        source = root / "main/images/sun_flare_icbm.iwi"
+        receipt = root / "receipt.json"
+        expected = "b38240472d19f2397220fe301467f0b2c5f4dfc033639381609b466b2f160a94"
+        if (hashlib.sha256(receipt.read_bytes()).hexdigest()
+                != "164e3d82afa74fd3f7dc8f5700bbb28e09decd83a7d02def3ccf81a5823ec664"
+                or hashlib.sha256(source.read_bytes()).hexdigest() != expected):
+            raise ValueError("same-build sunflare fingerprint mismatch")
+        destination = stage / "devraw_shared/images/sun_flare_icbm.iwi"
+        if destination.exists() or destination.parent.is_junction() or destination.parent.is_symlink():
+            raise ValueError("unsafe sunflare destination")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, destination)
+        log["map_sunflare"] = {"sha256": expected, "destination": str(destination)}
 
     if _MAP_DIR:
         source_dir = Path(_MAP_DIR)
@@ -2412,7 +2465,7 @@ def patched_prepare(args, run_dir, stage, log, phase_done):
 
 
 def build_host_arguments(user_argv: list[str]) -> list[str]:
-    global MAP_PROBE, MAP_LOADSCREEN_PLACEHOLDER, MAP_COMPASS_PROBE, MAP_LOOSE_CROSSFIRE, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, TCP_LOOPBACK_GUARD, LOCAL_AUTH_LSG, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
+    global MAP_PROBE, MAP_LOADSCREEN_PLACEHOLDER, MAP_COMPASS_PROBE, MAP_LOOSE_CROSSFIRE, MAP_LOOSE_GAMETYPE, MAP_GAMETYPE_FF, MAP_SUNFLARE, MAP_LOOSE_CRASH_TROPICAL, MAP_COMMAND_MODE, ROOM_COMMAND, CBUF_COMMAND, PREFIX_CBUF, LOOPBACK_GUARD, TCP_LOOPBACK_GUARD, LOCAL_AUTH_LSG, LOOPBACK_PORT, MAIN_CALL, MAIN_CALL_ECX, PREWRITES, CONNECTION_ADR_PORT, TRANSPORT_CONNECT, RING_PROBE, HOOK_LOOPBACK, INJECT_CHALLENGE, GAMESTATE_PATH, CALL_CHALLENGE_PARSER, INIT_TRANSPORT, CALL_CHALLENGE_BRANCH, RING_TYPE, RAW_UDP_PATCH, RAW_UDP_BRANCH, BRANCH_NOOP, BRANCH_CAPTURE, BRANCH_SOCKET, BRANCH_SENDTO, REMOTE_UDP_SEND, INJECT_REMOTE_RESPONSE, REMOTE_UDP_CONNECT, REMOTE_NETOBJ
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument("--name")
     parser.add_argument("--full", action="store_true",
@@ -2429,6 +2482,14 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
                         help="stage verified same-build Cross Fire compass IWI in private runtime")
     parser.add_argument("--map-loose-crossfire", action="store_true",
                         help="stage all 538 verified same-build Cross Fire loose assets")
+    parser.add_argument("--map-loose-gametype", action="store_true",
+                        help="stage all 1037 verified same-build MP gametype loose assets")
+    parser.add_argument("--map-loose-crash-tropical", action="store_true",
+                        help="stage 1099 verified same-build loose assets carrying sunflare")
+    parser.add_argument("--map-gametype-ff", action="store_true",
+                        help="stage the signed v461 common and localized MP gametype fastfiles")
+    parser.add_argument("--map-sunflare", action="store_true",
+                        help="stage the verified same-build sun_flare_icbm IWI")
     parser.add_argument("--map-command-mode", choices=("startup", "queue", "none"), default="startup")
     parser.add_argument("--audit-breakpoints", action="store_true")
     parser.add_argument("--capture-ui-movie", action="store_true")
@@ -2498,12 +2559,24 @@ def build_host_arguments(user_argv: list[str]) -> list[str]:
     MAP_LOADSCREEN_PLACEHOLDER = known.map_loadscreen_placeholder
     MAP_COMPASS_PROBE = known.map_compass_probe
     MAP_LOOSE_CROSSFIRE = known.map_loose_crossfire
+    MAP_LOOSE_GAMETYPE = known.map_loose_gametype
+    MAP_GAMETYPE_FF = known.map_gametype_ff
+    MAP_SUNFLARE = known.map_sunflare
+    MAP_LOOSE_CRASH_TROPICAL = known.map_loose_crash_tropical
     if MAP_LOADSCREEN_PLACEHOLDER and MAP_PROBE != "mp_cross_fire_native":
         parser.error("--map-loadscreen-placeholder requires --map-probe mp_cross_fire_native")
     if MAP_COMPASS_PROBE and MAP_PROBE != "mp_cross_fire_native":
         parser.error("--map-compass-probe requires --map-probe mp_cross_fire_native")
     if MAP_LOOSE_CROSSFIRE and MAP_PROBE != "mp_cross_fire_native":
         parser.error("--map-loose-crossfire requires --map-probe mp_cross_fire_native")
+    if MAP_LOOSE_GAMETYPE and MAP_PROBE != "mp_cross_fire_native":
+        parser.error("--map-loose-gametype requires --map-probe mp_cross_fire_native")
+    if MAP_GAMETYPE_FF and MAP_PROBE != "mp_cross_fire_native":
+        parser.error("--map-gametype-ff requires --map-probe mp_cross_fire_native")
+    if MAP_SUNFLARE and MAP_PROBE != "mp_cross_fire_native":
+        parser.error("--map-sunflare requires --map-probe mp_cross_fire_native")
+    if MAP_LOOSE_CRASH_TROPICAL and MAP_PROBE != "mp_cross_fire_native":
+        parser.error("--map-loose-crash-tropical requires --map-probe mp_cross_fire_native")
     if MAP_LOOSE_CROSSFIRE and MAP_COMPASS_PROBE:
         parser.error("--map-loose-crossfire already includes the compass IWI")
     if MAP_LOOSE_CROSSFIRE and MAP_LOADSCREEN_PLACEHOLDER:

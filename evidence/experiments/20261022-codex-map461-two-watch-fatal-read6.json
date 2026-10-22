@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "pid": 28836,
+  "utc": "2026-10-22T09:43:30.540324+00:00",
+  "dump": "0x418c1000",
+  "return_address": "0x49eec8",
+  "error_code": "0xdb659c",
+  "text": "WIN_ZONE_ERROR:[localized_common_gametype_mp.ff]",
+  "status": "read"
+}

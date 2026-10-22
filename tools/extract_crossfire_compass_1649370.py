@@ -16,8 +16,18 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = Path(r"E:\GAME\COD\Original Client\IIPS\IIPSDownload\lf_init_mp_cross_fire_V10.ifs")
-SOURCE_SHA = "c340793c2ea18e6e37cde3b94b9475aa6b7f91bd89c2c111eb54b8b119634386"
+SOURCE_ROOT = Path(r"E:\GAME\COD\Original Client\IIPS\IIPSDownload")
+PACKS = {
+    "crossfire": ("lf_init_mp_cross_fire_V10.ifs",
+                  "c340793c2ea18e6e37cde3b94b9475aa6b7f91bd89c2c111eb54b8b119634386",
+                  Path("main/images/compass_map_mp_cross_fire.iwi")),
+    "gametype": ("lf_init_common_gametype_mp_V25.ifs",
+                 "3f27b8b4f6fb9392d7340b8f491c10dc46616b35df4e2f63756bb4e10dae768d",
+                 Path("main/images/dpad_ks_uav.iwi")),
+    "crash_tropical": ("lf_init_mp_crash_tropical_V21.ifs",
+                       "5605bd43ed2dd5ef5000e4f4ca1de977a350df16ce1a55d23eabf5d1304a2d6d",
+                       Path("main/images/sun_flare_icbm.iwi")),
+}
 IFS_DLL = Path(r"E:\GAME\COD\Original Client\IIPS\IFS2.dll")
 IFS_SHA = "5b0324e0b2ba3545a6c02626287d4fbc6a3116594744f4647333982d85508421"
 LEGACY = ROOT.parent / "CODOL2697/fbe7c395"
@@ -25,7 +35,6 @@ EXTRACTOR = LEGACY / "extract_local_ifs.exe"
 EXTRACTOR_SHA = "82aa733ab9fa97e1ad551d7d6b1e44772a65793d2e50cdb7adcce6e0749e338e"
 CODEC = LEGACY / "decode_loose_resources.py"
 CODEC_SHA = "43a03053bf0ab693c5a3c3697b7522a32ec28737de2719394cb92fef12f9da54"
-RESOURCE = Path("main/images/compass_map_mp_cross_fire.iwi")
 
 
 def sha_file(path: Path) -> str:
@@ -35,14 +44,17 @@ def sha_file(path: Path) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--pack", choices=PACKS, default="crossfire")
     parser.add_argument("--out", type=Path, default=ROOT / "runs/20261022-crossfire-compass-v461")
     parser.add_argument("--all-main", action="store_true",
                         help="decode every carried main/ loose asset instead of only the compass")
     args = parser.parse_args()
+    pack_name, source_sha, required_resource = PACKS[args.pack]
+    source = SOURCE_ROOT / pack_name
     out = args.out.resolve()
     if not out.is_relative_to((ROOT / "runs").resolve()):
         parser.error("output must be within 319/runs")
-    for path, expected in ((SOURCE, SOURCE_SHA), (IFS_DLL, IFS_SHA),
+    for path, expected in ((source, source_sha), (IFS_DLL, IFS_SHA),
                            (EXTRACTOR, EXTRACTOR_SHA), (CODEC, CODEC_SHA)):
         if sha_file(path) != expected:
             raise ValueError(f"input fingerprint mismatch: {path}")
@@ -52,10 +64,10 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="crossfire-ifs-", dir=out) as temp:
         tempdir = Path(temp)
-        alias = tempdir / SOURCE.name
+        alias = tempdir / source.name
         extracted = tempdir / "extracted"
-        shutil.copyfile(SOURCE, alias)
-        if sha_file(alias) != SOURCE_SHA:
+        shutil.copyfile(source, alias)
+        if sha_file(alias) != source_sha:
             raise ValueError("private archive copy changed")
         result = subprocess.run([str(EXTRACTOR), str(IFS_DLL), str(alias), str(extracted)],
                                 capture_output=True, text=True, timeout=120)
@@ -66,9 +78,9 @@ def main() -> None:
             raise ValueError("expected one public IFS member list")
         names = {line.replace("\\", "/").lower(): line.replace("\\", "/")
                  for line in listings[0].read_text(encoding="utf-8-sig").splitlines()}
-        original_name = names.get(RESOURCE.as_posix().lower())
+        original_name = names.get(required_resource.as_posix().lower())
         if original_name is None:
-            raise ValueError("compass IWI absent from IFS member list")
+            raise ValueError(f"required IWI absent from IFS member list: {required_resource}")
         selected = ([name for key, name in names.items() if key.startswith("main/")]
                     if args.all_main else [original_name])
         resources = []
@@ -96,15 +108,15 @@ def main() -> None:
                               "encoded_sha256": encoded_sha,
                               "decoded_sha256": hashlib.sha256(data).hexdigest(),
                               "decoded_size": len(data)})
-        if not any(r.get("present") and r["member"].lower() == RESOURCE.as_posix().lower()
+        if not any(r.get("present") and r["member"].lower() == required_resource.as_posix().lower()
                    for r in resources):
-            raise ValueError("compass IWI not carried or decoded")
+            raise ValueError(f"required IWI not carried or decoded: {required_resource}")
         report = {
-            "schema": 1, "build": 1649370, "source": str(SOURCE),
-            "source_sha256": SOURCE_SHA, "ifs_dll_sha256": IFS_SHA,
+            "schema": 1, "build": 1649370, "source": str(source),
+            "source_sha256": source_sha, "ifs_dll_sha256": IFS_SHA,
             "extractor_sha256": EXTRACTOR_SHA, "codec_sha256": sha_file(CODEC),
             "extractor_exit_code": result.returncode,
-            "scope": "all_main" if args.all_main else "compass_only",
+            "scope": "all_main" if args.all_main else "required_resource_only",
             "listed": len(resources), "decoded": sum(bool(r.get("present")) for r in resources),
             "missing": [r["member"] for r in resources if not r.get("present")],
             "resources": resources,
