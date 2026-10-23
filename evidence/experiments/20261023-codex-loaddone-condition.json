@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T08:45:00+00:00",
+  "scope": "the load-completion callback is gated on the status query returning 2; it returns 0 because [obj+0x4F4] is null",
+  "call_chain_0x8037AB": {
+    "0x8037B8": "call 0xB838A0",
+    "0x8037BF": "call 0xB7A670 (status query) -> eax",
+    "0x8037C9": "esi = eax (status result)",
+    "0x8037D6": "cmp esi, 2",
+    "0x8037D9": "je 0x8037FA (loading branch)",
+    "0x8037FA": "cmp eax(ui_state), 5",
+    "0x8037FD": "je 0x803818 -> call 0x8018B0 (load completion)"
+  },
+  "why_0x8018B0_never_runs": [
+    "the only caller is 0x803818, which is reached only when the status query returns 2 AND ui_state == 5",
+    "in our session the status query returned 0 (observed esi=0x42436CD8, eax=0), so esi != 2 and the loading branch is never taken",
+    "0xB7A670 returns 0 immediately when [obj+0x4F4] is null - so the loader object for this session's object was missing"
+  ],
+  "next": [
+    "at 0x8037BF break and read esi (the object) and [esi+0x4F4] to confirm it is null",
+    "if null, find what should populate [obj+0x4F4] (the loader creation) and why it did not happen"
+  ],
+  "artifacts": {
+    "previous": "evidence/experiments/20261023-codex-loaddone-not-called.json"
+  }
+}
