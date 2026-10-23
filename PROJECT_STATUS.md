@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [PsField probe is unreliable]**
+> Probe on nz1 recorded index 708 / codec -97, but the implied address 0xDA8518 holds zeros. The assumption that ECX is the table entry at 0x6701D0 entry is wrong.
+> The call site computes the entry as [ebp+0x1c] + 12*esi, so the table base is the delta decoder's 5th argument.
+> Next: fix the probe to log the five stack arguments + ECX, making the table base and field index directly observable.
+> Evidence: [psfield probe wrong](evidence/experiments/20261023-codex-psfield-probe-wrong.json).
 > **2026-10-23 [Corrected LSB: 32 bits measured vs 40 predicted; landing field is the suspect]**
 > nz1 (V=22, distance=23, codec 11, 0x100 plain LSB): ps 1308 -> actors 1340 = 32 bits, state 9. The client consumed only 4 field bits after the gate.
 > Width rule looks right ([entry+4] = codec), so the record probably is not decoding field 22. Next: PsField probe to log the actual index/codec/width.

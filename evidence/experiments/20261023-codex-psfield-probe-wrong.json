@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T05:10:00+00:00",
+  "scope": "the existing PsField probe is unreliable: it reported index 708 / codec -97, but the address it implies holds zeros",
+  "probe_output": {
+    "entry": "0xda8518 (implied)",
+    "index": 708,
+    "codec": -97
+  },
+  "check": {
+    "implied_address": "0xDA63E8 + 708*12 = 0xDA8518",
+    "memory_at_that_address": "four dwords of zeros / 0xFFFFFFFF patterns, no -97 codec",
+    "conclusion": "the probe's assumption that ECX holds the field-table entry pointer at 0x6701D0 entry is WRONG; the register holds something else at that moment"
+  },
+  "what_the_disassembly_says": [
+    "the call site (0x6710A2-0x6710BB) computes the entry as [ebp+0x1c] + 12*esi and passes it in ECX",
+    "so the table base is the delta decoder's 5th argument ([ebp+0x1c]), which is NOT necessarily 0xDA63E8",
+    "the probe should therefore log the TABLE BASE as well (read from the caller frame) or log the raw stack arguments"
+  ],
+  "next": [
+    "fix the probe: at 0x6701D0 entry log [esp+4], [esp+8], [esp+0xC], [esp+0x10], [esp+0x14] (the five arguments) plus ECX",
+    "then the real table base and the real field index become directly observable instead of inferred"
+  ],
+  "artifacts": {
+    "tool": "tools/launch_1649370.py (PsField branch)",
+    "server_log": "runs/codex-r157-gs.jsonl"
+  }
+}
