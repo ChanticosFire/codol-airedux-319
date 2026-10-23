@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T08:35:00+00:00",
+  "scope": "final determination: did the client receive and consume our fragments, and what did it do",
+  "session": {"client": "20261023-cnt, pid 30576", "server": "server1649370 on 28971"},
+  "counters": {
+    "bridge_sent": 17,
+    "bridge_received": 6,
+    "bridge_injected": 6,
+    "ring_b_write": 6,
+    "ring_b_read": 6,
+    "ring_a_write": 295,
+    "ring_a_read": 294,
+    "client_stage_after": 5,
+    "client_state_after": 5,
+    "client_messageAck": 1
+  },
+  "conclusion": {
+    "delivery_is_complete": "the bridge injected 6 datagrams and the client's ring-B read count equals the write count (6/6), so all of our packets were written into the client's inbound ring and consumed by it",
+    "the_client_consumed_but_did_not_advance": "stage/state stayed at 5 (lobby) and messageAck stayed 1, so consumption did not lead to acceptance",
+    "therefore": "the remaining defect is in what the client does AFTER reading the datagram - either its netchan parser rejects our frame, or it accepts the frame but the gamestate payload fails its validation"
+  },
+  "what_this_rules_out": [
+    "transport loss between our server and the bridge",
+    "bridge-side filtering or dropping (received == injected == ring write)",
+    "the client never seeing the packets (ring read == 6)"
+  ],
+  "what_it_points_to": [
+    "the client's netchan receive path may reject our datagram before payload parsing (for example because of the address it associates with the connection: connection_adr still shows type 2 / 0.0.0.0 which is the fake address we injected)",
+    "or the payload parses but a validation (checksum feed / configstring count / baseline) fails silently"
+  ],
+  "notable_anomaly": {
+    "connection_adr": "type 2, ip 0.0.0.0, port 0, channel 157",
+    "why_it_matters": "the client's connection object still carries a fake/zero address; if the receive path filters datagrams by matching the source address, our loopback packets would be dropped after being read from the ring"
+  },
+  "next": [
+    "test the address hypothesis: set connection_adr to 127.0.0.1 with the bridge's port before sending fragments (the same trick that worked on the dedrun client_t remoteAddress)",
+    "if the client then advances stage/messageAck, the address was the gate all along",
+    "otherwise instrument the client's decode entry to see whether it even runs on our datagram"
+  ],
+  "artifacts": ["runs/cnt-forward.json", "runs/cnt-gs.jsonl"]
+}
