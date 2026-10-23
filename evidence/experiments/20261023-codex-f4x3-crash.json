@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T07:20:00+00:00",
+  "scope": "a 2-bit index plus 1-bit value per field crashes the client",
+  "experiment": {
+    "body": "runs/snapshot-f4x3.bin",
+    "fields": 4,
+    "encoding": "per field: 2-bit index 0, 1-bit value 0",
+    "result": "client exited (pid 0)"
+  },
+  "series": [
+    "8 zero bits -> crash",
+    "7 zero bits + tail -> state 9",
+    "4 x (2-bit index + 1-bit value) -> crash"
+  ],
+  "conclusion": "the field encoding is still unknown; guessing bit patterns costs a client crash each time, so the next step must be a complete disassembly of the field loop in 0x471D80 (0x471E05..0x471E81) and the value reader 0x671700",
+  "next": [
+    "annotate 0x471E05..0x471E81 instruction by instruction to recover the index/value layout",
+    "only then construct a field stream"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r38-gs.jsonl",
+    "body": "runs/snapshot-f4x3.bin"
+  }
+}
