@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Renderer entity array located: clc -> cgame copy targets [cg]+0x3B98]**
+> Entity-array key 0xDF5B8C38 has 9 refs; new ones at 0x514315/0x514346 etc. 0x5142E0..0x514358 is the clc->cgame copy: ecx=[ebx+0xA904]^key -> edx=entity[index] (stride 0x34) -> edx=edi+0x3B98 (destination) -> call 0xC3C603 memcpy 0xD000 bytes; tail uses lea ecx,[esi+edi+0x3B98].
+> So the renderer entity array is [cg]+0x3B98, and this memcpy is the only bridge from the network array.
+> Next: find the cg global (trace edi at 0x5142E0), then inject eType/origin into cg+0x3B98 and screenshot - or patch this copy to run.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [cgame entities](evidence/experiments/20261023-codex-cgame-entities.json).
 > **2026-10-23 [clc entity injection does not reach the renderer - a second cgame copy exists]**
 > Injected entity 0 into clc+0xA904 (eType=1, origin 5830/-4369/-95, count=1) then scanned 0x10000000..0x40000000 for the float pair: only hit is the injected location itself (0x131E5590), no cgame copy, screenshot black.
 > Conclusion: the renderer does not read the clc entity array; it consumes a second cgame copy that was never populated. Pure clc injection cannot produce a visible entity.
