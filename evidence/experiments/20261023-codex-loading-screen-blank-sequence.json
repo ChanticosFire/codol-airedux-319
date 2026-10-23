@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T12:00:00+00:00",
+  "scope": "user observation: the map loading screen renders correctly and then blanks to black",
+  "observation": {
+    "source": "user screenshot (1920x1080)",
+    "content": [
+      "title: 战术团队竞技模式 交叉火力 (mp_cross_fire war)",
+      "map thumbnail with factions 141特遣队 / 暗影军团",
+      "victory condition text and a score bar 20 / 36 / 2",
+      "bottom-right: 等待玩家数据",
+      "bottom progress bar filled, then empties"
+    ],
+    "sequence": "loading screen with progress -> progress empties -> black screen"
+  },
+  "interpretation": {
+    "confirmed": [
+      "the client does reach the real map loading screen for mp_cross_fire",
+      "UI resources, map art, mode text and the map minimap all load correctly",
+      "the black screen happens after the loading screen closes, not instead of it"
+    ],
+    "new_lead": "the loading screen asks for 等待玩家数据 (waiting for player data); our snapshot carries an empty actor block and no client entities, so the game layer may have no local player/camera to render"
+  },
+  "next": [
+    "reverse the snapshot actor/sub-block format (0x471010 and 0x471560) to emit one local player",
+    "or keep the 2697 client block and repair the mismatch that made sub-block 3 fail",
+    "verify the view origin appears once a player entity is present"
+  ],
+  "artifacts": {
+    "user_screenshot": "attachments/v1/objects/f6/f61e0d3e7420a456452dc057d092fc861ef1ba06ff4b1c89c2082b92aabc5c67"
+  }
+}

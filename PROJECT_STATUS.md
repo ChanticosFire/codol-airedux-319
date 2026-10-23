@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【关键：加载屏正常，黑屏在其关闭之后】** ✅用户截图确认“交叉火力”加载屏完整显示（缩略图、阵营、胜利条件、比分条、进度条），随后进度条置空→黑屏；加载屏右下角为“等待玩家数据”。→ 地图/UI 资源均已正确加载，黑屏属加载屏关闭后的游戏场景/相机初始化问题，且与快照没有 client 实体吻合。下一轮逆向 actor/clients 子块格式并发出本地玩家实体。证据：[JSON](evidence/experiments/20261023-codex-loading-screen-blank-sequence.json)。
+
 > **2026-10-23【configstring 扩展：合规槽位可接受但不改变黑屏】** ✅类型表 12761B：9320 个 255、1135 个 13、955 个 18；槽 0..23 全 255，24..188 多为 13/18。✅把 171 条字符串放 3..173 → `XBOXLIVE_CANTJOINSESSION` 回 0；放到合规槽 189..359（174 条、3307B）→ state 10、无 Com Error、file_missing 59，但截图仍黑（unique=5/max=18）。→ configstring 不是 world 渲染门。下一步验证 bsp 是否加载。证据：[JSON](evidence/experiments/20261023-codex-configstring-expansion.json)。
 
 > **2026-10-23【clc 与 cl 头部相机扫描均 0 候选；转向验证 world/bsp】** ✅state 10 时扫描完整 `clc`（43536B，0x13010E78）与 `cl` 前 131072B（0x13CADAA0），对齐 float 三元组命中均为 0——没有可识别 view origin，支持“world 尚未建立”。下一步确认 bsp 是否加载（映射文件/CM_LoadMap），并把 gamestate configstring 从 3 条扩到 2697 的 ~188 条。证据：[JSON](evidence/experiments/20261023-codex-clc-camera-negative.json)。

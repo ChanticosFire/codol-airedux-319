@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T11:55:00+00:00",
+  "scope": "bsp path loader is not used; the client maps no fastfile or bsp",
+  "session": {
+    "pid": 42976,
+    "state": 10,
+    "breakpoints": [
+      "0x453760:MapLoading",
+      "0x43E060:LoadBspPath"
+    ],
+    "MapLoading_hit": true,
+    "LoadBspPath_hit": false
+  },
+  "static": {
+    "maps_mp_string": "0xDB0D78",
+    "users": [
+      "0x43E060 (sprintf path then call 0x43DFB0)",
+      "0x43E1A1"
+    ],
+    "interpretation": "0x43E060 builds a 'maps/mp/<map>.d3dbsp' style path for an external bsp; CODOL fastfiles embed the bsp, so this loader staying idle matches the platform"
+  },
+  "mappings": {
+    "mapped_files_total": 19,
+    "all_system": true,
+    "ff_or_bsp": 0,
+    "reading": "the client reads fastfiles with ordinary file I/O instead of mapping them, so mapped-file enumeration cannot answer whether mp_cross_fire data is loaded"
+  },
+  "next": [
+    "enumerate file handles (NtQuerySystemInformation/SystemHandleInformation) or hook CreateFileW to see mp_cross_fire*.ff reads",
+    "alternatively, break on the zone/fastfile loader inside CL_MapLoading",
+    "if the fastfile read is confirmed, move to the renderer scene setup"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-eb714810/events.jsonl",
+    "tool": "tools/list_mappings_1649370.py"
+  }
+}
