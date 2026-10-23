@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ps tail 1336 aligns: 28 bits, error 0, state 10]**
+> snapshot-ps-tail1336: ps entry 1308 -> actors 1336 (28 bits), error 0, state 10. Loading text 等待玩家数据 belongs to state 9; at state 10 the frame is black.
+> So the final gate is cgame rendering nothing at state 10 -> back to the entity payload (rejected by the global stream-error flag).
+> Next: A=1 body with one entity PLUS a playerState block, run with ClearStreamError at 0x4724A5.
+> Acceptance: a screenshot showing the map. Evidence: [ps tail1336 state10](evidence/experiments/20261023-codex-ps-tail1336-state10.json).
 > **2026-10-23 [ps block is well-formed with headroom: 28 bits, error 0]**
 > Bodies padded to bit 1500 before the tail: last=0 gives ps entry 1308 -> actors 1336 (28 bits), stream error 0. 28 = 9 header + 1 present + 1 continuation + 5 index + ~12 distance/codec.
 > So the encoder is well-formed; earlier overruns came from placing the tail too early.

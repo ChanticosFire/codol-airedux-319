@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T05:35:00+00:00",
+  "scope": "ps tail at 1336 aligns exactly (28 bits, error 0) and state 10 is reachable; the loading text belongs to state 9, the black frame to state 10",
+  "measurements": {
+    "body": "runs/snapshot-ps-tail1336.bin (172 B, V=1, headroom to bit 1336, then the hybrid tail)",
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1336,
+    "ps_bits_consumed": 28,
+    "stream_error": 0,
+    "state": 10
+  },
+  "loading_screen_timeline": {
+    "state 9": "loading screen with map/mode/minimap and the text 等待玩家数据 (waiting for player data)",
+    "state 10": "screen goes BLACK - the loading text disappears"
+  },
+  "reading": [
+    "the ps block is well-formed and the tail alignment at bit 1336 is correct - the snapshot is accepted and state 10 is reached",
+    "the 等待玩家数据 text is tied to state 9 (loading); once the client reaches state 10 the frame is black",
+    "so 'waiting for player data' is not the final gate - the final gate is that cgame renders nothing at state 10",
+    "that points back at the entity payload: the entity block is rejected by the global stream-error flag, so cgame has no entities and no camera"
+  ],
+  "next": [
+    "combine the two working pieces: an A=1 body with one entity PLUS a playerState block, run with the ClearStreamError patch at 0x4724A5 so the snapshot is accepted",
+    "if that produces entities + ps, cgame may finally have something to render"
+  ],
+  "artifacts": {
+    "summary": "runs/ps1336-summary.json",
+    "frames": [
+      "runs/ps1336-t20.png",
+      "runs/ps1336-t35.png"
+    ],
+    "server_log": "runs/codex-r125-gs.jsonl"
+  }
+}
