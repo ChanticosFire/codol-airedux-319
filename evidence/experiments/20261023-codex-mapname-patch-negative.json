@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:20:00+00:00",
+  "scope": "map-name hypothesis refuted; rendering output stays black even in windowed mode",
+  "patch_experiment": {
+    "when": "state 9, 24 s after connect",
+    "object_slot": "0x333A8EC",
+    "object": "0x8114D8C",
+    "field": "+0xC",
+    "before": "",
+    "written": "mp_cross_fire",
+    "write_ok": true,
+    "readback": "mp_cross_fire",
+    "after_snapshot": {
+      "connection_state": 10,
+      "ui_state": 5
+    },
+    "result": "no UI transition"
+  },
+  "static_recheck": {
+    "site": "0x515D61..0x515E02",
+    "finding": "the object field is fed into the console/command-history buffer (0x76595A4 descriptor); the branch at 0x515D81 parses a 'p<digit> ...' console command. It is not the game/UI bring-up gate."
+  },
+  "rendering_check": {
+    "r_fullscreen_0": "injected via Cbuf",
+    "print_window_png": "unique=1 mean=0 max=0",
+    "desktop_copy_png": "unique=1 mean=0 max=0",
+    "conclusion": "the render target is black regardless of fullscreen/windowed; this is not a PrintWindow/fullscreen-exclusive artifact"
+  },
+  "demo_note": "previous sessions wrote 60-90 KiB demos while state 10, so the frame loop ran and recorded; the current session demo stayed 0 bytes",
+  "next": [
+    "instrument the state 8->9 function that contains 0x515AD6 and its callees 0x60ED00/0x451BD0/0x60E5A0",
+    "verify whether CL_MapLoading (0x453760) is actually entered; the breakpoint did not fire in the last session",
+    "read the world/camera pointer used by the renderer (backEnd) to distinguish 'no world' from 'present failure'"
+  ],
+  "artifacts": {
+    "patch": "runs/codex-r3-patch.json",
+    "status_before": "runs/codex-r3-status9.json",
+    "status_after": "runs/codex-r3-status-after.json",
+    "desktop_png": "runs/codex-r3-desktop2.png",
+    "window_png": "runs/codex-r3-win.png"
+  }
+}
