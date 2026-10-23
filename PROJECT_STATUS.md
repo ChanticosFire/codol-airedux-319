@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Load-completion gate decoded: status==2 AND ui_state==5 required; status returns 0]**
+> Sole caller of 0x8018B0 is 0x803818 in 0x8037AB: call 0xB7A670 -> esi=result; cmp esi,2 must match; cmp ui_state,5 must match; then call 0x8018B0.
+> Our session: status query returned 0 (esi=0x42436CD8, eax=0) -> loading branch never taken -> callback never ran. 0xB7A670 returns 0 when [obj+0x4F4] is null.
+> Next: break at 0x8037BF, read esi and [esi+0x4F4]; if null, find what populates it (loader creation).
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [loaddone condition](evidence/experiments/20261023-codex-loaddone-condition.json).
 > **2026-10-23 [Root cause located: load-completion callback 0x8018B0 is never called]**
 > Breakpoints: 0x8018B0 (LoadDone) 0 hits - never runs; 0xB7A670 (StatusQuery) 1 hit with esi=0x42436CD8 (different from singleton 0x424DDBE8) returning 0.
 > So the UI never leaves the loading screen because nobody calls the completion path; the singleton measured earlier is not the one on this path.
