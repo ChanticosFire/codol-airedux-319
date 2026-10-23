@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T23:00:00+00:00",
+  "scope": "the cols encoder's hint2 trailer layout, and what it implies for our surplus",
+  "cols_write_hint2_tail": {
+    "location": "cols/crates/protocol/src/game/snapshot/mod.rs:1385-1429",
+    "structure": [
+      "a FIXED list of eight hint fields in table order: 82, 89, 93, 98, 101, 104, 106, 122",
+      "each entry writes ONE gate bit (value != 0), and only when the width is non-zero AND the value is non-zero does it write the payload",
+      "the first entry (82, the radar codec) instead writes one gate bit and, when present, six more bits",
+      "the loop BREAKS as soon as `index >= last_changed`, so the trailer is gated by the same `last` value that gates the field loop"
+    ]
+  },
+  "what_this_implies": [
+    "with `last_changed = 0` (what our bodies write) the trailer writes NOTHING - every hint index is >= 0",
+    "so the trailer does not explain the 14-16 bit surplus we measured with last=0",
+    "but it does explain why a REAL server's ps is much longer: its `last_changed` is large, so the trailer engages",
+    "and it means our `last` value is doing double duty: it gates the field loop AND the hint trailer"
+  ],
+  "the_next_experiment": [
+    "set `last` to 22 in the body (instead of 0) and re-measure; the prediction is that the surplus grows by roughly the trailer size (up to 9 gate bits plus any radar payload)",
+    "if the surplus changes in exactly that way, the trailer is confirmed for this build and the remaining surplus (with last=0) must come from somewhere else"
+  ],
+  "artifacts": {
+    "cols": "E:/GAME/COD/codol-airedux/cols/crates/protocol/src/game/snapshot/mod.rs:1385"
+  }
+}

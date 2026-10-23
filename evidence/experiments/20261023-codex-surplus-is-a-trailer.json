@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T22:00:00+00:00",
+  "scope": "both discriminator runs show a 14-16 bit surplus per field, which matches the HINT2 TRAILER that the cols encoder writes after the field loop",
+  "measurements": [
+    {"body": "runs/snapshot-land22-v100.bin", "built": 40, "measured": 54, "surplus": 14, "actors_error": 0},
+    {"body": "runs/snapshot-idx0-v100.bin", "built": 49, "measured": 65, "surplus": 16, "actors_error": 0}
+  ],
+  "what_the_discriminator_showed": [
+    "the distance-1 run also has a surplus, so the surplus is not the distance coder",
+    "and it is not simply the landing value either: the value grew by 21 bits between the two runs while the surplus changed by only 2",
+    "so the surplus is a FIXED-ISH per-snapshot trailer of roughly 14-16 bits"
+  ],
+  "the_match_in_the_cols_encoder": [
+    "cols writes a trailer right after the field loop: `write_hint2_tail(&mut out, last_changed, motion, shellshock, world.perk_display, world.radar_flags)`",
+    "that trailer is exactly the kind of fixed-size tail we are missing",
+    "and the ps block's own disassembly has a matching region: the history-ring copy at 0x471A8C..0x471B50 followed by the extra reads around 0x471B9E"
+  ],
+  "next": [
+    "read cols' write_hint2_tail (crates/protocol/src/game/snapshot/mod.rs line 1385) to get its exact bit layout",
+    "then append the equivalent bits to the body and re-measure: the surplus should disappear and the ps length should match the builder's prediction"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r189-gs.jsonl",
+    "cols": "E:/GAME/COD/codol-airedux/cols/crates/protocol/src/game/snapshot/mod.rs:1385"
+  }
+}
