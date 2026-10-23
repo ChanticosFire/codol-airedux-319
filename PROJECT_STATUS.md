@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Cost model VALIDATED exactly: 56 = 14 + 13 + 28 + 1]**
+> V=22/distance=23 measured ps = 56 bits, error 0: 14 prologue + 13 distance(23) + 28 codec-11 + 1 exit. Exact match.
+> So ps_bits = 14 + distance_bits(d) + field_bits(codec) + 1 is usable for planning. New fact: codec 11 costs 28 bits (not the generic positive-width 12).
+> Next: tabulate field_bits for codecs 11/10/10 (origin trio at indices 22/13/14). Evidence: [cost model validated](evidence/experiments/20261023-codex-cost-model-validated.json).
 > **2026-10-23 [Walk model CONFIRMED: V=23 landing on 22 costs one extra record]**
 > jump23 bodies (V=23, distance=23, 40-bit prediction): measured 54 bits, error 0. The 14-bit excess is exactly one record, because the landing index (22) is below the target (23).
 > Correction: landing index must equal V, so distance = V + 1. For index 22 use V=22 + distance 23 (predicted 40 bits).

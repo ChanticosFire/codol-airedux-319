@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T22:30:00+00:00",
+  "scope": "cost model VALIDATED and exact: 56 bits = 14 prologue + 13 distance + 28 codec-11 + 1 exit",
+  "bodies": [
+    "runs/snapshot-v22.bin (V=22, distance=23, codec 11)",
+    "runs/snapshot-v8.bin",
+    "runs/snapshot-v1.bin"
+  ],
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1364,
+    "ps_bits_consumed": 56,
+    "actors_error": 0,
+    "states": {
+      "t=22": 9,
+      "t=35": 9,
+      "t=50": 9,
+      "t=62": 9
+    }
+  },
+  "decomposition": {
+    "prologue": "has-ps 1 + mode 1 + last 5 + present 1 + continuation 1 + V 5 = 14",
+    "distance": "distance 23 = 1 bit (not-1) + 4 chunks of 3 bits = 13",
+    "field": "28 (codec 11 at offset 20) - NOT the 12 bits the generic positive-width rule predicted",
+    "exit": "1 (has-ps = 0)",
+    "sum": 56,
+    "exact_match": true
+  },
+  "findings": [
+    "the walk model is now confirmed numerically: a single record with distance = V+1 lands exactly on V and stops",
+    "codec 11 costs 28 bits, so it does NOT use the generic positive-width encoder; it is a distinct codec (most likely a 28-bit float/mantissa form)",
+    "the cost model is therefore usable for planning: ps_bits = 14 + distance_bits(d) + field_bits(codec) + 1, where distance_bits(23) = 13"
+  ],
+  "next": [
+    "tabulate field_bits for the codecs of the fields we actually need (the origin trio at offsets 16/20/24 = indices 22/13/14, codecs 11/10/10)",
+    "then emit three records (one per origin component) and accept whatever total length results - the model predicts it in advance"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r147-gs.jsonl",
+    "encoder": "runs/_gen_v22.py",
+    "module": "server1649370/ps_codec.py"
+  }
+}
