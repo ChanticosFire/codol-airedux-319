@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T10:05:00+00:00",
+  "scope": "the glass breakpoint (0x4475F0) breaks the baseline run - the known-good body no longer reaches state 10",
+  "experiment": {
+    "body": "runs/snapshot-hybrid-empty-actors.bin (the known-good baseline)",
+    "breakpoints": [
+      "0x471980:SnapTracePlayerState",
+      "0x471010:SnapTraceActors",
+      "0x4475F0:SnapTraceGlass"
+    ],
+    "state": 8,
+    "snap_trace_records": 0,
+    "note": "without breakpoints this same body reaches state 10; with the glass breakpoint the run stalls at state 8 and no block is traced"
+  },
+  "reading": [
+    "0x4475F0 is a hot function used far beyond the snapshot parser, so patching int3 there disturbs the client",
+    "this is the third instance of the same tool hazard (mid-function/hot breakpoints silently break the run)",
+    "so the baseline geometry cannot be measured with that breakpoint; only ps/actors traces are safe"
+  ],
+  "next": [
+    "measure the baseline geometry with only 0x471980 and 0x471010 (both proven safe)",
+    "derive the actors length from the ps/actors pair plus the body length and the EOF position"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r134-gs.jsonl"
+  }
+}

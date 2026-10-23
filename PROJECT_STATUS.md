@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Round 100] Glass breakpoint breaks the baseline run**
+> Baseline body + 3 breakpoints (incl. 0x4475F0): state 8, zero snap_trace records; same body without breakpoints reaches state 10.
+> 0x4475F0 is hot; third instance of the breakpoint hazard. Next: measure geometry with only 0x471980 + 0x471010.
+> Acceptance: a screenshot showing the map. Evidence: [glass breakpoint breaks run](evidence/experiments/20261023-codex-glass-breakpoint-breaks-run.json).
 > **2026-10-23 [Shifted A=0 body overruns in actors; tail bits must be re-roled]**
 > snapshot-ps-tail1336 with 3 breakpoints: ps 1308 -> actors 1336 -> glass 1382 (err 1), body 1376 bits; actors consumed 46 bits > 27 reused bits.
 > The 27 bits after hybrid ps were a mix of ps-tail/actors/glass/EOF; shifting them 28 bits changes their roles.
