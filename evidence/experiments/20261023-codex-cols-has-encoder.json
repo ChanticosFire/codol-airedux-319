@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T17:05:00+00:00",
+  "scope": "cols contains a complete snapshot WRITER - the reference implementation for the open encoder work",
+  "discovery": {
+    "repo": "E:/GAME/COD/codol-airedux/cols",
+    "crates": [
+      "protocol",
+      "server"
+    ],
+    "snapshot_module": "crates/protocol/src/game/snapshot/mod.rs (136 KB, 30 submodules)",
+    "top_level_writers": [
+      "bootstrap(server_time)",
+      "bootstrap_at_origin(...)",
+      "frame(...)",
+      "equipped_frame(...)",
+      "aimed_frame(...)",
+      "player_frame(...)",
+      "player_frame_with_motion(...)",
+      "player_frame_with_world(server_time, command_time, origin, establish_baseline, equipment, angles, world)"
+    ],
+    "block_writers": [
+      "enemy.rs: write_enemy_entity / write_enemy_client",
+      "corpse.rs: write_corpse",
+      "hud.rs: write_hud / write_hud_with_nuke / write_hud_with_preparation / write_hud_with_remote_exit",
+      "glass.rs, props.rs, impact.rs, animal.rs, helicopter.rs, ... (one writer per block)"
+    ]
+  },
+  "why_it_matters": [
+    "we have been hand-crafting the snapshot bit stream with partial knowledge; cols already contains a complete, working encoder for the 3.3.3.3 generation",
+    "its player_frame_with_world shows the whole block sequence with explicit validation of every field, which is exactly the semantic information our encoder lacks",
+    "the formats differ by generation, so it cannot be copied verbatim - but it is the reference to port the missing pieces from (playerstate fields, actors payload, glass)"
+  ],
+  "next": [
+    "read player_frame_with_world's body far enough to extract the ordered list of blocks and the playerstate field order it writes",
+    "compare that order with the 1649370 field table (0xDA63E8) to map cols field names onto our offsets",
+    "that mapping is what turns our 'unknown semantics' into a concrete porting task"
+  ],
+  "artifacts": {
+    "cols_repo": "E:/GAME/COD/codol-airedux/cols"
+  }
+}

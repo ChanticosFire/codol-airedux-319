@@ -163,3 +163,26 @@ Evidence: `20261023-codex-actors-terminator-found.json`,
 
 **A captured snapshot from a real server would answer all five at once** - the
 bytes could be replayed and compared instead of inferred.
+
+## 9. Reference implementation available (cols)
+
+`E:\GAME\COD\codol-airedux\cols` is a working Rust server for the **3.3.3.3**
+generation and it contains a **complete snapshot writer** - the piece this
+project had to hand-craft:
+
+- `crates/protocol/src/game/snapshot/mod.rs` (136 KB, 30 submodules)
+- entry points: `bootstrap`, `frame`, `equipped_frame`, `aimed_frame`,
+  `player_frame`, `player_frame_with_motion`,
+  **`player_frame_with_world(server_time, command_time, origin,
+  establish_baseline, equipment, angles, world)`**
+- one writer per block: `enemy.rs` (`write_enemy_entity`), `corpse.rs`,
+  `hud.rs`, `glass.rs`, `props.rs`, `impact.rs`, `animal.rs`, ...
+
+It cannot be copied verbatim (different generation), but it is the **reference to
+port from**: its validation code encodes exactly the field semantics this project
+is missing. The practical next step is to read
+`player_frame_with_world` far enough to recover the **ordered block list and the
+playerstate field order**, then map those field names onto the offsets in the
+`0xDA63E8` table.
+
+Evidence: `evidence/experiments/20261023-codex-cols-has-encoder.json`.

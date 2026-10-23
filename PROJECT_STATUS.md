@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Discovery: cols contains a complete snapshot WRITER]**
+> cols (3.3.3.3 Rust server) has a full encoder: snapshot/mod.rs (136 KB, 30 submodules), entry points incl. player_frame_with_world(server_time, command_time, origin, establish_baseline, equipment, angles, world), and one writer per block (enemy/corpse/hud/glass/props/impact/animal...).
+> It is the reference to port from: it encodes the field semantics our encoder lacks. Recorded as docs/SNAPSHOT-FORMAT.md section 9.
+> Next: read player_frame_with_world to recover the ordered block list and playerstate field order, then map onto the 0xDA63E8 offsets. No client interaction this round.
+> Evidence: [cols has encoder](evidence/experiments/20261023-codex-cols-has-encoder.json).
 > **2026-10-23 [Added docs/RUNBOOK.md]**
 > Operations guide: prerequisites, ports, one-command run (with the expected 9->10->10->0), manual six-step sequence, client state table (0/5/8/9/10 with what the frame shows), evidence locations, troubleshooting table, and safe-vs-risky changes (breakpoint hazard).
 > With RELEASE.md + SNAPSHOT-FORMAT.md + the evidence records the project is reviewable and operable without the chat history. No client interaction this round.
