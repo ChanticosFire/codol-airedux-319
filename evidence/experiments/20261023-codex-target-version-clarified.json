@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T14:00:00+00:00",
+  "scope": "CORRECTION from the user: the target is CODOL 3.19.26.22 / build 1649370, not 2697",
+  "target_clarified": {
+    "client": "CODOL 3.19.26.22, build 1649370",
+    "server_role_of_2697": "the codol_dedrun.exe under runs/2697-server-test is a borrowed protocol-compatible server, NOT the target version",
+    "why_it_works_at_all": "the 1649370 client advertises shortversion 1.1.1.13 in connectResponse and the 2697 dedrun speaks the same 1.1.1.13 lineage (CODOL_Xor, seq-only netchan, 3-bit command stream), which is why challenge/connect/stats/gamestate complete",
+    "consequence": "when we build our own server, its acceptance test is the 3.19.26.22 client, and the 2697 source is only a protocol reference for the shared 1.1.1.13 generation"
+  },
+  "new_reference_found": {
+    "file": "他人文件参考/INTEL-native319-进大厅汇总.md",
+    "what_it_is": "a status report for someone else's Rust native319 server (16 modules, 5226 lines) serving CODOL 3.19.26.13 - the version immediately before ours",
+    "verified_results_there": "CS=9 (auth passed) + DW=5 (LSG alive) + SCENE=5, all achieved by server-side replies with zero client binary changes",
+    "their_blocker": "SCENE=6 (entering the lobby scene) is blocked because [lobby+0x1F4] becomes -2 every round, so the bdLobby state machine never completes a cycle",
+    "architecture": {
+      "main.rs": "entry and seven run modes",
+      "lsg.rs": "LSG session: handshake, key derivation, 0x85 decrypt, task dispatch, heartbeat",
+      "svc.rs": "svc10/71/12/80/6 payload construction",
+      "crypto.rs": "Tiger-192, HMAC-SHA1, AES-128-CBC, SESSION_KEY, derive_keys",
+      "frame.rs": "bd frame codec",
+      "stun.rs": "UDP 3074/3078 STUN replies, 1E pump handshake",
+      "auth.rs": "HTTPS /auth/ ticket issuance",
+      "iips.rs": "IIPS UDP 8000/8080",
+      "ipc.rs": "IPC bridge to a Python business side",
+      "upnp.rs": "fake IGD"
+    },
+    "ports": {"lsg": "TCP 3074 + UDP 3074 (same process)", "auth": "TCP 4175", "iips": "UDP 8000/8080", "upnp": "UDP 1900/49152"}
+  },
+  "what_we_can_reuse": [
+    "the LSG auth frame layout and key derivation shape matches our server319.lsg and bdproto319.py, so those two agree",
+    "their port map is a checklist for a complete 3.19-class server",
+    "their SCENE=6 blocker is a known pitfall to expect on our side too",
+    "their zero-patch claim supports the approach of doing everything server-side"
+  ],
+  "what_it_does_not_cover": [
+    "it is a lobby/auth server, not an in-game server; nothing there about gamestate/snapshot/clc_move",
+    "it targets 3.19.26.13, so offsets and some payloads may differ from 3.19.26.22"
+  ],
+  "revised_plan": {
+    "step_1": "keep server319.lsg as the auth/lobby side (it already reaches the lobby for our build)",
+    "step_2": "build the in-game server ourselves against the 3.19.26.22 client, using runs/2697-native-src only as the 1.1.1.13 protocol reference",
+    "step_3": "acceptance = the 3.19.26.22 client leaves loading and can stand/move; never use 2697 as the acceptance target",
+    "step_4": "log everything from the first packet so version differences between 3.19.26.22 and 2697 show up immediately"
+  },
+  "next": [
+    "install py7zr or 7zip to inspect 他人文件参考/3.19服务-客户端.7z (the 3.19 server+client bundle) for a matching 3.19.26.22 server sample",
+    "start server1649370/ with the phase-1 UDP reply set against the 3.19.26.22 client",
+    "keep the version banner printed by both client and server so mismatches are obvious"
+  ],
+  "artifacts": ["他人文件参考/INTEL-native319-进大厅汇总.md", "他人文件参考/3.19服务-客户端.7z", "他人文件参考/bdproto319.py"]
+}
