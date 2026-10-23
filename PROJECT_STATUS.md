@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Route B: clean state-10 hard disconnect is invisible to the client]**
+> Killed the gameserver while the client was confirmed at state 10.
+> Result: state stayed 10 for 90 s and `ring_a` kept advancing (51 -> 66 -> 96 -> 134/141), so the client kept sending usercmd as if nothing happened.
+> Conclusion: no connection timeout leaves the match at state 10; lobby return needs an explicit game-side message.
+> Next: locate the end-of-match / leave-game message (svc handler that calls the client's own disconnect path, or a gamestate field marking the match finished).
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [hard-kill state10](evidence/experiments/20261023-codex-hard-kill-state10.json).
 > **2026-10-23 [Route B: hard disconnect stops usercmd, but the client stays in the match]**
 > Killed the gameserver process while the client was connected.
 > Result: `ring_a` froze at 34 immediately (client stopped sending usercmd, so it noticed the disconnect), yet **state stayed 9 for 90 s** and the process never exited or returned to the lobby.
