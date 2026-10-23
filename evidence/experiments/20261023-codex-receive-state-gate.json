@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "source_image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "method": "static disassembly of the exact 1649370 offline image using tools/disasm_image_1649370.py",
+  "receive_path": [
+    "0x4f8ed8 calls 0x5c2260 for the previous ring B packet",
+    "0x5c22af checks msg length >= 4 and 0x5c22bd checks for OOB marker -1",
+    "non-OOB falls through to 0x5c22fc: cmp dword ptr [0x76446b0], 7",
+    "0x5c2303: jl 0x5c2413, where xor al,al; ret",
+    "only when state >= 7 does 0x5c2380 call 0x674eb0 and 0x5c23a0 call 0x674740"
+  ],
+  "runtime_observation_from_delay_seq_a": {"state_after": 5, "stage_after": 5, "ring_b_read": 10, "ring_b_write": 10, "client_message_ack": 1},
+  "conclusion": "At state 5, this receive path discards non-OOB gamestate before netchan processing. Patching connection+0x34 cannot change this earlier guard. The required state transition to >=7 remains unknown.",
+  "qualification": "The disassembly proves the branch in this executable; a runtime breakpoint at 0x5c2303 is still needed to prove this precise branch was taken in the session.",
+  "next": "Trace the natural state transition from 5 to 7 and the required OOB or reliable message before retrying gamestate. Instrument 0x5c2303 and 0x5c2380 in the same client session."
+}

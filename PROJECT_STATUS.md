@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23 · 接收路径静态定位** ✅已验证：1649370 exe 的 `0x5C22FC` 对非 OOB 包要求 `[0x76446B0] >= 7`，否则 `0x5C2303` 跳到返回 0，尚未到 `0x674EB0`/`0x674740`。方案 A 运行时该状态为 5，解释了为什么先补 `connection+0x34` 不推进 ACK。⚠️推断：自然状态前置是当前更强卡点。❌未知：尚需同会话断点证实实际分支及找出 5→7 的触发条件。证据：[接收门 JSON](evidence/experiments/20261023-codex-receive-state-gate.json)。
+
 > **2026-10-23 · 1649370 自建游戏服** ✅已验证：`--delay-send 8` 方案 A 让 `connection+0x34=2` 的补丁先于 3 个 `seq=3` gamestate 分片约 7.3 秒生效，分片投递和消费成立（环 B `10/10`）。✅已验证：`stage` 仍 5、`messageAck` 仍 1；排除「单靠该序号补丁即可进图」。⚠️推断：还存在可靠命令层或连接状态前置条件。❌未知：本轮未产生 getchallenge，challenge 为 0，序号门本身尚不能彻底证伪。实现与证据见 [1649370-STATUS.md](1649370-STATUS.md) 和 [实验 JSON](evidence/experiments/20261023-codex-delay-seq-a.json)。
 
 > **2026-10-23【投递链由计数器证实（环 B 13/13）；`svc_gamestate` 是 LONG 不是 byte】** ✅结束时读客户端环计数器：**`ring_b_read=13`、`ring_b_write=13`**（环 A 219/219）→ **服务端 13 个数据报已写入环 B 并被客户端全部消费**，投递问题排除。✅`sv_client.c:2340-2402` 真实写入序列：`WriteByte(svc_EOF=7)`→`WriteLong(0)`→**`WriteLong(svc_gamestate=1)`**→`WriteLong(configDataSequence)`→`WriteLong(clientNum)`→`WriteLong(checksumFeed)`→`WriteLong(0)`→configstrings；**`svc_gamestate` 是 4 字节 LONG**，此前单字节 `0x01` 宽度错误。已按正确宽度构造 `07 00000000 01000000 …`，**客户端仍不 ack**。→ 问题收敛到 **payload 内容**：缺真实 `configDataSequence`/`clientNum`/`checksumFeed`/全部 configstring/baseline/结尾 `svc_EOF`。下一轮：**抓 2697 真实 gamestate 解码**，或**读 dedrun 的 `sv.checksumFeed`/`svs.configDataSequence`** 复用，再按地图默认构造 configstrings。证据 [20261023-codex-ringb-delivered.json](evidence/experiments/20261023-codex-ringb-delivered.json)。
