@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T13:00:00+00:00",
+  "scope": "ROOT CAUSE: the playerState block's history argument is NULL, which is the symptom of cgame not being fully initialised",
+  "measured": {
+    "snap_trace_probe": {
+      "stream_arg1": "0x134F4FA8",
+      "history_arg3": "0x00000000  <-- NULL",
+      "count_at_history_plus_3ba0": 0
+    },
+    "final_state": 10
+  },
+  "the_call_site": {
+    "0x47239A": "test edi,edi ; je 0x47232B          -> if the history pointer is NULL, take a different path",
+    "0x4723CB": "push edi                          -> arg3 to 0x471980",
+    "0x4722E8": "cmp [edi+0x3B88], eax             -> edi is a large client structure (the one holding +0x3BA0)",
+    "conclusion": "arg3 is a client-side structure that the caller passes as NULL when the client is not fully in a map"
+  },
+  "the_circular_dependency": [
+    "the ps field decode requires `current == last`, and `current` comes from that history structure",
+    "the history structure is NULL until the client is fully initialised (cgame up, map loaded)",
+    "a fully initialised client is exactly what this project has never achieved - the frame is black because cgame has no scene data",
+    "so: **no map load -> no history structure -> no field decode -> no playerState content -> (indirectly) no scene data**",
+    "and the loop closes: the world cannot be made visible by constructing a snapshot, because the snapshot's content path is gated behind the world already being loaded"
+  ],
+  "why_earlier_results_looked_like_progress": [
+    "an empty playerState parses fine (stream_error 0) and the client still reaches state 10, so every 'accepted' body was really 'empty ps accepted'",
+    "the field-write attempts added bits after the empty block, which the following blocks consumed - producing the inconsistent lengths and the crashes"
+  ],
+  "what_this_means_for_the_next_phase": [
+    "the real target is the MAP LOAD completion, not the snapshot content: until cgame initialises, no playerState field can ever be decoded",
+    "the load path was explored in the earlier rounds (0x8018B0 / 0x803830 / 0xB7A670 and the command-buffer route) and never completed - that is where the work must resume",
+    "a captured real snapshot would help only after the client is in a state where it parses snapshots with a valid history, so it does not bypass this dependency"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r184-gs.jsonl",
+    "addresses": ["0x47239A (edi NULL check)", "0x4723CB (push arg3)", "0x471980 (ps block)"]
+  }
+}

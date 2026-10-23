@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ROOT CAUSE: ps history arg is NULL; content is gated behind a fully initialised client]**
+> SnapTrace args: stream 0x134F4FA8, history (arg3) = NULL, [history+0x3BA0] = 0, state 10. Call site 0x47239A tests edi for NULL and 0x4723CB pushes it as arg3; edi is a large client structure (0x4722E8 reads edi+0x3B88).
+> So the field decode needs a history structure that only exists once cgame/map load completes - which this project never achieved. Circular: no map load -> no history -> no field decode -> no ps content.
+> Real target is MAP LOAD COMPLETION, not snapshot content. A captured snapshot does not bypass this.
+> Evidence: [root cause](evidence/experiments/20261023-codex-root-cause-history-null.json).
 > **2026-10-23 [DECISIVE: field decode gated by current == last; the ps history ring is empty in our sessions]**
 > 0x471A72 sets [ebp-0xD0] = last (my slot_d0). 0x471ADC increments arg2's count; when counter >= count, [ebp-0xC0] = 0x1869F; 0x471B50 `jne 0x471C41` skips the field unless current == last.
 > With an empty history the sentinel never equals last, so no field decodes - matching Slot never firing, loop_c8 0, slot_d0 0, stream_error 0. An empty playerState is legitimately accepted.

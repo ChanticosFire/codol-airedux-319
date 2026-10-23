@@ -2959,6 +2959,29 @@ def main(argv=None) -> int:
                                          "bit": bit}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"ps_loop_error": f"{label}: {error}"})
+        if label.startswith("SnapTrace"):
+            try:
+                registers = row.get("registers", {})
+                esp = int(registers["esp"], 0)
+
+                def arg(n: int) -> int:
+                    raw = self.process.read(esp + 4 * n, 4)
+                    return struct.unpack("<I", raw)[0]
+
+                stream = arg(1)
+                history = arg(3)
+                count = 0
+                if history:
+                    raw = self.process.read(history + 0x3BA0, 4)
+                    count = struct.unpack("<I", raw)[0]
+                n = getattr(self, "_snaptrace_count", 0)
+                if n < 16:
+                    self.record({"snap_args": {
+                        "stream": hex(stream), "history": hex(history),
+                        "count_3ba0": count, "n": n}})
+                self._snaptrace_count = n + 1
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"snap_args_error": f"{label}: {error}"})
         if label.startswith("PsBit"):
             try:
                 registers = row.get("registers", {})
