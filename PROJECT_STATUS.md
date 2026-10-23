@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MILESTONE: full match flow - connect, load, play, automatic end, back to lobby]**
+> Added --match-duration S (alias for --oob-delay): seconds from connect to the automatic OOB disconnect.
+> Experiment --match-duration 50: t=20s state 9 (loading) -> t=40s state 10 -> t=55s still 10 -> OOB disconnect at 1792779468.89 -> t=70s state 0 (new conn, adr type 0) -> t=90s still 0.
+> Complete player-visible loop: handshake -> map load -> match -> automatic end -> lobby, fully server-driven by a timer.
+> Remaining: visible/interactive world still blocked by the client entity-loop parser limitation; optional "match over" screen would need PS field 83 (full ps field stream).
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [match flow](evidence/experiments/20261023-codex-match-flow.json).
 > **2026-10-23 [MILESTONE: server-driven end of match - OOB disconnect returns the client to the lobby]**
 > Added --oob-command/--oob-delay (send_due_oob wired into both serve-loop branches); sent UDP OOB `disconnect` 25 s after the gamestate.
 > Result: t=15s state 8, t=30s state 10 (adr type 2), OOB sent at 1792779300.41, t=45s state 0 (new conn, adr type 0), t=60s still state 0.
