@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Route B: playerState block entry decoded on 1649370]**
+> Disassembled 0x471980: ps block = one has-ps bit, then one last-mode bit (1 = previous+1, 0 = 5-bit last index), then the field loop up to last; cursor past length raises Com_Error(0xdb465c).
+> Hybrid already sets bit1312=1 (has ps) and bit1313=1 (incremental last), consistent with it parsing ps and reaching state 10.
+> To send intermission we need last >= 83 and field 83 = 6; the 1649370 field-83 encoding still needs confirmation (cols table 0xc55f70; 1649370 template 0xDA9920).
+> Next: locate 1649370's ps field table, then encode bit1=1, bit2=0, 5-bit last=83 plus fields up to 83.
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [ps block entry](evidence/experiments/20261023-codex-ps-block-entry.json).
 > **2026-10-23 [Route B: complete playerState block encoding recovered]**
 > cols writer (snapshot/mod.rs ~898-960): header = svc_snapshot(0) + server_time u32 + delta + flags(8 baseline) + bit(0) no prior ps + bit(1) transmit origin + 8 bits last_changed+1 + bit(1) gap to field 0 + bit(1) -97 codec + command_time u32; then per field gap(index-prev) + value. Width-8 scalar = bit(1) + 1 byte; other widths use remainder-bits-then-bytes with codecs for float(0)/short angle(87)/u32(97)/events(75,94)/angles(100,101).
 > Intermission recipe: single field (83, 6, 8) with last_changed=83.
