@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T08:30:00+00:00",
+  "scope": "the client can leave the match: a console disconnect takes it from state 10 to state 0",
+  "experiment": {
+    "pre": {
+      "state": 10,
+      "connection": "0x133BA698",
+      "adr_type": 2
+    },
+    "action": "cbuf injected the console command 'disconnect'",
+    "post": {
+      "state": 0,
+      "connection": "0x139A2994",
+      "adr_type": 0,
+      "connection_state": 0
+    },
+    "samples": {
+      "+5s": 0,
+      "+15s": 0,
+      "+30s": 0
+    }
+  },
+  "significance": [
+    "this proves the client's own leave-match path works: state 10 -> 0 with the connection torn down (adr type 0)",
+    "it also proves our cbuf injection is reliable and executes console commands",
+    "the missing piece is only the server-side trigger: the svc command channel does not execute console commands (tested earlier), so we need either the svc disconnect opcode or an OOB disconnect"
+  ],
+  "next": [
+    "find the svc opcode that the client maps to its disconnect path (or use OOB)",
+    "then the server can end a match: send that opcode and the client returns to the lobby"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r75-gs.jsonl"
+  }
+}
