@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Two-field body: one delta then stream error]**
+> loop2f (2 full header groups, 33 ps bits): delta_call = 1, stream_error 1, state 9. One iteration should cost 16 bits, so 33 should fit two - it does not, so the real per-iteration cost is larger (extra bits inside 0x670FF0).
+> Next: arm the existing PsRead probe to log the stream cursor per read and measure the exact iteration budget.
+> Evidence: [two-field one delta](evidence/experiments/20261023-codex-two-field-one-delta.json).
 > **2026-10-23 [CORRECTION: 0x471C41 is the NORMAL delta path, not a skip]**
 > 0x471C41: idiv -> slot index from the game clock; *0x58 stride into the ps ring at [ebx+0xA900]^0x3613BDA3; read present bit; [esi] = last; call 0x670FF0 (delta); then 0x471CA3 loops back to has-ps if no error.
 > Round 171 inverted this. So the ps block DOES decode fields and DOES loop; the accepted body decodes one field (commandTime=0), it is not empty; multi-field = one full header group per field, terminated by has-ps=0.
