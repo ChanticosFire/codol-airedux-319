@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ps block parses without a stream error; 55 bits consumed]**
+> Swept the field advance V=1/5/9/13: ps entry 1308 -> actors 1363 (55 bits) with error=0 at ps exit (previously always errored). The decoder accepted header + present + delta index + codec; the extra bits mean it decoded more fields after our value.
+> state 9 now only because the tail offset is wrong - mechanical fix.
+> Next: sweep tail offsets 1335/1340/1350/1363 to find state 10, then check the frame.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps clean parse](evidence/experiments/20261023-codex-ps-clean-parse.json).
 > **2026-10-23 [Frame-loop encoder overruns; the 5-bit value is a field distance]**
 > runs/_gen_ps_frame.py: ps entry 1308 -> actors entry 1390 (82 bits) with stream error 1 and state 9; 1390 > 1376 bits, so the block overran.
 > Re-read 0x670FF0: the 5-bit value advances the decoder position (distance), skipped fields are copy-only (0x670D30), only the landing field is decoded (0x6701D0). With V=8 it landed near index 7 and decoded many fields until overrun.

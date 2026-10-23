@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T21:30:00+00:00",
+  "scope": "the ps block now parses WITHOUT a stream error (error=0) but consumes 55 bits, so our tail is misaligned",
+  "sweep": {
+    "bodies": [
+      "runs/snapshot-ps-v1.bin",
+      "runs/snapshot-ps-v5.bin",
+      "runs/snapshot-ps-v9.bin",
+      "runs/snapshot-ps-v13.bin"
+    ],
+    "processed_snapshots": 1,
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1363,
+    "ps_bits_consumed": 55,
+    "stream_error_at_ps_exit": 0,
+    "state_after": 9
+  },
+  "what_changed": [
+    "previously the ps block ALWAYS set the stream error; now, with the frame-loop model plus a real field value, ps exits with error=0",
+    "that means the decoder accepted the header + present + delta + codec we supplied",
+    "the 55-bit consumption (vs our 26 written bits) shows it kept decoding extra fields after our value, reading into what we intended as the tail"
+  ],
+  "consequence": [
+    "state is still 9 only because the actors/glass/EOF tail now sits at the wrong bit offset",
+    "the fix is mechanical: place the tail exactly where ps actually ends"
+  ],
+  "next": [
+    "sweep the tail offset: build bodies with the tail at 1335 / 1340 / 1350 / 1363 and find the offset that yields state 10",
+    "then check whether the frame changes (the ps carries a non-zero value in the origin field)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r110-gs.jsonl",
+    "encoder": "runs/_gen_ps_v.py"
+  }
+}
