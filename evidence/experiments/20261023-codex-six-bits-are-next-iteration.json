@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T03:00:00+00:00",
+  "scope": "the post-delta region reads NO bits - it is the ps history ring copy - so the 6 bits belong to the loop prologue of the next iteration",
+  "disassembly_0x471ca3_0x471d60": [
+    "0x471CA3  cmp [edi],0 ; je 0x471A3E        -> no stream error: loop back to the has-ps read",
+    "0x471CAC  cmp [ebp-0xC0],0x1869F ; je 0x471D60",
+    "0x471CC6  cmp [edi],0 ; jne 0x471D60",
+    "0x471CD6  idiv [ebx+0xA8E8] ; xor [ebx+0xA900],0x3613BDA3  -> ring slot address",
+    "0x471CFF  rep movsd  (ecx = 0x16 dwords = 88 bytes)         -> COPY the ps struct into the ring",
+    "0x471D0C..0x471D2C  clock and count increments, then jge 0x471D60",
+    "0x471D60  epilogue"
+  ],
+  "key_observation": [
+    "this entire region contains NO call to 0x447190 (the bit reader) - it is pure bookkeeping",
+    "so the six bits the client consumes after the delta are NOT read here",
+    "they can only be read by the next loop iteration at 0x471A3E, i.e. has-ps and the header that follows it"
+  ],
+  "the_arithmetic": [
+    "one full iteration measured against the pinned body: 8 (header) + 40 (delta) + 6 + 1 (terminator) = 55, and the client consumed exactly 55",
+    "so the next iteration's prologue costs exactly SIX bits before the terminating has-ps is consumed",
+    "the candidates are has-ps + mode + last (7) or has-ps + last (6) - the second matches exactly"
+  ],
+  "conclusion": [
+    "the layout is pinned for this body shape: header(8) + delta(40) + next-iteration-prologue(6) + terminator(1)",
+    "and the six bits are simply the beginning of the NEXT iteration, which our padding supplies as zeros and which the client then abandons when it hits the terminator",
+    "that means the block does not have a fixed trailer at all: it has a next-iteration prologue that our body terminates early"
+  ],
+  "next": [
+    "to write a second real field, supply that next-iteration prologue explicitly (has-ps = 1 followed by its header) instead of zeros",
+    "to write ONE field, place the terminator so that it lands where the client expects it - which the pinned 55-bit body already does"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x471CA3 loop-back",
+      "0x471CFF ring copy",
+      "0x471A3E has-ps"
+    ],
+    "server_log": "runs/codex-r192-gs.jsonl"
+  }
+}
