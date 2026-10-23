@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Constant load bypassed (edi=0 at 0x47226D) and the gate at 0x47239A never reached]**
+> Exact-match re-run: GateConst (0x47226D) 1 hit with edi = 0; GateTest (0x47239A) 0 hits. So the caller is entered after 0x472268 and our snapshot's flag bit at 0x47238A reads 0, taking the full-frame path (push 0 at 0x4723AC, push edi=0 at 0x4723CB).
+> Open: 0x471D80 still never fires, so the skip of the entity call lies between 0x4723B9 and 0x4723DD. Next: read 0x4723C4..0x4723F0.
+> Evidence: [const bypassed, gate never](evidence/experiments/20261023-codex-const-bypassed-gate-never.json).
 > **2026-10-23 [THE GATE: 0x47239A test edi,edi ; je 0x47232B - NULL history skips ALL content blocks]**
 > 0x671D80 is only the snapshot header parser: zero calls to entities/ps/actors/glass in 0x671D80..0x672580. The content blocks are called from the caller at 0x4723xx, and 0x47239A tests edi: if it is NULL, 0x47232B sets the stream error and returns, skipping entities, playerState, actors and glass.
 > That explains 0x471D80's zero hits, the sentinel entity_count and state 9.

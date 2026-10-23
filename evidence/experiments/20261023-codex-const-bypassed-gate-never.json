@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T18:00:00+00:00",
+  "scope": "DECISIVE: at 0x47226D edi is ALREADY 0 (the constant load at 0x472268 is bypassed), and the gate at 0x47239A is NEVER reached",
+  "measurement": {
+    "gate_const_0x47226d": {
+      "hits": 1,
+      "edi": "0x0"
+    },
+    "gate_test_0x47239a": {
+      "hits": 0
+    }
+  },
+  "what_this_proves": [
+    "0x47226D executes, so control does pass through that point",
+    "but edi is 0 there, even though the instruction at 0x472268 is `mov edi,0xC89A490` (5 bytes, ending exactly at 0x47226D)",
+    "so the path does NOT execute 0x472268: control enters the function at a LATER offset, or jumps past the constant load",
+    "and 0x47239A (the `test edi,edi` gate) is never reached at all, so execution leaves before it"
+  ],
+  "the_flow_that_fits_all_measurements": [
+    "the caller is entered after 0x472268, so edi starts as 0",
+    "the bit read at 0x47238A returns 0 (our snapshot's flag bit), which jumps to 0x4723AC",
+    "0x4723AC pushes 0 into the 0x671D80 call and falls through to 0x4723CB, which pushes edi (= 0) - matching the round-174 measurement of edi = 0 at 0x4723CB",
+    "0x47239A is never reached because it belongs to the bit == 1 branch",
+    "so our snapshots take the 'full frame / no history' path, and the caller still proceeds to call 0x671D80"
+  ],
+  "the_open_contradiction": [
+    "if the caller proceeds past 0x4723B9, the entity block at 0x4723DD should be called - yet round 197 measured ZERO hits at 0x471D80",
+    "so something between 0x4723B9 and 0x4723DD must also be conditional; the disassembly showed `test edi,edi` again at 0x47239A but the entity call site needs its own inspection"
+  ],
+  "next": [
+    "read 0x4723C4..0x4723F0 (between the 0x671D80 call and the entity call) to find what gates 0x471D80",
+    "that is the last unexplained skip between a working header parse and a never-called entity block"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r206-gs.jsonl"
+  }
+}
