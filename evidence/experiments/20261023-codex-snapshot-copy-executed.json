@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T20:00:00+00:00",
+  "scope": "the snapshot copy path does run; it copies empty data, which corrects the previous 'copy never ran' reading",
+  "static": {
+    "sequence": [
+      "0x472808 lea edi,[ebx+0xc]      (source = cl+0xC)",
+      "0x47280B call 0x472830          (copy into the snapshot buffer)",
+      "0x472810 mov [ebx+0x3BE4],1     (accepted flag)"
+    ],
+    "copy_function": "0x472830(edi=source, esi=destination) copies fields 0x3B7C..0x3BB8",
+    "other_callers": [
+      "0x472745",
+      "0x47275F"
+    ]
+  },
+  "deduction": {
+    "accepted_is_1": "therefore 0x47280B executed, therefore the copy ran",
+    "snap_all_zero": "the source fields were already zero, so copying them produced zeros",
+    "root_cause": "our 167-byte baseline carries no entity/playerState fields; has_base=0 selects the zero baseline and the body contributes nothing"
+  },
+  "next": [
+    "emit a snapshot body that actually carries fields (entity and playerState deltas)",
+    "the hand-built ps/entity encodings must be completed using the 0x670D30 type branches",
+    "keep the 167-byte baseline only as the network-acceptance fallback"
+  ],
+  "artifacts": {
+    "previous_claim": "evidence/experiments/20261023-codex-clsnap-empty.json"
+  }
+}
