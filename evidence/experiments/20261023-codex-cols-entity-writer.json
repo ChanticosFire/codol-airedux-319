@@ -30,9 +30,15 @@
   "conclusion": "3.3.3.3 and 1649370 differ in the entity-table header, so the cols writer cannot be copied verbatim; however the field-stream grammar (last bound + distance + codec) matches what the decoder expects and remains the best template",
   "next": [
     "write a Python port of the cols field-stream encoder driven by 0xDA63E8 and graft it after our own 1/1/8/12 entity-table header",
-    "start with a minimal field set (eType + 3 positions) and verify entity_count and the frame"
+    "start with a minimal field set (eType + 3 positions) and verify entity_count and the frame",
+    "resolve the 3-bit vs 4-bit gap question by checking which decoder path the 3.3.3.3 entity actually hits"
   ],
   "artifacts": {
     "cols": "E:/GAME/COD/codol-airedux/cols/crates/protocol/src/game/snapshot/enemy.rs"
+  },
+  "entity_gap_writer": {
+    "file": "crates/protocol/src/game/snapshot/enemy.rs:403",
+    "rule": "1 bit (1 = distance 1); otherwise 3-bit chunks of 7 until the remainder is below 7",
+    "conflict": "the decoder in snapshot/mod.rs reads 4-bit chunks (part<15), so writer and reader disagree in this repo - likely two different entity families/versions share the same function name"
   }
 }
