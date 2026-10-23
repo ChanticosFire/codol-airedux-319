@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T05:35:00+00:00",
+  "scope": "analysis round: where the renderer gets its camera, and why the field loop cannot end cleanly",
+  "findings": {
+    "cl_snap_is_not_the_camera_source": "writing angles/origin at cl+0x3B7C+0x20/0x30 changed nothing, so the renderer reads a different structure (likely a refdef/cg snapshot copy)",
+    "field_loop_terminator": "0x471D80 keeps looping while the stream error flag at [edx] is zero; the only way it stops is reading past length, which sets the error flag and makes 0x471D80 return 1",
+    "why_state_9": "with error set, the following blocks (playerState, actor) read from an already-exhausted stream, so the snapshot never promotes to state 10"
+  },
+  "next": [
+    "locate the renderer camera input: search for the code that writes vieworg/viewangles into a refdef-like global before R_RenderScene",
+    "or find cg.snap (the game copy) rather than cl.snap, and inject there as a diagnostic",
+    "protocol side: determine the entityState field count so the field stream can end exactly at length"
+  ],
+  "artifacts": {
+    "previous": "evidence/experiments/20261023-codex-clsnap-injection-negative.json"
+  }
+}
