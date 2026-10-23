@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "utc": "2026-10-23T19:55:00+00:00",
+  "scope": "confirm that the 2697 server log is readable and contains the gamestate seed",
+  "log_location": "runs/2697-server-test/main/qconsole.log",
+  "verified_lines": [
+    "CoDOL 2697 netconst checksum=36e8f17b seed=6b6fb5d0",
+    "CoDOL 2697 publication rows=62 aliases=0 recipes=0 unmapped=0 registration=1",
+    "CoDOL 2697 publication dry encode=1 bytes=748 actual_client_crc=1",
+    "CoDOL 2697 reliable audit mapped=37 immutable_omitted=212 failures=0",
+    "CoDOL 2697 publication rows=188 aliases=0 recipes=0 unmapped=0 registration=1"
+  ],
+  "user_screenshot_comparison": {
+    "screenshot_values": "checksum=3be817b seed=cb6fb5d0",
+    "log_values": "checksum=36e8f17b seed=6b6fb5d0",
+    "meaning": "the seed and checksum differ per server start, so they are session-random values, not constants baked into the build"
+  },
+  "why_this_matters": {
+    "checksumFeed": "SV_SendClientGameState writes sv.checksumFeed into the gamestate; the seed printed at startup is the most likely source of that value for this build",
+    "our_own_server": "we can choose our own checksumFeed, but the client may validate it against the map's expected checksum, so the first attempt should reuse the value shape (a 32-bit random) and observe whether the client rejects it",
+    "capture_path": "the dedrun also can be captured directly: forward --dump-in recorded 3871 outbound datagrams in one session, with repeated 74747474 bytes indicating XOR ciphertext"
+  },
+  "answer_to_user": "yes - the 2697 server log is readable at runs/2697-server-test/main/qconsole.log; it even carries the per-session seed that the gamestate needs",
+  "next": [
+    "decrypt one captured dedrun gamestate using challenge ^ serverId ^ messageAck and compare its first bytes with the header we emit",
+    "read client->challenge via the correct offset constant (read_dedrun_client lacks OFF_CHALLENGE; forge_client_ack defines it as OFF_RELIABLE_SEQUENCE + 20)"
+  ],
+  "artifacts": ["runs/2697-server-test/main/qconsole.log", "runs/dump-in.jsonl"]
+}
