@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T20:30:00+00:00",
+  "scope": "offline brute force of the netchan key against the captured gamestate",
+  "input": {
+    "file": "runs/dec-in.jsonl",
+    "first_packet_length": 1172,
+    "raw_head_32": "0400008000028a048a0400000000dcdfdfdfdfb2af80bcadb0acac80b9b6adba",
+    "body_head_32": "00028a048a0400000000dcdfdfdfdfb2af80bcadb0acac80b9b6adbadfb2afdf",
+    "seq_word": "0x80000004"
+  },
+  "results": {
+    "single_byte_key_strict": [],
+    "single_byte_key_byte_gamestate": [],
+    "plaintext_first_byte_07": [7],
+    "interpretation": {
+      "strict_header_no_match": "no constant XOR byte produces 07 00000000 01000000 (svc_EOF + svc_gamestate as a long) at the body start",
+      "key_7_only_fixes_first_byte": "with key 7 the first plaintext byte is 0x07, but the next byte becomes 0x05 instead of 0x00, so the key is rolling",
+      "conclusion": "the cipher key is NOT constant across the packet; the command-driven rolling term from CODOL_Xor is active, which means reliableCommands[reliableAck & 127].command is non-empty"
+    }
+  },
+  "what_this_rules_out": [
+    "an empty command stream for this captured packet",
+    "any single-byte key hypothesis for the whole datagram"
+  ],
+  "next": [
+    "start a dedrun session and read client_t.reliableCommands[(reliableAck & 127)] to obtain the exact command string",
+    "replay CODOL_Xor with that command to decrypt the stored capture and verify the 07 00000000 01000000 header",
+    "then mirror the same header and configstring layout in server1649370's outbound body"
+  ],
+  "artifacts": ["runs/dec-in.jsonl"]
+}
