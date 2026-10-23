@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T04:30:00+00:00",
+  "scope": "the cols-order gates body lands on state 8 (a reload) rather than state 10",
+  "body": {
+    "file": "runs/snapshot-gates.bin",
+    "bytes": 172,
+    "layout": "count1 header + 9 entity bits + 8 gate bits + 1 HUD + 4 lists + 15 empty anim/actor + clients + glass + EOF"
+  },
+  "result": {
+    "client": "alive (pid 36624)",
+    "state": 8,
+    "entity_count": 0,
+    "ring_b": "read 5 / write 9 (backlog)"
+  },
+  "reading": [
+    "state 8 is lower than the state 9 we had before, so this body made the client re-enter loading",
+    "the 13 gate bits at this position are therefore wrong for 1649370, or the block order differs from 3.3.3.3",
+    "entity_count stayed 0, so the entity table was not applied either"
+  ],
+  "next": [
+    "revert to the empty-actor body (state 9, entity_count=1) as the working baseline",
+    "break on 0x471980 (playerState) and 0x471010 (actors) with that body to see which block fails first"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r63-gs.jsonl",
+    "body": "runs/snapshot-gates.bin"
+  }
+}
