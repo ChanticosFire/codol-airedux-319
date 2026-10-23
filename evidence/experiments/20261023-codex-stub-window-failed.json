@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T05:30:00+00:00",
+  "scope": "write a valid callback into cl2+0x30 before the heartbeat calls 0x5B2C10",
+  "session": {
+    "name": "20261023-world-9",
+    "pid": 8568,
+    "patches": {
+      "ring-a-drain": "0x674F30 -> 31c0c3",
+      "0x5B31B4": "e8 57 fa ff ff -> 90 90 90 90 90 (temporary, to let cl2 rebuild without calling 0x5B2C10)"
+    },
+    "bridge": "forward --start-challenge --fake-stats --send-move --keepalive"
+  },
+  "attempt": {
+    "stub": "0x11240000: xor eax,eax; ret",
+    "write": "after the forward started, read cl2=0x130D0E78 and write [cl2+0x30] = stub ^ (cl2+0x2C) ^ [0xE60B78] = 0x4DF921CF; readback matched",
+    "restore": "0x5B31B4 restored to e8 57 fa ff ff, readback matched"
+  },
+  "result": {
+    "phase_never_reached_8": true,
+    "phase_at_write": 0,
+    "phase_after_restore": 0,
+    "ring_a": [4, 4],
+    "server": "no new AdministraClient line; only bot mantle/menucmd entries",
+    "conclusion": "with 0x5B2C10 skipped the client never advances to phase 8, so there is no rebuilt cl2 to patch and the stub is never called. The temporary skip prevents the very window it was meant to protect."
+  },
+  "lesson": "the rebuild (0x4FE740: CL_Shutdown + CL_Init) and the 0x5B2C10 calls both happen at phase 8, and the rebuild comes first. Any patch to cl2+0x30 must therefore run at the end of CL_Init, not from outside the process between polls.",
+  "next": [
+    "hook 0x4FE780 (the instruction right after the CL_Init call inside 0x4FE740) and have the stub write [cl2+0x30] automatically: cl2 = [0x76638F4] ^ 0x6891D1C7, value = stub ^ (cl2+0x2C) ^ [0xE60B78]",
+    "keep 0x5B31B4 untouched in that run so the heartbeat can call 0x5B2C10 immediately after the stub has written the callback",
+    "observe the server out counter: if it stops growing, the callback is the acknowledgement producer and the stub needs to return the right value; if the client crashes, the stub signature is wrong"
+  ],
+  "artifacts": ["runs/w9-stub.json", "runs/w9-in.jsonl"]
+}
