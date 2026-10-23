@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T08:45:00+00:00",
+  "scope": "the actors block is the failing one: it overruns our 27-bit tail and sets the stream error",
+  "trace": {
+    "ps_entry_bit": 1345,
+    "ps_error": 0,
+    "actors_entry_bit": 1373,
+    "actors_error": 0,
+    "glass_entry_bit": 1408,
+    "glass_error": 1,
+    "length_bits": 1408,
+    "actors_bits_consumed": 35,
+    "note": "1408 equals the whole body length, so the actors block ran to the very end and set the error"
+  },
+  "reading": [
+    "ps is fine (28 bits, error 0) and the actors block starts exactly at 1373",
+    "the actors block then consumes at least 35 bits and overruns, because our 27-bit hybrid tail does not contain a valid actors payload",
+    "so the A=1 tail must be rebuilt: the actors block needs real content, not the no-entity hybrid tail"
+  ],
+  "next": [
+    "feed the actors block plenty of zero bits and measure where glass starts - that gives the actors payload length for the A=1 case",
+    "then rebuild the tail with the measured length and check the EOF acceptance"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r131-gs.jsonl"
+  }
+}

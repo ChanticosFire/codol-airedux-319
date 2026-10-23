@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The actors block overruns the 27-bit tail]**
+> v3 body trace: ps 1345 (err 0) -> actors 1373 (err 0) -> glass 1408 (err 1); 1408 = body end, so actors consumed 35 bits and overran.
+> ps is solid; the hybrid no-entity tail has no valid actors payload. Next: zero-feed the actors block, measure the glass entry, rebuild the A=1 tail.
+> Acceptance: a screenshot showing the map. Evidence: [actors overrun](evidence/experiments/20261023-codex-actors-overrun.json).
 > **2026-10-23 [ALIGNMENT ACHIEVED: entity + ps, ps consumes exactly the predicted 28 bits]**
 > snapshot-entity-ps-v3.bin (176 B): v2 prefix 0..1344 + 28-bit ps at 1345 + 27-bit tail. Measured ps entry 1345 error 0, actors 1373, ps 28 bits (= predicted), entity_count 1, state 9.
 > First time the ps block sits exactly where expected inside an entity-carrying snapshot. Rejection now happens AFTER ps, i.e. in the actors/glass/EOF tail (we used the hybrid no-entity tail).
