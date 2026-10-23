@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T10:10:00+00:00",
+  "scope": "0xB7A670 is a generic helper with 220 call sites, so it is not a load-specific status query",
+  "finding": {
+    "callers": 220,
+    "examples": [
+      "0x4700AD",
+      "0x470109",
+      "0x7F3B6F",
+      "0x7F3BF5",
+      "0x8037BF",
+      "0x8038EE",
+      "0x80391E"
+    ],
+    "conclusion": "the function is a general-purpose accessor; the loading-screen decision is one specific caller among many"
+  },
+  "implication": [
+    "our earlier interpretation of 0xB7A670 as 'the load status query' was too narrow - it is called from UI, menu, and loader code alike",
+    "so the load-completion gate (status==2 && ui_state==5) at 0x8037AB is still the right structure, but the session we traced never executed that call site",
+    "the remaining task is to find what causes 0x8037AB to run at all (it appears to be a UI-refresh path), rather than analysing 0xB7A670 further"
+  ],
+  "next": [
+    "identify what triggers 0x8037AB (its own callers) and why it is idle in our state",
+    "or accept that this path is driven by a UI refresh we are not engaging and look for the event that schedules it"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r94-gs.jsonl"
+  }
+}
