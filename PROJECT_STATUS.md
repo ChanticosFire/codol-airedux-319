@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ps block EXACTLY aligned (32==32); error moved to the actors block]**
+> Measurement table showed the landing field is narrower than 11 bits. Writing value 5 in 3 bits: builder 32, client 32 exactly. ps error 0, actors entry error 0, but decide stream_error 1.
+> So the error is raised between the actors entry and the decision - by actors or glass - most likely because [stream+0x24] (written by the ps header as `last`) is reused by the actors block as the actor index.
+> Next: append 60-100 zero bits after the ps before the tail so actors has room. First body with a provably correct playerState.
+> Evidence: [ps aligned error moved](evidence/experiments/20261023-codex-ps-aligned-error-moved.json), docs/MEASUREMENTS.md.
 > **2026-10-23 [Hardening: tools/selfcheck.py -> 8/8 passed]**
 > One command runs codec round-trip, encoder-vs-accepted-body, evidence audit, three argument/hazard rejections, required files, and the runner delivery block. Result: 8/8 passed, exit 0, ~10 s.
 > Each check maps to a defect that once cost a full session. It is the gate before any future experiment. RELEASE.md leads with it.

@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T16:20:00+00:00",
+  "scope": "the ps block is now EXACTLY aligned (32 == 32); the stream error is raised later, by the actors block",
+  "body": {
+    "file": "runs/snapshot-w3-v5.bin",
+    "construction": "V=22, distance=23, codec 11, gate=1, value=5 in 3 bits, exit",
+    "builder_ps_bits": 32
+  },
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1340,
+    "ps_bits_consumed": 32,
+    "ps_alignment": "EXACT (builder 32 == client 32)",
+    "actors_entry_error": 0,
+    "decide_stream_error": 1,
+    "states": {"t=25": 9, "t=35": 9, "t=45": 9, "t=55": 9, "t=62": 9},
+    "delivery": "forward summary missing, but the traces and decide record prove the snapshot was parsed this time"
+  },
+  "why_this_matters": [
+    "the hypothesis from the measurement table was right: the landing field is narrower than 11 bits, and writing a 3-bit value makes the ps block land EXACTLY on 32 bits",
+    "the ps entry error is 0 and the actors entry error is 0, but the final stream error at the decision point is 1",
+    "therefore the error is raised BETWEEN the actors entry and the decision - i.e. by the actors block or the glass block",
+    "this is the first body where the ps block is provably correct and the failure has moved into the next block"
+  ],
+  "open_question": [
+    "the actors block starts at 1340 and the tail we append begins with the 13-bit terminator (bit0=0, bit1=1, 11 bits = 2047)",
+    "the 29-bit body (single22) terminates the actors block with the same tail, so the difference must be state the ps block leaves behind - most likely [stream+0x24], which the ps header writes (last) and the actors block reuses as the actor index"
+  ],
+  "next": [
+    "append extra zero room after the ps (e.g. 60-100 bits) before the tail, so the actors block has space whatever index it starts from",
+    "or write an actors terminator that is valid for a non-zero starting index (bit 0 -> bit 1 -> 11-bit absolute 0x7FF) followed by zero padding"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r165-gs.jsonl",
+    "encoder": "runs/_gen_w3.py",
+    "measurement_table": "docs/MEASUREMENTS.md"
+  }
+}
