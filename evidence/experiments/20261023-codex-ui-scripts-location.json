@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T02:25:00+00:00",
+  "scope": "UI assets are not in the loose runtime folder; the UI scripts must come from a pk3 or the exe",
+  "exploration": {
+    "runtime_main_dirs": [
+      "demo",
+      "images",
+      "models",
+      "screenshots",
+      "sound",
+      "video"
+    ],
+    "ui_directory": "absent",
+    "finding": "the client's UI/menu scripts are not loose files in runtime/main, so the 'enter game view' decision lives either in a packed archive or inside the executable"
+  },
+  "implication": [
+    "the loading screen we see is UI-rendered, so UI scripts do run from somewhere",
+    "locating that script (or the cgame init path it triggers) is the shortest route to understanding what still gates the switch to the game view"
+  ],
+  "next": [
+    "list the archives the client loads (pk3/iwd) and inspect the UI scripts inside",
+    "or trace the client's UI state transitions at runtime to see which state the loading screen maps to and what event it waits for"
+  ],
+  "artifacts": {
+    "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/runtime/main"
+  }
+}
