@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T18:45:00+00:00",
+  "scope": "implemented the authoritative gap + codec encoder/decoder and verified it with a round-trip self test",
+  "module": {
+    "path": "server1649370/ps_codec.py",
+    "classes": [
+      "BitWriter",
+      "BitReader"
+    ],
+    "functions": [
+      "write_gap",
+      "read_gap",
+      "write_field",
+      "read_field",
+      "_self_test"
+    ],
+    "rules_transcribed_from": "cols/crates/protocol/src/game/snapshot/mod.rs (fn gap 1431-1442; codec branches 917-955)"
+  },
+  "self_test": {
+    "command": "python -m server1649370.ps_codec",
+    "result": "self-test failures: 0",
+    "coverage": [
+      "gap distances 1, 2, 3, 15, 16, 17, 30, 31, 46 round-trip",
+      "codecs -88, -87, -75, -97, -100, -101, 6, 10, 11, 12, 16, 32 round-trip",
+      "assertion that codec 10 with a value emits gate + 2 remainder bits + 1 byte = 11 bits"
+    ]
+  },
+  "why_this_matters": [
+    "this is the first encoder in the project written from a working reference instead of from inference",
+    "the positive-width path is the corrected one: gate bit, then width % 8 remainder bits FIRST, then whole bytes",
+    "the -94 event codec is deliberately left unimplemented (needs the event table) rather than guessed"
+  ],
+  "next": [
+    "compose the 1649370 prologue (has-ps + mode + 5-bit last + present + continuation + V + distance) in front of write_field",
+    "pick a landing field whose codec is a positive width so the corrected path is exercised, and check the resulting ps length against the client's measurement"
+  ]
+}

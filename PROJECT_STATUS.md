@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ps_codec.py: authoritative gap + codec encoder, self test 0 failures]**
+> server1649370/ps_codec.py implements write_gap/read_gap and write_field/read_field transcribed from the cols encoder, incl. the corrected positive-width rule (gate bit, remainder bits first, then bytes). -94 left unimplemented on purpose.
+> python -m server1649370.ps_codec -> self-test failures: 0 (gap 1/2/3/15/16/17/30/31/46; codecs -88/-87/-75/-97/-100/-101/6/10/11/12/16/32).
+> First encoder written from a working reference instead of inference. Next: compose the 1649370 prologue and land on a positive-width field. No client interaction this round.
+> Evidence: [ps codec module](evidence/experiments/20261023-codex-ps-codec-module.json).
 > **2026-10-23 [MAJOR: authoritative ps encoder extracted from cols; our codec assumption was wrong]**
 > Recorded verbatim (docs/SNAPSHOT-FORMAT.md section 10): prologue with 8-bit last_changed+1, gap() = 1 bit for distance 1 else 4-bit chunks of 15 + 4-bit remainder, and the full codec table (-88/-87/-75/-94/-97/-100/-101/positive N).
 > Key correction: positive N writes a gate bit, then N%8 REMAINDER bits first, then whole bytes - NOT 'zero-flag + N LSB-first bits' (our assumption rounds 69-110). That mismatch likely explains every overrun when carrying a value.
