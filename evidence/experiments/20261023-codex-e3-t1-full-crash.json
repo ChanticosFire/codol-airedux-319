@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T21:15:00+00:00",
+  "scope": "correction: the e3-t1 body does crash in a full-length session",
+  "previous_claim": "round 6 reported e3-t1 as alive (pid 37720, entity_count 0)",
+  "this_run": {
+    "body": "runs/snapshot-e3-t1.bin",
+    "session": "full length (70s forward, 40s after connect)",
+    "result": "client exited (pid 0)"
+  },
+  "explanation": [
+    "the round-6 run used a 30s forward window and only ~16s of wait, so the snapshot was likely never delivered before the client was stopped",
+    "alive in that window therefore did not test the body at all",
+    "the full-length run proves the body crashes once the snapshot actually arrives"
+  ],
+  "corrected_conclusion": [
+    "changed=1 + codec=1 + last=1 + one field still crashes",
+    "the only bodies proven safe so far are those with codec=0 (c1k0l0 / c0k1l0 / c0k0l0), i.e. bodies that declare no field payload"
+  ],
+  "next": [
+    "verify that the c1k0l0 family really does reach state 10 with a full session (that is the safety baseline check)",
+    "then vary the field payload length upward from zero with codec=1 and strict full sessions only"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r56-gs.jsonl"
+  }
+}
