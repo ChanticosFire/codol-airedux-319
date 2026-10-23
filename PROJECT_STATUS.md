@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Landing on index 22: clean parse but 54 bits vs predicted 40]**
+> land22-v100 (V=23, distance=23, codec 11, 0x100): built 40, measured ps 1308 -> 1362 = 54, actors error 0, delta 1, state 9.
+> Two exact fits: (a) distance 23 costs 27 bits, or (b) codec-11 value costs 25 bits.
+> Next: V=1 with distance 1 (predicted 49) discriminates: if 49, the value is wider; else the distance coder is.
+> Evidence: [land22 54 bits](evidence/experiments/20261023-codex-land22-54bits.json).
 > **2026-10-23 [CORRECTION: landing index is V-1; accepted body writes field 21 (event), not 22]**
 > 29 bits decompose exactly as 1+1+5+1+1+5+13+1+1. With V=22 the landing is index 21 = offset 268 / codec -94 (event), which costs 1 bit for an empty event - so the body never touches origin[0]. Codec 11 would cost gate+11 bits.
 > This index-off-by-one is what made the recent measurements incoherent. Next: V=23 distance=23 -> landing index 22 (codec 11), predicted ps = 40 bits.
