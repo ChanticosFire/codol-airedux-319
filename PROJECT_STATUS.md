@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Delta entity path: accepted but produces no entity]**
+> hybrid (has_base=0) then delta-base1 (has_base=1, delta bit, 8-bit index 0) under ClearStreamError: trace before 0/after 0 (no stream error), but state 10, ui 5, entity_count 0, black frame.
+> Reading: copy did not create an entity - either base slot 0 is empty or [ebp+0x14] is null and the copy is skipped.
+> Next: trace [ebp+0x14] at 0x471D80 for the second snapshot; if null, delta is unusable and the field path (0x671700) remains the only way to create an entity.
+> Safe baseline: hybrid body (state 10, empty world) - not playable. Evidence: [delta no entity](evidence/experiments/20261023-codex-delta-no-entity.json).
 > **2026-10-23 [UI state enumeration: all values render black; the scene is the gate]**
 > At client state 10 forced UI state to 0/2/3/4/5/6/7 and screenshotted each: all black (unique 5-6, mean 0, max 19-53). UI state does not gate the rendered frame; the black comes from the renderer having no scene (no camera/entities). Idea closed.
 > Next: with owner's authorization to patch the client, return to the entity path - ClearStreamError already lifts entity_count to 1 at state 10; feed a valid entity (eType + origin) under the same patch and check the frame.
