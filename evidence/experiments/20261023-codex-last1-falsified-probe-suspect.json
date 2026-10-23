@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T05:00:00+00:00",
+  "scope": "last=1 with two groups still decodes ONE field - and that puts the PsField probe itself in doubt",
+  "body": "runs/snapshot-last1.bin (prologue last=1, two [present(0)+delta] groups, terminator, 27 bits)",
+  "measurement": {
+    "ps_field_records": 1,
+    "decide_stream_error": 1,
+    "state": 9
+  },
+  "falsified_hypotheses": [
+    "loop shape A: has-ps at top of every iteration + full header each time (loop2) -> 1 decode",
+    "loop shape B: header once + N continuation records (rec2) -> 1 decode",
+    "loop shape C: header once + N [present+delta] groups with last=0 (pf2) -> 1 decode",
+    "loop shape D: same as C but with last=1 -> 1 decode",
+    "and every one of them ends in stream_error = 1"
+  ],
+  "the_suspicion": [
+    "the PsField probe sits on 0x6701D0 and has now reported exactly ONE record in every single experiment, including the accepted body",
+    "a constant of 1 across five structurally different bodies is much more likely to be a property of the PROBE than of the stream",
+    "plausible reasons: 0x6701D0 may not be the entry used for the ps delta path in the way assumed, or the probe only fires once per snapshot because the harness stops on the first hit, or ECX/args are read at a moment that makes the record meaningless",
+    "so the PsField numbers should not be used as evidence until the probe itself is validated"
+  ],
+  "what_is_still_solid": [
+    "the accepted all-zero body (29 bits, state 10) and the exact bit layout that reproduces it: 8-bit prologue + 1 present bit + one delta + terminator",
+    "stream_error at 0x4724A5 as an accept/reject oracle",
+    "the parse chain and the present-bit / delta call structure read from the disassembly of 0x471B9E",
+    "the whole delivered server (handshake, gamestate, state-10 snapshots, match end, lobby return, 8/8 self-checks)"
+  ],
+  "recommendation": [
+    "stop constructing bodies: five consecutive structural hypotheses have been falsified, and the instrument used to judge them is now suspect",
+    "the next real step is a proper debugger session on 0x471980/0x670FF0 with a REAL snapshot, where the loop bound and the per-field flags can be observed directly",
+    "without a captured snapshot this is the only route that produces interpretable data"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r177-gs.jsonl",
+    "encoder": "runs/_gen_last1.py"
+  }
+}

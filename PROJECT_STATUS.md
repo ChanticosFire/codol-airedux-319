@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [last=1 falsified too; PsField probe now suspect]**
+> Four loop shapes (has-ps per iteration / header+N records / header+N present+delta with last=0 / same with last=1) all give exactly ONE ps_field record and stream_error 1.
+> A constant 1 across five different bodies is more likely a probe property than a stream property; PsField must be validated before its numbers are used.
+> Solid: accepted 29-bit layout, stream_error oracle, disassembled present-bit structure, and the delivered server with 8/8 self-checks.
+> Recommendation: stop constructing bodies; use a real debugger session on 0x471980/0x670FF0 with a real snapshot.
+> Evidence: [last1 falsified](evidence/experiments/20261023-codex-last1-falsified-probe-suspect.json).
 > **2026-10-23 [last = field count]**
 > pf2 (last=0, two groups) decoded one field with stream_error 1. The loop bound is `cmp ecx,[eax+0x3BA0]`, a COUNT from the prologue's mode+last. Accepted body had last=0 -> 1 field.
 > Next: last=1 with two groups; predict two decodes and stream_error 0.
