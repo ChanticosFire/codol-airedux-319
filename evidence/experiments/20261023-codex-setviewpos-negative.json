@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T15:20:00+00:00",
+  "scope": "setviewpos does not change the black frame",
+  "experiment": {
+    "state": 10,
+    "command": "setviewpos 5830 -4369 -95 0 90",
+    "coordinates_source": "2697 server command U 5830 -4369 -95",
+    "injection": "cbuf status injected",
+    "screenshot": "unique=5 mean=0 max=29",
+    "result": "no visible change"
+  },
+  "reading": "either the client does not execute setviewpos in this build, or the camera moves but the game scene still draws nothing",
+  "next": [
+    "recover the real ps field table (0xDA63E8 dwords are not the ps field table)",
+    "find the camera/view globals updated by the movement code and read them after setviewpos",
+    "consider a present/scene hook to count draw calls before chasing more input data"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r15b-gs.jsonl",
+    "screenshot": "runs/codex-r15b-screenshot.png",
+    "cbuf": "runs/codex-r15b-setview.json"
+  }
+}
