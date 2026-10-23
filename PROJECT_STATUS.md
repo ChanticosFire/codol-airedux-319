@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【位布局验证正确；缺字段 delta 崩溃】** ✅按 SnapTrace 布局构造 `snapshot-entity1-v2.bin`（170B/1345bits）：hybrid[0:163] + byte163 置 bit1307/1308 + count(8)=1 + id(12)=0 + ps 缺席 + actor/sub4/glass + EOF；发送后 ack 仍 1、客户端 pid=0。→ 解析器确实进入实体字段循环（布局对），但无字段 delta 流导致越界崩溃。下一轮确定 0x471D80 的字段数量与 0x671700 编码，先生成全零字段流再测 entity_count/cl.snap。证据：[JSON](evidence/experiments/20261023-codex-entity-no-fields-crash.json)。
+
 > **2026-10-23【SnapTrace：实体表 bit1307、playerState bit1308、actor bit1309】** ✅实测 hybrid/state 10：`0x671650` 命中 `cursor=164,bit=1307`；`0x471980` 命中 `cursor=164,bit=1308`；actor 块起于 1309。三者相邻各 1 bit——实体表读 bit1307=0 直接返回（count 保持 memset 0）、ps 读 bit1308=0 返回，故 hybrid 是空世界。`SnapTraceAccepted` 的 esi 非 message，字段无效。下一轮按此布局位级重建：byte163 bit3=1 → form=1 → count(8) → 实体号(12) → 字段 delta → ps → actor/sub4/glass → EOF。证据：[JSON](evidence/experiments/20261023-codex-snaptrace-bit-positions.json)。
 
 > **2026-10-23【hybrid 解析出 0 实体；单翻 count 位失败】** ✅hybrid 被接受、state 10（pid 39200）时 `[0x7859558]`=0、实体号数组全 0、cl.snap 全 0——空世界确认；`accepted` 会在解析开始时清零，单次读取会抓中间态，后续以 entity_count/cl.snap 为主判据。✅把 byte7 bit3 置 1（count 名义 1）→ state 9、ack 未推进、count 停在 0xFF：count>0 时必须同时给 12-bit 实体号与字段 delta。下一轮做位级重建（count=1 + 实体号 + 字段 delta + 原尾部）。证据：[JSON](evidence/experiments/20261023-codex-hybrid-entity-count-zero.json)、[JSON](evidence/experiments/20261023-codex-count-flip-fails.json)。
