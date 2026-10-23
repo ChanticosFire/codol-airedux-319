@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ps header decoded: has-ps(1) + mode(1) + (mode ? bit+1 : 5-bit last)]**
+> Bit-reader hooks (0x447190, 0x66EC30) recorded 0 calls inside the ps block, so the code was read instead: 0x471A3E has-ps, 0x471A45 skip if 0, 0x471A4D mode, 0x471A58 inc bit+1 / 0x471A5D 5-bit last, [ebp-0xD0]=last. 0x471A8C..0x471B50 is history-ring copying (stride 0x58), no bit reads.
+> Header is 7 bits for mode=0 but measured cost is 10 -> 3 more bits around 0x471B52..0x471CAC where field parsing lives.
+> Next: disassemble 0x471B52..0x471CAC, mirror the layout, watch the UI.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps header decoded](evidence/experiments/20261023-codex-ps-header-decoded.json).
 > **2026-10-23 [8-bit ps group is not a field count]**
 > Variants measured (ps entry -> actors entry): all-zero 10 bits; 0xFE + ones 15 bits; count=1 with zero fields 10 bits.
 > So the group is not "number of changed fields" (2 adds nothing, 254 adds 5); the loop is driven otherwise. The count=1 body failed only because its tail sat at 1358 while ps ended at 1318.

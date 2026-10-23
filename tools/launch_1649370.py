@@ -2867,6 +2867,21 @@ def main(argv=None) -> int:
                 self.record({"dump_cg": {"cg": hex(cg), "size": len(data), "candidates": hits}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"dump_cg_error": f"{label}: {error}"})
+        if label.startswith("PsBegin"):
+            self._in_ps = True
+            self.record({"ps_begin": {"bit": row.get("registers", {}).get("ecx")}})
+        elif label.startswith("PsEnd"):
+            self._in_ps = False
+            self.record({"ps_end": {"bit": row.get("registers", {}).get("ecx")}})
+        elif label.startswith("PsRead"):
+            if getattr(self, "_in_ps", False):
+                try:
+                    edx = int(row.get("registers", {})["edx"], 0)
+                    raw = self.process.read(edx + 0x18, 16)
+                    cursor, bit = struct.unpack_from("<II", raw, 4)
+                    self.record({"ps_read": {"cursor": cursor, "bit": bit}})
+                except (OSError, ValueError, KeyError, struct.error) as error:
+                    self.record({"ps_read_error": f"{label}: {error}"})
         if label.startswith("CheckLoader"):
             try:
                 registers = row.get("registers", {})

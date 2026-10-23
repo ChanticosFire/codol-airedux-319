@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T15:25:00+00:00",
+  "scope": "ps header decoded from code: has-ps(1) + mode(1) + (mode ? bit+1 : 5-bit last); the field loop is not where the bits are read",
+  "negative_results": {
+    "0x447190 as ps bit reader": "0 ps_read records (it is a reader but not the one used inside the ps block)",
+    "0x66EC30 as ps bit reader": "0 ps_read records"
+  },
+  "code_0x471980": {
+    "0x471A36": "cmp [edi],0 ; jne 0x471CAC - abort the whole ps block if the stream error flag is set",
+    "0x471A3E": "call 0x447190 - read 1 bit = has-ps",
+    "0x471A45": "test eax,eax ; je 0x471CAC - has-ps == 0 -> skip the block",
+    "0x471A4D": "call 0x447190 - read 1 bit = mode",
+    "0x471A54": "if mode == 1 -> inc [edi+0x24] (last = bit+1)",
+    "0x471A5D": "if mode == 0 -> push 5; call 0x66EC30 -> read a 5-bit `last`",
+    "0x471A72": "[ebp-0xd0] = last",
+    "0x471A8C..0x471B50": "playerstate history ring walk (stride 0x58, hash [ebx+0xA900]^0x3613BDA3), no bit reads",
+    "0x471B32": "edx = index; cmp edx,[ebp-0xd0]; jl 0x471A98 - loop until index >= last"
+  },
+  "conclusion": [
+    "the ps block header is: has-ps (1 bit), mode (1 bit), then either (bit+1) or a 5-bit last value",
+    "with has-ps=1, mode=0, last=0 the block should finish after 7 bits, but the measured cost is 10 bits - so 3 more bits are consumed further down",
+    "the playerstate field parsing is not in 0x471A8C..0x471B50 (that is history-ring copying); it must live around 0x471B52..0x471CAC"
+  ],
+  "next": [
+    "disassemble 0x471B52..0x471CAC to find the 3 extra bits and the field read loop",
+    "then mirror that layout in the body and check whether the UI reacts"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r103-gs.jsonl"
+  }
+}
