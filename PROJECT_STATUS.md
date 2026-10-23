@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【结构合法 ps（含 viewangles）写入后仍黑】** ✅state 10（pid 7016、clc 0x134A53D8、ps_base 0x13D25F68）写入 0xDA9920 默认 ps + viewangles(0,90,0)，回读正确但截图仍 unique=5/mean=0/max=14。→ ps 只有 0x58 字节、不含 origin，相机位置须来自 entityState；渲染器还需场景。下一轮恢复 entityState 布局写一致实体，并确认视图原点来源。证据：[JSON](evidence/experiments/20261023-codex-ps-injection-negative.json)。
+
 > **2026-10-23【恢复 playerState 默认模板 0xDA9920】** ✅0x58 字节模板，非零字段 +0x04=345、+0x08=2、+0x0C=1266、+0x10=-1、+0x14=1267、+0x18=1317、+0x28=3、+0x34=3、+0x40=1，viewangles(0x4C)=(0,0,0)——提供结构合法的 ps 底板。⚠️本轮注入未执行（客户端已退出，clc 读空，stage 0/state 0）。下一步在 state 10 存活时注入默认 ps + viewangles。证据：[JSON](evidence/experiments/20261023-codex-playerstate-template.json)。
 
 > **2026-10-23【渲染器证明在跑，排除 Present 失败】** ✅加载屏可见渲染、state 10 黑屏时加载图标仍在转动 → 帧循环与 Present 持续执行，渲染器未停（停了会冻结）。→ 无需 hook Present；黑屏是场景内容问题（ps/实体/比赛状态为空）。下一步回到 playerState 字段编码与比赛状态命令。证据：[JSON](evidence/experiments/20261023-codex-renderer-alive-proof.json)。

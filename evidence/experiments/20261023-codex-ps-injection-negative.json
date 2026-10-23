@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T18:00:00+00:00",
+  "scope": "writing a structurally valid playerState with viewangles still leaves the frame black",
+  "session": {
+    "state": 10,
+    "pid": 7016,
+    "clc": "0x134A53D8",
+    "ps_base": "0x13D25F68"
+  },
+  "injection": {
+    "payload": "0xDA9920 default playerState (0x58 bytes) with viewangles (0, 90, 0) at offset 0x4C",
+    "write_ok": true,
+    "readback_viewangles": [
+      0.0,
+      90.0,
+      0.0
+    ],
+    "screenshot": "unique=5 mean=0 max=14 - unchanged"
+  },
+  "conclusion": "a valid-looking playerState with viewangles is not enough; the camera also needs a position source (playerState has no origin field at 0x58 bytes - the origin comes from the entityState) and the renderer needs a scene",
+  "next": [
+    "recover the entityState field layout (origin is in pos.trBase / pos.trDelta) and write a consistent player entity",
+    "verify the view origin source the renderer reads (cl.snap or cg before drawing)",
+    "consider that world geometry may not be registered with the renderer at all"
+  ],
+  "artifacts": {
+    "screenshot": "runs/codex-r20-screenshot.png",
+    "server_log": "runs/codex-r20-gs.jsonl"
+  }
+}
