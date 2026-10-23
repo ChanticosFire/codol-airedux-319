@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T05:45:00+00:00",
+  "scope": "auto-write the encoded callback into cl2+0x30 at CL_Init's return point",
+  "session": {
+    "name": "20261023-world-10",
+    "pid": 20764,
+    "hook": {
+      "site": "0x4FE780 (first instruction after call CL_Init inside 0x4FE740)",
+      "original": "c6 05 87 3b 2c 08 01 (mov byte [0x82C3B87],1)",
+      "cave": "0x54640000",
+      "callback_stub": "0x54650000 (xor eax,eax; ret)",
+      "cave_logic": "cl2 = [0x76638F4] ^ 0x6891D1C7; [cl2+0x30] = stub ^ (cl2+0x2C) ^ [0xE60B78]; replay the 7 original bytes; jmp 0x4FE787",
+      "patch_readback": "e9 7b 18 14 54 90 90"
+    },
+    "bridge": "forward --start-challenge --fake-stats --send-move --keepalive (0x5B31B4 untouched, 0x66F20E untouched)"
+  },
+  "evidence": {
+    "client_reached_game": "server logged 'CoDOL menucmd -> 0 (AdministraClient): v/u' so the client did join and send menu commands",
+    "server_out_still_grows": ["out 160", "out 283", "out 406"],
+    "crash": {"exception": "0xC0000005", "eip": "0x0E75EA7A", "edx": "0x0E75EA7A", "eax": "cl2+0x1C (0x12FE0E6C)", "edi": "cl2+0xC (0x12FE0E5C)"},
+    "phase_at_probe": "process already gone"
+  },
+  "analysis": {
+    "crash_is_the_callback_again": "the registers match the 0x66F170 decode exactly (eax=cl2+0x1C, edi=cl2+0xC, edx=target). The cl2 used at the crash is 0x12FE0E50, so its [cl2+0x30] was zero again.",
+    "why_the_hook_did_not_help": "either the hook wrote a different (earlier) cl2 that was later rebuilt again, or the hook did not run for this rebuild. CL_Init can be invoked more than once per phase-8 attempt (we measured two shutdown+init cycles), so a one-shot write at the first return is not enough."
+  },
+  "next": [
+    "refresh the encoded callback immediately before every call to 0x5B2C10: patch 0x5B31B4 (call 0x5B2C10) to jmp to a cave that writes [cl2+0x30] first, then performs call 0x5B2C10 and jumps back to 0x5B31B9",
+    "that removes all timing dependence: whichever cl2 is current at that instant gets its callback written just before the initialiser runs",
+    "also record a hit counter in the cave so the next run proves the refresh executes"
+  ],
+  "artifacts": ["runs/w10-hook.json", "runs/w10-in.jsonl"]
+}
