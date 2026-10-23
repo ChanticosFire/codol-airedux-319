@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [One-bit full/delta flag at 0x47238A]**
+> 0x47238A reads one bit: 0 -> without-history path (push 0), 1 -> requires valid history (push edi). Our bodies take bit == 0, i.e. the FULL form, so a NULL history is expected rather than an error.
+> Open: 0x472268 sets edi = 0xC89A490 and the ring branch never fired, yet history read 0 - needs single-stepping.
+> Next: re-read 0x471C41 (the current != last branch) as the full-form field path, and locate the flag bit in our preamble.
+> Evidence: [full vs delta flag](evidence/experiments/20261023-codex-full-vs-delta-flag.json).
 > **2026-10-23 [Sequence hypothesis falsified; PHASE-SUMMARY rewritten with corrections]**
 > --snapshot-seq 1 gives the same NULL history and ring_idx 31 as seq 1000, so the sequence is not the cause; 31 is a mask (ring size 32).
 > docs/PHASE-SUMMARY.md now has a 'Corrections found late' section retracting four conclusions (state 10 != acceptance; every body has an EMPTY ps; PsField is a generic codec; seq is not the cause) and states the real blocker plus what is genuinely delivered.

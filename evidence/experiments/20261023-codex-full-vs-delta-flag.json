@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T17:00:00+00:00",
+  "scope": "NEW: a one-bit flag at 0x47238A selects 'with history' vs 'without history', and our snapshots take the without-history path",
+  "the_flag": {
+    "0x47238A": "edx = esi ; call 0x447190  -> READ ONE BIT from the snapshot stream",
+    "0x472391": "test eax,eax ; setg al",
+    "0x472398": "je 0x4723AC    -> bit == 0: take the WITHOUT-history path",
+    "0x47239A": "test edi,edi ; je 0x47232B  -> bit == 1 requires a valid history pointer, else error path",
+    "0x4723A8": "push edi        -> bit == 1: pass the history to 0x671D80",
+    "0x4723B6": "push 0          -> bit == 0: pass NULL to 0x671D80",
+    "0x4723CB": "push edi        -> arg3 of the playerState block"
+  },
+  "what_this_means": [
+    "the snapshot preamble carries a FLAG that tells the client whether to use its playerState history",
+    "bit == 1 is the DELTA form (history required); bit == 0 is the FULL form (no history)",
+    "our bodies take the bit == 0 path - which is consistent with the NULL history we measured",
+    "so a NULL history is NOT necessarily an error: it is what a FULL snapshot looks like",
+    "that changes the interpretation of the last four rounds: the client is not 'refusing' our history, it is treating our snapshot as a FULL frame"
+  ],
+  "the_open_contradiction": [
+    "the caller at 0x472268 sets edi = 0xC89A490 (a constant, non-zero) before either branch",
+    "yet the argument probe read history = 0 at 0x471980",
+    "the ring branch (0x4722A2..0x4722C0) never fired, so edi was not overwritten there",
+    "so either the probe reads the argument at a moment when the register differs, or this function is entered at an offset other than 0x472268 - which only single-stepping settles"
+  ],
+  "next": [
+    "for a FULL snapshot the ps block is expected to carry the COMPLETE playerstate, so the field gate may have a different form for bit == 0 - worth re-reading 0x471C41 (the branch taken when current != last) to see if it decodes a full field list",
+    "and the bit at 0x47238A is itself a concrete thing to locate in our body: it is read BEFORE 0x671D80, i.e. in the snapshot preamble we already control"
+  ],
+  "artifacts": {
+    "addresses": ["0x47238A flag read", "0x4723AC without-history path", "0x4723A8 with-history path", "0x4723CB arg3 push"]
+  }
+}
