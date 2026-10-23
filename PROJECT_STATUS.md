@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Route B breakthrough: the client CAN leave the match - state 10 -> 0]**
+> cbuf injected console `disconnect` while at state 10: before state 10 / adr type 2 / conn 0x133BA698; after state 0 / adr type 0 / conn 0x139A2994, stable at +5/+15/+30 s.
+> Proves (1) the client's leave-match path works and lands at state 0 (lobby), (2) cbuf injection reliably runs console commands.
+> Missing piece: the server-side trigger - the svc command channel does not run console commands, so we need the svc disconnect opcode or an OOB disconnect.
+> Next: find that opcode (or OOB) so the server can end a match and return the client to the lobby.
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [cbuf disconnect](evidence/experiments/20261023-codex-cbuf-disconnect-success.json).
 > **2026-10-23 [Route B: gametype is not an end-of-match lever]**
 > Added gametype to the gamestate (build_native_gamestate(..., gametype=b"mp"), configstring 0 rewritten) and exposed --gamestate-gametype.
 > Experiment: --gamestate-gametype war -> client alive (pid 28244), state 10, entity_count 0 - loaded normally like mp.
