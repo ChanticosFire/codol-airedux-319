@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【静态修正：state 8→9 写入点为 0x5157E9】** ✅`0x515AD6` 属另一条 state==5 检查路径；`CL_MapLoading` 返回点 `0x515754` 后经 `0xbec980` **无条件**执行 `0x5157E9 mov [edi],9`。→ 运行过加载器的会话必到 state 9，观察到的 state 8 停滞发生在加载器调用之前。✅加载器返回后 UI 调用 `0x76EDF0`（内部 `0x76E950` 跳表分发）读取 `[0xE89B10]+8/+0xC`。下一轮读该对象字段并在 `0x5157A2` 记录 `0x76EDF0` 返回值。证据：[JSON](evidence/experiments/20261023-codex-state9-writer-and-ui-call.json)。
+
 > **2026-10-23【MapLoading 9.4 秒正常返回；黑屏收窄到渲染/场景层】** ✅`0x453760` 1792746797.49 进入、`0x515754` 1792746806.88 返回（9.39 秒、eax=0），随后 state 10、`ring_b 85/85`、无 Com Error；加载器不是卡点。✅`r_clearColor 2` + screenshot 仍 unique=4/mean=0，渲染探针无变化。下一轮定位 backEnd/world camera 并读取 viewOrigin/viewangles 与绘制计数；若 camera 无效，快照需携带有效 player state。证据：[JSON](evidence/experiments/20261023-codex-maploading-returns-render-probe.json)。
 
 > **2026-10-23【确认 CL_MapLoading 执行，修正上一轮判断】** ✅同一会话中 `0x51574F`（调用点）、`0x453760`（CL_MapLoading）、`0x472810`（快照接受）三断点全部命中：加载器于 1792746647.12 进入，快照在 1792746666.48 被接受（19.4 秒），最终 state 10、无 Com Error。上一会话未命中属时序差异，不能说明加载器被跳过。✅statResponse 延迟改为 0.8/2.0/4.0 秒后仍稳定到 10。剩余问题在“加载产物/世界内容”：UI 仍停在加载屏、渲染目标全黑。下一轮在 `0x515754`（返回点）与 `0x4549F0` 附近取证并读取 world/camera。证据：[JSON](evidence/experiments/20261023-codex-maploading-executes.json)。

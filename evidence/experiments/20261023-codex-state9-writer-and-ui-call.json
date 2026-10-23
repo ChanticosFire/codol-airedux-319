@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:45:00+00:00",
+  "scope": "static correction: the state 8 -> 9 writer is 0x5157E9, reached unconditionally after CL_MapLoading returns",
+  "correction": {
+    "previous_assumption": "0x515AD6 was treated as the state 9 writer",
+    "finding": "0x515AD6 belongs to a different path that first checks state == 5. The MapLoading return site 0x515754 continues through 0x5157A5 (call 0xbec980) and then executes 0x5157E9 mov [edi],9 regardless of the state check at 0x5157AF.",
+    "practical_meaning": "any session that runs CL_MapLoading must reach state 9; the observed state-8 stalls therefore happen before the loader is called, not after it"
+  },
+  "ui_call_after_loader": {
+    "site": "0x515754..0x5157A2",
+    "object": "[0xE89B10]",
+    "fields": {
+      "+8": "byte used to pick a string (0 or 0xDB0000)",
+      "+0xC": "checked non-zero by 0x444240"
+    },
+    "callee": "0x76EDF0 -> 0x76E950 (UI comparison/visibility dispatch, 0..0xC jump table)",
+    "unknown": "whether 0x76EDF0 fails and keeps the loading screen alive"
+  },
+  "next": [
+    "read [0xE89B10]+8 and +0xC in a state-10 session",
+    "breakpoint 0x5157A2 (after 0x76EDF0) and record eax",
+    "if the loading object is inactive, find the caller that should activate the game UI"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-a7cda7fb/events.jsonl"
+  }
+}
