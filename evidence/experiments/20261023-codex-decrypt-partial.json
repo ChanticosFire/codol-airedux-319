@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T21:40:00+00:00",
+  "scope": "first successful partial decryption of a real gamestate",
+  "session": {
+    "client": "20261023-dec2, pid 36932",
+    "bridge": "forward --target 127.0.0.1:28970 --dump-in runs/dec2-in.jsonl",
+    "captured": "first in-band datagram, 1172 bytes"
+  },
+  "verified_facts": {
+    "client_t": {"challenge": 1739021628, "messageAck": 1},
+    "lastClientCommandString_at_name_plus_265480": {"length": 0, "head": ""},
+    "decrypt": {
+      "key_formula": "challenge ^ seq (seq = packet first 4 bytes, signed int)",
+      "command": "empty (so the key should be constant)",
+      "plain_head_hex": "3f3db53bb53b3f3f3f3f03000000006d705f63726f73735f66697265006d70007bf1e83604bc00095c675f67616d6574",
+      "readable_fragments": {
+        "6d705f63726f73735f66697265": "mp_cross_fire",
+        "6d70": "mp",
+        "5c675f67616d6574": "\\g_gamet..."
+      }
+    }
+  },
+  "interpretation": {
+    "partial_success": "the map name mp_cross_fire and the gametype prefix decode correctly, proving the key formula challenge ^ seq is right",
+    "why_the_first_bytes_are_noise": "the leading 10 bytes decode to 3f3db53bb53b3f3f3f3f instead of 07 00000000 01000000..., so either the key is not constant over the first few bytes (a non-empty command string we have not located) or our command-string offset is wrong and the real lastClientCommandString still advances the key early on",
+    "note": "later bytes decode as clean ASCII, so the cipher implementation and the challenge value are both correct"
+  },
+  "what_we_gained": [
+    "proof that decrypting a live 2697 gamestate is possible with data we can read",
+    "the real text 'mp_cross_fire' inside a gamestate - the exact configstring the client needs",
+    "the plaintext layout shows a 4-byte zero field followed by the map name, then 'mp', then binary"
+  ],
+  "next": [
+    "locate the true lastClientCommandString by scanning client_t for an ASCII string after name+265420..266500 instead of trusting the computed 265480",
+    "re-decrypt and require the header to decode to 07 00 00 00 00 01 00 00 00",
+    "then extract the full configstring set from the plaintext and mirror it in server1649370"
+  ],
+  "artifacts": ["runs/dec2-in.jsonl", "runs/20261023-dec2-lsg.jsonl"]
+}
