@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Forcing 0x8018B0 runs but changes nothing]**
+> tools/force_call.py (remote thread + shellcode call) invoked 0x8018B0 in a live state-10 session: thread finished, client alive, state 10 / ui 5 / entity_count 0 / black - unchanged.
+> So 0x8018B0 does not perform the transition; the real switch is in the unreachable UI refresh (0x8037AB, no callers).
+> New hypothesis: the loading screen drops when cgame has a local player, i.e. the snapshot carries a playerState block. Hybrid has has-ps=0; A=1 bodies die in the entity loop.
+> Next: encode has-ps=1 with a minimal ps field stream and watch the UI.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [force call](evidence/experiments/20261023-codex-force-call-loaddone.json).
 > **2026-10-23 [2697 dedrun not present; A/B control unavailable]**
 > Searched E:\GAME\COD (depth 2) for *dedrun*: none. No 2697 server build available, so the client+A/B comparison cannot run; the loading-screen stall must be solved client-side.
 > Next: with owner authorisation, force the load-completion callback 0x8018B0 to run from a breakpoint handler (remote thread/code cave) and screenshot.

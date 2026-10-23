@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T13:20:00+00:00",
+  "scope": "forcing the load-completion callback 0x8018B0 via a remote thread executes but changes nothing",
+  "experiment": {
+    "method": "VirtualAllocEx + shellcode (mov eax,0x8018B0; call eax; ret) + CreateRemoteThread",
+    "before": {
+      "state": 10,
+      "ui": 5
+    },
+    "thread": "created and finished (no crash, client alive)",
+    "after": {
+      "state": 10,
+      "ui": 5,
+      "entity_count": 0
+    },
+    "screenshot": "black (unique 6, mean 0)"
+  },
+  "reading": [
+    "0x8018B0 does not perform the UI transition itself - it queries the singleton and returns 0 when the singleton/loader pair is not the one in use",
+    "the actual screen switch lives in the UI refresh path (0x8037AB), which has no callers and is unreachable by direct invocation",
+    "so the loading screen is not dismissed by the callback alone; something else must mark the client ready"
+  ],
+  "hypothesis_for_next": [
+    "in this engine the loading screen usually drops when cgame has a valid local player, i.e. when the snapshot carries a playerState block",
+    "our hybrid body sets has-ps = 0 (ps block skipped), so cgame never gets a predictedPlayerState and never reports ready",
+    "next step: encode has-ps = 1 with a minimal ps field stream (8-bit last, gap bit, -97 commandTime) and observe whether the UI moves"
+  ],
+  "artifacts": {
+    "tool": "tools/force_call.py",
+    "server_log": "runs/codex-r96-gs.jsonl",
+    "screenshot": "runs/codex-r96-screenshot.png"
+  }
+}
