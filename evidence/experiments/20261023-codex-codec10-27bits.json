@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T23:05:00+00:00",
+  "scope": "codec 10 is also a wide field (~27 bits), so the origin trio costs ~28 bits per component",
+  "bodies": [
+    "runs/snapshot-o1.bin (V=13, distance=14, codec 10)",
+    "runs/snapshot-o2.bin (V=14, distance=15, codec 10)"
+  ],
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1357,
+    "ps_bits_consumed": 49,
+    "actors_error": 0,
+    "states": {
+      "t=22": 9,
+      "t=35": 9,
+      "t=50": 9,
+      "t=62": 9
+    }
+  },
+  "decomposition": {
+    "prologue": 14,
+    "exit": 1,
+    "remaining_for_distance_plus_field": "49 - 15 = 34",
+    "distance_14_bits": 7,
+    "implied_field_bits": 27,
+    "note": "codec 10 lands at 27 bits, close to codec 11 at 28 - both are WIDE codecs, most likely float forms, not the generic positive-width encoder"
+  },
+  "consequences": [
+    "the origin trio (indices 22, 13, 14 with codecs 11, 10, 10) costs about 28 bits per component",
+    "a full three-record origin payload therefore costs roughly 14 + (13+28) + (7+27) + (7+27) + 1 = ~124 bits",
+    "that is entirely affordable inside a snapshot body - the earlier multi-hundred-bit blowups came from walking with distance 1, not from the field widths"
+  ],
+  "next": [
+    "emit the three origin records with real coordinate values and verify the total against the ~124-bit prediction",
+    "then check whether the client accepts the snapshot (state 10) - the first time the playerstate carries a real position"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r148-gs.jsonl",
+    "encoder": "runs/_gen_origin2.py"
+  }
+}

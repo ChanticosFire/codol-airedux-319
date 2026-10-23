@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Codec 10 ~27 bits; origin trio ~28 bits per component]**
+> V=13/distance=14/codec 10 measured ps = 49 bits (14 prologue + 1 exit + 7 distance + 27 field). Codec 11 was 28, so both are wide (float-like) codecs.
+> A full three-record origin payload is therefore ~124 bits - affordable. The old blowups were caused by distance=1 walking, not by field widths.
+> Next: three origin records with real values, verify ~124 bits, then check state 10. Evidence: [codec10 27 bits](evidence/experiments/20261023-codex-codec10-27bits.json).
 > **2026-10-23 [Cost model VALIDATED exactly: 56 = 14 + 13 + 28 + 1]**
 > V=22/distance=23 measured ps = 56 bits, error 0: 14 prologue + 13 distance(23) + 28 codec-11 + 1 exit. Exact match.
 > So ps_bits = 14 + distance_bits(d) + field_bits(codec) + 1 is usable for planning. New fact: codec 11 costs 28 bits (not the generic positive-width 12).
