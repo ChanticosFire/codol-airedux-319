@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T00:20:00+00:00",
+  "scope": "confirm the reliable-command wire format used by the CODOL build",
+  "source": "runs/2697-native-src/src/sv_snapshot.c SV_WriteReliableCommand",
+  "verified_facts": {
+    "codol_wire_constants": {
+      "SV_WIRE_SERVERCOMMAND": 1,
+      "SV_WIRE_EOF": "6 when CODOL_Target2697ArchivesActive(), otherwise 5",
+      "comment": "both builds use service 1 for sequence + NUL-terminated text; retail service 2 is a distinct binary command (sequence + u16 length + bytes)"
+    },
+    "write_order": [
+      "MSG_WriteByte(msg, n ? 2 : SV_WIRE_SERVERCOMMAND)",
+      "MSG_WriteLong(msg, sequence)",
+      "if n: MSG_WriteShort(msg, n) + MSG_WriteData(payload, n)",
+      "else: MSG_WriteString(msg, command)"
+    ],
+    "therefore": "each reliable command on the wire is opcode(1) + sequence(4) + either a NUL-terminated string or u16 length + bytes"
+  },
+  "confront_with_capture": {
+    "captured_plaintext_near_map": "… 8b 89 01 8f 01 8f 8b 8b 8b 8b | 03 00 00 00 00 | mp_cross_fire",
+    "expected_at_body_start": "opcode should be 1 (text) or 2 (binary), then a 4-byte sequence",
+    "observed_at_offset_10": "03 00 00 00 00 - neither opcode 1/2 nor a plausible sequence",
+    "conclusion": "the real opcode and sequence sit inside the ten contaminated bytes, so the 03 at offset 10 is something else (likely part of the command payload), not the reliable-command header"
+  },
+  "next": [
+    "solve the first ten bytes using the known header shape: plaintext must start with opcode(1)=01 or 02, then a small sequence (1..100)",
+    "with the correct opcode/seq assumption, solve for the command string that produces the observed key shift",
+    "once recovered, rebuild our outbound body as opcode(1) + seq(4) + NUL string containing the gamestate text"
+  ],
+  "artifacts": ["runs/2697-native-src/src/sv_snapshot.c", "runs/final-in.jsonl"]
+}
