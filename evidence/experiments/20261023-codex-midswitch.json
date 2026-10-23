@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T10:55:00+00:00",
+  "scope": "two different-map gamestates in one session end at state 10",
+  "server_change": "--gamestate-map now accepts a comma-separated list; each gamestate send picks the next map",
+  "experiment": {
+    "maps": [
+      "mp_cross_fire",
+      "mp_afghan"
+    ],
+    "gamestates": [
+      {
+        "ts": 1792757060.95,
+        "payload": 89
+      },
+      {
+        "ts": 1792757101.01,
+        "payload": 85
+      }
+    ],
+    "state_samples": {
+      "after_30s": 9,
+      "after_75s": 10
+    },
+    "client": "alive (pid 4164)"
+  },
+  "reading": [
+    "the first gamestate was still loading at the 30s sample (state 9)",
+    "by the 75s sample the client had reached state 10 after the second (afghan) gamestate",
+    "this does not prove a clean 8->10 reload; it shows the client tolerates a second, different-map gamestate and still converges on state 10"
+  ],
+  "next": [
+    "sample state faster around the second gamestate to capture a possible 8/9 transition",
+    "or move on to the end-of-match path: see whether a gamestate with a different gametype/configstring, or a dedicated command, makes the client leave the match"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r69-gs.jsonl"
+  }
+}

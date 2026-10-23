@@ -112,7 +112,9 @@ class GameServer:
         self.gamestate_source = gamestate_source
         self.gamestate_repeat = int(gamestate_repeat or 0)
         self.gamestate_interval = float(gamestate_interval or 0.0)
-        self.gamestate_map = (gamestate_map or "mp_cross_fire").encode("ascii")
+        self.gamestate_maps = [(part.strip() or "mp_cross_fire").encode("ascii")
+                               for part in (gamestate_map or "mp_cross_fire").split(",")]
+        self.gamestate_map = self.gamestate_maps[0]
         self.registration_checksum = registration_checksum
         self.snapshot_path = Path(snapshot_path) if snapshot_path else None
         self.snapshot_files = ([Path(part.strip()) for part in snapshot_path.split(",") if part.strip()]
@@ -246,9 +248,10 @@ class GameServer:
             if time.monotonic() < due:
                 continue
             peer["gamestate_sent"] = True
+            index = min(peer.get("gamestate_count", 0), len(self.gamestate_maps) - 1)
             payload = (build_native_gamestate(self.registration_checksum,
                                               configstrings=self.configstrings,
-                                              mapname=self.gamestate_map)
+                                              mapname=self.gamestate_maps[index])
                        if self.gamestate_source == "native" else GAMESTATE_PLAINTEXT)
             if not payload:
                 self.log({"dir": "meta", "kind": "gamestate_missing"})
