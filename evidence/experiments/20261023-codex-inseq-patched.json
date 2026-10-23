@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T11:30:00+00:00",
+  "scope": "set the client incomingSequence to 2 so it expects our seq=3, then observe",
+  "session": {"client": "20261023-seq4, pid 36548", "server": "server1649370 on 28971"},
+  "verified_facts": {
+    "connection": "0x13ead178 (populated, connection_adr.type = 2)",
+    "field_before": "conn+0x30 = 20549, conn+0x34 = 1",
+    "patch": "wrote int32 2 at conn+0x34",
+    "field_after": "conn+0x30 = 20549, conn+0x34 = 2",
+    "ring_b_at_patch_time": {"read": 5, "write": 5},
+    "stage": 5,
+    "messageAck": 1
+  },
+  "crucial_ordering_problem": {
+    "what_happened": "forward had already delivered the three gamestate fragments (seq=3) before we patched the sequence field, so the client judged them against incomingSequence=1 (expecting 2) and dropped them",
+    "fix": "patch conn+0x34 BEFORE the gamestate is sent, then send",
+    "how": "run connect, then patch, then start-challenge - or issue forward with a delay long enough to patch in between"
+  },
+  "why_this_is_the_best_remaining_lead": {
+    "consistent_with_every_failure": "if the client rejects out-of-order sequences before payload parsing, then byte-perfect payloads fail exactly as observed",
+    "testable_in_one_round": "patch then send is a single ordering change with a binary outcome"
+  },
+  "next": [
+    "sequence: drain, install hook, connect, READ status for connection, PATCH conn+0x34 = 2, then start-challenge",
+    "verify ring_b increments after start-challenge",
+    "check whether stage leaves 5 or messageAck exceeds 1"
+  ],
+  "artifacts": ["runs/seq4-status.json"]
+}
