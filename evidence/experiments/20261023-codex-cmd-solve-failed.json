@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T23:05:00+00:00",
+  "scope": "attempt to solve lastClientCommandString from the observed key shift",
+  "equation": {
+    "observed": "plain[i] = cipher[i] ^ 139 (what we decrypted with the constant key)",
+    "true_relation": "plain[i] = plain_real[i] ^ (command[j] << (i & 1))",
+    "so": "command[j] << (i & 1) = plain[i] ^ plain_real[i]"
+  },
+  "attempt": {
+    "assumed_plaintext": "lastClientCommand(4 LE) + svc_EOF(07) + 00000000 + svc_gamestate(01) ...",
+    "tested_lcc_values": "0..15",
+    "result_deltas": "every delta came out in the 0x80..0x8f range, never in printable ASCII",
+    "conclusion": "under the assumed plaintext, the implied command bytes are not printable, so either the plaintext header assumption is wrong or lastClientCommandString is not printable text"
+  },
+  "why_printable_matters": {
+    "source": "CODOL_Xor advances the key with command[index] << (i & 1) where command is (const byte*)client->lastClientCommandString with length sizeof(...) = 1024",
+    "implication": "if the string were ordinary text, delta[even] would land in 0x20..0x7E; instead it lands at 0x80..0x8f, which is exactly 0x8b XOR small ASCII values",
+    "alternative": "the field may contain a binary or UTF-16-ish representation, or the encoder may pass a pointer whose first bytes are not what we assume"
+  },
+  "next": [
+    "hook or breakpoint SV_Netchan_Encode inside the dedrun and dump lastClientCommandString at the moment of encoding - this removes all guessing",
+    "if hooking is impractical, sample client_t+265480 at high frequency while a packet is being sent and look for a non-zero transient value",
+    "as a fallback, brute force a short printable command whose shifted bytes reproduce the observed delta pattern exactly"
+  ],
+  "artifacts": ["runs/final-in.jsonl"]
+}
