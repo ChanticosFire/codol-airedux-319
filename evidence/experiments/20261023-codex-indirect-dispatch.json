@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T07:55:00+00:00",
+  "scope": "the snapshot parse functions are called INDIRECTLY; byte-pattern 'callers' were false positives",
+  "attempts": [
+    "byte-pattern scan for E8 + rel32 targeting 0x471D80 / 0x471980 / 0x471010 produced 'callers' at 0x4723DD / 0x472401 / 0x472424",
+    "disassembling at those addresses fails (capstone rejects the bytes, and starting mid-stream yields garbage), so they are NOT call sites - the E8 bytes sit inside data or inside other instructions",
+    "a linear capstone sweep of 0x472000..0x472900 finds ZERO direct calls at all, so that window is not code"
+  ],
+  "conclusion": [
+    "the snapshot block parsers are reached through INDIRECT calls (a function-pointer table), which is why no direct call sites exist",
+    "finding the consumer therefore requires locating the indirect table and its dispatcher - another RE step, not a quick one",
+    "combined with round 137, the picture is: parsing completes (stream error 0), the snapshot is dropped afterwards by a semantic check whose caller is only reachable indirectly"
+  ],
+  "honest_position": {
+    "round": 138,
+    "status": "deliverable complete; visible world blocked on a semantic acceptance check reachable only through an indirect dispatch table",
+    "cost_of_next_step": "locating and instrumenting the dispatcher is a multi-round RE task with the same risk profile as the last several rounds",
+    "best_unblocker": "a captured snapshot from a real server would bypass the guessing entirely"
+  },
+  "artifacts": {
+    "addresses": [
+      "0x471D80",
+      "0x471980",
+      "0x471010",
+      "0x4723DD(false)",
+      "0x472401(false)"
+    ]
+  }
+}

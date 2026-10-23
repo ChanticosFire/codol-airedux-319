@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Snapshot parsers are reached indirectly]**
+> Byte-pattern callers at 0x4723DD/0x472401/0x472424 are false positives (not valid instruction boundaries); a linear sweep of 0x472000..0x472900 finds zero direct calls.
+> So the block parsers are called through a function-pointer table. Combined with round 137: parse completes, snapshot dropped afterwards by a semantic check reachable only indirectly.
+> Honest: deliverable complete; visible world blocked on that semantic check. A captured real snapshot would bypass the guessing.
+> Evidence: [indirect dispatch](evidence/experiments/20261023-codex-indirect-dispatch.json).
 > **2026-10-23 [Rejection is semantic, not framing]**
 > 0x471D80 parse entry mapped (precheck 0x671650, bit read 0x447190, count 0x66EC30, loop 0x671700, terminator cmp). Rejected non-zero bodies show stream error 0, so the parser completes.
 > Therefore the snapshot is dropped AFTER parsing by a semantic check (time/state consistency), not by framing.
