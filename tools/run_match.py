@@ -172,6 +172,7 @@ def main() -> int:
     parser.add_argument("--match-duration", type=int, default=45,
                         help="seconds until the server sends the end-of-match disconnect")
     parser.add_argument("--snapshot", default="runs/snapshot-hybrid-empty-actors.bin")
+    parser.add_argument("--map", default="", help="override the gamestate map name")
     parser.add_argument("--runtime", default="20261023-codex-delay-a2")
     parser.add_argument("--lsg-port", type=int, default=28969)
     parser.add_argument("--gs-port", type=int, default=28971)
@@ -198,14 +199,17 @@ def main() -> int:
     time.sleep(2)
 
     log("starting game server")
-    start(["-m", "server1649370.gameserver",
-           "--port", str(args.gs_port), "--log", f"runs/{name}-gs.jsonl",
-           "--delay-send", "10", "--gamestate-source", "native",
-           "--snapshot-file", args.snapshot, "--snapshot-delay", "20",
-           "--snapshot-seq", "1000", "--snapshot-repeat", "120",
-           "--snapshot-interval", "1.5",
-           "--oob-command", "disconnect", "--match-duration", str(args.match_duration)],
-          RUNS / f"{name}-gs.out", RUNS / f"{name}-gs.err")
+    gs_args = ["-m", "server1649370.gameserver",
+               "--port", str(args.gs_port), "--log", f"runs/{name}-gs.jsonl",
+               "--delay-send", "10", "--gamestate-source", "native",
+               "--snapshot-file", args.snapshot, "--snapshot-delay", "20",
+               "--snapshot-seq", "1000", "--snapshot-repeat", "120",
+               "--snapshot-interval", "1.5",
+               "--oob-command", "disconnect",
+               "--match-duration", str(args.match_duration)]
+    if args.map:
+        gs_args += ["--gamestate-map", args.map]
+    start(gs_args, RUNS / f"{name}-gs.out", RUNS / f"{name}-gs.err")
     time.sleep(2)
 
     log("launching client")

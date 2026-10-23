@@ -117,7 +117,8 @@ class GameServer:
         self.gamestate_maps = [(part.strip() or "mp_cross_fire").encode("ascii")
                                for part in (gamestate_map or "mp_cross_fire").split(",")]
         self.gamestate_map = self.gamestate_maps[0]
-        self.gamestate_gametype = (gamestate_gametype or "mp").encode("ascii")
+        self.map_name = self.gamestate_map.decode("ascii")
+        self.gamestate_gametype = (gamestate_gametype or DEFAULT_GAMETYPE).encode("ascii")
         self.oob_command = oob_command
         self.oob_delay = float(oob_delay or 0.0)
         self.registration_checksum = registration_checksum
@@ -133,7 +134,7 @@ class GameServer:
         self.command_seq = command_seq
         self.command_repeat = max(1, command_repeat)
         self.command_interval = max(0.2, command_interval)
-        self.configstrings = DEFAULT_CONFIGSTRINGS
+        self.configstrings = self._configstrings_for(self.map_name, self.gamestate_gametype.decode("ascii"))
         if configstring_file:
             self.configstrings = self._load_configstrings(Path(configstring_file))
         self.pending_oob: list[tuple[float, tuple, str]] = []
@@ -230,11 +231,25 @@ class GameServer:
                   "challenge_field": info.get("challenge"),
                   "effective_challenge": peer.get("challenge"),
                   "build_field": info.get("2490")})
-        response = (f"connectResponse \\mapname\\{DEFAULT_MAP}"
+        response = (f"connectResponse \\mapname\\{self.map_name}"
                     f"\\gametype\\{DEFAULT_GAMETYPE}"
                     f"\\sv_maxclients\\{DEFAULT_MAXCLIENTS}"
                     f"\\protocol\\1\\shortversion\\{PROTOCOL_GENERATION}")
         self.send_oob(addr, response)
+
+    @staticmethod
+    def _configstrings_for(map_name: str, gametype: str) -> tuple[tuple[int, bytes], ...]:
+        """Return the default configstrings with index 0 built from map/gametype.
+
+        The client names the loading screen from configstring 0, so overriding
+        --gamestate-map only takes effect if this string is rebuilt.
+        """
+        rebuilt: list[tuple[int, bytes]] = []
+        for index, value in DEFAULT_CONFIGSTRINGS:
+            if index == 0:
+                value = (f"\\g_gametype\\{gametype}\\mapname\\{map_name}").encode("ascii")
+            rebuilt.append((index, bytes(value)))
+        return tuple(rebuilt)
 
     @staticmethod
     def _load_configstrings(path: Path) -> tuple[tuple[int, bytes], ...]:
@@ -476,7 +491,7 @@ class GameServer:
     # ------------------------------------------------------------------ serving
     def serve(self) -> None:
         self.log({"dir": "meta", "kind": "start", "port": self.sock.getsockname()[1],
-                  "generation": PROTOCOL_GENERATION, "map": DEFAULT_MAP})
+                  "generation": PROTOCOL_GENERATION, "map": self.map_name})
         while self.running:
             try:
                 data, addr = self.sock.recvfrom(65535)

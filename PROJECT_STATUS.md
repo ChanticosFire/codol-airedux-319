@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Map override fixed; other maps need fastfiles]**
+> Defect: --gamestate-map changed the gamestate payload but configstring 0 / connectResponse / start log still used the default map. Fixed by rebuilding configstring 0 from map+gametype, using the configured map in connectResponse and the start log, and defaulting the gametype to war.
+> Verified: start log map=mp_afghan, configstring 0 = \g_gametype\war\mapname\mp_afghan; run_match gained --map.
+> crossfire regression passes (9->10->10->0); mp_afghan disconnects early (no afghan fastfiles in this runtime).
+> Evidence: [map override fixed](evidence/experiments/20261023-codex-map-override-fixed.json).
 > **2026-10-23 [Snapshot format documented in docs/SNAPSHOT-FORMAT.md]**
 > Consolidated doc: body layout, baseline geometry (ps 1 bit / actors 13 / glass ~14), ps frame loop, delta decoder with the non-linear cost table (28/68/69 bits), field table 0xDA63E8, codec semantics, actors grammar with the 0x7FF terminator, the rejected-attempt table, tooling hazards, and 5 open questions.
 > Makes the visible-world work resumable; a real snapshot capture would answer all five open questions at once. No blind attempts this round.

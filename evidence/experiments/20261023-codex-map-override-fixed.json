@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T15:45:00+00:00",
+  "scope": "map/gametype override now actually reaches the client; other maps need their fastfiles",
+  "bug_found_and_fixed": {
+    "symptom": "--gamestate-map mp_afghan produced mapname=mp_afghan inside the gamestate payload, but configstring 0 and the connectResponse still said mp_cross_fire, so the client kept showing 交叉火力",
+    "root_cause": "configstring 0 was taken from the constant DEFAULT_CONFIGSTRINGS, connectResponse used DEFAULT_MAP, and the start log used DEFAULT_MAP",
+    "fix": [
+      "build configstring 0 from the configured map/gametype (_configstrings_for)",
+      "use the configured map in connectResponse and in the start log",
+      "gametype falls back to DEFAULT_GAMETYPE ('war') instead of 'mp' so the string matches the previously working value"
+    ],
+    "verification": "start log now reports map=mp_afghan and configstring 0 is \\g_gametype\\war\\mapname\\mp_afghan"
+  },
+  "new_capability": "tools/run_match.py --map NAME passes the map through to the game server",
+  "findings": {
+    "mp_cross_fire": "unchanged - states 9 -> 10 -> 10 -> 0 with all steps true (regression run regress2)",
+    "mp_afghan": "the client disconnects early (state 0, then the process exits) - this runtime does not carry the afghan fastfiles, so the map override cannot be exercised beyond crossfire today"
+  },
+  "artifacts": {
+    "server": "server1649370/gameserver.py",
+    "runner": "tools/run_match.py",
+    "logs": [
+      "runs/regress2-gs.jsonl",
+      "runs/afghan3-gs.jsonl"
+    ]
+  }
+}
