@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [STABLE + EXACT: single-record ps body reaches state 10; 29 bits predicted = 29 measured]**
+> snapshot-single22.bin (hybrid prefix + 29-bit ps: V=22, distance=23, codec 11 zero, exit): ps 1308 -> actors 1337 = 29 bits (exact), error 0, state 10 at t=38/46/54/62.
+> Correction: round 127 credited trio2, but trio2 alone stays at state 9 - the accepted body was always single22.
+> First ps body whose length the cost model predicts exactly and which reproducibly reaches state 10. Frame still black (no entity data).
+> Next: use single22 as the stable baseline and vary one thing at a time. Evidence: [ps body stable exact](evidence/experiments/20261023-codex-ps-body-stable-exact.json).
 > **2026-10-23 [Entity + ps together crashes the client]**
 > ep-a/ep-b (entity 1336 + pad + trio2 ps + zeros + tail): state 9 with entities 0 at t=22, then the process is gone; zero snap_trace records.
 > Each part works alone (entity -> count 1; ps alone -> state 10), so the combination fails - most likely the per-entity payload we supply. Third recent crash.
