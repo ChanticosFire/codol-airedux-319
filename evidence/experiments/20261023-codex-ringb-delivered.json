@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T19:35:00+00:00",
+  "scope": "prove ring-B delivery and correct the gamestate header width",
+  "verified_facts": {
+    "ring_b_counters": {
+      "read": 13,
+      "write": 13,
+      "meaning": "13 datagrams from our server were written into ring B and the client consumed all of them - delivery is no longer in question"
+    },
+    "ring_a_counters": {"read": 219, "write": 219},
+    "gamestate_header_now_correct_width": {
+      "body_hex_head": "07 00000000 01000000 00000000 00000000 00000000 00000000",
+      "why": "2697 SV_SendClientGameState writes MSG_WriteByte(svc_EOF=7), MSG_WriteLong(0), then MSG_WriteLong(svc_gamestate=1) - svc_gamestate is a LONG, not a byte; the earlier single 0x01 was the wrong width",
+      "still_no_ack": "client messageAck stayed 1 for all seq 6..8"
+    }
+  },
+  "conclusion": {
+    "transport_chain_complete": "bridge -> ring B -> client consumption is proven by the equal read/write counters",
+    "remaining_problem_is_purely_the_payload": "the client reads our packets but does not acknowledge, so the body is still not a usable gamestate",
+    "what_a_real_gamestate_still_needs": [
+      "a valid configDataSequence",
+      "a valid clientNum",
+      "the real checksumFeed",
+      "all current configstrings (svc_configstring entries)",
+      "baselines (svc_baseline) and the terminating svc_EOF"
+    ]
+  },
+  "next": [
+    "capture a real 2697-to-client gamestate and decode it (the 2697 dedrun does produce one) to obtain the exact byte sequence and lengths",
+    "or read sv.checksumFeed / svs.configDataSequence out of the dedrun and reuse those values",
+    "then build the configstring set from the map's defaults"
+  ],
+  "artifacts": ["runs/gs2-live.jsonl", "server1649370/gameserver.py", "runs/2697-native-src/src/sv_client.c"]
+}

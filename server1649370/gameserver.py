@@ -209,18 +209,32 @@ class GameServer:
             self.server_seq = getattr(self, "server_seq", 0) + 1
             peer["last_server_seq"] = self.server_seq
             seq_word = (self.server_seq | 0x80000000) & 0xFFFFFFFF
-            # 2697 net_game_conf.h: svc_nop=0, svc_gamestate=1, svc_configstring=2,
-            # svc_baseline=3, svc_serverCommand=4, svc_download=5, svc_snapshot=6,
-            # svc_EOF=7.  The client never acks an all-zero body, so start with a
-            # real service byte; a full gamestate payload comes later.
-            body = b"\x01" + bytes(196)
+            # 2697 SV_SendClientGameState writes, in order:
+            #   MSG_WriteByte(svc_EOF=7)
+            #   MSG_WriteLong(0)
+            #   MSG_WriteLong(svc_gamestate=1)     <-- LONG, not a byte
+            #   MSG_WriteLong(configDataSequence)
+            #   MSG_WriteLong(clientNum)
+            #   MSG_WriteLong(checksumFeed)
+            #   MSG_WriteLong(0)
+            # then the configstrings.  The earlier single-byte 0x01 was the wrong
+            # width, so build the real header now.
+            body = (b"\x07"
+                    + struct.pack("<I", 0)
+                    + struct.pack("<I", 1)
+                    + struct.pack("<I", 0)
+                    + struct.pack("<I", 0)
+                    + struct.pack("<I", 0)
+                    + struct.pack("<I", 0))
+            body += bytes(max(0, 197 - len(body)))
+            body = body[:197]
             reply = (struct.pack("<I", seq_word) + b"\x00"
                      + struct.pack("<i", 0) + body)
             self.sock.sendto(reply, addr)
             self.state.counters["inband_sent"] += 1
             self.log({"dir": "out", "kind": "inband", "to": f"{addr[0]}:{addr[1]}",
-                      "seq": self.server_seq, "fragment": True, "svc": "gamestate",
-                      "length": len(reply), "hex_head": reply[:24].hex()})
+                      "seq": self.server_seq, "fragment": True, "svc": "gamestate_long",
+                      "length": len(reply), "hex_head": reply[:32].hex()})
         else:
             self.log({"dir": "in", "kind": "inband_short", "from": f"{addr[0]}:{addr[1]}",
                       "length": len(data), "hex": data[:64].hex()})
