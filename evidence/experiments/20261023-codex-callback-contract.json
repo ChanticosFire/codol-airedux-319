@@ -51,6 +51,27 @@
     "cl": "0x13000CCC",
     "cl2": "0x1312B3CC"
   },
+  "second_probe": {
+    "session": "20261023-stub-6",
+    "pid": 36880,
+    "sequence": "write phase 8 -> wait for rebuilt cl -> read cl2 (0x13150B6C) -> encode [cl2+0x30] -> restore ff d2 -> wait",
+    "hit": {
+      "magic": "0xDEADBEEF",
+      "record": {
+        "esi": "0x1AF3BC (stack: the 0x2C-byte output structure built by 0x66F170)",
+        "edi": "0x13150B78 = cl2+0xC",
+        "eax": "0x13150B88 = cl2+0x1C"
+      },
+      "message_2C": "all zero",
+      "cl2_f0x3E4_f0x3F8_f0x3FC": "0, 0, 0"
+    },
+    "finding": "at callback time the message that 0x66F170 is building is still entirely zero, and the three source fields it reads from cl2 are zero as well. The callback therefore is not given an already-built packet; it must itself produce the content that 0x66F210 consumes.",
+    "branch_write_attempt": {
+      "wrong_target": "the first probe wrote [eax+4] (cl2+0x20); the consumer actually reads [ecx+4] where ecx is the local 8-byte buffer",
+      "correct_target": "result+4 of the local buffer passed in ecx",
+      "outcome": "the window closed before the corrected stub could be hit (phase 0, cl2 re-created to 0x131508F8), so the branch steer is still unmeasured"
+    }
+  },
   "conclusions": [
     "the decoded callback can be redirected precisely by writing [cl2+0x30]; the formula stub ^ (cl2+0x2C) ^ [0xE60B78] is verified by readback and by an actual hit",
     "the callback contract is fn(cl2+0x1C, &local_8byte_result), with edi = cl2+0xC preserved by the caller",
