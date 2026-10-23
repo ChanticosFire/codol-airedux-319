@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T21:00:00+00:00",
+  "scope": "gap 3 run alone: parse FAILS (stream_error 1) and the client survives; the only body that ever parsed a non-zero value is the one that crashed",
+  "body": "runs/snapshot-tg3.bin (ps 32 bits, 3 zero bits, tail at 1343)",
+  "measurement": {
+    "actors_entry_bit": 1340,
+    "actors_entry_error": 0,
+    "decide_stream_error": 1,
+    "states": {"t=25": 9, "t=32": 9, "t=40": 9, "t=48": 9, "t=56": 9, "t=62": 9},
+    "client": "ALIVE throughout"
+  },
+  "table_for_value_5_bodies": {
+    "tg0 (tail 1340)": {"parse": "FAIL", "crash": false},
+    "tg3 (tail 1343)": {"parse": "FAIL", "crash": false},
+    "room60 (tail 1400 after 60 zeros)": {"parse": "OK", "crash": true}
+  },
+  "the_pattern": [
+    "every body that PARSES a non-zero playerState value has also CRASHED",
+    "every body that fails to parse leaves the client alive",
+    "so the bottleneck has moved again: from 'make it parse' to 'make the parsed value safe to apply'",
+    "the crash is therefore likely in cgame's use of the field we wrote (index 22, offset 16 under the 0xDA8520 table), not in the bit stream"
+  ],
+  "next": [
+    "test the SAME construction with value 1 instead of 5 (single body, room 60): if it parses and still crashes the field itself is the problem; if it survives, the crash depends on the magnitude",
+    "if the field is the problem, repeat the whole exercise on a different field index (e.g. 20 with codec 32) to find one whose application is harmless"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r170-gs.jsonl"
+  }
+}

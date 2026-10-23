@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Gap 3 alone: parse fails, client survives]**
+> tg3 alone: actors error 0 at 1340, decide stream_error 1, state 9, client alive. Value-5 bodies: tg0 FAIL/no crash, tg3 FAIL/no crash, room60 OK/crash.
+> So every body that parses a non-zero value has crashed; the bottleneck moved to applying the value (likely cgame's use of index 22 / offset 16).
+> Next: value 1 with room 60, single body; if it still crashes, switch field index.
+> Evidence: [gap3 alone](evidence/experiments/20261023-codex-gap3-alone.json).
 > **2026-10-23 [Tail-offset sweep inconclusive]**
 > Four gaps (+0/+3/+8/+16) queued alternately produced exactly ONE decide record (stream_error 1) with no way to attribute it. Alternating bodies cannot attribute results; a decisive sweep needs one session per gap.
 > Next: tail at 1343 (gap 3) run ALONE - if it parses without crashing, the crash came from the room's bogus actor bits.
