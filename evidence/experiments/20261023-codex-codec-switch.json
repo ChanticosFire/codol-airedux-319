@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T18:45:00+00:00",
+  "scope": "enumerated the full codec switch (46 codecs) and decoded the four codecs used by the ps table",
+  "codec_switch_0x6701D0": {
+    "total_codecs": 46,
+    "values": [
+      -64,
+      -63,
+      -62,
+      -101,
+      -102,
+      -80,
+      -78,
+      -75,
+      -89,
+      -88,
+      -61,
+      -60,
+      -59,
+      -99,
+      -65,
+      -98,
+      -97,
+      -74,
+      -72,
+      -70,
+      -73,
+      -71,
+      -96,
+      -94,
+      -93,
+      -77,
+      -92,
+      -91,
+      -90,
+      -83,
+      -82,
+      -81,
+      -100,
+      -79,
+      -58,
+      -57,
+      -56,
+      -87,
+      -86,
+      -85,
+      -84,
+      -76,
+      -69,
+      -55
+    ],
+    "structure": "linear if-chain comparing field->codec against each constant"
+  },
+  "ps_table_codecs": {
+    "-97": {
+      "addr": "0x67069C -> 0x670BBF",
+      "note": "shared with -74/-72/-70"
+    },
+    "-100": {
+      "addr": "0x6708AD -> 0x670B5B",
+      "impl": "fld [edi] (previous float) -> call 0x66FEE0 -> store; a float delta against the previous value"
+    },
+    "-58": {
+      "addr": "0x6708BF -> 0x6708D3",
+      "impl": "fld [0xD599EC] (float constant) -> call 0x66FE90 -> store; float with a fixed scale"
+    },
+    "-57": {
+      "addr": "0x6708E9 -> 0x6708FC",
+      "impl": "call 0x447190 (1 bit) -> setne -> store byte; a 1-bit boolean"
+    },
+    "-73/-71": {
+      "addr": "0x670BA5",
+      "impl": "call 0x66EE10 -> store dword; integer read"
+    },
+    "-101": {
+      "addr": "0x6702A7",
+      "impl": "float angle with rounding"
+    },
+    "-102": {
+      "addr": "0x670334",
+      "impl": "float vector"
+    },
+    "0": {
+      "addr": "0x67020B",
+      "impl": "float with 1+1+5 bit mantissa form"
+    }
+  },
+  "reading": [
+    "the ps field table uses only four special codecs plus fixed bit widths (6/10/11/12/16/32)",
+    "two of the four are floats with baked-in scale constants, one is a float delta against the previous value, one is a 1-bit boolean",
+    "positive widths are the simple path (read N bits, store), so a first encoder should target those fields (ps origin uses 10/11/10)",
+    "full fidelity still needs the distance reader (0x670CB0) and the default branch for positive widths"
+  ],
+  "next": [
+    "disassemble 0x670CB0 (distance) and the positive-width default branch",
+    "implement the encoder in Python and iterate against the ps-entry/actors-entry bit cursors"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r103-gs.jsonl"
+  }
+}

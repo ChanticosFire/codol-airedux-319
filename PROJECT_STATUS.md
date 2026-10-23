@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Full codec switch enumerated (46); the four ps codecs decoded]**
+> 0x6701D0 is a linear if-chain over 46 codec constants. ps uses -57 (1-bit bool: 0x6708E9 call 0x447190 -> setne), -58 (float with const [0xD599EC] via 0x66FE90), -100 (float delta vs prev via 0x66FEE0), -97 (0x67069C -> 0x670BBF). -73/-71 integer via 0x66EE10; -101 angle; -102 vector; codec 0 float mantissa form.
+> Positive widths 6/10/11/12/16/32 are the simple path; ps origin uses 10/11/10.
+> Next: disassemble 0x670CB0 (distance) + positive-width default, then implement the encoder.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [codec switch](evidence/experiments/20261023-codex-codec-switch.json).
 > **2026-10-23 [CORRECTION: the game DLL IS loaded - 7-module list was a WOW64 artifact]**
 > 32-bit client + 64-bit Python: EnumProcessModules/tasklist /m only return the WOW64 host modules. Corrected via 32-bit PEB Ldr walk: 60+ modules including a 58,228,736-byte image at 0x61D10000 = codoMP_client_shipRetailBase.dll.
 > So cgame is available; the black frame is a data/view problem (ps/entity/camera), not a missing module. The ps work (rounds 58-64) stands.
