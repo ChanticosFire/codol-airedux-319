@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T03:55:00+00:00",
+  "scope": "replace the coarse heartbeat block with precise patches and find out which client function may be skipped",
+  "sessions": [
+    {
+      "name": "20261023-world-2",
+      "pid": 31360,
+      "reused_services": {"lsg": "pid 41276 on TCP 28969", "dedrun": "pid 24200 on UDP/TCP 28970"},
+      "experiment_A": {
+        "patches": ["ring-a-drain block 0x674F30", "0x66F20E ff d2 -> 90 90 (callback neutralised, heartbeat intact)"],
+        "bridge": "forward --start-challenge --fake-stats --send-move --keepalive",
+        "observation": {"phase": 0, "phase_trend": "rose to 5 then fell to 0", "ring_a": [4, 4], "ring_b": [3871, 3871], "flag_100260": 0, "netadr_109260": 0},
+        "server": "CoDOL splash admission: client 0 admitted slot 2 row 309 ... state 4; bots kept spawning",
+        "conclusion": "calling 0x5B2C10 with the callback neutralised makes the client fall back to phase 0; the teardown is triggered after 0x5B2C10 runs"
+      },
+      "experiment_B": {
+        "patches": ["0x5B31B4 e8 57 fa ff ff -> 90 90 90 90 90 (skip only the call 0x5B2C10)", "0x66F20E 90 90 -> ff d2 (restore)"],
+        "observation": {"phase": 0, "ring_a": [7, 7], "ring_b": [10633, 10633]},
+        "server": "AdministraClient state 4 ack 1 gamestate 31 out 301; Training 14/17/19 still active",
+        "conclusion": "skipping 0x5B2C10 prevents connection progress altogether: the client keeps sending getchallenge but never processes the replies. 0x5B2C10 is on the mandatory path."
+      }
+    }
+  ],
+  "constraint": "0x5B2C10 is required for the client to consume the server replies, but running it also leads to the phase-0 teardown at 0x77C290. The next step must either stop the teardown or make the callback supply a correct result.",
+  "teardown_hook": {
+    "site": "0x77C316",
+    "current_bytes": "75 2b",
+    "current_meaning": "jne 0x77C343 -> writes [0x76446B0]=0 unless phase == 5",
+    "candidate_patch": "eb 35 (jmp 0x77C34D) so phase is never cleared here",
+    "alternative": "nop the 10-byte store at 0x77C343"
+  },
+  "next": [
+    "patch 0x77C316 to eb 35 (or nop 0x77C343) together with 0x66F20E -> 90 90, keep the heartbeat, and see whether phase 8 then survives with a live connection",
+    "if phase survives but the world still times out, capture a launcher breakpoint at 0x77C343 to identify the caller that reaches it",
+    "keep 0x5B31B4 untouched in that run"
+  ],
+  "artifacts": ["runs/w2-status1.json", "runs/w2-status2.json", "runs/w2-status3.json", "runs/w2-in2.jsonl"]
+}
