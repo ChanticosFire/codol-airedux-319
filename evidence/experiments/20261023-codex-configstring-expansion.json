@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T11:40:00+00:00",
+  "scope": "configstring expansion is accepted only on typed-text slots and does not change the black screen",
+  "type_table": {
+    "file": "evidence/experiments/20261023-client-slot-types-1649370.bin",
+    "bytes": 12761,
+    "histogram_top": {
+      "255": 9320,
+      "13": 1135,
+      "18": 955,
+      "4": 292,
+      "1": 252,
+      "0": 249,
+      "20": 165,
+      "21": 165
+    },
+    "text_slots": 9485,
+    "slots_0_to_23": "all 255 (text allowed)",
+    "slots_24_to_188": "mostly 13/18 (string rejected)"
+  },
+  "experiment_1": {
+    "mapping": "captured strings at slots 3..173",
+    "result": "Com Error XBOXLIVE_CANTJOINSESSION at 0x4F82E0; connection returned to 0",
+    "cause": "slots 24..173 include types below 0x17 that are not 0x15"
+  },
+  "experiment_2": {
+    "mapping": "slots 0/1/2 kept; 171 captured strings placed on typed-text slots 189..359",
+    "gamestate_length": 3307,
+    "entries": 174,
+    "result": "state 10, no Com Error, ring_b 44/44, file_missing 59",
+    "screenshot": "black (unique=5, mean=0, max=18)"
+  },
+  "conclusion": "the configstring table alone is not the gate for world rendering; expanding it changes neither the loading UI nor the black frame",
+  "next": [
+    "verify whether the map bsp is actually loaded (mapped files or a breakpoint in CM_LoadMap)",
+    "if the bsp is loaded, instrument the renderer scene/view setup",
+    "if not, find which gamestate field starts the world load"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r7c-gs.jsonl",
+    "forward": "runs/codex-r7c-forward.json",
+    "screenshot": "runs/codex-r7c-screenshot.png",
+    "configstrings": "runs/configstrings-2697.json"
+  }
+}

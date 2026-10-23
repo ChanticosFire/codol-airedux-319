@@ -95,7 +95,7 @@ class GameServer:
                  snapshot_seq: int = 5, snapshot_repeat: int = 0,
                  snapshot_interval: float = 0.5,
                  command_path: str | None = None, command_delay: float = 2.0,
-                 command_seq: int = 4):
+                 command_seq: int = 4, configstring_file: str | None = None):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -116,6 +116,9 @@ class GameServer:
         self.command_path = Path(command_path) if command_path else None
         self.command_delay = command_delay
         self.command_seq = command_seq
+        self.configstrings = DEFAULT_CONFIGSTRINGS
+        if configstring_file:
+            self.configstrings = self._load_configstrings(Path(configstring_file))
         self.pending_oob: list[tuple[float, tuple, str]] = []
 
     # ------------------------------------------------------------------ logging
@@ -216,6 +219,14 @@ class GameServer:
                     f"\\protocol\\1\\shortversion\\{PROTOCOL_GENERATION}")
         self.send_oob(addr, response)
 
+    @staticmethod
+    def _load_configstrings(path: Path) -> tuple[tuple[int, bytes], ...]:
+        rows = json.loads(path.read_text(encoding="utf-8"))
+        out = []
+        for index, value in rows:
+            out.append((int(index), str(value).encode("latin-1")))
+        return tuple(out)
+
     def send_due_gamestates(self) -> None:
         """Send once after connect's delay, after the first client in-band packet."""
         for addr, peer in self.state.peers.items():
@@ -225,7 +236,8 @@ class GameServer:
             if time.monotonic() < due:
                 continue
             peer["gamestate_sent"] = True
-            payload = (build_native_gamestate(self.registration_checksum)
+            payload = (build_native_gamestate(self.registration_checksum,
+                                              configstrings=self.configstrings)
                        if self.gamestate_source == "native" else GAMESTATE_PLAINTEXT)
             if not payload:
                 self.log({"dir": "meta", "kind": "gamestate_missing"})
@@ -240,7 +252,8 @@ class GameServer:
             self.log({"dir": "meta", "kind": "gamestate_source", "source": self.gamestate_source,
                       "payload_length": len(payload), "registration_checksum": hex(self.registration_checksum),
                       "configstrings": [[index, value.decode("latin-1")]
-                                        for index, value in DEFAULT_CONFIGSTRINGS],
+                                        for index, value in self.configstrings][:8],
+                      "configstring_count": len(self.configstrings),
                       "payload_head": payload[:96].hex()})
             seq = 3
             peer["last_server_seq"] = seq
@@ -456,6 +469,8 @@ def main() -> int:
     parser.add_argument("--command-delay", type=float, default=2.0,
                         help="seconds after gamestate before server commands")
     parser.add_argument("--command-seq", type=int, default=4)
+    parser.add_argument("--configstring-file", default=None,
+                        help="JSON [[index, value], ...] replacing the built-in configstrings")
     args = parser.parse_args()
     if args.delay_send < 0:
         parser.error("--delay-send must be nonnegative")
@@ -477,7 +492,8 @@ def main() -> int:
                         args.gamestate_source, args.registration_checksum,
                         args.snapshot_file, args.snapshot_delay, args.snapshot_seq,
                         args.snapshot_repeat, args.snapshot_interval,
-                        args.command_file, args.command_delay, args.command_seq)
+                        args.command_file, args.command_delay, args.command_seq,
+                        args.configstring_file)
     try:
         server.serve()
     except KeyboardInterrupt:
