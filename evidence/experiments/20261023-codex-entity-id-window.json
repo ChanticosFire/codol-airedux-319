@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T02:55:00+00:00",
+  "scope": "entity id window characterised; count stays 1 and the client survives",
+  "experiment": {
+    "body_a": {
+      "byte163": "0xD8",
+      "byte164": "0x01",
+      "id": 2078
+    },
+    "body_b": {
+      "byte163": "0x18",
+      "byte164": "0x01",
+      "id": 2072
+    },
+    "delta": 6,
+    "delta_bits": "bits 1310 and 1311 (byte163 bits 6 and 7), which matches an id window starting at bit 1309",
+    "count": 1,
+    "state": 9,
+    "client": "alive (pid 39492)"
+  },
+  "meaning": [
+    "the count encoding is stable at byte164",
+    "the 12-bit id window starts at bit 1309 and currently overlaps byte164, so the id cannot be forced to 0 while count=1",
+    "id 2072 is still inside the client's entity array capacity (32768), so the parser accepts it; what is missing is the field delta stream"
+  ],
+  "next": [
+    "stop trying to zero the id; instead append the entity field delta stream so the entity becomes complete",
+    "the field stream must be long enough to consume exactly up to the ps/actor blocks, otherwise parsing runs off the buffer"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r31-gs.jsonl",
+    "body": "runs/snapshot-count1-id8.bin"
+  }
+}
