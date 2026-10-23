@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T06:30:00+00:00",
+  "scope": "index 0 (codec -97, offset 0) with a real commandTime is rejected: 24 ps bits measured vs 52 predicted",
+  "body": "runs/snapshot-cmdtime.bin (V=1, distance=2, codec -97, value 1000)",
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1332,
+    "ps_bits_consumed": 24,
+    "builder_predicted_bits": 52,
+    "actors_error": 0,
+    "states": "state 9 at every sample"
+  },
+  "comparison_table": {
+    "V=22 distance=23 codec 11 zero -> 29 bits -> STATE 10": "runs/snapshot-single22.bin",
+    "V=22 distance=23 codec 11 value 0x100 -> 32 bits -> state 9": "runs/snapshot-nz1.bin",
+    "V=1 distance=2 codec -97 value 1000 -> 24 bits -> state 9": "runs/snapshot-cmdtime.bin"
+  },
+  "reading": [
+    "the ONLY playerState body that reaches state 10 is the one with an all-zero field value",
+    "every attempt to carry a real value - through codec 11 or codec -97, at index 22 or index 0 - is rejected",
+    "the field table discovery (0xDA8520) is solid knowledge, but it has not yet produced an accepted non-zero body",
+    "each experiment costs one full client session and the rejection gives almost no diagnostic signal"
+  ],
+  "honest_position": {
+    "round": 136,
+    "what_is_delivered": "server1649370 with handshake, gamestate, snapshots at state 10, match end, lobby return, one-command runner, three documents and 110+ evidence records",
+    "what_blocks_the_world": "carrying real playerState/entity CONTENT in a snapshot the client accepts",
+    "why_still_blocked": "we can now predict packet LENGTHS but not what makes a value acceptable; every content hypothesis is falsified by a full-session experiment",
+    "what_would_unblock_it": "a captured real snapshot from a live server, or a debugger session that inspects the client's own validation of the playerstate"
+  },
+  "artifacts": {
+    "server_log": "runs/codex-r159-gs.jsonl",
+    "encoder": "runs/_gen_cmdtime.py"
+  }
+}

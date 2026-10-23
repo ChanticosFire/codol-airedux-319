@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Real commandTime rejected; only all-zero ps is accepted]**
+> cmdtime (V=1, codec -97, 1000): ps 24 bits (predicted 52), state 9. Pattern: single22 (codec 11 zero) = 29 bits -> state 10; nz1 (0x100) = 32 -> 9; cmdtime = 24 -> 9.
+> The only accepted ps body has a zero field value. The 0xDA8520 table discovery is solid but has not produced an accepted non-zero body.
+> Honest: server deliverable complete and reproducible; content acceptance is the blocker; needs a captured snapshot or a debugger session on the client's validation.
+> Evidence: [cmdtime rejected](evidence/experiments/20261023-codex-cmdtime-rejected.json).
 > **2026-10-23 [MAJOR: the real field table is 0xDA8520, not 0xDA63E8]**
 > Probe (ECX + 5 stack args) on nz1: ecx = 0xDA8520 at 0x6701D0 entry; entry = offset 0 / codec -97. Stack args [stream 0x16D9EC, 0x11A00, 0x166244, 0, 0].
 > All previous index/codec mappings were built on 0xDA63E8 and are INVALID. This explains why the cost model matched while content never did.
