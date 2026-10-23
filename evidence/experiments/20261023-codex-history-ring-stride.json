@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T14:00:00+00:00",
+  "scope": "the history structure is either a constant 0xC89A490 or a 0x3BBC-stride ring entry - so arg3 should NOT be zero, and why it was needs one more observation",
+  "disassembly_around_the_caller": [
+    "0x472268  mov edi, 0xC89A490        ; the function containing the ps call starts by pointing edi at a CONSTANT structure",
+    "0x4722A2  mov edi, [ebx+0xA8DC]     ; alternatively: a per-snapshot index",
+    "0x4722AE  and edi, eax              ; masked",
+    "0x4722B0  imul edi, edi, 0x3BBC     ; stride 0x3BBC = 15292 bytes per entry",
+    "0x4722BC  add edi, edx              ; + base -> the ring entry",
+    "0x4722C0  cmp [edi+0x3B7C], ecx",
+    "0x4722E8  cmp [edi+0x3B88], eax     ; the same structure family the ps block later reads",
+    "0x47239A  test edi,edi ; je 0x47232B",
+    "0x4723CB  push edi                  ; -> arg3 of 0x471980"
+  ],
+  "the_contradiction": [
+    "the constant 0xC89A490 is non-zero and the ring entry is base + idx*0x3BBC, also non-zero",
+    "yet the probe read arg3 = 0x00000000 at 0x471980 entry",
+    "so some path between 0x472268 and 0x4723CB leaves edi = 0 - most likely a branch that only reaches the ps call with a NULL history when the client has no valid snapshot slot yet"
+  ],
+  "what_this_tells_us": [
+    "the client keeps a RING of 15292-byte snapshot structures (stride 0x3BBC) - that is the history the ps block needs",
+    "a real session fills ring entries as snapshots arrive; our client apparently has none (or an invalid index) at the moment the ps block runs",
+    "the constant 0xC89A490 is likely the fallback/empty structure",
+    "so the missing piece is a VALID SNAPSHOT SLOT on the client side, which is consistent with the client never having completed a map load"
+  ],
+  "next": [
+    "probe 0x4722BC (after the ring address is computed) and 0x4723CB (just before the ps call) to log edi at both points, and see which branch sets it to zero",
+    "both addresses are once-per-snapshot, so they are cheap and safe to arm"
+  ],
+  "artifacts": {
+    "addresses": ["0x472268 constant 0xC89A490", "0x4722B0 stride 0x3BBC", "0x4722E8 [edi+0x3B88]", "0x4723CB push edi"]
+  }
+}

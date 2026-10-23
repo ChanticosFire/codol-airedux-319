@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [History is a 0x3BBC-stride snapshot ring or constant 0xC89A490]**
+> Caller: 0x472268 edi = 0xC89A490; or 0x4722A2 edi = [ebx+0xA8DC] & eax, *0x3BBC, +edx -> ring entry; 0x47239A tests it; 0x4723CB pushes it as arg3.
+> Both paths give a non-zero edi, yet the probe read arg3 = 0, so a branch passes NULL when the client has no valid snapshot slot.
+> Next: probe 0x4722BC and 0x4723CB (once per snapshot) to see which branch zeroes edi.
+> Evidence: [history ring stride](evidence/experiments/20261023-codex-history-ring-stride.json).
 > **2026-10-23 [ROOT CAUSE: ps history arg is NULL; content is gated behind a fully initialised client]**
 > SnapTrace args: stream 0x134F4FA8, history (arg3) = NULL, [history+0x3BA0] = 0, state 10. Call site 0x47239A tests edi for NULL and 0x4723CB pushes it as arg3; edi is a large client structure (0x4722E8 reads edi+0x3B88).
 > So the field decode needs a history structure that only exists once cgame/map load completes - which this project never achieved. Circular: no map load -> no history -> no field decode -> no ps content.
