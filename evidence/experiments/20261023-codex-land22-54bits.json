@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T21:00:00+00:00",
+  "scope": "landing on index 22 parses cleanly but costs 54 bits, not the predicted 40 - two candidate explanations fit exactly",
+  "body": "runs/snapshot-land22-v100.bin (V=23, distance=23, codec 11 value 0x100)",
+  "builder_prediction": 40,
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1362,
+    "ps_bits_consumed": 54,
+    "actors_entry_error": 0,
+    "delta_calls": 1,
+    "state": 9
+  },
+  "analysis": [
+    "the prediction of 40 was built as 8 (header) + 1 (continuation) + 5 (V) + 13 (distance 23) + 12 (codec 11 gate + 11) + 1 (terminator)",
+    "the client consumed 54, i.e. 14 more",
+    "TWO candidate explanations fit exactly: (a) the distance for 23 costs 27 bits instead of 13, or (b) the codec-11 value costs 25 bits instead of 12",
+    "the ps block itself ended with error 0 at 1362, so it read past our intended boundary into the tail without failing"
+  ],
+  "the_discriminating_experiment": [
+    "build V=1 (landing index 0, codec -97) with distance 1 (a single bit)",
+    "then header 8 + continuation 1 + V 5 + distance 1 + value 33 (gate + 32) + terminator 1 = 49 bits",
+    "if the client consumes 49 the distance coder is fine and the surplus in this round came from the value;(b) is the answer",
+    "if it consumes something else, the surplus is in the distance coder, i.e.(a)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r188-gs.jsonl",
+    "encoder": "runs/_gen_land22.py"
+  }
+}
