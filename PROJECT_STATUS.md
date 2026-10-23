@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Root cause located: load-completion callback 0x8018B0 is never called]**
+> Breakpoints: 0x8018B0 (LoadDone) 0 hits - never runs; 0xB7A670 (StatusQuery) 1 hit with esi=0x42436CD8 (different from singleton 0x424DDBE8) returning 0.
+> So the UI never leaves the loading screen because nobody calls the completion path; the singleton measured earlier is not the one on this path.
+> Next: find callers of 0x8018B0 and its guard condition, or trace the 0x42436CD8 object's progress ([obj+0x4F4]/status).
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [loaddone not called](evidence/experiments/20261023-codex-loaddone-not-called.json).
 > **2026-10-23 [Loader state already complete; flag already 1 so forcing does nothing]**
 > At state 10: singleton [0x8269774]=0x424DDBE8, loader=0x42415E70, loader+0xC8=2, +0x644=0, +0x5E8=3, singleton+0x4F8 low byte=1 (u32 0xBAAA9A01).
 > By 0xBA0780 logic the inner status already returns 2 and the flag is already 1, so 0xB7A670 should pass 2 through - yet ui_state stays 5 and the screen is black.
