@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Inconclusive run: ps breakpoints did not fire; 1345 alignment unverified]**
+> snapshot-entity-ps-1345 (ps 1345..1373) and -1347: client stayed on the loading screen, no breakpoint records (snap_trace 0, clear_ps_error 0), entity_count read None.
+> So the pipeline did not reach the ps block in the sampling window; alignment unverified.
+> Next: repeat 60 snapshots, sample at t=35 and t=50, correlate with server sends, verify breakpoints are applied.
+> Acceptance: a screenshot showing the map. Evidence: [entity ps inconclusive](evidence/experiments/20261023-codex-entity-ps-inconclusive.json).
 > **2026-10-23 [Entity + ps body: entity_count=1 and ps entered with error 0]**
 > snapshot-entity-ps-v2.bin (176 B): count1 1336 bits + 7 zero pad to 1343 + 28-bit ps + 27-bit tail. Result entity_count=1, ps entry 1345 error 0, ps 1 bit, actors 1346, state 9.
 > First body with a real entity AND a clean ps entry; only the offset is wrong (entity loop runs to 1345, ps written at 1343).

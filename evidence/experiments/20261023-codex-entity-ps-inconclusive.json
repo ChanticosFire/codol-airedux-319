@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T07:20:00+00:00",
+  "scope": "inconclusive: the ps breakpoints produced no records this run, so the alignment result cannot be read",
+  "bodies": {
+    "runs/snapshot-entity-ps-1345.bin": "ps block at 1345, ends 1373 (176 B)",
+    "runs/snapshot-entity-ps-1347.bin": "ps block at 1347, ends 1375 (177 B)"
+  },
+  "run": {
+    "breakpoints": [
+      "0x471980:SnapTracePlayerState",
+      "0x471A36:ClearPsError",
+      "0x471010:SnapTraceActors"
+    ],
+    "snap_trace_records": 0,
+    "clear_ps_error_records": 0,
+    "entity_count_read": "failed (None) - the address was unreadable at the time of sampling",
+    "frame": {
+      "unique_colors": 4113,
+      "mean": [
+        39,
+        37,
+        42
+      ],
+      "note": "loading screen (state 9)"
+    }
+  },
+  "reading": [
+    "the client stayed on the loading screen and NONE of the three breakpoints fired, which means the snapshot pipeline did not reach the ps block during the sampling window",
+    "this is either a timing artefact (the snapshots were processed later/earlier than the sample) or the breakpoints were not applied this run",
+    "so the 1345 alignment is NOT yet verified either way"
+  ],
+  "next": [
+    "re-run with more snapshots (repeat 60) and sample twice (t=35 and t=50) to make sure the window covers processed snapshots",
+    "log the game-server side too (snapshot sends) so we can correlate",
+    "if the breakpoints still do not fire, verify the launch actually accepted the breakpoint list"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r129-gs.jsonl",
+    "screenshot": "runs/codex-r129-screenshot.png"
+  }
+}
