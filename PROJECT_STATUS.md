@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [First ps encoder (v0): header reproduces, field section errors at bit 1336]**
+> runs/_gen_ps_body.py implements has-ps(1)+mode(1)+5-bit last+per-field present(1)+delta decoder, then the hybrid tail. Bodies: enc-baseline (169B), enc-origin0 (173B), enc-origin012 (179B).
+> origin0 test: ps entry 1308 -> actors entry 1336 (28 bits) with stream error 1, state 9. Model wrote 34 bits, so the field encoding diverges.
+> Next: instrument 0x6701D0 entry (ecx = table entry pointer -> index = (ecx-0xDA63E8)/12; bit = [stream+0x24]) to learn the exact field order.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps encoder v0](evidence/experiments/20261023-codex-ps-encoder-v0.json).
 > **2026-10-23 [ps codec fully mapped: distance + positive-width default decoded]**
 > Distance 0x670CB0 (args stream, bits=3): unary when bits==1; else 1 bit (1 -> distance 1), else 3 bits accepted unless 7, then longer form - Elias-gamma style.
 > Default branch 0x670B15 for positive widths: 1 bit zero-flag (0 -> value 0), else 0x66FE30(codec) reads `codec` bits.

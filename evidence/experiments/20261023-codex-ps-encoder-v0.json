@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T19:35:00+00:00",
+  "scope": "first ps encoder (v0) reproduces the header but the field section errors out at bit 1336",
+  "encoder_v0": {
+    "file": "runs/_gen_ps_body.py",
+    "model": "has-ps(1) + mode(1)=0 + 5-bit last + per-field present(1) + [present==0 -> continuation(1) + 5-bit index + distance + codec] + hybrid tail",
+    "bodies": {
+      "runs/snapshot-ps-enc-baseline.bin": "last=0, no fields (169 B)",
+      "runs/snapshot-ps-enc-origin0.bin": "last=8, field 8 codec 10 value 0x1FF (173 B)",
+      "runs/snapshot-ps-enc-origin012.bin": "last=22, fields 8/13/22 (179 B)"
+    }
+  },
+  "measurement_origin0": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1336,
+    "ps_bits_consumed": 28,
+    "stream_error_at_actors": 1,
+    "result_state": 9,
+    "reading": "the client consumed 28 bits and then set the stream error, so the field encoding diverges from the client's expectation"
+  },
+  "why_v0_is_wrong": [
+    "the model assumed a 'present' bit per field followed by a 5-bit index, but the measured consumption (28 bits) does not match the bytes written (34 bits)",
+    "the field-loop entry conditions (the 0x471B9E present bit vs the 0x670FF0 continuation bit) are still ambiguous",
+    "the ps block's own 'last' semantics may not be the last changed field index"
+  ],
+  "next": [
+    "instrument 0x6701D0 entry: ecx holds the field-table entry pointer, so index = (ecx - 0xDA63E8)/12, and the stream bit is [stream+0x24]; logging (index, bit) reveals the exact field order the client expects",
+    "use that trace to correct the encoder instead of guessing"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r107-gs.jsonl"
+  }
+}
