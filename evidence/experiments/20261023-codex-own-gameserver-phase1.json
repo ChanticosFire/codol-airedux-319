@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T15:00:00+00:00",
+  "scope": "write the first working piece of our own game server and self-test it",
+  "created": {
+    "package": "server1649370/",
+    "files": ["__init__.py", "gameserver.py"],
+    "description": "UDP game-server skeleton for protocol generation 1.1.1.13: logs every datagram and answers the three out-of-band commands the client uses during startup"
+  },
+  "self_test": {
+    "server": "python -m server1649370.gameserver --port 28971 --log runs/gs-selftest.jsonl",
+    "client_probe": "raw UDP datagrams prefixed with ffffffff",
+    "results": [
+      {"sent": "getchallenge 0 \"123456\"", "received": "challengeResponse 1727926132"},
+      {"sent": "connect 0123456789abcdef \"\\name\\TestPlayer\\xuid\\110000100\\challenge\\123\\2490\\1.1.1.13\"", "received": "connectResponse \\mapname\\mp_cross_fire\\gametype\\war\\sv_maxclients\\12\\protocol\\1\\shortversion\\1.1.1.13"},
+      {"sent": "stats", "received": "statsResponse 0"}
+    ],
+    "all_three_ok": true
+  },
+  "what_it_logs": {
+    "inbound_oob": "source, command, parsed args, length",
+    "inbound_inband": "sequence, length, first 64 bytes as hex (not parsed yet)",
+    "outbound": "text and full hex of every reply",
+    "parsed_connect": "uid, userinfo keys, name, xuid, challenge field, build field",
+    "counters": "oob/inband received and sent, per-command counts"
+  },
+  "deliberately_not_done_yet": [
+    "in-band netchan decode (seq/serverId/messageAck + XOR cipher)",
+    "gamestate and snapshot generation",
+    "clc_move/usercmd parsing",
+    "any lobby/auth behaviour (server319 keeps that role)"
+  ],
+  "how_it_fits": "the 1649370 client writes packets into an in-process ring, so tools/ring_bridge_1649370.py forward drains the ring and speaks UDP; this server is the UDP peer the bridge forwards to. Next step is to point the bridge at port 28971 instead of the 2697 dedrun on 28970 and watch a real client handshake.",
+  "next": [
+    "run a real 1649370 session with forward --target 127.0.0.1:28971 and confirm the server logs the client's getchallenge/connect/stats with real fields",
+    "compare the captured challenge/connect/connectResponse fields with what the 2697 dedrun saw, to expose any 3.19.26.22 differences",
+    "then add the in-band netchan layer (decode first, reply later)"
+  ],
+  "artifacts": ["server1649370/gameserver.py", "runs/gs-selftest.jsonl"]
+}
