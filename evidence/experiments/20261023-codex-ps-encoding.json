@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T05:45:00+00:00",
+  "scope": "complete playerState block encoding recovered from cols",
+  "header": [
+    "byte 0: svc_snapshot opcode (0)",
+    "bytes 1..5: server_time LE32",
+    "byte 5: delta distance",
+    "byte 6: flags (8 for a full baseline)",
+    "bit: 0 (no prior playerState)",
+    "bit: 1 (transmit origin/velocity)",
+    "8 bits: last_changed + 1",
+    "bit: 1 (field gap +1, i.e. field 0)",
+    "bit: 1 (-97 codec, absolute LE32)",
+    "bytes: command_time LE32 (field 0 payload)"
+  ],
+  "field_loop": {
+    "gap": "fn gap(out, distance) at mod.rs:1431",
+    "scalar_width_8": "bit(1) nonzero gate + exactly 1 byte of the value",
+    "other_widths": "remainder bits first, then whole bytes; width 0 = raw float, 87 = short angle, 100/101 = float/angle codecs, 75/94 = events, 97 = absolute u32"
+  },
+  "intermission_recipe": {
+    "fields": [
+      [
+        83,
+        6,
+        8
+      ]
+    ],
+    "last_changed": 83,
+    "encoded": "header with last_changed=83, then field 0 = command_time via -97, then gap from 0 to 83 and the scalar 6"
+  },
+  "next": [
+    "write a python ps-block builder for this recipe",
+    "place it in the hybrid body where the ps block belongs and test whether the client enters intermission"
+  ],
+  "artifacts": {
+    "cols": "E:/GAME/COD/codol-airedux/cols/crates/protocol/src/game/snapshot/mod.rs"
+  }
+}
