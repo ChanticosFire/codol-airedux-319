@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MAJOR: parser accepts a non-zero ps body (stream_error 0); client then crashes]**
+> 32-bit aligned ps (value 5 in 3 bits) + 60/120 zero room + tail: actors entry error 0 at 1340, decide stream_error 0. First non-zero ps value to pass the accept test.
+> Failure mode changed from rejected to crash-after-parse, i.e. the parsed content is used by game logic and inconsistent.
+> Next: run room60 alone; then bisect the value (1, 2). Oracle is now stream_error == 0 at 0x4724A5.
+> Evidence: [parser accepts nonzero](evidence/experiments/20261023-codex-parser-accepts-nonzero.json).
 > **2026-10-23 [ps block EXACTLY aligned (32==32); error moved to the actors block]**
 > Measurement table showed the landing field is narrower than 11 bits. Writing value 5 in 3 bits: builder 32, client 32 exactly. ps error 0, actors entry error 0, but decide stream_error 1.
 > So the error is raised between the actors entry and the decision - by actors or glass - most likely because [stream+0x24] (written by the ps header as `last`) is reused by the actors block as the actor index.
