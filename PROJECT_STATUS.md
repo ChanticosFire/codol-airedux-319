@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ps cost scales with the landing index - all fields up to it are decoded]**
+> idx8 (V=9): ps entry 1308 -> actors 1400 (92 bits) with stream error 1, whole buffer consumed, state 9. V=1 cost ~45 bits, V=9 cost 92 ~ 9 fields x 10 bits.
+> Hypothesis: every field from index 0 up to the landing index is decoded; only fields beyond it are copy-only.
+> Next: FULL ps encoder writing all 24 fields in table order (codec + value each), which matches a real server; measure length, align tail, confirm state 10.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps cost scales](evidence/experiments/20261023-codex-ps-cost-scales.json).
 > **2026-10-23 [BREAKTHROUGH: the client does decode a field - V=1 lands on index 0 (codec -58)]**
 > Probe at 0x6710BB (call to 0x6701D0): 1 record, esi=0, last=1, state 10. So V = target index + 1; V=1 lands on field 0 (offset 76, codec -58, float). The earlier '0x6701D0 never called' was a probe artifact.
 > Consequence: the encoder works - the landing field is fully controlled by V. Next: bodies with V=9/14/23 -> indexes 8/13/22, measure ps length per body, align the tail, confirm state 10, check the frame.

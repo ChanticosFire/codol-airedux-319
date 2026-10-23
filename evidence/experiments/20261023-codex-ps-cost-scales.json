@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T01:25:00+00:00",
+  "scope": "V=9 costs 92 bits and overruns - evidence that EVERY field up to the landing index is decoded, not just the landing one",
+  "bodies": {
+    "runs/snapshot-ps-idx8.bin": "V=9 -> landing index 8, 175 B",
+    "runs/snapshot-ps-idx13.bin": "V=14 -> landing index 13, 175 B",
+    "runs/snapshot-ps-idx22.bin": "V=23 -> landing index 22, 175 B"
+  },
+  "measurement_idx8": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1400,
+    "ps_bits_consumed": 92,
+    "stream_error": 1,
+    "length_bits": 1400,
+    "note": "the block consumed the whole buffer (1400 bits = 175 bytes) and overran",
+    "state": 9
+  },
+  "hypothesis": {
+    "statement": "the delta decoder decodes EVERY field from index 0 up to the landing index; only fields beyond the landing index are copy-only",
+    "support": [
+      "V=1 (landing 0) consumed ~45 bits in the ps section for a single field, far more than one codec read",
+      "V=9 (landing 8) consumed 92 bits ~ 9 fields x ~10 bits",
+      "so the cost scales with the landing index, which is exactly what 'decode all fields up to the landing point' predicts"
+    ]
+  },
+  "next": [
+    "implement a FULL ps encoder that writes all 24 fields in table order, each with its own codec and a value (zero is acceptable for most)",
+    "that matches what a real server sends and removes the guessing about gaps entirely",
+    "measure the resulting ps length, align the tail, and confirm state 10"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r117-gs.jsonl",
+    "encoder": "runs/_gen_ps_origin.py"
+  }
+}
