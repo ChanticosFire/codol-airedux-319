@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Route B: playerState parser has no field table]**
+> Constant pushes in 0x471980..0x471C30: only 0xDA9920 (PS 0x58-byte default template), 0xDB465C (Com_Error string), 0xDA63E8 (entityState table, surfacing inside this range).
+> No playerState field-table pointer - ps fields are hard-coded like 0x671700; reaching field 83 would need every preceding field encoded. Impractical.
+> Pivot: stop injecting PS field 83; look for a coarser end-of-match lever (gamestate gametype/match state or a dedicated svc command).
+> Next: vary the gamestate gametype string (currently war) and watch for a state change.
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [ps no table](evidence/experiments/20261023-codex-ps-no-table.json).
 > **2026-10-23 [Route B: playerState block entry decoded on 1649370]**
 > Disassembled 0x471980: ps block = one has-ps bit, then one last-mode bit (1 = previous+1, 0 = 5-bit last index), then the field loop up to last; cursor past length raises Com_Error(0xdb465c).
 > Hybrid already sets bit1312=1 (has ps) and bit1313=1 (incremental last), consistent with it parsing ps and reaching state 10.
