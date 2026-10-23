@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Entity + ps body: entity_count=1 and ps entered with error 0]**
+> snapshot-entity-ps-v2.bin (176 B): count1 1336 bits + 7 zero pad to 1343 + 28-bit ps + 27-bit tail. Result entity_count=1, ps entry 1345 error 0, ps 1 bit, actors 1346, state 9.
+> First body with a real entity AND a clean ps entry; only the offset is wrong (entity loop runs to 1345, ps written at 1343).
+> Next: ps at 1345, verify entity_count 1 + state 10, screenshot.
+> Acceptance: a screenshot showing the map. Evidence: [entity ps v2](evidence/experiments/20261023-codex-entity-ps-v2.json).
 > **2026-10-23 [Entity body too short: overruns 7 bits before ps]**
 > count1 body is 167 B = 1336 bits but the entity loop consumes to bit 1342 -> 7-bit overrun, which sets the stream error and skips ps.
 > The rebuild failed in the generator (IndexError) so the run is invalid evidence.

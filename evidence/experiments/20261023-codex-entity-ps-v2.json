@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T06:55:00+00:00",
+  "scope": "entity + ps body: entity_count = 1 and the ps block is entered with NO stream error - only the tail offset is still off",
+  "body": {
+    "file": "runs/snapshot-entity-ps-v2.bin",
+    "size_bytes": 176,
+    "layout": "count1 1336 bits + 7 zero pad bits to 1343 + 28-bit ps block starting at 1343 + 27-bit tail",
+    "note": "the ps block was placed at 1343 but the entity loop actually ran to 1345"
+  },
+  "measurement": {
+    "entity_count": 1,
+    "ps_entry_bit": 1345,
+    "ps_entry_error": 0,
+    "ps_bits_consumed": 1,
+    "actors_entry_bit": 1346,
+    "state": 9
+  },
+  "reading": [
+    "this is the FIRST body that carries both a real entity (entity_count = 1) and enters the ps block with error = 0",
+    "the zero padding made the entity loop terminate cleanly, so the ps entry moved from 1343 to 1345",
+    "the ps block then only reads 1 bit because our 28-bit block was written 2 bits too early",
+    "state 9 is purely an offset problem now, not a rejection"
+  ],
+  "next": [
+    "rebuild with the ps block starting at 1345: count1 1336 bits + zeros to 1345 + 28-bit ps + tail",
+    "then verify entity_count == 1 AND state 10, then screenshot"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r128-gs.jsonl",
+    "encoder": "runs/_gen_entity_ps2.py"
+  }
+}
