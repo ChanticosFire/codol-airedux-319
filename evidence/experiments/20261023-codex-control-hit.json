@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T18:30:00+00:00",
+  "scope": "control run: 0x471D80 fires with the e2 body, so the crash is inside the entity loop",
+  "experiment": {
+    "body": "runs/snapshot-e2-entity.bin",
+    "breakpoint": "0x471D80 SnapTraceEntityLoop only",
+    "hit": {
+      "cursor": 164,
+      "bit": 1307,
+      "length": 182,
+      "flags": 12,
+      "param_ebp8": 1628824
+    },
+    "after_hit": "client exited"
+  },
+  "conclusion": [
+    "the entity loop IS entered with the e2 body, so the crash happens inside the loop/field path",
+    "the previous no-hit result was caused by unsafe breakpoint addresses (0x471DE1 / 0x471E4A), not by an early crash",
+    "therefore only the field-stream layout (last/gap) needs fixing, not the preceding blocks"
+  ],
+  "next": [
+    "keep using only validated breakpoint addresses (0x471D80, 0x671700, 0x4723DD)",
+    "vary last(6) and the gap chunk width on the e2 body and watch entity_count/state"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-32eb88a9/events.jsonl",
+    "server_log": "runs/codex-r52-gs.jsonl"
+  }
+}
