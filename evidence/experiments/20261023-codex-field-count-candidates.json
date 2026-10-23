@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:10:00+00:00",
+  "scope": "field-table globals read at runtime",
+  "jump_table": {
+    "type1": "0x671890",
+    "type2": "0x671833",
+    "type3": "0x6717A1 (11-bit int)",
+    "type4": "0x6717B5 (float)",
+    "type5": "0x671B21 (out of range)",
+    "type6": "0x671979",
+    "type7": "0x6719E8",
+    "type8": "0x6718D2",
+    "type9": "0x6719AA",
+    "type10": "0x6719B8",
+    "type11": "0x6717C7 (entity ref)",
+    "type12": "0x6717FD (entity ref)",
+    "type13": "0x67193C"
+  },
+  "tail": {
+    "0x671A0D": "walks the field list at [0x77D8218], marks the field bit in 0x77DC6C3, appends type 0x12 to the list at 0x77DC8CC, then loops back to 0x671711",
+    "0x671B19": "out-of-range type -> return 0"
+  },
+  "runtime_globals": {
+    "0x77D821C": 955,
+    "0x77D8218": "0x77DB518",
+    "0x77DC8C8": 2157,
+    "0x77DB880": 0
+  },
+  "reading": [
+    "955 is a candidate for the field count, but 955 fields per entity is far too many for a 0x34-byte entityState; it is more likely a global bit/record cursor",
+    "the field loop terminates by walking a linked list and testing a per-field bitmap, so the exact stop condition still needs annotation of 0x671A0D..0x671B19"
+  ],
+  "next": [
+    "trace [0x77D821C] and [0x77DC8C8] before and after one snapshot to see which one advances with fields",
+    "annotate the 0x671A0D tail to identify the real loop bound"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r41-gs.jsonl"
+  }
+}
