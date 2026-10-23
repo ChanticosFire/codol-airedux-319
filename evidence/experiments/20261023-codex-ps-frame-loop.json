@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T20:30:00+00:00",
+  "scope": "BREAKTHROUGH: the ps block is not header+field-loop - it is an outer frame loop where every iteration re-reads has-ps",
+  "control_flow": {
+    "0x471A3E": "LOOP HEAD: read 1 bit (has-ps); 0 -> exit to 0x471CAC",
+    "0x471A4D": "read 1 bit (mode); mode==1 -> last = bitpos+1, else read 5 bits",
+    "0x471A8C..0x471B50": "ring copy for this frame (stride 0x58)",
+    "0x471B9E": "read 1 bit (present); 1 -> skip decode",
+    "0x471BC8": "present==0 -> call 0x670FF0 (delta field decoder)",
+    "0x471CA3": "cmp [edi],0; je 0x471A3E -> loop back to the header",
+    "0x471CAC": "exit path"
+  },
+  "verified_against_measurement": {
+    "all_zero_body": "1 (has-ps=1) + 1 (mode=0) + 5 (last) + 1 (present) + 1 (has-ps=0 -> exit) = 9-10 bits, matching the measured 10 bits from round 58",
+    "conclusion": "the model now explains the measured bit counts"
+  },
+  "why_encoder_v0_failed": [
+    "v0 treated the block as one header + a long field loop with a closing bit",
+    "in reality every 'frame' costs 3 header bits + 1 present bit, and the block ends when has-ps reads 0",
+    "so the tail placement and the present-bit count were both wrong"
+  ],
+  "next": [
+    "rebuild the encoder as: [has-ps=1, mode, last] + [present=0] + delta(continuation + 5-bit index + distance + codec) + [has-ps=0] + hybrid tail",
+    "expect the actors entry bit to land exactly where the encoder says; then try a real origin value"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r108-gs.jsonl"
+  }
+}

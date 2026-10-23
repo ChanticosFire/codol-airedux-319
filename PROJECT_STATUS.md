@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [BREAKTHROUGH: ps block is a frame loop that re-reads has-ps each iteration]**
+> 0x471A3E = loop head (read has-ps; 0 -> exit); 0x471A4D mode (bit+1 or 5-bit last); ring copy; 0x471B9E present bit (1 skip, 0 -> call 0x670FF0); 0x471CA3 loops back when no error.
+> Explains the round-58 measurement: all-zero body = 1+1+5+1+1 = 9-10 bits, matching the measured 10.
+> Encoder v0 failed because it modelled one header + a long field loop; really every frame costs 3 header bits + 1 present bit and the block ends on has-ps=0.
+> Next: rebuild as [has-ps=1,mode,last] + [present=0] + delta + [has-ps=0] + tail; verify the actors entry bit; then a real origin.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps frame loop](evidence/experiments/20261023-codex-ps-frame-loop.json).
 > **2026-10-23 [Field decoder never reached - ps block errors earlier]**
 > Instrumented 0x6701D0 (ecx = table entry -> index; [stream+0x24] = bit). origin0 body consumes 28 bits, sets stream error, and never calls the field decoder; the single captured record (entry 0xDA8520, index 708) is a startup call, so the instrument works.
 > So the divergence is in the header/loop control flow (0x471980..0x471CAC), not the codec. Unknowns: present-vs-continuation flow, the 5-bit header value, and positive-width quantisation.
