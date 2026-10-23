@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T22:00:00+00:00",
+  "scope": "final round: correlate the decrypted body with the real write order",
+  "session": {
+    "client": "20261023-final, pid 29192",
+    "capture": "runs/final-in.jsonl, first in-band datagram",
+    "client_t": {"challenge": -1976592760, "messageAck": 1}
+  },
+  "verified_facts": {
+    "no_ascii_in_window": "scanning client_t+265420..266620 produced zero readable strings of length >= 3, so lastClientCommandString is empty on this client",
+    "mp_cross_fire_still_decrypts": "with key = challenge ^ seq the plaintext still contains the map name, so the key formula itself is right",
+    "write_order_from_source": [
+      "MSG_WriteLong(&msg, client->lastClientCommand)   // 4 bytes, FIRST",
+      "MSG_WriteByte(&msg, svc_EOF)                       // 1 byte",
+      "MSG_WriteLong(&msg, 0)",
+      "MSG_WriteLong(&msg, svc_gamestate)",
+      "MSG_WriteLong(&msg, svs.configDataSequence)",
+      "MSG_WriteLong(&msg, client - svs.clients)",
+      "MSG_WriteLong(&msg, sv.checksumFeed)",
+      "MSG_WriteLong(&msg, 0)"
+    ]
+  },
+  "correction": {
+    "earlier_assumption": "the body starts with svc_EOF (0x07)",
+    "actual": "the body starts with a 4-byte lastClientCommand, so svc_EOF sits at offset 4",
+    "consequence": "checking plain[0]==0x07 was the wrong test; the right test is plain[4]==0x07 and plain[5:9]==0"
+  },
+  "not_yet_explained": "with the corrected offset the decrypted plain[4] was 0xb5 rather than 0x07, so either the cipher start offset is not data+4 for this packet or challenge/seq pairing differs from what we assumed",
+  "next": [
+    "test both candidate cipher start offsets (data+4 vs data+0) and both byte orders for the seq word",
+    "score candidates by plain[4]==0x07 and plain[5:9]==0x00000000",
+    "once the header aligns, dump the configstring list from the plaintext and mirror it in server1649370"
+  ],
+  "artifacts": ["runs/final-in.jsonl", "runs/2697-native-src/src/sv_client.c", "runs/2697-native-src/src/sv_net_chan.c"]
+}
