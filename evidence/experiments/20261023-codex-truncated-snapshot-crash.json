@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T13:25:00+00:00",
+  "scope": "a truncated 211-byte snapshot slice kills the client during map loading",
+  "experiment": {
+    "source": "runs/snapshot-2697-real.bin sliced at the first plausible next-snapshot boundary",
+    "slice_bytes": 211,
+    "payload_bytes": 215,
+    "seq": 1000,
+    "client_ack": 1,
+    "client_process_after": "gone (exited, no Com Error line recorded)",
+    "user_observation": "map loading screen appears, then the client exits immediately"
+  },
+  "boundary_scan": {
+    "method": "scan for 0x00 + plausible serverTime + small delta + known flags",
+    "candidates": 2,
+    "first": {
+      "offset": 0,
+      "time": 56300,
+      "flags": "0x0C"
+    },
+    "second": {
+      "offset": 211,
+      "time": 180224,
+      "flags": "0x0D",
+      "verdict": "false positive from payload bytes"
+    }
+  },
+  "lesson": "the client crashes instead of rejecting an incomplete snapshot; never send a slice of a bit-packed snapshot body unless the boundary was produced by a real parser",
+  "next": [
+    "write a parser that mirrors 0x671D80/0x471D80/0x671650/0x671700 and walk the 10 KB body to exact snapshot boundaries",
+    "or hand-build a minimal entity snapshot once the pre-block (0x671D80) format is recovered",
+    "keep the working 167-byte baseline as the guaranteed-accepted fallback"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r12-gs.jsonl",
+    "forward": "runs/codex-r12-forward.json",
+    "slice": "runs/snapshot-2697-first.bin"
+  }
+}

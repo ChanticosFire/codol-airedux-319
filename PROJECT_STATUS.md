@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【教训：截断快照切片会让客户端崩溃退出】** ✅从 10200 字节体按“0x00 + 合理 time”扫描边界仅得 2 候选（第二个为误匹配），切出 211 字节以 seq 1000 发送 → ack 仍 1、客户端进程消失、用户看到“加载画面瞬间退出”。❌不完整快照不是被拒绝而是崩溃，位流切片不可再用。167 字节 hybrid baseline 仍是可回退的稳定路径。下一轮手写最小实体（先恢复 `0x671D80` pre-block）或写镜像解析器精确切分。证据：[JSON](evidence/experiments/20261023-codex-truncated-snapshot-crash.json)。
+
 > **2026-10-23【实体快照格式恢复；10KB 拼接快照未被确认】** ✅主解析链 `0x4722A0..0x4724A5`（`0x47238C` 读 has_base 位；`0x671D80`→`0x471D80`→`0x471980`→`0x471010`→`0x471560`→`0x4475F0`）。✅实体编码：`0x671650` 实体号表（1+1 bit、8-bit 数量、每实体 12 bits）、`0x671700` 字段 delta、`0x447190` 读位、`0x66EC30` 读 N 位。✅从 seq5 服务流提取 2697 真实快照体 10200 字节，以 9 片 seq 1000 发送 → 未确认、state 9。下一轮改发单个快照或手写单实体。证据：[JSON](evidence/experiments/20261023-codex-entity-snapshot-format.json)。
 
 > **2026-10-23【2697 抓包无 snapshot；客户端实体数组全 0】** ✅599 条消息全是 opcode 1（server command），唯一命令 99 条；补发 31 条含 `d 0 <serverinfo>`/`D 0`/`C 0`/`v` 后仍 state 10 全黑。✅实体数组 `[clc+0xA904]^0xDF5B8C38`、stride 0x34，抽查 32 项全 0——客户端未解析到实体。下一步必须让 base 快照携带玩家实体（`0x471D80`+`0x447190`+`0x671700`）。证据：[JSON](evidence/experiments/20261023-codex-full-commands-and-empty-entities.json)。
