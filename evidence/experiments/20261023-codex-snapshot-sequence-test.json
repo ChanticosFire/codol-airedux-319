@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T14:50:00+00:00",
+  "scope": "a concatenated hybrid+delta body only gets the first snapshot processed",
+  "experiment": {
+    "body": "runs/snapshot-seq-hybrid-then-delta.bin",
+    "composition": "hybrid 167B (has_base=0) + count1 167B (has_base=1)",
+    "total_bytes": 334,
+    "result": {
+      "state": 10,
+      "entity_count": 0,
+      "client": "alive (pid 30432)"
+    }
+  },
+  "reading": [
+    "the first snapshot is accepted (state 10), but the second one does not take effect: entity_count stays 0",
+    "either the client treats the concatenation as one message and stops after the first snapshot, or the has_base=1 snapshot is rejected silently"
+  ],
+  "next": [
+    "send the two snapshots as separate messages with different seq values instead of one concatenated body",
+    "that requires a multi-snapshot schedule in the server (send file A, wait, send file B)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r47-gs.jsonl",
+    "body": "runs/snapshot-seq-hybrid-then-delta.bin"
+  }
+}
