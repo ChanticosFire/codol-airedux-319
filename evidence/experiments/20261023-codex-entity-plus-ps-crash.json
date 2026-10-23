@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T01:45:00+00:00",
+  "scope": "entity table + playerState TOGETHER crashes the client",
+  "bodies": [
+    "runs/snapshot-ep-a.bin (183 B)",
+    "runs/snapshot-ep-b.bin (189 B)"
+  ],
+  "measurement": {
+    "t=22": {
+      "state": 9,
+      "entities": 0
+    },
+    "t=35": "client process gone",
+    "t=50": "client process gone",
+    "t=62": "client process gone",
+    "snap_trace_records": 0
+  },
+  "reading": [
+    "with the entity table (A=1) and a real playerState in the same body, the client terminates",
+    "no snap_trace records were produced, so the crash happened before or during the parse",
+    "individually each part is now known to work: the entity table alone yields entity_count = 1, and the ps block alone (A=0) reaches state 10",
+    "so the failure is in their COMBINATION - most plausibly the entity payload we supply (which has never carried a valid per-entity field set) is consumed as soon as a playerstate is also present"
+  ],
+  "honest_note": [
+    "this is the third crash in the recent rounds (non-zero -58, and now entity+ps)",
+    "each crash costs a full session and yields little information beyond 'combination rejected'"
+  ],
+  "next": [
+    "stop combining: instead complete the A=0 playerState body first (make its length exact and confirm state 10 reproducibly)",
+    "only then study the per-entity payload format, which is still completely unknown"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r152-gs.jsonl",
+    "encoder": "runs/_gen_ep.py"
+  }
+}
