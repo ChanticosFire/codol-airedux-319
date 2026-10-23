@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MILESTONE: first ps-carrying snapshot accepted (state 10)]**
+> snapshot-trio2 (three records, indices 13/14/22, zero values): ps 1308 -> actors 1389 = 81 bits, error 0, state 10 at t=35/50/62.
+> Until now every has-ps=1 body was rejected at state 9; the ps block is now structurally valid. Frame still black (unique 6) - state 10 without entity/actors data renders nothing.
+> Next: exact ps length, then add the entity table on top of the working ps block. Entity/actors payload is the only remaining blocker.
+> Evidence: [ps accepted state10](evidence/experiments/20261023-codex-ps-accepted-state10.json).
 > **2026-10-23 [Zero-valued field = one gate bit]**
 > Three-record all-zero payload (builder 73 bits): measured ps = 25 bits, error 0 - the client finished early because zero costs a single 0 gate bit; remainder-bits-first applies only to non-zero values.
 > write_field/read_field fixed accordingly, with a 1-bit zero assertion; self test 0 failures. Next: rebuild with the corrected encoder (predicted 55 bits for all-zero), then real coordinates.

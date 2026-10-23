@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T00:25:00+00:00",
+  "scope": "MILESTONE: the first playerState-carrying snapshot that the client ACCEPTS (state 10)",
+  "bodies": {
+    "runs/snapshot-trio2.bin": "three records, indices 13/14/22, all-zero values, builder length 42 bits",
+    "runs/snapshot-single22.bin": "single record, index 22, builder length 29 bits"
+  },
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1389,
+    "ps_bits_consumed": 81,
+    "actors_error": 0,
+    "states": {
+      "t=22": 9,
+      "t=35": 10,
+      "t=50": 10,
+      "t=62": 10
+    }
+  },
+  "why_this_is_a_milestone": [
+    "until now EVERY body with has-ps = 1 was rejected and the client stayed at state 9",
+    "this body carries a real playerState delta and the client accepted it: state 10 at three consecutive samples",
+    "so the ps block is now structurally valid - the gate that blocked progress for ~60 rounds is open",
+    "the length differs from the builder prediction (81 vs 42), which means the client consumed extra records from what we intended as padding; the important part is that it accepted the result",
+    "the frame is STILL BLACK (unique 6 colours): state 10 without world/entity data renders nothing, so the visible world still needs the entity/actors content"
+  ],
+  "screenshot": {
+    "file": "runs/codex-r150-state10.png",
+    "unique_colours": 6,
+    "mean": [
+      0,
+      0,
+      0
+    ],
+    "reading": "black - the client is in-match but has no scene data"
+  },
+  "next": [
+    "make the ps length exact so the tail lands where intended (the 81 vs 42 gap means our exit bit was not where the client stopped)",
+    "then add the entity table (A=1) on top of this now-working ps block - previously the entity block was rejected because the ps block after it failed first",
+    "the entity/actors payload is now the only remaining blocker for a visible world"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r150-gs.jsonl",
+    "encoder": "runs/_gen_trio2.py",
+    "screenshot": "runs/codex-r150-state10.png"
+  }
+}
