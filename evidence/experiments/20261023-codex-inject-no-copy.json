@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T20:55:00+00:00",
+  "scope": "injecting the clc entity array does not reach the renderer (no cgame copy appears)",
+  "experiment": {
+    "injected": {
+      "entity_base": "clc+0xA904",
+      "eType": 1,
+      "origin": [
+        5830.0,
+        -4369.0,
+        -95.0
+      ],
+      "count": 1
+    },
+    "scan": "searched 0x10000000..0x40000000 for the float pair (5830,-4369)",
+    "hits": [
+      "0x131E5590 (the injected location itself)"
+    ],
+    "screenshot": "black (unique 6, mean 0)"
+  },
+  "conclusion": [
+    "the renderer does not read the clc entity array directly - the injected entity stays only where it was written",
+    "there is a second copy (cgame entities) that the renderer consumes, and it was never populated",
+    "so a pure memory injection into clc cannot produce a visible entity; the update path (network -> clc -> cgame) must run"
+  ],
+  "next": [
+    "locate the cgame entity array (its count/pointer) and inject there directly as a diagnostic",
+    "or patch the clc->cgame update so it copies our synthetic entity"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r87-gs.jsonl",
+    "screenshot": "runs/codex-r87-screenshot.png"
+  }
+}
