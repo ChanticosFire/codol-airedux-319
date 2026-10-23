@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Full-process camera scan: only level-like triples, no eye position]**
+> Scanned 0x400000..0x80000000 (6.34 MB), filter 500<|x|,|y|<15000, -2000<z<2000: 15 candidates, e.g. 0xE9D71DC=(5605.51,-13131.45,0), 0x1215F84=(-7522.32,-4096.98,0). All z=0 (level/ground data), no eye position.
+> With no entity/world loaded, a null camera remains the most plausible cause of the black frame.
+> Next: inspect context around 0xE9D71DC; or accept no camera exists while nothing is loaded.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [camera scan](evidence/experiments/20261023-codex-camera-scan.json).
 > **2026-10-23 [0x8037AB has no callers; stop the static UI-refresh crawl]**
 > Direct callers 0, data refs 0. Previous function ends at 0x8037A9 (pop esi; ret); 0x8037AB starts a new region but nothing calls it directly (jump table/callback/inlined).
 > After four rounds (51-54) the load-completion callback is still out of reach by static navigation. Decision: stop the crawl and return to the entity/camera side with authorised client patches.
