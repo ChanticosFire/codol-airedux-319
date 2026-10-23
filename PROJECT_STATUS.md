@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [cg entity injection writes but shows nothing - likely a camera/refdef problem]**
+> Captured cg from edi at 0x5142E0 (0x1303A194), injected into cg+0x3B98 (0x1303DD2C): eType=1, origin 5830/-4369/-95; readback after_head=01000000 (eType present). Result: state 10, ui 5, entity_count 0, screenshot black.
+> The write succeeded but the screen did not change. Most plausible: the camera/refdef (vieworg) is still zero, or the entity struct layout at cg+0x3B98 differs from our guess.
+> Next: locate the refdef/camera and check vieworg; or disassemble the consumer of cg+0x3B98 to learn the real layout.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [inject cg no effect](evidence/experiments/20261023-codex-inject-cg-no-effect.json).
 > **2026-10-23 [Renderer entity array located: clc -> cgame copy targets [cg]+0x3B98]**
 > Entity-array key 0xDF5B8C38 has 9 refs; new ones at 0x514315/0x514346 etc. 0x5142E0..0x514358 is the clc->cgame copy: ecx=[ebx+0xA904]^key -> edx=entity[index] (stride 0x34) -> edx=edi+0x3B98 (destination) -> call 0xC3C603 memcpy 0xD000 bytes; tail uses lea ecx,[esi+edi+0x3B98].
 > So the renderer entity array is [cg]+0x3B98, and this memcpy is the only bridge from the network array.
