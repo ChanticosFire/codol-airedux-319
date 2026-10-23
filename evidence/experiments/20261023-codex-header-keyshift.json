@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T22:50:00+00:00",
+  "scope": "explain why the first ten decrypted bytes look wrong",
+  "decrypted_header": {
+    "hex": "8b 89 01 8f 01 8f 8b 8b 8b 8b 03 00 00 00 00",
+    "map_name_offset": 15,
+    "orientation": {
+      "[0:4]": "0x8f01898b",
+      "[4:8]": "0x8b8b8f01",
+      "[8:12]": "0x00038b8b",
+      "[10]": 3,
+      "[11:15]": "00000000"
+    }
+  },
+  "key_insight": {
+    "key_value": 139,
+    "key_hex": "0x8b",
+    "observation": "the constant run of 0x8b bytes in the first ten positions equals the XOR key itself",
+    "meaning": "those positions decrypt to 0x00 if and only if the key were applied as 0x8b; since they decrypt to 0x8b with our key, the plaintext there is actually the ciphertext with a DIFFERENT key",
+    "conclusion": "the key is not constant over the first ten bytes - lastClientCommandString is non-empty and advances the rolling key for a short prefix, then the key settles and the rest of the packet (including mp_cross_fire at offset 15) decrypts correctly with key 139"
+  },
+  "why_this_is_progress": [
+    "it explains the exact shape of the anomaly: a short prefix under a different key, not a wrong formula",
+    "it means our key, cipher start and challenge are all correct for the bulk of the packet",
+    "it narrows the remaining unknown to a single short string (lastClientCommandString) rather than a layout mystery"
+  ],
+  "next": [
+    "recover lastClientCommandString by solving the first ten plaintext bytes: the header should decode to lastClientCommand(4) + svc_EOF(1) + 0(4) + svc_gamestate(4)..., and we can brute force a short ASCII command that reproduces the observed prefix",
+    "or read lastClientCommandString from the dedrun at the moment of encoding (the field may be cleared later, which is why our window scan found nothing)",
+    "then rebuild the full 15-byte header and emit it from server1649370"
+  ],
+  "artifacts": ["runs/final-in.jsonl"]
+}
