@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T03:05:00+00:00",
+  "scope": "no loose UI menu scripts exist; only fileSysCheck.cfg is present, so the UI state machine lives in the exe",
+  "exploration": {
+    "resources": [
+      "E:/GAME/COD/1649370/resources/v1649370/offline-loose-library/main",
+      "E:/GAME/COD/1649370/resources/v1649370/offline-resources/main"
+    ],
+    "menu_scripts_found": "none (*.menu / *.ui absent)",
+    "configs_found": "fileSysCheck.cfg only"
+  },
+  "implication": [
+    "the loading screen and its 'waiting for player data' text are driven by code inside the executable",
+    "the UI state machine (0x84ABA50) is therefore the right address to inspect: its writers define when the client switches from loading to the game view"
+  ],
+  "next": [
+    "search the exe for writers of 0x84ABA50 to find the loading->game transition",
+    "cross-reference with the loading-screen text strings to identify the wait condition"
+  ],
+  "artifacts": {
+    "resources": "E:/GAME/COD/1649370/resources/v1649370"
+  }
+}
