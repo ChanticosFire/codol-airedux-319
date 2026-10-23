@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T02:16:00+00:00",
+  "scope": "does a legal phase 7 or an explicit loopback netadr make the connection initialiser send",
+  "sessions": [
+    {
+      "name": "20261023-clinit-lifecycle-3",
+      "pid": 38524,
+      "sequence": "install counters -> patch 0x66F20E to 90 90 -> write [0x76446B0]=7 -> wait for the rebuilt cl -> write cl+0x14 netadr -> call 0x5C83D0(1) manually",
+      "observations": {
+        "cl_before": "0x1392362C",
+        "cl_after_phase7": "0xD362501F (decoded value of the zeroed global, i.e. the client object is gone)",
+        "counters_after_phase7": {"cl_init_enter": 1, "cl_create": 0, "cl_shutdown": 1, "b2c10_enter": 1},
+        "netadr_write": "failed (no valid cl object)"
+      },
+      "manual_cl_init": {
+        "call": "call_main_thread --target 0x5C83D0 --args 1 --settle 0.6",
+        "result": "process died",
+        "crash": {"exception": "0xC0000005", "eip": "0x102", "eax": "0x76EC1F83", "ecx": "0", "edx": "0", "esi": "0x3E8", "edi": "1", "ebp": "0xBE0B30"}
+      },
+      "finding": "phase 7 makes 0x77C290 tear the client object down without a successful CL_Init (entry counted, allocation not reached), and a manual CL_Init on the live client still jumps to an invalid 0x102 callback. Manual CL_Init is not a viable recovery path."
+    },
+    {
+      "name": "20261023-clinit-lifecycle-4",
+      "pid": 37304,
+      "sequence": "install counters -> patch 0x66F20E to 90 90 -> write [0x76446B0]=8 -> poll cl until it is rebuilt -> write loopback netadr into the rebuilt cl+0x14 -> sample",
+      "observations": {
+        "t0": {"cl": "0x13CFDAF4", "phase": 0, "counters": [0, 0, 0, 0], "ring_a": [0, 0]},
+        "after_phase8": {"cl": "0x13060124", "netadr_written": true, "netadr_readback": "02000000000000000000000000000000000000009d000000"},
+        "t2_600ms": {"cl": "0x13060124", "phase": 8, "netadr_kept": true, "ring_a": [0, 0], "ring_b": [0, 0]},
+        "t3_1600ms": {"phase": 0, "netadr": "all zero", "ring_a": [0, 0]},
+        "t4_3100ms": {"cl": "0x139A2CA8"},
+        "final_counters": {"cl_init_enter": 2, "cl_create": 2, "cl_shutdown": 2, "b2c10_enter": 2},
+        "final_callers": {"cl_init_enter": "0x004FE780", "cl_shutdown": "0x004FE779", "b2c10_enter": "0x005B31B9"}
+      },
+      "finding": "A valid loopback netadr written into the rebuilt cl survives for the whole phase-8 window (600 ms) yet ring A and ring B stay at cursor 0. Therefore the missing outbound packet is not caused by an empty netadr: with 0x66F20E neutralised the initialiser simply never reaches the send path. Restoring that callback with a valid target is the remaining prerequisite."
+    }
+  ],
+  "conclusions": [
+    "phase 8 remains the only observed phase that triggers a successful CL_Shutdown + CL_Init rebuild (create=1), even though phase 8 itself is not a legal client phase and is cleared by 0x77C343",
+    "phase 7 triggers teardown without a rebuild and leaves the client object gone",
+    "manual CL_Init on a live client crashes at EIP=0x102 regardless of the cl being empty",
+    "netadr is necessary but not sufficient; the 0x66F170 callback is on the send path"
+  ],
+  "next": [
+    "redirect the decoded 0x66F170 callback to a recording stub by writing [cl2+0x30] = stub ^ (cl2+0x2C) ^ [0xE60B78] right after the phase-8 rebuild, then read the recorded eax (cl2+0x1C), ecx (&stack buffer) and the buffer contents",
+    "find the shipped initialiser of the cl2+0x1C object; its fields 0x1C..0x34 are zero in every measured state",
+    "after the callback contract is known, decide between a stub sender and reusing the loopback ring writer 0x6750A0"
+  ],
+  "artifacts": ["runs/20261023-clinit-4-netadr.json", "runs/20261023-clinit-3-T1.json", "runs/20261023-clinit-4-T5.json"]
+}
