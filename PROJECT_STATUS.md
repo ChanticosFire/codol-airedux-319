@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [0xB7A670 is a generic helper with 220 call sites]**
+> All callers enumerated: 220 (e.g. 0x4700AD, 0x7F3B6F, 0x8037BF, 0x8038EE, 0x80391E). It is a general-purpose accessor, not a load-specific query.
+> The load-completion gate at 0x8037AB (status==2 && ui_state==5) still stands but that call site never ran. Next: find 0x8037AB's own callers / what schedules it.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [status query generic](evidence/experiments/20261023-codex-status-query-generic.json).
 > **2026-10-23 [0x8037BF never fires; status query has another caller]**
 > Breakpoint 0x8037BF:CheckLoader produced 0 records (client alive, state 10). Earlier session showed 0xB7A670 firing once, so the status query has at least one other call site.
 > The loading decision may not flow through 0x8037AB. Next: enumerate all callers of 0xB7A670 and break on each to find the one that runs at state 10.
