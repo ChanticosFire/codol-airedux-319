@@ -1,5 +1,7 @@
 # CODOL 1649370 自建服务端 — 交接文档（给 codex）
 
+> **2026-10-23 索引续进度**：✅已验证：在 `0x472E58` 断点抓到首个被拒索引 `edi=8194 (0x2002)`，客户端类型表字节 `[0x77D8250+edi]=18 (0x12)`；该类型不满足分支允许的 `>=0x17` 或 `==0x15`，随后抛 `XBOXLIVE_CANTJOINSESSION`。⚠️推断：可能是索引表差异或位流错位。❌未知：索引来自 payload 的哪个位偏移。下一步记录 `0x472E00` 读取状态与 `0x447190` 返回值。证据：[本轮 JSON](evidence/experiments/20261023-codex-configstring-index.json)。
+
 > **2026-10-23 再续进度**：✅已验证：`0x4731B0` 的配置字符串校验比较原始 gamestate offset 26 `0x36E8F17B` 与本版客户端 `[0x77D8240]=0xFFB56D7E`；在服务端用 `--checksum-feed 0xffb56d7e` 仅覆写出站副本后，客户端 state 到 **8**，原 `EXE_POSSIBLECONFIGSTRINGMISMATCH` 消失。新错误 `XBOXLIVE_CANTJOINSESSION` 的静态触发点是 `0x472E48..64` 的配置字符串索引类型校验。⚠️推断：2697 配置字符串索引表与 1649370 不兼容。❌未知：首个错误索引。下一步在 `0x472E58` 记录 `edi` 和 `[0x77D8250+edi]`。详见 [本轮 JSON](evidence/experiments/20261023-codex-checksum-feed-gate.json)。
 
 > **2026-10-23 续进度（优先于下文旧假设）**：✅已验证：1649370 客户端识别的 OOB 命令是单数 `statResponse`，自建服已从 `statsResponse` 改正；实测客户端 state 4→7，收到 3 片 gamestate 后发 `gamestateupdate 1`，随后 `Com_Error(EXE_POSSIBLECONFIGSTRINGMISMATCH)` 并回 state 0。`stage=5`、`messageAck=1`，尚未达成进图判据。✅已验证（静态）：`connection+0x34` 在 OOB 重试路径自增，不是原先猜测的 incomingSequence。⚠️推断：当前 2697 来源 gamestate 的配置字符串不符合 1649370。❌未知：具体失配字段。下一步 instrument `0x4731B0` 的参数与 `[0x77D8240]`。实验复用 `20261023-codex-delay-a2/runtime`，不再生成完整运行副本。证据见 [本轮 JSON](evidence/experiments/20261023-codex-statresponse-state7.json)。

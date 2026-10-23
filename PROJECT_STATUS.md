@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【1649370 首个 configstring 类型拒绝索引定位】** ✅断点 `0x472E58` 实测 `edi=8194 (0x2002)`、客户端类型表字节 `[0x77D8250+edi]=18 (0x12)`，后续错误为 `XBOXLIVE_CANTJOINSESSION`；`0x472E48..64` 静态分支要求类型 `>=0x17` 或 `==0x15` 才跳过错误。⚠️推断：可能是 2697 索引表与本版不兼容，或位流错位；❌未知：对应 payload 位偏移。`stage=5`、`messageAck=1`，完成判据未达成。证据：[实验 JSON](evidence/experiments/20261023-codex-configstring-index.json)。
+
 > **2026-10-23【1649370 gamestate 校验门越过，状态到 8】** ✅原样 gamestate offset 26=`0x36E8F17B`，客户端当前 checksum=`0xFFB56D7E`，断点实测失配对应 `EXE_POSSIBLECONFIGSTRINGMISMATCH`。✅服务端仅在发包时用 `--checksum-feed 0xffb56d7e` 覆盖该 uint32 后，断点实测相等，客户端 state **4→5→7→8→0**，发 `gamestateupdate 1`；原错误消失。✅新错误 `XBOXLIVE_CANTJOINSESSION` 来自 `0x472E48..64` 的配置字符串**索引类型检查**。⚠️推断：2697 gamestate 的配置字符串表不符合 1649370；❌首个错误索引仍未知。`stage=5`、`messageAck=1`，地图/交互目标未达成。下一步断点 `0x472E58` 记录 `edi` 与类型。证据：[实验 JSON](evidence/experiments/20261023-codex-checksum-feed-gate.json)。
 
 > **2026-10-23【1649370 自建游戏服：状态 5→7 的协议门已打通】** ✅已验证：目标 exe 的 OOB 命令名是 `statResponse`（单数），自建服原来的 `statsResponse`（复数）无法进入对应分支；修正后，复用既有运行目录的客户端实测 state **4→7**，收到三片 `seq=3` gamestate 后发出 **`gamestateupdate 1`**，桥注入/环 B 消费均为 7/7。✅已验证：客户端随即 `Com_Error(EXE_POSSIBLECONFIGSTRINGMISMATCH)` 并回到 state 0，`stage=5`、`messageAck=1`；尚未达成地图、交互、结算或返回大厅判据。✅已验证（静态）：`connection+0x34` 在 OOB 重试路径自增，排除 incomingSequence 假设。⚠️推断：当前卡点是 2697 来源 gamestate 的配置字符串与 1649370 校验不匹配。❌未知：精确失配字段。下一步 instrument `0x4731B0` 与 `[0x77D8240]`，构造 1649370 原生配置字符串。证据：[实验 JSON](evidence/experiments/20261023-codex-statresponse-state7.json)、[详细状态](1649370-STATUS.md)。

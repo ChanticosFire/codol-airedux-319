@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "experiment": "break at 0x472e58 after 1649370 checksum override to identify first rejected configstring index",
+  "reused_runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/runtime",
+  "reliable_until_state": 0,
+  "checksum_feed_override": "0xffb56d7e",
+  "rejected_index": 8194,
+  "rejected_index_hex": "0x2002",
+  "client_type_byte": 18,
+  "client_type_hex": "0x12",
+  "type_address": "0x77da252",
+  "error": "XBOXLIVE_CANTJOINSESSION",
+  "static_condition": "at 0x472e48 type=[0x77d8250+edi]; values >=0x17 or ==0x15 skip the 0x472e58 error path, type 0x12 reaches it",
+  "bridge_ring_b_after": {"read": 6, "write": 6},
+  "verified_conclusion": "The first observed failure in the configstring type gate has edi=8194 and type=18, which triggers XBOXLIVE_CANTJOINSESSION in this code path.",
+  "unknown": "Whether index 8194 is a genuine 2697 configstring index or is caused by bitstream misalignment in the 1649370 parser; exact payload read cursor at this instruction.",
+  "artifacts": ["runs/codex-index-forward.json", "runs/codex-index-gs.jsonl", "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-0fe01d47/events.jsonl"]
+}

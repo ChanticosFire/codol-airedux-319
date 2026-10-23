@@ -2780,6 +2780,14 @@ def main(argv=None) -> int:
                                                        "return_address": hex(struct.unpack("<I", self.process.read(ebp + 4, 4))[0])}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"configstring_compare_error": str(error)})
+        if label == "ConfigstringIndexReject":
+            try:
+                index = int(row.get("registers", {})["edi"], 0)
+                kind = self.process.read(0x77D8250 + index, 1)[0]
+                self.record({"configstring_index_reject": {"index": index, "type": kind,
+                                                           "type_address": hex(0x77D8250 + index)}})
+            except (OSError, ValueError, KeyError, IndexError) as error:
+                self.record({"configstring_index_reject_error": str(error)})
         if label == "BeforeCbuf":
             try:
                 pointer, capacity, length = struct.unpack("<3I", self.process.read(0x76595A4, 12))
