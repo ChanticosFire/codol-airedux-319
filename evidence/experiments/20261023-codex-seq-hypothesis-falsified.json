@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T16:00:00+00:00",
+  "scope": "sequence-window hypothesis FALSIFIED: seq=1 gives exactly the same NULL history as seq=1000",
+  "run": {
+    "snapshot_seq": 1,
+    "ring_records": 1,
+    "ringcalc": 0,
+    "record": {
+      "label": "RingPush",
+      "edi": "0x0",
+      "ring_idx": 31
+    },
+    "snap_args": {
+      "stream": "0x13030590",
+      "history": "0x0",
+      "count_3ba0": 0
+    },
+    "final_state": 10
+  },
+  "comparison": {
+    "seq 1000": {
+      "history": "NULL",
+      "ring_idx": 31,
+      "state": 10
+    },
+    "seq 1": {
+      "history": "NULL",
+      "ring_idx": 31,
+      "state": 10
+    }
+  },
+  "what_this_rules_out": [
+    "the snapshot sequence number is NOT the reason the history argument is NULL",
+    "and the constant 31 at [ebx+0xA8DC] is almost certainly a MASK (0x1F = ring size 32 minus 1), not an index - which also explains why it never changes"
+  ],
+  "what_remains": [
+    "edi is zero at the push point and the ring-calculation branch at 0x4722B0..0x4722C0 is never taken",
+    "the function that contains the call (start 0x472268, mov edi,0xC89A490) would give a NON-zero edi, so some path between 0x472268 and 0x4723CB must zero it",
+    "finding that branch means single-stepping the caller, which this harness cannot do (it only supports breakpoints at fixed addresses)"
+  ],
+  "honest_position": {
+    "round": 175,
+    "established": [
+      "the ps block is entered but decodes zero fields because `current == last` never holds",
+      "that is because the history argument is NULL",
+      "the history argument is NULL regardless of the snapshot sequence number",
+      "an empty playerState is accepted (stream_error 0) and state 10 comes from the gamestate, not from the snapshot"
+    ],
+    "blocked_on": "why the caller passes a NULL history - which is a single branch in a function this harness cannot step through",
+    "why_i_am_stopping_the_loop": "two more full sessions (174, 175) were spent on hypotheses that failed, and the remaining question needs single-stepping rather than more parameter sweeps"
+  },
+  "artifacts": {
+    "server_log": "runs/codex-r186-gs.jsonl"
+  }
+}
