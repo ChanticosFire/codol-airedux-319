@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T01:57:00+00:00",
+  "scope": "correct two object-identity errors in the CL_Init / CL_Shutdown model before counting CL_Init invocations",
+  "image": {
+    "path": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+    "sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+    "expected_match": true
+  },
+  "corrections": [
+    {
+      "id": "A8F0-object",
+      "claim_before": "cl+0xA8F0 holds an encoded pointer and the round-by-round repair wrote cl+0xA8F0",
+      "evidence": {
+        "cl_pointer": "0x331C0C8, decoded with xor 0xD362501F (CL_Init 0x5C85BA..0x5C85BF), object size 0x12A700",
+        "cl2_pointer": "0x76638F4, decoded with xor 0x6891D1C7 (CL_Init 0x5C85D3..0x5C85DB), object size 0xAA10",
+        "0x5B2C10_prologue": [
+          "0x5B2C23 mov ecx,[0x331C0C8]",
+          "0x5B2C2F mov eax,ecx",
+          "0x5B2C32 xor eax,0xD362501F   ; eax = cl, kept at [ebp-0x83c]",
+          "0x5B2C70 mov ebx,[0x76638F4]",
+          "0x5B2C76 xor ebx,0x6891D1C7   ; ebx = cl2",
+          "0x5B2C7C lea edi,[ebx+0xC]",
+          "0x5B2C85 call 0x66F170"
+        ],
+        "0x5B2C10_user": [
+          "0x5B2DD7 mov esi,ecx            ; ecx=[ebp-0x83c] => esi = cl",
+          "0x5B2DE8 mov edx,[0x3401E48]",
+          "0x5B2DEE mov eax,[esi+0x109250] ; cl field",
+          "0x5B2DF7 mov edx,[ebx+0xA8F0]  ; cl2 field",
+          "0x5B2DFE and eax,[ebx+0xA8DC]  ; cl2 field",
+          "0x5B2E04 xor edx,0x96B9DC91",
+          "0x5B2E0D mov eax,[ebx+0x68D0]  ; cl2 field",
+          "0x5B2E13 sub eax,[edx+ecx*4]"
+        ],
+        "CL_Init_writer": [
+          "0x5C8628 mov esi,[0x76638F4]",
+          "0x5C862E xor esi,0x6891D1C7    ; esi = cl2",
+          "0x5C8637 mov dword [esi+0xA8DC],0x1F",
+          "0x5C8641 mov dword [esi+0xA8D8],0x20",
+          "0x5C864E ja 0x5C899E            ; jump table at 0x5C8A4C indexed by edi",
+          "0x5C865B push 0x180 / 0x5C8660 call 0x5C8330",
+          "0x5C8668 xor eax,0x96B9DC91",
+          "0x5C866D mov [esi+0xA8F0],eax   ; cl2+0xA8F0"
+        ]
+      },
+      "conclusion": "0xA8F0 belongs to cl2 (the 0xAA10 block decoded from [0x76638F4]), not to cl. Every previous 'repair cl+0xA8F0' wrote the wrong object; its 'crash moved forward' observation cannot be used as evidence that the repair was correct.",
+      "correction": "repair cl2+0xA8F0 = alloc(0x180) ^ 0x96B9DC91; only write cl2+0xA8DC=0x1F and cl2+0xA8D8=0x20 when they are still zero"
+    },
+    {
+      "id": "5C8AC0-owner",
+      "claim_before": "both stores to [0x331C0C8] (0x5C85C0 and 0x5C8AC1) are inside CL_Init",
+      "evidence": {
+        "cl_init_ret": "0x5C8A39 ret (CL_Init body ends here)",
+        "independent_routine": [
+          "0x5C8A70 xor eax,eax",
+          "0x5C8A72 mov [0x7508B80],eax",
+          "0x5C8A77 mov [0x77DB830],eax",
+          "0x5C8A7C cmp [0x3381398],eax",
+          "0x5C8A82 jle 0x5C8ACF (ret)",
+          "0x5C8A84..0x5C8AC0 clear a batch of globals including [0x76638F4] and [0x331C0C8]",
+          "0x5C8AC5 mov eax,0xdbc09c      ; string \"$perLocalClient\"",
+          "0x5C8ACA jmp 0x7733E0          ; unregister-by-string helper",
+          "0x5C8ACF ret"
+        ]
+      },
+      "conclusion": "The second store starts at 0x5C8AC0 (not 0x5C8AC1) and belongs to an independent teardown routine at 0x5C8A70, provisionally CL_Shutdown. CL_Init ends at 0x5C8A39. So cl is created only by CL_Init and destroyed only by 0x5C8A70."
+    },
+    {
+      "id": "CL_Init-idempotence",
+      "evidence": [
+        "0x5C83E5 cmp [0x3381398],0",
+        "0x5C83EB jg 0x5C8A29          ; already initialised -> straight to the epilogue",
+        "0x5C8A1A mov [0x3381398],1    ; completion flag",
+        "0x5C8A7C/0x5C8AB6 clears [0x3381398] on teardown"
+      ],
+      "conclusion": "A second CL_Init call returns immediately unless 0x5C8A70 ran first. Therefore any real cl re-creation implies a shutdown-then-init sequence, and a counter at 0x5C85BF (the allocation store) is the decisive signal, while a counter at 0x5C83D0 only measures entries."
+    }
+  ],
+  "callers": {
+    "0x5C83D0_CL_Init": ["0x47039D", "0x4FE77B", "0x5C8163", "0x813D25"],
+    "0x5C8A70_teardown": ["0x4FE774", "0x5C2C35", "0x813D11"],
+    "0x5B2C10": ["0x4746EB", "0x5B314A", "0x5B31B4"],
+    "0x5B2B70_predicate": ["0x4746E2", "0x5B3141", "0x5B31AB"]
+  },
+  "official_reset_sequences": {
+    "0x4FE774": "call 0x5C8A70 (teardown); push 1; call 0x5C83D0 (CL_Init mode 1); then set several globals",
+    "0x813D11": "call 0x5C8A70 (teardown); eax = 3 or 7 depending on [ebp+8]; push eax; call 0x5C83D0; mov [0x76446B0],7",
+    "note": "0x813D11 is the only located sequence that both rebuilds the client objects and writes the phase value 7 that 0x5B2C10 requires (cmp edx,7). It is the natural candidate for a positive 'enter loading' path."
+  },
+  "counter_sites": {
+    "0x5C83D0": {"original": "55 8b ec 83 ec 70", "length": 6, "resume": "0x5C83D6", "counts": "CL_Init entries"},
+    "0x5C85BF": {"original": "a3 c8 c0 31 03", "length": 5, "resume": "0x5C85C4", "counts": "actual cl allocations"},
+    "0x5C8A70": {"original": "33 c0 a3 80 8b 50 07", "length": 7, "resume": "0x5C8A77", "counts": "teardown runs"}
+  },
+  "next": [
+    "install three counters and read a T0..T5 timeline around one 0x5B2C10 call",
+    "dump both cl and cl2 plus [0x3381398] before the call",
+    "repair cl2+0xA8F0/0xA8DC/0xA8D8 (not cl+0xA8F0) and compare survival with the old wrong-object repair",
+    "if the counters show shutdown+init, use the recorded caller return addresses to find the trigger; if cl2 is zero, fall back to CL_Init or manual 0xAA10 creation"
+  ],
+  "artifacts": [
+    "tools/disasm_image_1649370.py 0x5C85A0 0x60 --raw --stop-ret 0",
+    "tools/disasm_image_1649370.py 0x5C8A6D 0x70 --stop-ret 0",
+    "tools/disasm_image_1649370.py 0x5B2C10 0x230 --stop-ret 0",
+    "tools/disasm_image_1649370.py 0x5C85F0 0xA0 --stop-ret 0"
+  ]
+}
