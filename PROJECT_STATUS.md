@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [FOUND the accept/reject decision at 0x4724A7..0x4724CD]**
+> Round 138 was wrong: capstone stopped at invalid bytes. With skipdata=True the real call sites are 0x4723DD/0x472401/0x472424 -> entities/ps/actors, then 0x471560, then 0x4475F0 (glass).
+> Decision: [esi]!=0 (stream error) -> reject; [ebp-0x3BD0]==0 -> reject; [ebp-0x54]==0 -> reject; reject path is 0x47281A.
+> ctx_3bd0 is already 72192 in our runs, so the new lead is [ebp-0x54]. Next: instrument [ebp-0x50]/[ebp-0x54] and the branch taken on a rejected body.
+> Evidence: [accept decision found](evidence/experiments/20261023-codex-accept-decision-found.json).
 > **2026-10-23 [Snapshot parsers are reached indirectly]**
 > Byte-pattern callers at 0x4723DD/0x472401/0x472424 are false positives (not valid instruction boundaries); a linear sweep of 0x472000..0x472900 finds zero direct calls.
 > So the block parsers are called through a function-pointer table. Combined with round 137: parse completes, snapshot dropped afterwards by a semantic check reachable only indirectly.

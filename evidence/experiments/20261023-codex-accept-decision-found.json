@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T08:40:00+00:00",
+  "scope": "FOUND the snapshot accept/reject decision point: 0x4724A7..0x4724CD",
+  "how_it_was_found": [
+    "a byte-pattern scan produced false positives because capstone stops at invalid bytes",
+    "re-running the linear sweep with skipdata=True found the REAL call sites: 0x4723DD -> 0x471D80, 0x472401 -> 0x471980, 0x472424 -> 0x471010",
+    "disassembling that window with skipdata revealed the full parse chain and the decision block"
+  ],
+  "parse_chain": [
+    "0x4723B9 call 0x671D80",
+    "0x4723DD call 0x471D80   (entities)",
+    "0x472401 call 0x471980   (playerState)",
+    "0x472424 call 0x471010   (actors)",
+    "0x472445 call 0x471560",
+    "0x4724A0 call 0x4475F0   (glass)",
+    "before each call: mov [esi+0x24],-1 ; mov [esi+0x28],0xFFFE7961 (cursor/sentinel reset)",
+    "no per-block error check between them - the error accumulates in the stream struct"
+  ],
+  "decision_block": {
+    "0x4724A7": "cmp [esi],edi ; jne 0x47281A   -> stream error => REJECT",
+    "0x4724AF": "call 0x8142A0 ; test al,al ; je 0x4724CA",
+    "0x4724B8": "test byte [ebp-0x50],8 ; jne 0x4724CA",
+    "0x4724BE": "cmp [ebp-0x3BD0],edi ; je 0x47281A   -> snapshot.struct[0] == 0 => REJECT",
+    "0x4724CA": "cmp [ebp-0x54],edi ; je 0x47281A       -> another field == 0 => REJECT"
+  },
+  "significance": [
+    "[ebp-0x3BD0] is the snapshot struct handed to every block via lea ecx,[ebp-0x3bd0]",
+    "our own PsTrace already records this as ctx_3bd0 = 72192 (non-zero) in the runs, so that check passes",
+    "the remaining check [ebp-0x54] == 0 is a new, concrete lead - it is examined only after the parse completes",
+    "0x47281A is the reject path; everything below 0x4724CD continues the accept path"
+  ],
+  "next": [
+    "instrument [ebp-0x50] and [ebp-0x54] at 0x4724A5, and the branch taken at 0x4724A9/0x4724C4/0x4724CD, on a rejected body",
+    "that will say exactly which of the three checks rejects our non-zero playerstate"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x4723DD",
+      "0x472401",
+      "0x472424",
+      "0x472445",
+      "0x4724A0",
+      "0x4724A7",
+      "0x4724BE",
+      "0x4724CA",
+      "0x47281A (reject)"
+    ]
+  }
+}
