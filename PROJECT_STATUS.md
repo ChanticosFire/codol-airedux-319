@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MAJOR: client renders a real lobby - the black frame was the loading screen]**
+> tools/run_match.py: one-command end-to-end run verified - steps all true, states [9,10,10,0] at t=20/35/50/65s.
+> Post-match screenshot is NOT black (unique 1268, mean 16/21/25): the real 1920x1080 CODOL lobby UI, player profile level 70, weekly panel, and an 错误/服务器连接断开 dialog with 退出.
+> So the renderer/UI/fonts work (black frames were the loading screen), and the disconnect dialog is visual proof the OOB end-of-match reached the client. Remaining: complete the loading screen.
+> Next: screenshot during loading (t=20/35/50) and read the loading text.
+> Evidence: [lobby rendered](evidence/experiments/20261023-codex-lobby-rendered.json).
 > **2026-10-23 [DECISIVE: no ps copy exists anywhere - build-level limitation recorded]**
 > FillPs wrote (5830,-4369,-95) into one ps slot (clc 0x134D4ED4, array 0x13513E64); a full-process scan found the pair ONCE, at an unrelated address. So no consumer duplicates the playerState.
 > With the eight earlier paths, the conclusion: this offline rebuild does not feed a rendered 3D scene from snapshot data. It is a build-level limitation, not a server defect - the server's gamestate and snapshots are accepted (state 10) and the match ends back to state 0.

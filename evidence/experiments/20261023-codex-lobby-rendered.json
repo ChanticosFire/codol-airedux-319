@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T04:35:00+00:00",
+  "scope": "MAJOR: the client renders a real 1920x1080 CODOL lobby after the match ends - the renderer works",
+  "artifacts": {
+    "screenshot_png": "runs/runbook-screenshot.png",
+    "screenshot_tga": "runs/runbook-screenshot.tga",
+    "summary": "runs/runbook-summary.json",
+    "runner": "tools/run_match.py"
+  },
+  "one_command_result": {
+    "command": "python tools/run_match.py --name runbook --seconds 70 --match-duration 45",
+    "steps": {
+      "engine_init": true,
+      "login": true,
+      "ring_a_blocked": true,
+      "refresh_hook": true,
+      "connect": true
+    },
+    "states": [
+      {
+        "t": 20,
+        "state": 9
+      },
+      {
+        "t": 35,
+        "state": 10
+      },
+      {
+        "t": 50,
+        "state": 10
+      },
+      {
+        "t": 65,
+        "state": 0
+      }
+    ],
+    "frame": {
+      "unique_colors": 1268,
+      "mean": [
+        16,
+        21,
+        25
+      ],
+      "max": 163
+    }
+  },
+  "what_the_frame_shows": [
+    "the real CODOL lobby UI at 1920x1080: top navigation (游戏大厅 / 开始游戏 / 生涯 / 商城 / 仓库 / 军火基地 / 赛事)",
+    "the player profile (南韩超人朴玄俊, level 70) and the weekly-challenge panel",
+    "an error dialog: **错误 / 服务器连接断开** (Error / server connection dropped) with an 退出 button",
+    "the bottom bar: 大厅群聊频道加入中..."
+  ],
+  "why_this_matters": [
+    "the client's renderer, UI and font stack all work - the earlier 'black frame' was the LOADING SCREEN, not a missing renderer",
+    "the 错误/服务器连接断开 dialog is visual proof that our OOB end-of-match disconnect reached the client and it returned to the lobby",
+    "so the remaining problem is narrower than 'no rendering': the loading screen must be completed so the client enters the world view",
+    "next diagnostic is obvious: capture screenshots DURING loading (t=20/35/50) and read the loading-screen text, which should name what it is waiting for"
+  ],
+  "next": [
+    "extend run_match.py with -screenshot-at to capture frames at several timestamps",
+    "read the loading screen text to identify the missing condition"
+  ]
+}
