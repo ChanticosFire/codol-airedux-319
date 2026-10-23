@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T03:25:00+00:00",
+  "scope": "connect the 1649370 client to the real 2697 dedrun through the loopback forward bridge and reach CS_ACTIVE on the server",
+  "setup": {
+    "dedrun": {"path": "runs/2697-server-test/codol_dedrun.exe", "binary": "codol_dedrun_enterworld12.exe (patched)", "config": "cmd-28970.json (net_port 28970)", "map": "mp_cross_fire", "bots": {"scr_codol_botfill": 12, "scr_codol_botmax": 11, "sv_botDifficulty": "regular"}, "listeners": ["UDP 28970", "TCP 28970"]},
+    "lsg": {"port": 28969, "note": "LSG must stay on 28969 because --local-auth-lsg requires the 28969 TCP guard; dedrun moved to 28970"},
+    "client": {"name": "20261023-dedrun-fwd4", "pid": 10272, "launch": "launch_1649370.py --full --local-profile --loopback-tcp-guard --local-auth-lsg"},
+    "bridge": "ring-a-drain block (0x674F30 -> xor eax,eax; ret) then forward --target 127.0.0.1:28970 --adr-type 2 --start-challenge --fake-stats --send-move --keepalive"
+  },
+  "server_evidence": {
+    "stats_rejected_without_fix": [
+      "SV packet 127.0.0.1:60925: stats",
+      "CoDOL 2697 stats rejected index=1 compressed=1277 bytes=39"
+    ],
+    "after_fake_stats": [
+      "CoDOL: AdministraClient on stale serverId 0 (server 1) state 4 ack 1 gamestate 32 out 160 sent 1",
+      "CoDOL stance: Training 1 无敌人 -> 冲刺",
+      "CoDOL stance: Training 7 无敌人 -> 冲刺",
+      "CoDOL equiptest: grenade_fire semtex_mp by Training 2 at (4377.81, -1549.17, 94.8787)",
+      "Warning: snapshot could not be prepared for Training 4 (no native frame for sequence 1)",
+      "CoDOL: AdministraClient on stale serverId 0 (server 1) state 4 ack 1 gamestate 32 out 281 sent 1"
+    ],
+    "clients": "serverstatus.xml Clients Total=12 (player + 11 bots)",
+    "interpretation": "the real server accepted the fake stats upload, promoted AdministraClient to client state 4 (CS_ACTIVE), and is running the bot entities. Snapshot building still lacks a native frame."
+  },
+  "client_evidence": {
+    "phase_before_crash": 5,
+    "crash": {"exception": "0xC0000005", "eip": "0x4B1F794C", "edx": "0x4B1F794C", "eax": "cl2+0x1C", "edi": "cl2+0xC", "ecx": "0x1AF340", "esi": "0x1AF3BC"},
+    "interpretation": "the client died in the already-known 0x66F170 heartbeat callback with the decoded garbage target, i.e. the phase-8 heartbeat crash. No heartbeat block was applied in this run."
+  },
+  "conclusions": [
+    "the 1649370 client and the 2697 dedrun interoperate through the loopback forward bridge: challenge, connect, stats and reliable commands all crossed the bridge",
+    "with --fake-stats the server reaches CS_ACTIVE and runs the 12-entity bot match (player + 11 bots)",
+    "the only observed client-side blocker is the known phase-8 heartbeat garbage callback; the historical workaround is to patch 0x5B3160 to xor eax,eax; ret before the phase reaches 7",
+    "snapshots still report 'no native frame', which the historical path fixed with tools/enter_world_dedrun.py --call (SV_ClientEnterWorld 0x4705F4)"
+  ],
+  "next": [
+    "restart the same setup but run ring_bridge heartbeat block before forwarding, so the client survives phase 8",
+    "after the client reaches phase 8, call tools/enter_world_dedrun.py --call to force CS_ACTIVE snapshots with a native frame",
+    "capture a screenshot and verify the world renders; then test player movement input and bot combat",
+    "if the client still times out on deferred configstrings, apply tools/patch_dedrun_defer.py to the dedrun"
+  ],
+  "artifacts": [
+    "runs/2697-server-test/main/qconsole.log",
+    "runs/2697-server-test/serverstatus.xml",
+    "runs/fwd-in2.jsonl",
+    "runs/fwd-forward2.json"
+  ]
+}
