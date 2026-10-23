@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T08:00:00+00:00",
+  "scope": "read the bridge delivery counters to confirm the three fragments reached the client",
+  "session": {"client": "20261023-ring, pid 37772", "server": "server1649370 on 28971, three fragments sent (seq 3, index 0/1/2)"},
+  "result": {
+    "ring_forward_json": "not created",
+    "ring_drain_json": "created (80 bytes)",
+    "ring_start_json": "created (83 bytes)",
+    "reason": "the forward process was terminated by the cleanup step before it could write its statistics file, so the run produced no delivery counters"
+  },
+  "what_is_still_known_from_logs": {
+    "server_sent": "three fragments at ts 1792733648.62, seq 3, index 0/1/2, chunk 1162/1162/1102",
+    "client_ack": "messageAck stayed 1 in the previous identically-configured run"
+  },
+  "lesson": "the bridge statistics are written only on clean exit; cleanup must let forward finish (or read counters before killing it)",
+  "next": [
+    "rerun and either wait the full --seconds window or query the bridge counters while it is still running",
+    "compare 'fragments sent by server' vs 'datagrams injected by bridge' vs 'client ring-B read count'",
+    "if injected < sent, the bridge is the limiter; if read == written but messageAck stays 1, the client parses and rejects"
+  ],
+  "artifacts": ["runs/ring-gs.jsonl", "runs/ring-drain.json", "runs/ring-start.json"]
+}
