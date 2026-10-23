@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:10:00+00:00",
+  "scope": "log the command bytes used by the netchan encoder and try a second plain variant",
+  "session": {
+    "name": "20261023-world-17",
+    "pid": 3736,
+    "hook": "install_refresh_hook.py --install",
+    "bridge": "forward --adr-type 2 --start-challenge --fake-stats --send-move --keepalive --forge-ack --forge-interval 1.5 --forge-plain 1"
+  },
+  "forge_log_tail": [
+    {"seq": 8, "ack": 88, "qport": 57054, "plain": "580000000a00", "plain_variant": 1, "command_len": 0, "command_head": "", "challenge": -1537027253, "reliable_ack": 0, "message_ack": 1},
+    {"seq": 9, "ack": 88, "qport": 57054, "plain": "580000000a00", "plain_variant": 1, "command_len": 0, "command_head": "", "challenge": -1537027253, "reliable_ack": 0, "message_ack": 1}
+  ],
+  "server": ["out 109", "out 224", "out 342", "out 457"],
+  "root_cause_candidate": {
+    "finding": "command_len is 0: the command string read from reliableCommands[(ack & 0xFF)] is empty, so encode() never advances its rolling key and the cipher cannot match the server's decoder",
+    "why": "the offset OFF_COMMANDS=1228 or the index (currently reliableSequence instead of reliableAcknowledge) does not point at a populated command entry",
+    "note": "read_dedrun_client documents reliableCommands as 256 entries of (int + char[1024]) after name/clantag/whitelist/userinfo, but the actual layout in this build may differ"
+  },
+  "next": [
+    "index by reliableAcknowledge (values[1]) instead of reliableSequence and re-log command_len",
+    "dump 256 bytes around base+OFF_COMMANDS to find the real string start, then adjust OFF_COMMANDS",
+    "cross-check with the native source under runs/2697-native-src for the client_t layout (name/whitelist/userinfo/reliableCommands offsets)"
+  ],
+  "artifacts": ["runs/forge-ack-log.jsonl", "runs/w17-forward.json"]
+}
