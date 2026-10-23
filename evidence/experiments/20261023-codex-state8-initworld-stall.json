@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:22:00+00:00",
+  "scope": "state 8 stall: 0x451BD0 (UI viewer init) runs, CL_MapLoading never fires",
+  "session": {
+    "breakpoints": [
+      "0x451BD0:InitWorldCall",
+      "0x453760:MapLoading",
+      "0x472810:SnapshotAccepted"
+    ],
+    "initworld_hit": true,
+    "initworld_time": 1792746313.698,
+    "initworld_stack_contains": "mp_ui_viewer",
+    "maploading_hit": false,
+    "snapshot_accepted_hit": false,
+    "connection_state_after_60s": 8,
+    "ring_b": {
+      "read": 5,
+      "write": 21
+    }
+  },
+  "reading": "the client enters the state 8 -> 9 path and calls 0x451BD0, whose stack mentions mp_ui_viewer; it then stops consuming the inbound ring (5/21) so state 9/10 never happens in this session. CL_MapLoading (0x453760) is not on this path.",
+  "contrast": "other sessions with the same server configuration do reach state 10, so the stall depends on client-side timing/resources rather than the network payload",
+  "next": [
+    "instrument 0x451BD0 entry/return and its callees to find the blocking call",
+    "watch whether the UI viewer waits on a resource (mp_ui_viewer) or an event",
+    "if the viewer is optional, check the branch that skips it and whether our gamestate should mark the client as non-spectator"
+  ],
+  "artifacts": {
+    "forward": "runs/codex-r3b-forward.json",
+    "server_log": "runs/codex-r3b-gs.jsonl",
+    "status": "runs/codex-r3b-status.json"
+  }
+}

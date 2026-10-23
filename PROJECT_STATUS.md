@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【state 8 阻塞定位到 0x451BD0（mp_ui_viewer）】** ✅同一轮装 `0x451BD0`/`0x453760`/`0x472810` 三个断点，只有 `0x451BD0` 命中（栈含 `mp_ui_viewer`），`CL_MapLoading` 与快照接受均未发生；客户端停在 state 8、`ring_b 5/21`。对照其他会话可到 state 10，说明卡点取决于客户端时序/资源而非网络载荷。下一轮查 `0x451BD0` 内部等待点。证据：[JSON](evidence/experiments/20261023-codex-state8-initworld-stall.json)。
+
 > **2026-10-23【排除 mapname 门；渲染目标本身全黑】** ✅在 state 9 把 `[0x333A8EC]+0xC` 写入 `mp_cross_fire`（回读成功），state 仍推进到 10，但 UI_STATE 保持 5；静态复查确认该字段走的是控制台命令历史（`0x76595A4`），不是 UI 门——上一轮推断已修正。✅`r_fullscreen 0` 后 PrintWindow 与桌面抓屏仍全黑（unique=1/mean=0），黑屏不是抓屏方式问题。✅state 10 时 demo 曾增长到 60–90KiB，说明帧循环在跑。下一轮查 state 8→9 的 0x515AD6 函数与渲染器 world/camera 指针。证据：[JSON](evidence/experiments/20261023-codex-mapname-patch-negative.json)。
 
 > **2026-10-23【UI 切换门找到：`[0x333A8EC]+0xC` 地图名为空】** ✅实测 state 10 / UI_STATE 5 时，对象 `0x8114D8C` 的 `+0xC` 指向缓冲区 `0x789C740`，内容为空串；静态 `0x515D69` 正是 `cmp byte [esi],0; je 0x515EAA`，地图名为空就跳过 state 10 后的对局/UI 初始化。→ 黑屏=UI 未切换的直接原因已定位。✅用 `black.bk2` 占位 `mp_cross_fire_load.bk2` 可解除一次 state 8 长阻塞，但不改变 UI 状态。下一轮在 state 9 直接把地图名写入该缓冲区，验证 UI 是否离开加载屏。证据：[JSON](evidence/experiments/20261023-codex-mapname-empty-gate.json)。
