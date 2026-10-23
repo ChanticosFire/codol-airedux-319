@@ -48,21 +48,31 @@ class BitWriter:
 
 
 def build(*, server_time: int = SERVER_TIME, entity_ids: tuple[int, ...] = (),
-          has_base: int = 0, flags: int = SNAP_FLAGS) -> bytes:
+          has_base: int = 0, flags: int = SNAP_FLAGS,
+          ps_entries: int = 1) -> bytes:
     writer = BitWriter()
     writer.raw(b"\x00")
     writer.raw(struct.pack("<I", server_time))
     writer.raw(bytes([0, flags]))
     writer.bits(has_base & 1, 1)
     writer.bits(1, 1)                      # entity table present
-    writer.bits(1, 1) if entity_ids else writer.bits(1, 1)
     writer.bits(len(entity_ids), 8)
     for entity_id in entity_ids:
         writer.bits(entity_id, 12)
+    if ps_entries:
+        writer.bits(1, 1)                  # playerState block present (0x471A3E)
+        writer.bits(0, 1)                  # five-bit count form (0x471A4D)
+        writer.bits(ps_entries, 5)
+        for _ in range(ps_entries):
+            writer.bits(0, 1)              # field data present (0x471B9E)
+            for _ in range(8):             # 0xDA63E8 lists eight playerState fields
+                writer.bits(0, 1)
     # Empty actor / sub / glass blocks, matching the verified baseline's tail.
     writer.bits(0, 1)
     writer.bits(1, 1)
     writer.bits(2047, 11)
+    writer.bits(0, 1)
+    writer.bits(0, 1)
     writer.raw(b"\x05")
     return bytes(writer.data)
 

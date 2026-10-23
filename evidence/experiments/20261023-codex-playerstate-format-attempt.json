@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T14:55:00+00:00",
+  "scope": "playerState block bit layout recovered; the first hand-built ps body still disconnects the client",
+  "playerstate_parser": {
+    "function": "0x471980",
+    "structure_bytes": 88,
+    "array": "[clc+0xA900] ^ 0x3613BDA3",
+    "flow": [
+      "0x471A3E: 1 bit - block present; 0 ends the block",
+      "0x471A4D: 1 bit - 1 means internal counter form, 0 means a 5-bit count follows",
+      "per entry: 1 bit at 0x471B9E - 1 skips field data, 0 calls 0x670FF0",
+      "0x670FF0(3, 0xDA63E8, 0x18, ps, buffer, base, stream): reads the field deltas"
+    ],
+    "field_table_0xDA63E8": {
+      "dwords": [
+        76,
+        4294967238,
+        0,
+        80,
+        4294967196,
+        0,
+        84,
+        4294967196,
+        0,
+        65,
+        4294967239,
+        0,
+        68,
+        4294967199,
+        0,
+        72,
+        16,
+        0,
+        66,
+        4294967239,
+        0,
+        67,
+        4294967196,
+        0
+      ],
+      "shape": "eight groups of (offset, bits_or_mask, 0)",
+      "offsets": [
+        76,
+        80,
+        84,
+        65,
+        68,
+        72,
+        66,
+        67
+      ],
+      "note": "offsets 76/80/84 match the classic playerState viewangles triple"
+    }
+  },
+  "experiment": {
+    "file": "runs/snapshot-ps-empty.bin",
+    "bytes": 14,
+    "content": "no entities, one empty playerState entry (8 zero field bits), empty actor/sub4/glass, EOF",
+    "result": "connection dropped back to state 5, client exited",
+    "reading": "the ps field encoding is not one bit per field; 0x670FF0 must be reversed before a ps body can be emitted"
+  },
+  "next": [
+    "disassemble 0x670FF0 to recover the per-field delta coding for playerState",
+    "emit a ps with clientNum 0 and viewangles/origin set",
+    "keep the 167-byte baseline as the accepted fallback"
+  ],
+  "artifacts": {
+    "builder": "tools/build_1649370_snapshot_entity.py",
+    "hand_snapshots": [
+      "runs/snapshot-ps-empty.bin",
+      "runs/snapshot-ps0-entity0.bin"
+    ],
+    "server_log": "runs/codex-r14-gs.jsonl"
+  }
+}

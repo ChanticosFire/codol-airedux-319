@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【playerState 位布局恢复；首个手写 ps 体断线】** ✅`0x471980`：1 bit 块存在 → 1 bit 数量形式（0=5-bit count）→ 每条目 1 bit（1 跳过字段、0 调 `0x670FF0`）；字段表 `0xDA63E8` 为 8 组 (offset,bits,0)，offset 76/80/84 对应 viewangles。✅手写 14 字节（无实体+空 ps）→ 连接回落 state 5、客户端退出，说明 ps 字段不是每字段 1 bit。下一轮反汇编 `0x670FF0` 恢复字段编码。证据：[JSON](evidence/experiments/20261023-codex-playerstate-format-attempt.json)。
+
 > **2026-10-23【相机来源锁定：`0x471980` = playerState 块（0x58 字节）】** ✅该子块步长 0x58、数组 `[clc+0xA900]^0x3613BDA3`、默认值 0xDA9920 拷贝 0x58 字节；顺序为 `0x671D80`→`0x471D80`(entities)→`0x471980`(**playerState**)→`0x471010`→`0x471560`→`0x4475F0`。→ 已接受的 baseline 里 playerState 为空，客户端没有本地视角/原点，正是黑屏来源。✅手写 11 字节快照（`00`+serverTime+delta+flags 0x0C+has_base 0+实体表 count=0）发送后客户端存活、但 ack 未推进、state 9——头部编码接近，缺 playerState 子块位编码。下一轮反汇编 `0x471A3E..0x471CAC` 恢复 ps 字段并写入 viewOrigin。证据：[JSON](evidence/experiments/20261023-codex-playerstate-block.json)。
 
 > **2026-10-23【教训：截断快照切片会让客户端崩溃退出】** ✅从 10200 字节体按“0x00 + 合理 time”扫描边界仅得 2 候选（第二个为误匹配），切出 211 字节以 seq 1000 发送 → ack 仍 1、客户端进程消失、用户看到“加载画面瞬间退出”。❌不完整快照不是被拒绝而是崩溃，位流切片不可再用。167 字节 hybrid baseline 仍是可回退的稳定路径。下一轮手写最小实体（先恢复 `0x671D80` pre-block）或写镜像解析器精确切分。证据：[JSON](evidence/experiments/20261023-codex-truncated-snapshot-crash.json)。
