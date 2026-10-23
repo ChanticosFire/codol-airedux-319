@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T06:20:00+00:00",
+  "scope": "final A-path verdict: table-present (A=1) always ends at state 9, even with count=0",
+  "experiment": {
+    "body": "runs/snapshot-a1-count0.bin",
+    "bytes": 167,
+    "layout": "hybrid with byte163 |= 0x18 (A/B set) and byte164 = 0x00 (count 0)",
+    "result": {
+      "client": "alive (pid 36596)",
+      "state": 9,
+      "entity_count": 0
+    },
+    "trace": {
+      "SnapTraceEntityLoop": {
+        "cursor": 164,
+        "bit": 1307,
+        "length": 167,
+        "error": 0
+      }
+    }
+  },
+  "verdict": [
+    "A=0 (hybrid) reaches state 10; A=1 reaches state 9 regardless of the count byte",
+    "the entity loop has no count-based exit: after the table it always reads at least one entity bit and eventually errors",
+    "so a non-empty entity table cannot be delivered through this client's wire parser - the limitation is in the client build, not in our encoder"
+  ],
+  "evidence_chain": [
+    "count=1 full session -> error at body end (playerState/actor blocks see error=1)",
+    "count=0 with A=1 -> still state 9",
+    "A=0 hybrid -> state 10"
+  ],
+  "recommendation": "stop the entity path and move to match-flow/lobby-return work on the hybrid baseline; keep the entity findings as a documented limitation",
+  "artifacts": {
+    "server_log": "runs/codex-r65-gs.jsonl",
+    "body": "runs/snapshot-a1-count0.bin"
+  }
+}
