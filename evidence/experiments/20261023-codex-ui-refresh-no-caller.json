@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T10:40:00+00:00",
+  "scope": "0x8037AB has no callers and no data references - it is not a normal function entry",
+  "finding": {
+    "callers": 0,
+    "data_refs": 0,
+    "note": "0x8037A9 ends the previous function (pop esi; ret), so 0x8037AB starts the next region, but nothing calls it directly"
+  },
+  "implication": [
+    "the UI refresh path we have been tracing is not reachable by a direct call - it must be entered through a jump table, a callback pointer, or an inlined path",
+    "after four rounds on this thread the load-completion callback is still out of reach by static navigation alone"
+  ],
+  "decision": "stop the static crawl of the UI refresh path; record the finding and switch back to the entity/camera side where the owner has authorised client patches",
+  "next": [
+    "return to the entity path: ClearStreamError + cg injection gave entity_count=1 but no image; the missing piece was suspected to be the camera",
+    "test injecting a camera/refdef (vieworg) with the same patch and screenshot"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r94-gs.jsonl"
+  }
+}
