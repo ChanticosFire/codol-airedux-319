@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T14:55:00+00:00",
+  "scope": "count=1 with all-zero field bits still consumes 10 bits - the 8-bit group is not a plain field count",
+  "measurements": [
+    {
+      "variant": "has-ps=1, bits 1309.. all zero",
+      "ps_bits": 10,
+      "state": 9,
+      "note": "tail misaligned by design"
+    },
+    {
+      "variant": "has-ps=1, bits 1309..1316 = 254 (0xFE), rest ones",
+      "ps_bits": 15
+    },
+    {
+      "variant": "has-ps=1, bits 1309..1316 = 2, count=1 at bit 1310",
+      "ps_bits": 10,
+      "state": 9
+    }
+  ],
+  "conclusion": [
+    "the 8-bit group at 1309..1316 is NOT a simple 'number of changed fields': value 2 adds no bits, value 254 adds 5 bits",
+    "so the ps field loop is driven by something else (likely a terminator bit or a hard-coded field sequence with per-field flags)",
+    "a count=1 body therefore still produced 10 bits, and the snapshot was rejected only because the tail had been placed at bit 1358 instead of 1318"
+  ],
+  "next": [
+    "hook the bit reader (0x447190) and log every (bit) delta between the ps entry (0x471980) and the actors entry (0x471010)",
+    "that gives the exact field layout instead of guessing from total lengths"
+  ],
+  "artifacts": {
+    "body": "runs/snapshot-ps-count1-zero.bin",
+    "server_log": "runs/codex-r101-gs.jsonl"
+  }
+}

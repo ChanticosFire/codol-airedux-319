@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [8-bit ps group is not a field count]**
+> Variants measured (ps entry -> actors entry): all-zero 10 bits; 0xFE + ones 15 bits; count=1 with zero fields 10 bits.
+> So the group is not "number of changed fields" (2 adds nothing, 254 adds 5); the loop is driven otherwise. The count=1 body failed only because its tail sat at 1358 while ps ended at 1318.
+> Next: hook the bit reader (0x447190) and log bit deltas between ps entry and actors entry to get the exact layout.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps count not count](evidence/experiments/20261023-codex-ps-count-not-count.json).
 > **2026-10-23 [MILESTONE: snapshot with a playerState block accepted end-to-end (state 10)]**
 > runs/snapshot-ps-count0-aligned.bin (170 B): bits 0..1307 hybrid header, bit 1308 has-ps=1, bit 1309=0, bits 1310..1317 count=0, hybrid tail (27 bits) at bit 1318, trailing 0x05.
 > Traced ps entry 1308 -> actors entry 1318 (10 bits consumed), result state 10, ui 5, entity_count 0, black.
