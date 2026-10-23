@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T01:00:00+00:00",
+  "scope": "adding 15 zero bits CHANGED where the block stops (55 instead of 65), so the 'surplus' was the client reading our tail until it saw has-ps = 0",
+  "measurements": [
+    {
+      "body": "idx0-v100",
+      "built": 49,
+      "padding": 0,
+      "measured": 65
+    },
+    {
+      "body": "tr15",
+      "built": 49,
+      "padding": 15,
+      "measured": 55
+    }
+  ],
+  "the_insight": [
+    "with no padding the block consumed 65 bits = 49 of our field plus 16 bits of the hybrid tail that followed",
+    "with 15 zeros before the terminator it stopped at 55 = 49 + 6",
+    "so the block keeps LOOPING after the first field and terminates on the first has-ps bit it reads as 0 - which is whatever zero bit it encounters next",
+    "that means the 'fixed trailer' interpretation was wrong: there is no fixed trailer, there is an under-terminated loop reading our tail"
+  ],
+  "the_remaining_six_bits": [
+    "55 - 49 = 6, so after the delta the block reads SIX bits before it consumes the has-ps that exits it",
+    "a plausible candidate is the hint2 radar entry from the cols encoder: one gate bit plus six payload bits - if this build reads the gate as 1 it would consume exactly six more, but our padding is zeros",
+    "so the 6 bits must come from something else and need a direct measurement"
+  ],
+  "next": [
+    "sweep the padding length (0, 1, 2, 4, 6, 8) and record the measured ps length for each",
+    "the measured length as a function of the padding pins the exact number of bits read after the delta, and therefore where the has-ps terminator must be written"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r191-gs.jsonl",
+    "encoder": "runs/_gen_tr15.py"
+  }
+}
