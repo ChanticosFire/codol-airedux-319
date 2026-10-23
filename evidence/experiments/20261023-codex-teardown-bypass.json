@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T04:10:00+00:00",
+  "scope": "block the phase-clearing store at 0x77C343 via its branch and see whether phase 8 survives",
+  "session": {
+    "name": "20261023-world-3",
+    "pid": 26520,
+    "patches": {
+      "ring-a-drain": "0x674F30 558bec -> 31c0c3",
+      "0x77C316": "75 2b (jne 0x77C343) -> eb 35 (jmp 0x77C34D), verified",
+      "0x66F20E": "ff d2 -> 90 90, verified"
+    },
+    "bridge": "forward --target 127.0.0.1:28970 --adr-type 2 --start-challenge --fake-stats --send-move --keepalive"
+  },
+  "observation": {
+    "phase": 0,
+    "cl": "0x1338A85C",
+    "flag_100260": 0,
+    "netadr_109260": 0,
+    "ring_a": [4, 4],
+    "ring_b": [4069, 4070],
+    "server": "CoDOL: AdministraClient on stale serverId 0 (server 1) state 4 ack 1 gamestate 3 out 353 sent 1; bot perks/menucmds active"
+  },
+  "analysis": {
+    "why_the_patch_did_not_help": "the branch at 0x77C316 only covers the phase != 5 case. When phase == 5 the function falls through 0x77C318..0x77C33E and still reaches the store at 0x77C343. The client therefore still clears its own phase while it is connected.",
+    "secondary": "0x77C290 also calls 0x7FA4C0 before the store, which may tear down the client object, so suppressing only the store may still leave a broken connection"
+  },
+  "next": [
+    "patch the entry of 0x77C290 itself to c3 (return immediately) so no teardown path can run, keeping the heartbeat and 0x5B2C10 alive",
+    "if the client then stays at phase 8 and stops timing out, verify the world render without the dialog and test movement input",
+    "fallback: nop the 10-byte store at 0x77C343 and also check whether cl is re-created (which would mean 0x7FA4C0 ran)"
+  ],
+  "artifacts": ["runs/w3-status1.json", "runs/w3-in.jsonl", "runs/w3-patch77c316.json"]
+}
