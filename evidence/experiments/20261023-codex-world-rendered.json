@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T03:40:00+00:00",
+  "scope": "render the real mp_cross_fire world in the 1649370 client through the 2697 dedrun forward bridge",
+  "setup": {
+    "dedrun": {"config": "runs/2697-server-test/cmd-28970.json", "net_port": 28970, "map": "mp_cross_fire", "bots": "botfill 12 / botmax 11 / regular"},
+    "lsg": {"port": 28969, "reason": "--local-auth-lsg requires the 28969 TCP guard"},
+    "client": {"name": "20261023-world-1", "pid": 7776, "launch": "--full --local-profile --loopback-tcp-guard --local-auth-lsg"},
+    "pre_patches": {
+      "ring-a-drain block": "0x674F30 558bec -> 31c0c3",
+      "heartbeat block": "0x5B3160 558bec -> 31c0c3"
+    },
+    "bridge": "forward --target 127.0.0.1:28970 --adr-type 2 --start-challenge --fake-stats --send-move --keepalive"
+  },
+  "result": {
+    "client_phase": 8,
+    "client_alive": true,
+    "client_exceptions": "none in the final events",
+    "render": "the screenshot evidence/experiments/20261023-world-rendered.png shows the real crossfire world: grey ground, texture detail and the centre reticle, with a '服务器连接超时' (server connection timed out) dialog overlaid",
+    "server": {
+      "administra_client": "state 4 (CS_ACTIVE) ack 1 gamestate 31",
+      "bots": ["Training 1 spawn/mantle/equiptest", "Training 2 semtex", "Training 6/9/10 stance", "Training 7 origin (5410 -3642 -72) angles (0 161 0)"],
+      "clients_total": 12,
+      "known_warning": "snapshot could not be prepared for Training 4 (no native frame) — affects bot snapshots, not the local player"
+    },
+    "injected_sequence": [
+      "ffffffff challengeResponse -6... (33 B)",
+      "ffffffff connectResponse \\mapname\\mp_cross_fire\\... (106 B)",
+      "ffffffff statsResponse 0 (19 B)",
+      "1172-byte 1F/21 fragments (13974 packets) = 2697 gamestate/snapshot stream"
+    ]
+  },
+  "analysis": {
+    "world_rendered": true,
+    "timeout_cause": "heartbeat block replaces 0x5B3160 with 'xor eax,eax; ret', so the client stops sending its periodic client packet; the server and the client both conclude the link timed out and the dialog appears",
+    "note": "this reproduces the historical result (game scene + server-timeout overlay) but now with the full packet trace and the exact cause"
+  },
+  "next": [
+    "do not blanket-block 0x5B3160; instead neutralise only the crashing callback: patch 0x66F20E (call edx) to 90 90 before the phase reaches 7, or redirect the decoded callback to a safe stub",
+    "keep the heartbeat alive so the client stays connected, then verify that the world renders without the timeout dialog",
+    "then test player movement input (send_key / click_at) and bot combat, and finally the exit-to-lobby path"
+  ],
+  "artifacts": [
+    "evidence/experiments/20261023-world-rendered.png",
+    "runs/world-status1.json",
+    "runs/world-status2.json",
+    "runs/world-in.jsonl",
+    "runs/2697-server-test/main/qconsole.log"
+  ]
+}
