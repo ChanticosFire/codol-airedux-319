@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T17:00:00+00:00",
+  "scope": "the renderer is alive: the loading screen proves Present runs",
+  "reasoning": [
+    "the loading screen (map art, faction icons, progress bar, spinning icon) renders visibly in state 9",
+    "the spinning icon keeps animating in state 10, which means the frame loop and Present keep running",
+    "a stopped renderer would freeze the screen instead of animating"
+  ],
+  "conclusion": "the black game view is a scene-content problem, not a renderer/present failure; there is no need to instrument Present",
+  "implication": "the remaining gap is the game scene data: playerState and entities, plus possibly the match-start state behind 等待其他玩家加入",
+  "next": [
+    "recover the real playerState field table/encoding and emit clientNum 0 with viewangles",
+    "investigate the match-state transition (S/D/C server commands) that precedes 等待玩家数据",
+    "keep the 167-byte baseline as the stable fallback"
+  ],
+  "artifacts": {
+    "user_observations": [
+      "loading screen visible",
+      "spinner keeps animating on the black screen"
+    ],
+    "evidence": [
+      "evidence/experiments/20261023-codex-loading-screen-blank-sequence.json"
+    ]
+  }
+}

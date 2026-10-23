@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【渲染器证明在跑，排除 Present 失败】** ✅加载屏可见渲染、state 10 黑屏时加载图标仍在转动 → 帧循环与 Present 持续执行，渲染器未停（停了会冻结）。→ 无需 hook Present；黑屏是场景内容问题（ps/实体/比赛状态为空）。下一步回到 playerState 字段编码与比赛状态命令。证据：[JSON](evidence/experiments/20261023-codex-renderer-alive-proof.json)。
+
 > **2026-10-23【渲染接口确认 d3d9；Present 走 COM vtable[17]】** ✅模块：`d3d9.dll` 0x6C5A0000、`nvd3dum.dll` 0x623C0000、`D3DCompiler_43.dll` 0x6B660000。`Present` 不是 d3d9 导出，需扫描“vtable 在 d3d9 范围且 vtable[17] 也在 d3d9”的设备对象定位，再用一次性断点验证 state 10 是否真的 Present——命中则问题在场景内容，不命中则渲染更早停住。证据：[JSON](evidence/experiments/20261023-codex-d3d9-present-setup.json)。
 
 > **2026-10-23【ps 数组全 0；内存注入 viewangles+origin 仍黑】** ✅`[clc+0xA900]^0x3613BDA3=0x134253D8`，容量 1024，前 8 项全 0（viewangles 0,0,0）。✅写 `ps[0].viewangles=(0,90,0)`、实体 eType=1、pos.trBase=(5830,-4369,-95)，写入回读均正确，但截图仍 unique=5/mean=0/max=34。→ 补视角/原点不足以点亮画面。下一轮先 hook Present/SwapBuffers 统计 state 10 帧数，确认渲染器是否真的在绘制。证据：[JSON](evidence/experiments/20261023-codex-memory-inject-negative.json)。
