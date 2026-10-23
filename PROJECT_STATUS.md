@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Both entity paths measured dead; only code-level client patches remain]**
+> delta path: second snapshot (has_base=1) at 0x471D80 shows base pointer [ebp+0x14] (edi) still 0, copy skipped - unusable without a real base entity.
+> field path: snapshot-e1-f50.bin + ClearStreamError still crashes (pid 0) - truncated hard-coded field stream dies before the error check.
+> Both protocol routes closed. Remaining: code-level client patches (owner-authorized) - e.g. patch the field reader to skip the field set, or patch the entity loop to create a synthetic entity.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [delta no entity](evidence/experiments/20261023-codex-delta-no-entity.json), [base ptr null](evidence/experiments/20261023-codex-base-ptr-null.json), [f50 patch crash](evidence/experiments/20261023-codex-f50-patch-crash.json).
 > **2026-10-23 [Delta entity path: accepted but produces no entity]**
 > hybrid (has_base=0) then delta-base1 (has_base=1, delta bit, 8-bit index 0) under ClearStreamError: trace before 0/after 0 (no stream error), but state 10, ui 5, entity_count 0, black frame.
 > Reading: copy did not create an entity - either base slot 0 is empty or [ebp+0x14] is null and the copy is skipped.
