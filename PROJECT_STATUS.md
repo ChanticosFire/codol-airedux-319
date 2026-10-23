@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Load-completion is a three-level status chain]**
+> 0x8018B0 -> 0x803830 (singleton [0x8269774]) -> 0xB7A670 (status): ecx=[esi+0x4F4]; null->0; else call 0xBA0780; if [esi+0x4F8]!=0 return it; else rewrite 2 to 1. 0x8018B0 success branch needs exactly 2.
+> So load completion depends on the inner status (0xBA0780) and the flag at [esi+0x4F8] - a stateful chain, not a single flag.
+> Next: inspect 0xBA0780 and identify the object at [esi+0x4F4] (map/level loader) + flag [esi+0x4F8].
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [load state query](evidence/experiments/20261023-codex-load-state-query.json).
 > **2026-10-23 [UI transition decoded: esi==2 enters loading (ui_state 5), otherwise ui_state 0]**
 > 0x8037D6: cmp esi,2 -> loading branch ([0x84ABA50]=5, [0xE4EA3C]=0xDE170C); else [0x84ABA50]=0, [0xE4EA3C]=0xDE16F0. Immediate UI-state writes: 1 (0x7F264F), 0 (0x8037E4), 5 (0x803804).
 > Forcing ui_state 0 already renders black, so the game view is not one of the 0..5 states - the loading screen must be dismissed by the load-completion path (0x803818 -> 0x8018B0).
