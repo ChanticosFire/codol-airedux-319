@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Value 1 crashes too: the FIELD is unsafe, not the magnitude]**
+> val1-room60: ps 32, parse OK (stream_error 0), client crashed. So any non-zero value in index 22 (offset 16) is unsafe; the bit stream is correct and the problem is in what the field means to cgame.
+> Next: move the write to index 12 (offset 44, codec 8, ps 31 bits), then index 20 (offset 12, codec 32).
+> Evidence: [value1 crashes](evidence/experiments/20261023-codex-value1-crashes.json).
 > **2026-10-23 [Gap 3 alone: parse fails, client survives]**
 > tg3 alone: actors error 0 at 1340, decide stream_error 1, state 9, client alive. Value-5 bodies: tg0 FAIL/no crash, tg3 FAIL/no crash, room60 OK/crash.
 > So every body that parses a non-zero value has crashed; the bottleneck moved to applying the value (likely cgame's use of index 22 / offset 16).
