@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T23:45:00+00:00",
+  "scope": "replay the recovered gamestate with a clean header and a constant key",
+  "session": {
+    "client": "20261023-replay, pid 32004",
+    "server": "server1649370 on 28971, replaying the recovered 1168-byte body",
+    "bridge": "forward --target 127.0.0.1:28971 --reliable-until-state 0"
+  },
+  "what_we_sent": {
+    "plain_head": "00000000 07 00000000 01 000000 6d705f63726f73735f6669",
+    "plain_len": 1166,
+    "packet_len": 1170,
+    "key": "challenge ^ seq (constant per packet, command string empty)",
+    "header_used": "lastClientCommand(0) + svc_EOF(7) + 0(4) + svc_gamestate(1) + 6 zero bytes = 15 bytes"
+  },
+  "what_the_client_did": {
+    "messageAck": 1,
+    "acked_our_seq": false,
+    "client_seq_advanced": "9 -> 10",
+    "meaning": "the client kept sending empty ack heartbeats and never acknowledged our sequences 14/16/18"
+  },
+  "interpretation": {
+    "delivery_was_fine": "ring B delivery and the bridge filter were already proven in earlier rounds",
+    "the_client_parsed_and_rejected": "a received-but-unparseable packet does not advance messageAcknowledge, so the body is still not a valid gamestate",
+    "most_likely_defect": "the configstring section is malformed: in the recovered plaintext the map name is preceded by 03 00 00 00 00, but a configstring entry should be svc_configstring(1) + index(2) + string, so those five bytes cannot all be a valid entry header"
+  },
+  "next": [
+    "decode the bytes right before mp_cross_fire as a configstring entry candidate: 03 00 00 00 00 -> opcode 3 (svc_baseline?) then zeros, or a 2-byte index with padding",
+    "compare with the 2697 source's SV_SendClientGameState configstring loop to learn the exact entry layout for this build",
+    "rebuild the configstring section accordingly and retest"
+  ],
+  "artifacts": ["runs/replay-gs.jsonl"]
+}

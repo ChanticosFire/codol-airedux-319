@@ -247,7 +247,14 @@ class GameServer:
             # included), so this is a byte-exact replay test.
             self.server_seq = getattr(self, "server_seq", 0) + 1
             peer["last_server_seq"] = self.server_seq
-            plain = GAMESTATE_PLAINTEXT or (b"\x07" + bytes(4) + struct.pack("<I", 1) + bytes(4))
+            # Replay the recovered gamestate body, but replace the leading bytes
+            # that were contaminated by the 2697 command stream with a clean
+            # header.  The map name sits at offset 15 in the recovered plaintext,
+            # so the header is exactly 15 bytes:
+            #   lastClientCommand(4)=0, svc_EOF(1)=7, 0(4), svc_gamestate(1)=1,
+            #   configDataSequence(??) -> zeroed tail so the total stays 15.
+            header = bytes.fromhex("00000000" "07" "00000000" "01" "000000")
+            plain = header + (GAMESTATE_PLAINTEXT[15:] if len(GAMESTATE_PLAINTEXT) > 15 else b"")
             key = (peer.get("challenge") or 0) ^ self.server_seq
             cipher = bytes(b ^ ((key >> 0) & 0xFF) for b in plain)
             packet = struct.pack("<I", self.server_seq) + cipher
