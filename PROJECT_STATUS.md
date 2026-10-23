@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Shifted A=0 body overruns in actors; tail bits must be re-roled]**
+> snapshot-ps-tail1336 with 3 breakpoints: ps 1308 -> actors 1336 -> glass 1382 (err 1), body 1376 bits; actors consumed 46 bits > 27 reused bits.
+> The 27 bits after hybrid ps were a mix of ps-tail/actors/glass/EOF; shifting them 28 bits changes their roles.
+> Next: baseline geometry - run the known-good hybrid body with the 3 breakpoints to learn where actors/glass really start.
+> Acceptance: a screenshot showing the map. Evidence: [tail geometry needed](evidence/experiments/20261023-codex-tail-geometry-needed.json).
 > **2026-10-23 [Actors block has no count-based exit]**
 > Zero payload (400 bits): ps 1345 -> actors 1373 -> glass 1786 (err 1), body 1784 bits; actors consumed 413 bits and overran. Same pattern as the entity loop.
 > So an A=1 snapshot cannot be completed by padding; the hybrid (A=0) tail is accepted in 27 bits, so actors depend on the entity-table bit.

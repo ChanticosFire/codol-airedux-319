@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T09:40:00+00:00",
+  "scope": "A=0 shifted body also overruns in actors; we need the baseline geometry of the known-good hybrid body",
+  "body": "runs/snapshot-ps-tail1336.bin (172 B = 1376 bits)",
+  "trace": {
+    "ps_entry_bit": 1308,
+    "ps_error": 0,
+    "actors_entry_bit": 1336,
+    "actors_error": 0,
+    "glass_entry_bit": 1382,
+    "glass_error": 1,
+    "length_bits": 1376,
+    "actors_bits_consumed": 46,
+    "note": "46 > the 27 tail bits we appended, so it overran"
+  },
+  "reading": [
+    "with ps taking 28 bits instead of its 1-bit 'no playerstate' form, everything after it shifts and the tail bits we reused are no longer in the right roles",
+    "the 27 bits after the hybrid ps were a mix of ps-tail/actors/glass/EOF - reusing them verbatim at a different offset does not reproduce the same block boundaries",
+    "so we need the baseline geometry: run the KNOWN-GOOD hybrid body with the same three breakpoints and read where actors and glass actually start"
+  ],
+  "next": [
+    "run runs/snapshot-hybrid-empty-actors.bin (the 167-byte body that reaches state 10) with ps/actors/glass breakpoints",
+    "that gives the true tail geometry to build from"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r133-gs.jsonl"
+  }
+}
