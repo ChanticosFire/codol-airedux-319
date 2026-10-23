@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Bit-exact ps prologue map]**
+> 0x471A3E = has-ps (0 exits), 0x471A4D = mode/last, 0x471B9E = per-field present, 0x471BC8 = delta call. Counters reset at entry; template memcpy from 0xDA9920.
+> Contradiction: our bits should reach the delta call, yet Slot never fires and loop_c8 = 0 with stream_error 0. No pre-0x471B9E exit path explains it.
+> Next: arm 0x471A3E and 0x471A4D (once per snapshot, safer) and count hits.
+> Evidence: [ps prologue map](evidence/experiments/20261023-codex-ps-prologue-map.json).
 > **2026-10-23 [DECISIVE: ps loop runs zero times; every body is an EMPTY playerState]**
 > Decide probe extended with loop variables: loop_c8 = 0, cur_c4 = 0, slot_d0 = 0, stream_error 0, state 10, snap_trace 1.
 > The ps block is entered at 1308 but its loop never runs; an empty ps is accepted. So the hybrid baseline AND every field-write attempt carried an empty playerState, and our extra bits were eaten by the following blocks - which explains the incoherent tail measurements.

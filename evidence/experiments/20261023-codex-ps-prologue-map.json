@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T10:00:00+00:00",
+  "scope": "bit-exact map of the ps block prologue read from 0x471980, and the contradiction it exposes",
+  "prologue_map": [
+    "0x4719BE  [ecx+0x3BA0] = 0        ; ps count reset to zero on entry",
+    "0x4719C4  [ebp-0xC8] = 0          ; loop counter reset",
+    "0x4719CA  [ebp-0xC4] = 0          ; current slot pointer reset",
+    "0x471A20  memcpy(0x58 bytes from 0xDA9920) -> a zeroed template at [ebp-0xBC]",
+    "0x471A36  cmp [edi],0 ; jne 0x471CAC     ; pre-existing stream error -> exit",
+    "0x471A3E  call 0x447190 -> READ BIT 1     ; has-ps: 0 => exit at 0x471CAC, 1 => continue",
+    "0x471A4D  call 0x447190 -> READ BIT 2     ; mode: 1 => last = bit+1, 0 => read 5 bits",
+    "0x471B9E  call 0x447190 -> READ NEXT BIT  ; per-field present: 1 => skip field, 0 => delta",
+    "0x471BC8  call 0x670FF0                   ; the delta record (table 0xDA63E8, count 0x18)",
+    "0x471BE7..0x471C00 counter++ and compare  ; next field via 0x471C11, or loop back via 0x471CA3"
+  ],
+  "the_contradiction": [
+    "by this map our accepted body sets bit 1308 = 1 (has-ps), bit 1309 = 0 (mode), bits 1310..1314 = 0 (last), bit 1315 = 0 (present)",
+    "so the client should proceed to the delta call at 0x471BC8 and the Slot probe at 0x471BB3 should fire at least once",
+    "but it never fires and the Decide probe reads loop_c8 = 0 and slot_d0 = 0 with stream_error = 0",
+    "so either the ps block is entered at a bit other than 1308 despite the trace, or one of the early branches exits before 0x471B9E"
+  ],
+  "candidate_exit_paths_before_the_present_bit": [
+    "0x4719D0 cmp eax,esi ; jne 0x4719E0 - if the argument [ebp+0x10] is 0, [ebp-0xC0] becomes 0x1869F and the slot path is skipped, but execution still reaches 0x471B9E",
+    "0x4719E0 cmp [eax+0x3BA0],esi ; jg 0x4719F4 - if the peer ps count is 0 the same happens",
+    "0x471A36 cmp [edi],0 ; jne 0x471CAC - exits only on a pre-existing stream error, which the trace shows as 0",
+    "so none of these explains a zero-iteration loop; the next thing to observe is which of 0x471A3E / 0x471A4D / 0x471B9E actually executes"
+  ],
+  "why_this_is_progress": [
+    "the prologue is now mapped instruction by instruction with the exact bit order (has-ps, mode/last, present, delta)",
+    "the remaining uncertainty is a single question - which of the three reads happen - and that is answerable by probing 0x471A3E and 0x471A4D, which are cheaper than 0x471B9E (they run once per snapshot, not once per field)"
+  ],
+  "next": [
+    "arm 0x471A3E and 0x471A4D (once per snapshot, so much safer than the per-field addresses) and count their hits for the accepted body",
+    "if 0x471A3E fires but 0x471A4D does not, the has-ps bit we write is being read as 0 and the ps entry bit is not 1308"
+  ],
+  "artifacts": {
+    "addresses": ["0x471A3E has-ps", "0x471A4D mode", "0x471B9E present", "0x471BC8 delta", "0x471CAC exit"]
+  }
+}
