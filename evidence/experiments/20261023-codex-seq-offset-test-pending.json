@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T11:10:00+00:00",
+  "scope": "shift the outbound starting sequence to 2 to match the client's incomingSequence",
+  "session": {"client": "20261023-seq3, pid 680", "server": "server1649370 on 28971"},
+  "attempted_change": "self.server_seq = getattr(self, 'server_seq', 1) + 1",
+  "observed_result": {
+    "fragments_sent": "seq 3, index 0/1/2",
+    "expected": "seq 2",
+    "why_it_did_not_take": "the default argument only applies when the attribute is absent; on this connection the counter already existed (the server emits an in-band reply right after connect and again after stats), so by gamestate time it had already advanced past 2",
+    "stage": 5,
+    "messageAck": 1,
+    "ring_b": {"read": 5, "write": 5}
+  },
+  "conclusion": "the sequence-offset experiment was not actually performed; the outbound start is still the natural 3 from earlier traffic",
+  "correct_approach_next": [
+    "force the gamestate sequence explicitly instead of relying on the running counter (for example set a dedicated gamestate_seq attribute and use it for all fragments)",
+    "or patch conn+0x34 (incomingSequence) to 2 so the client expects 3, then resend with seq 3 - this avoids touching the server at all"
+  ],
+  "note": "conn+0x34 read 1 in the populated-object run, which is the basis for believing the client expects 2",
+  "artifacts": ["runs/seq3-gs.jsonl", "runs/seq3-status.json"]
+}

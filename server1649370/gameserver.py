@@ -248,7 +248,10 @@ class GameServer:
                 # All fragments of ONE message share a single sequence; the
                 # reference capture used seq=3 for index 0,1,2 alike.  Only the
                 # next message gets the next sequence.
-                self.server_seq = getattr(self, "server_seq", 0) + 1
+                # We read the client's incomingSequence at connection+0x34 and it
+                # was 1, so the client expects the NEXT server sequence to be 2.
+                # Start there instead of at 3.
+                self.server_seq = getattr(self, "server_seq", 1) + 1
                 seq_word = (self.server_seq | 0x80000000) & 0xFFFFFFFF
                 key = ((peer.get("challenge") or 0) ^ (seq_word & 0x7FFFFFFF)) & 0xFF
                 for index in range(count):
