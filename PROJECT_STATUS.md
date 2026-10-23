@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [has-ps and mode bits both read; exit is between mode and present]**
+> 0x471A3E and 0x471A4D each hit once (edi = stream), snap_trace 1. So entry bit 1308 and the first two header bits are correct.
+> Slot never fires and loop_c8 stays 0 -> the exit is between 0x471A4D and 0x471B9E. Next: read 0x471A56..0x471B9E (incl. the history ring copy) where a zero `last` could skip the loop.
+> Evidence: [psbit hits](evidence/experiments/20261023-codex-psbit-hits.json).
 > **2026-10-23 [Bit-exact ps prologue map]**
 > 0x471A3E = has-ps (0 exits), 0x471A4D = mode/last, 0x471B9E = per-field present, 0x471BC8 = delta call. Counters reset at entry; template memcpy from 0xDA9920.
 > Contradiction: our bits should reach the delta call, yet Slot never fires and loop_c8 = 0 with stream_error 0. No pre-0x471B9E exit path explains it.

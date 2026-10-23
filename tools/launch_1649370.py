@@ -2959,6 +2959,16 @@ def main(argv=None) -> int:
                                          "bit": bit}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"ps_loop_error": f"{label}: {error}"})
+        if label.startswith("PsBit"):
+            try:
+                registers = row.get("registers", {})
+                edi = int(registers["edi"], 0)
+                n = getattr(self, "_psbit_count", 0)
+                if n < 20:
+                    self.record({"ps_bit": {"label": label, "edi": hex(edi), "n": n}})
+                self._psbit_count = n + 1
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"ps_bit_error": f"{label}: {error}"})
         if label.startswith("Present"):
             try:
                 registers = row.get("registers", {})

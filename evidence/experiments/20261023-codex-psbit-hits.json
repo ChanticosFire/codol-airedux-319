@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T11:00:00+00:00",
+  "scope": "the has-ps and mode bits ARE read (one hit each), so the ps header is reached; the block still never decodes a field",
+  "body": "runs/snapshot-single22.bin",
+  "breakpoints": ["0x471980:SnapTracePlayerState", "0x471A3E:PsBitHas", "0x471A4D:PsBitMode", "0x4724A5:Decide"],
+  "counts": {"snap_trace": 1, "ps_bit": 2},
+  "records": [
+    {"label": "PsBitHas", "edi": "0x16D9EC (stream)", "n": 0},
+    {"label": "PsBitMode", "edi": "0x16D9EC (stream)", "n": 1}
+  ],
+  "final_state": 10,
+  "what_this_establishes": [
+    "the has-ps read at 0x471A3E happens, so the ps entry point (bit 1308) is correct",
+    "the mode read at 0x471A4D happens too, so the first two header bits are consumed as expected",
+    "therefore the block really does enter its header path - the entry and the first bits are not the problem",
+    "yet the Slot probe at 0x471BB3 never fires and loop_c8 stays 0, so an exit happens BETWEEN the mode read (0x471A4D) and the present bit (0x471B9E)"
+  ],
+  "next_region_to_read": [
+    "0x471A56 .. 0x471B9E: the branch after the mode read (including the playerstate history ring copy at 0x471A8C..0x471B50) which is where a zero `last` could skip the field loop"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r183-gs.jsonl",
+    "probe": "tools/launch_1649370.py (PsBit branch)"
+  }
+}
