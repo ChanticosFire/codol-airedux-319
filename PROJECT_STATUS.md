@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [0x8037BF never fires; status query has another caller]**
+> Breakpoint 0x8037BF:CheckLoader produced 0 records (client alive, state 10). Earlier session showed 0xB7A670 firing once, so the status query has at least one other call site.
+> The loading decision may not flow through 0x8037AB. Next: enumerate all callers of 0xB7A670 and break on each to find the one that runs at state 10.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [loader breakpoint miss](evidence/experiments/20261023-codex-loader-breakpoint-miss.json).
 > **2026-10-23 [Load-completion gate decoded: status==2 AND ui_state==5 required; status returns 0]**
 > Sole caller of 0x8018B0 is 0x803818 in 0x8037AB: call 0xB7A670 -> esi=result; cmp esi,2 must match; cmp ui_state,5 must match; then call 0x8018B0.
 > Our session: status query returned 0 (esi=0x42436CD8, eax=0) -> loading branch never taken -> callback never ran. 0xB7A670 returns 0 when [obj+0x4F4] is null.
