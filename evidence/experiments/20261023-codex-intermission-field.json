@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T04:35:00+00:00",
+  "scope": "cols shows the exact end-of-match flag: playerState field 83 = 6 marks intermission",
+  "source": "cols crates/protocol/src/game/snapshot/mod.rs around line 786",
+  "finding": {
+    "field": 83,
+    "value": 6,
+    "bits": 8,
+    "meaning": "intermission - the client's 0x41dba0 case 6 skips movement and weapons, i.e. the match is ending",
+    "context": "written only when PlayerVitals.intermission is true; otherwise field 83 carries PM_DEAD (8) or nothing"
+  },
+  "implication": [
+    "this is the game-side end-of-match signal we were looking for - the connection-based approaches all failed",
+    "to use it on 1649370 we must send a playerState block containing field 83 = 6",
+    "our hybrid body has no playerState payload at all (only the 1-bit 'no change' path), so the next step is to learn the ps block encoding"
+  ],
+  "next": [
+    "read cols' playerState writer to learn how (index, value, bits) triples are serialised (the last/distance grammar)",
+    "then emit a minimal ps block carrying only field 83 = 6 and test whether the client enters intermission"
+  ],
+  "artifacts": {
+    "cols": "E:/GAME/COD/codol-airedux/cols/crates/protocol/src/game/snapshot/mod.rs"
+  }
+}
