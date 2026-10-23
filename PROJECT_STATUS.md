@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [cg pointer is a function argument; supplier 0x513F50 has two callers]**
+> 0x513F50 takes its argument in eax (moved to edi at 0x513F5E), so the earlier "cg pointer" is the caller's argument; it also loads ebx = [0x76638F4]^0x6891D1C7 (clc). Two callers: 0x54B6F7 and 0x54CFE7. Capstone output there decodes as data, so re-alignment is needed.
+> Next: re-align from a known prologue before those calls to see how eax (cg) is loaded; then read cg once and inspect the camera/refdef.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [cg callers](evidence/experiments/20261023-codex-cg-callers.json).
 > **2026-10-23 [clc->cgame copy breakpoint is conditional; did not fire on empty world]**
 > DumpCg at 0x5142E0 again (hybrid): no dump_cg record, client alive. In r88 the same breakpoint fired with edi=0x131D78A8.
 > Reading: the copy only runs when there is something to copy (empty entity set -> no copy), so polling cg this way is unreliable.
