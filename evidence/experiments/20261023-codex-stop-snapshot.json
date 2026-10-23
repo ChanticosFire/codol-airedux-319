@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T11:45:00+00:00",
+  "scope": "stopping the snapshot stream does not disconnect the client or return it to the lobby",
+  "experiment": {
+    "snapshots": [
+      1000,
+      1001,
+      1002
+    ],
+    "interval": 2.0,
+    "state_samples": {
+      "15s": 8,
+      "30s": 10,
+      "45s": 10,
+      "60s": 10,
+      "90s": 10
+    },
+    "client": "alive (pid 34440)",
+    "usercmd": "ring_a kept growing (33 -> 96), so the client stayed in-game"
+  },
+  "reading": [
+    "after the third snapshot the stream stops, yet the client keeps state 10 for at least 90 s",
+    "so the client does not use snapshot absence as a disconnect condition (or its timeout is much longer)",
+    "state 8 at the 15 s sample was the tail of the initial load, not a reload"
+  ],
+  "next": [
+    "test an explicit disconnect: stop the gameserver entirely, or send a disconnect-style command and watch for a lobby return",
+    "if the client still never returns, the lobby-return path needs a different trigger (e.g. the game-side end-of-match message)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r70-gs.jsonl"
+  }
+}
