@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MAJOR: offline exe never loads the 60 MB game module]**
+> Live session at state 10 has only 7 modules (exe + ntdll + 5 wow64); codoMP_client_shipRetailBase.dll (60 MB, real game code) is NOT loaded. Copying the DLL into the runtime does not change that (screenshot black -> uniform grey, modules still 7).
+> The exe has no cgame/CG_Init strings and is a rebuilt binary (bin/v1649370/README.md); the real full client still exists in E:\GAME\COD\Original Client.
+> Implication: a visible 3D world cannot come from cgame in this harness; either the rebuild has its own scene path or visible gameplay is impossible with this binary.
+> Next: check whether the rebuild has its own D3D9 scene renderer; if UI-only, switch to the real client.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [game module not loaded](evidence/experiments/20261023-codex-game-module-not-loaded.json).
 > **2026-10-23 [Correction: 0x670D30 is a field COPY helper, not the decoder]**
 > Branches: -94 -> memcpy 8; -101 -> angle copy with rounding; -102 -> vector copy; fallback -> plain dword copy. No bit reads anywhere.
 > So it is the 'unchanged field' path; the real decoding is in the tail of 0x670FF0 (0x6710AD onwards).

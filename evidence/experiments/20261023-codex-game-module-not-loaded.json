@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T17:55:00+00:00",
+  "scope": "MAJOR: the offline exe never loads the 60 MB game module; the real full client lives in Original Client",
+  "findings": {
+    "offline_exe": {
+      "path": "E:/GAME/COD/1649370/bin/v1649370/codol1649370-offline.exe",
+      "size": 11075584,
+      "origin": "rebuilt from Original Client/codoMP_client_shipRetail.exe (see bin/v1649370/README.md)"
+    },
+    "game_module": {
+      "path": "E:/GAME/COD/1649370/workspaces/full-client-image/codoMP_client_shipRetailBase.dll",
+      "size": 60327992,
+      "exports": "3, ordinal only",
+      "note": "the actual game code (cgame) lives here, not in the exe"
+    },
+    "runtime_module_list": {
+      "count": 7,
+      "modules": [
+        "codol1649370-offline.exe",
+        "ntdll.dll",
+        "wow64.dll",
+        "wow64base.dll",
+        "wow64win.dll",
+        "wow64con.dll",
+        "wow64cpu.dll"
+      ],
+      "game_dll_loaded": false
+    },
+    "after_copying_dll_into_runtime": {
+      "module_count": 7,
+      "game_dll_loaded": false,
+      "screenshot": "uniform grey (unique 1, mean 131) instead of pure black",
+      "note": "the exe does not attempt to load the DLL; copying it in only changed the captured frame"
+    },
+    "real_full_client": {
+      "path": "E:/GAME/COD/Original Client",
+      "exe": "codoMP_client_shipRetail.exe (7.8 MB)",
+      "dll": "codoMP_client_shipRetailBase.dll (60 MB)",
+      "subdirs": [
+        "client_shipretail",
+        "components",
+        "main",
+        "miles",
+        "players",
+        "TGuard",
+        "WeGameLauncher"
+      ]
+    },
+    "exe_string_scan": {
+      "cgame": 0,
+      "CG_Init": 0,
+      "ui_mp": 5,
+      "Loading": 5,
+      "waiting for": 1
+    }
+  },
+  "implications": [
+    "the offline rebuild is self-contained: it renders its own UI and parses snapshots, but it never loads the 60 MB game module",
+    "so 'the game view' cannot come from cgame in this harness - either the rebuild implements its own scene path, or a visible 3D world is impossible with this binary",
+    "the real full client (exe + 60 MB DLL + main/) exists and would be the only way to see true CGame rendering, but it also carries the retail launcher/anti-cheat chain"
+  ],
+  "next": [
+    "determine whether the offline rebuild has its own scene renderer (D3D9 draw path driven by the snapshot) or whether it is UI-only",
+    "if UI-only, switch the target to the real client and drive it with our server"
+  ],
+  "artifacts": {
+    "screenshot": "runs/codex-r105-screenshot.png",
+    "server_log": "runs/codex-r104-gs.jsonl"
+  }
+}
