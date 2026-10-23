@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [DEFINITIVE: loading screen says 等待玩家数据 (waiting for player data)]**
+> Timed frames: t=20 state 9 unique 4130 (real loading screen with map/mode 交叉火力, minimap, score bar) -> t=35/50 black. Bottom-right text: 等待玩家数据.
+> Decisive: the client names the missing input - the player data. Next: finish the ps delta encoding; the loading text is the pass/fail signal.
+> Acceptance: a screenshot showing the map. Evidence: [waiting for player data](evidence/experiments/20261023-codex-waiting-for-player-data.json).
 > **2026-10-23 [MAJOR: client renders a real lobby - the black frame was the loading screen]**
 > tools/run_match.py: one-command end-to-end run verified - steps all true, states [9,10,10,0] at t=20/35/50/65s.
 > Post-match screenshot is NOT black (unique 1268, mean 16/21/25): the real 1920x1080 CODOL lobby UI, player profile level 70, weekly panel, and an 错误/服务器连接断开 dialog with 退出.

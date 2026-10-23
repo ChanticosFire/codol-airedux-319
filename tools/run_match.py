@@ -146,6 +146,25 @@ def analyse_frame(tga: Path, png: Path) -> dict:
     return {"file": str(tga), "error": "no PIL available in any interpreter"}
 
 
+
+
+def capture(name: str, when: int, summary: dict) -> None:
+    """Capture one frame at a given time and record its statistics."""
+    run_tool(["tools/cbuf_command.py", "--command", "screenshot",
+              "--output", f"runs/{name}-cbuf-{when}.json"], timeout=90)
+    time.sleep(2)
+    shots = sorted((RUNTIME / "main" / "screenshots").glob("*.tga"),
+                   key=lambda p: p.stat().st_mtime, reverse=True)
+    if not shots:
+        return
+    tga = RUNS / f"{name}-t{when}.tga"
+    shutil.copyfile(shots[0], tga)
+    stats = analyse_frame(tga, RUNS / f"{name}-t{when}.png")
+    stats["t"] = when
+    summary.setdefault("frames", []).append(stats)
+    log(f"  frame t={when}: {stats}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="run one end-to-end CODOL 1649370 match")
     parser.add_argument("--name", default="match")
@@ -157,10 +176,13 @@ def main() -> int:
     parser.add_argument("--lsg-port", type=int, default=28969)
     parser.add_argument("--gs-port", type=int, default=28971)
     parser.add_argument("--bind-port", type=int, default=29000)
+    parser.add_argument("--screenshot-at", default="",
+                        help="comma separated seconds at which to capture a frame")
     args = parser.parse_args()
 
     RUNS.mkdir(exist_ok=True)
     name = args.name
+    shoot_at = {int(x) for x in args.screenshot_at.split(",") if x.strip().isdigit()}
     summary: dict = {"name": name, "steps": {}}
 
     log("cleaning stale processes")
@@ -240,6 +262,8 @@ def main() -> int:
         info["t"] = target
         samples.append(info)
         log(f"t={target}s state={info.get('state')} ui={info.get('ui')}")
+        if target in shoot_at:
+            capture(name, target, summary)
     summary["samples"] = samples
 
     log("capturing screenshot")

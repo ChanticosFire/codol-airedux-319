@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T05:10:00+00:00",
+  "scope": "DEFINITIVE: the loading screen text says '等待玩家数据' (waiting for player data) - the client names the missing input",
+  "timed_frames": {
+    "t=20 (state 9)": {
+      "unique_colors": 4130,
+      "mean": [
+        39,
+        37,
+        42
+      ],
+      "file": "runs/loadscreen2-t20.png"
+    },
+    "t=35 (state 10)": {
+      "unique_colors": 6,
+      "mean": [
+        0,
+        0,
+        0
+      ],
+      "file": "runs/loadscreen2-t35.png"
+    },
+    "t=50 (state 10)": {
+      "unique_colors": 5,
+      "mean": [
+        0,
+        0,
+        0
+      ],
+      "file": "runs/loadscreen2-t50.png"
+    }
+  },
+  "loading_screen_content": [
+    "title: 战术团队竞技模式 / 交叉火力 (tactical team mode / Crossfire) - the map and mode we send are correct",
+    "objective panel: 杀敌 / 胜利条件: 最先达到分数上限的队伍获胜",
+    "a minimap with both teams labelled 暗影军团 and 141特遣队",
+    "score bar: 120 lead / 36 / 2",
+    "bottom right: **等待玩家数据.** - WAITING FOR PLAYER DATA"
+  ],
+  "why_this_is_decisive": [
+    "the client explicitly names the missing input: player data",
+    "that is exactly the playerState/entity payload we could not deliver bit-exactly",
+    "so the loading screen is not stuck for an unknown reason - it is waiting for the data our encoder still fails to produce",
+    "after it the client goes black (t=35/50), which matches the user-visible 'black loading' phase"
+  ],
+  "next": [
+    "finish the playerState delta encoding so the client receives player data",
+    "the loading-screen text gives a fast pass/fail signal: as soon as the text 等待玩家数据 disappears we are through"
+  ],
+  "artifacts": {
+    "runner": "tools/run_match.py",
+    "summary": "runs/loadscreen2-summary.json",
+    "frames": [
+      "runs/loadscreen2-t20.png",
+      "runs/loadscreen2-t35.png",
+      "runs/loadscreen2-t50.png"
+    ]
+  }
+}
