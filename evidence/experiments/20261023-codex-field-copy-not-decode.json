@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T17:10:00+00:00",
+  "scope": "0x670D30 is a field COPY helper, not the bit decoder - the real codec reads happen later in 0x670FF0",
+  "codec_branches_0x670D30": {
+    "0x670D53": "codec == -94 (-0x5E) -> 0x670EF4: memcpy(dst, src, 8)",
+    "0x670D65": "codec == -101 (-0x65) -> float/angle copy with rounding (copy only, no bit reads)",
+    "0x670E2C": "codec == -102 (-0x66) -> float vector copy with rounding",
+    "0x670EDF": "fallback: *dst = *src (plain dword copy)"
+  },
+  "conclusion": [
+    "0x670D30 never reads bits; it copies a field from the previous playerstate into the current one",
+    "it is therefore the 'unchanged field' path inside the delta loop, not the value decoder",
+    "the actual bit decoding of changed fields must be in 0x670FF0 after the gap loop (0x6710AD onwards)"
+  ],
+  "next": [
+    "disassemble 0x6710AD..0x671140 (the tail of 0x670FF0) to find the changed-field bit decoding and its codec table usage",
+    "that is the last missing piece before a Python encoder can be written"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r103-gs.jsonl"
+  }
+}

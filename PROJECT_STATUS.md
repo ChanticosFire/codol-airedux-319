@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Correction: 0x670D30 is a field COPY helper, not the decoder]**
+> Branches: -94 -> memcpy 8; -101 -> angle copy with rounding; -102 -> vector copy; fallback -> plain dword copy. No bit reads anywhere.
+> So it is the 'unchanged field' path; the real decoding is in the tail of 0x670FF0 (0x6710AD onwards).
+> Next: disassemble 0x6710AD..0x671140 - last piece before a Python encoder.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [field copy not decode](evidence/experiments/20261023-codex-field-copy-not-decode.json).
 > **2026-10-23 [Dumped the 24-entry ps field table 0xDA63E8]**
 > Format [offset, codec, hint], 12 B/entry, 24 entries, struct 0x58: 0:76/-58, 1:80/-100, 2:84/-100, 3:65/-57, 4:68/-97, 5:72/16, 6:66/-57, 7:67/-100, 8:12/10, 9:56/12, 10:60/-97, 11:64/-57, 12:52/32, 13:20/10, 14:24/10, 15:40/6, 16:28/10, 17:44/6, 18:32/10, 19:48/6, 20:4/11, 21:8/11, 22:16/11, 23:36/6.
 > Negative codecs = special (-58,-100,-57,-97); positive = fixed widths (6,10,11,12,16,32). Decoder 0x670D30 handles -94/-101 explicitly; more branches below 0x670E2C.
