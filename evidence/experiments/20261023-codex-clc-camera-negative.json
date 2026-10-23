@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T11:20:00+00:00",
+  "scope": "camera scan over the full clc and cl head finds no float triple either",
+  "session": {
+    "pid": 16252,
+    "state": 10,
+    "clc": "0x13010E78",
+    "cl": "0x13CADAA0"
+  },
+  "scan": {
+    "clc_bytes": 43536,
+    "cl_bytes": 131072,
+    "filter": "aligned float triple, 0.5<|x|,|y|<9000, -2000<z<3000, at least one non-integral",
+    "clc_hits": 0,
+    "cl_hits": 0
+  },
+  "reading": "no plausible view origin exists in clc or the first 128 KiB of cl, which supports the hypothesis that the client never sets up a world camera (the game world is not active yet) even though the network state is 10",
+  "next": [
+    "verify whether the map brush data (bsp) is loaded at all: enumerate mapped files or instrument CM_LoadMap",
+    "expand the gamestate configstring set (2697 has 188 entries; we send 3) and see whether world setup starts",
+    "if world setup never starts, find the gamestate field that triggers it"
+  ],
+  "artifacts": {
+    "forward": "runs/codex-r7-forward.json",
+    "server_log": "runs/codex-r7-gs.jsonl",
+    "status": "runs/codex-r7-status.json"
+  }
+}

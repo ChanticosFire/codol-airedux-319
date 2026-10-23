@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【clc 与 cl 头部相机扫描均 0 候选；转向验证 world/bsp】** ✅state 10 时扫描完整 `clc`（43536B，0x13010E78）与 `cl` 前 131072B（0x13CADAA0），对齐 float 三元组命中均为 0——没有可识别 view origin，支持“world 尚未建立”。下一步确认 bsp 是否加载（映射文件/CM_LoadMap），并把 gamestate configstring 从 3 条扩到 2697 的 ~188 条。证据：[JSON](evidence/experiments/20261023-codex-clc-camera-negative.json)。
+
 > **2026-10-23【相机扫描负结果：cl 前 256 KiB 无 float 三元组】** ✅state 10 时对 `cl=0x1346ABF4` 前 262144 字节按对齐 float 三元组扫描（|x|,|y|∈(1,20000)、z∈(-5000,5000)、至少一个非整数），候选数为 0——相机不在该区域或未设置。下一轮扫描完整 cl（0x12A700）与 cg 指针，或改在渲染器视图设置函数断点截获输入。证据：[JSON](evidence/experiments/20261023-codex-camera-scan-negative.json)。
 
 > **2026-10-23【修正：10.1 秒属于 CL_MapLoading；`0xE89B10` 是数字 UI 控件】** ✅`0x5157A2` 在 `call 0x453760` 返回之后，10.14 秒 = 加载器 9.39 秒 + UI 约 0.7 秒；eax=0xff7fffff 是浮点比较结果。✅`[0xE89B10]` 由 ID "1669" 创建，`+8` 是控件 kind（0 时走默认早退、传字符串 "0"），属数字显示控件，不是地图描述符。下一轮转向渲染相机 viewOrigin/viewangles。证据：[JSON](evidence/experiments/20261023-codex-ui-call-correction.json)。
