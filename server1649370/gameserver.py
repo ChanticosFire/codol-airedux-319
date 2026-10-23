@@ -46,6 +46,36 @@ DEFAULT_GAMETYPE = "war"
 DEFAULT_MAXCLIENTS = 12
 
 
+def _load_gamestate_plaintext() -> bytes:
+    """Recover the gamestate plaintext from the archived 2697 capture.
+
+    The capture was produced with key = challenge ^ seq and an empty command
+    stream on our side, so decrypting it with the recorded challenge gives the
+    exact body a real server sent for mp_cross_fire.  Replaying it byte for byte
+    is the most direct way to learn whether the 1649370 client accepts our
+    outbound framing at all.
+    """
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "runs" / "final-in.jsonl"
+    if not path.exists():
+        return b""
+    challenge = -1976592760  # recorded at capture time
+    with path.open(encoding="utf-8") as fh:
+        for line in fh:
+            row = json.loads(line)
+            data = bytes.fromhex(row["hex"])
+            if len(data) >= 4 and not data.startswith(b"\xff\xff\xff\xff"):
+                seq = struct.unpack_from("<i", data, 0)[0]
+                key = (challenge ^ seq) & 0xFF
+                return bytes(b ^ key for b in data[4:])
+    return b""
+
+
+GAMESTATE_PLAINTEXT = _load_gamestate_plaintext()
+
+
 @dataclass
 class ServerState:
     """Everything we know about peers, kept explicit for logging."""
@@ -208,33 +238,25 @@ class GameServer:
             # treat such packets specially, so set it to test acknowledgement.
             self.server_seq = getattr(self, "server_seq", 0) + 1
             peer["last_server_seq"] = self.server_seq
-            seq_word = (self.server_seq | 0x80000000) & 0xFFFFFFFF
-            # 2697 SV_SendClientGameState writes, in order:
-            #   MSG_WriteByte(svc_EOF=7)
-            #   MSG_WriteLong(0)
-            #   MSG_WriteLong(svc_gamestate=1)     <-- LONG, not a byte
-            #   MSG_WriteLong(configDataSequence)
-            #   MSG_WriteLong(clientNum)
-            #   MSG_WriteLong(checksumFeed)
-            #   MSG_WriteLong(0)
-            # then the configstrings.  The earlier single-byte 0x01 was the wrong
-            # width, so build the real header now.
-            body = (b"\x07"
-                    + struct.pack("<I", 0)
-                    + struct.pack("<I", 1)
-                    + struct.pack("<I", 0)
-                    + struct.pack("<I", 0)
-                    + struct.pack("<I", 0)
-                    + struct.pack("<I", 0))
-            body += bytes(max(0, 197 - len(body)))
-            body = body[:197]
-            reply = (struct.pack("<I", seq_word) + b"\x00"
-                     + struct.pack("<i", 0) + body)
-            self.sock.sendto(reply, addr)
+            # Build an outbound packet the client can actually decrypt.
+            # CL_Netchan_Decode uses key = challenge ^ outgoingSequence with the
+            # server's lastClientCommandString as the rolling term.  Our server
+            # keeps that string empty, so the key is constant per packet and we
+            # can cipher with a plain XOR.  The body is the gamestate plaintext
+            # we recovered from a real 2697 capture (map name and serverinfo
+            # included), so this is a byte-exact replay test.
+            self.server_seq = getattr(self, "server_seq", 0) + 1
+            peer["last_server_seq"] = self.server_seq
+            plain = GAMESTATE_PLAINTEXT or (b"\x07" + bytes(4) + struct.pack("<I", 1) + bytes(4))
+            key = (peer.get("challenge") or 0) ^ self.server_seq
+            cipher = bytes(b ^ ((key >> 0) & 0xFF) for b in plain)
+            packet = struct.pack("<I", self.server_seq) + cipher
+            self.sock.sendto(packet, addr)
             self.state.counters["inband_sent"] += 1
             self.log({"dir": "out", "kind": "inband", "to": f"{addr[0]}:{addr[1]}",
-                      "seq": self.server_seq, "fragment": True, "svc": "gamestate_long",
-                      "length": len(reply), "hex_head": reply[:32].hex()})
+                      "seq": self.server_seq, "key": key & 0xFF,
+                      "plain_len": len(plain), "length": len(packet),
+                      "plain_head": plain[:24].hex()})
         else:
             self.log({"dir": "in", "kind": "inband_short", "from": f"{addr[0]}:{addr[1]}",
                       "length": len(data), "hex": data[:64].hex()})

@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T23:25:00+00:00",
+  "scope": "shift strategy: replay a real gamestate body from our own server instead of reverse-engineering the 2697 key stream",
+  "key_realization": {
+    "insight": "we do not need to reproduce the 2697 command string at all: our own server can keep lastClientCommandString empty, which makes the cipher key constant per packet (challenge ^ seq)",
+    "why_it_works": "the client's decoder uses the same formula the server's encoder used, so a constant key on our side is decoded correctly by the client",
+    "consequence": "the whole key-shift problem becomes irrelevant for our own outbound path"
+  },
+  "implementation": {
+    "file": "server1649370/gameserver.py",
+    "gamestate_plaintext_loader": "_load_gamestate_plaintext() decrypts runs/final-in.jsonl with the recorded challenge and returns the 1168-byte body",
+    "outbound": "packet = seq(4) + xor(plaintext, challenge ^ seq); the command string is empty by design",
+    "verified_loading": "GAMESTATE_PLAINTEXT length 1168, head 8b89018f018f8b8b8b8b03000000006d705f63726f73735f66697265006d7000"
+  },
+  "known_defect": {
+    "issue": "the first ten bytes of the recovered plaintext are still 8b-prefixed, i.e. contaminated by the 2697 command-stream key shift that we could not reproduce",
+    "impact": "if replayed verbatim, the client would see a garbled header before the valid mp_cross_fire configstring",
+    "fix": "replace those leading bytes with a correct gamestate header before sending"
+  },
+  "next": [
+    "determine the correct 15-byte header (map name sits at offset 15 in the recovered plaintext, so the header is exactly that long)",
+    "candidate header from the source write order with the 2697-contaminated bytes removed: lastClientCommand(4) + svc_EOF(1) + 0(4) + svc_gamestate(4) + ... trimmed to 15 bytes",
+    "emit seq + xor(header + rest_of_plaintext_from_offset_15, challenge ^ seq) and watch the client"
+  ],
+  "artifacts": ["server1649370/gameserver.py", "runs/final-in.jsonl"]
+}
