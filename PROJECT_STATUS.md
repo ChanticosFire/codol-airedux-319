@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [UI state enumeration: all values render black; the scene is the gate]**
+> At client state 10 forced UI state to 0/2/3/4/5/6/7 and screenshotted each: all black (unique 5-6, mean 0, max 19-53). UI state does not gate the rendered frame; the black comes from the renderer having no scene (no camera/entities). Idea closed.
+> Next: with owner's authorization to patch the client, return to the entity path - ClearStreamError already lifts entity_count to 1 at state 10; feed a valid entity (eType + origin) under the same patch and check the frame.
+> Safe baseline: hybrid body (state 10, empty world) - not playable. Evidence: [ui state enum](evidence/experiments/20261023-codex-ui-state-enum.json).
 > **2026-10-23 [CRITICAL CORRECTION: client state 10 is NOT the in-game view - UI state stays 5]**
 > At the "accepted" moment: network state 0x76446B0 = 10, but UI state 0x84ABA50 = 5, entity_count = 0, screenshot pure black (unique 5, mean 0).
 > Network and UI state machines are separate; state 10 only means the client accepted the gamestate (network active phase). The UI never leaves the loading screen. Matches what the user sees: loading -> waiting players -> waiting data -> black.
