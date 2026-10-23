@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:10:00+00:00",
+  "scope": "the entity loop reads one bit per entity then a full field set via 0x671700; 50 zero bits still crash",
+  "loop_structure": {
+    "0x471DE1": "loop head: pick target entity slot",
+    "0x471E05": "read 1 bit",
+    "bit=1": "delta entity: read N-bit index (N=[ebp+8]) and copy 0x34 bytes from another entity",
+    "bit=0": "field path: call 0x671700 to read the entity's whole field set",
+    "0x471E78": "loop while the stream error flag is zero"
+  },
+  "experiment": {
+    "body": "runs/snapshot-e1-f50.bin",
+    "encoding": "count1 + 1 entity-bit (field path) + 50 zero bits",
+    "result": "client exited (pid 0)"
+  },
+  "conclusion": "the field set is not a run of zero bits; 0x671700 has 25 calls with several 2-bit type selectors, so the exact per-field widths must be derived before any body can be valid",
+  "next": [
+    "annotate 0x671700 instruction by instruction (25 call sites) and build a bit-width table",
+    "only then emit a field set"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r39-gs.jsonl",
+    "body": "runs/snapshot-e1-f50.bin"
+  }
+}
