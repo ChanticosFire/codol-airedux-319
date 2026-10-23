@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CRITICAL CORRECTION: client state 10 is NOT the in-game view - UI state stays 5]**
+> At the "accepted" moment: network state 0x76446B0 = 10, but UI state 0x84ABA50 = 5, entity_count = 0, screenshot pure black (unique 5, mean 0).
+> Network and UI state machines are separate; state 10 only means the client accepted the gamestate (network active phase). The UI never leaves the loading screen. Matches what the user sees: loading -> waiting players -> waiting data -> black.
+> Earlier claim "state 10 = entering the map" was wrong. Correct criterion is UI state + screenshot; both currently fail.
+> Next: enumerate UI state values (set candidates + screenshot), or drive the transition the UI script uses when the match is ready (likely gated on a valid playerState/entity set).
+> Safe baseline: hybrid body (state 10, empty world) - NOT playable. Evidence: [state vs uistate](evidence/experiments/20261023-codex-state-vs-uistate.json).
 > **2026-10-23 [Final mechanism: global stream-error flag closes the entity path]**
 > Chain after the entity loop (0x4723E2..0x4724A5): each later block resets its own cursors ([esi+0x24]=-1, [esi+0x28]=0xFFFE7961) before playerState/actors/0x471560/glass, so the entity-loop error does not disturb them. But the stream error flag at [esi] is global: once the entity loop reads past length it stays set, and 0x4724A5 (cmp [esi],edi) fails -> snapshot not accepted -> state 9.
 > Complete explanation for why A=1 can never reach state 10 on this build; matches every experiment.
