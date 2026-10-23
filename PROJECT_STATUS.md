@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Hardening: startup argument validation]**
+> --gamestate-map must be a plain map name (non-empty, <=32 chars, no path separators); --snapshot-file paths must exist. Verified: both bad cases exit 2 with a clear message; valid args start normally.
+> Removes the class of wasted sessions seen in rounds 112-113 (parameter that looked applied; map without fastfile).
+> Evidence: [argument validation](evidence/experiments/20261023-codex-argument-validation.json).
 > **2026-10-23 [Hardening: encoder verified against the accepted body]**
 > tools/verify_encoder.py decodes runs/snapshot-single22.bin and asserts the full field sequence and 29-bit length: "ps block at bit 1308, consumed 29 bits", failures 0.
 > The encoder now round-trips a body the client accepted, not just itself; any breaking change fails in seconds without a client session. RELEASE.md gained a Self-checks section.

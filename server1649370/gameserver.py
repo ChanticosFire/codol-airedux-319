@@ -553,6 +553,18 @@ def main() -> int:
     parser.add_argument("--command-interval", type=float, default=5.0,
                         help="seconds between repeated server-command streams")
     args = parser.parse_args()
+    if args.gamestate_map:
+        for part in args.gamestate_map.split(","):
+            name = part.strip()
+            if not name:
+                parser.error("--gamestate-map contains an empty name")
+            if len(name) > 32 or any(ch in name for ch in '\\/:*?"<>| '):
+                parser.error(f"--gamestate-map {name!r} is not a plain map name")
+    if args.snapshot_file:
+        from pathlib import Path as _Path
+        for part in args.snapshot_file.split(","):
+            if part.strip() and not _Path(part.strip()).exists():
+                parser.error(f"--snapshot-file {part.strip()!r} does not exist")
     if args.delay_send < 0:
         parser.error("--delay-send must be nonnegative")
     if args.checksum_feed is not None and not 0 <= args.checksum_feed <= 0xFFFFFFFF:

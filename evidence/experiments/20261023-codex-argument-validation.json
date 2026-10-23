@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T13:35:00+00:00",
+  "scope": "added startup validation so bad parameters fail loudly instead of silently",
+  "problem": [
+    "round 112: --gamestate-map mp_afghan changed the gamestate payload but configstring 0 / connectResponse still used the default - a parameter that looked applied but was not",
+    "round 113: the map had no fastfile, so the client disconnected, which was only understood after a full session",
+    "a mistyped --snapshot-file only failed later, when the client was already running"
+  ],
+  "validation_added": [
+    "--gamestate-map: each comma-separated name must be non-empty, <= 32 chars, and a plain map name (no path separators, spaces or wildcards)",
+    "--snapshot-file: every listed path must exist at startup"
+  ],
+  "verified": {
+    "bad_map": "--gamestate-map 'mp_cross/fire' -> exit 2, 'is not a plain map name'",
+    "missing_snapshot": "--snapshot-file runs/nope.bin -> exit 2, 'does not exist'",
+    "good_args": "--gamestate-map mp_cross_fire --snapshot-file runs/snapshot-single22.bin -> server starts normally"
+  },
+  "why_it_matters": [
+    "both categories cost a full client session to diagnose in the past",
+    "failing at startup in milliseconds removes that entire class of wasted experiments"
+  ],
+  "artifacts": {
+    "server": "server1649370/gameserver.py"
+  }
+}
