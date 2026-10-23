@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T07:45:00+00:00",
+  "scope": "diagnosis: the breakpoints WERE registered, but the newest run never entered the ps block - the body is rejected before it",
+  "evidence": {
+    "launch_arguments": "contain --breakpoint 0x471980:SnapTracePlayerState --breakpoint 0x471A36:ClearPsError --breakpoint 0x471010:SnapTraceActors",
+    "game_server": "sent snapshot fragments seq 1000, 1001, ... for runs/snapshot-entity-ps-1345.bin (payload_length 180)",
+    "newest_run_dir": "reuse-8608688d (303 event lines, ZERO snap_trace / clear_ps_error records)",
+    "previous_run_dir": "reuse-45d21ba8 (the v2 body, DOES contain SnapTracePlayerState at bit 1345 with error 0)"
+  },
+  "conclusion": [
+    "the instrumentation is fine - the breakpoints are registered and the game server does send the snapshots",
+    "the 1345/1347 bodies are rejected BEFORE the ps block, so the client never reaches 0x471980",
+    "the v2 body (ps written at 1343) is the one that reaches ps entry 1345; the difference is only the two extra padding bits, which changed how the entity loop terminates"
+  ],
+  "next": [
+    "preserve the exact working prefix: take the v2 body's bits 0..1344 verbatim and place the 28-bit ps block at 1345, then the tail",
+    "that keeps the entity section byte-identical to the body that provably reaches ps with error 0"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r129-gs.jsonl",
+    "launch_log": "runs/codex-r129-launch.out"
+  }
+}

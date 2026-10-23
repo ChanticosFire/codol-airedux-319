@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Diagnosis: breakpoints fine; 1345/1347 bodies rejected before ps]**
+> Launch args contain all three breakpoints and the server sends the fragments, but the newest run dir has zero snap_trace records while the previous (v2 body) has ps entry 1345 error 0. So the 1345/1347 bodies are rejected before the ps block.
+> Next: reuse the v2 prefix bits 0..1344 verbatim and place the ps block at 1345, then the tail.
+> Acceptance: a screenshot showing the map. Evidence: [ps entry rejected diagnosis](evidence/experiments/20261023-codex-ps-entry-rejected-diagnosis.json).
 > **2026-10-23 [Inconclusive run: ps breakpoints did not fire; 1345 alignment unverified]**
 > snapshot-entity-ps-1345 (ps 1345..1373) and -1347: client stayed on the loading screen, no breakpoint records (snap_trace 0, clear_ps_error 0), entity_count read None.
 > So the pipeline did not reach the ps block in the sampling window; alignment unverified.
