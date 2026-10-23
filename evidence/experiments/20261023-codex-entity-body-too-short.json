@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T06:30:00+00:00",
+  "scope": "the entity body is too short for its own entity section - the loop overruns 167 bytes before the ps block is even reached",
+  "fact": {
+    "count1_body": "runs/snapshot-count1-b164.bin = 167 bytes = 1336 bits",
+    "measured_ps_entry_bit_with_entity": 1343,
+    "overrun": 7,
+    "note": "the entity loop consumes up to bit 1342, which is 7 bits past the end of the 167-byte body - that is exactly why it sets the stream error and ps is skipped"
+  },
+  "invalid_run": {
+    "what": "the generator raised IndexError (body too short) so runs/snapshot-entity-ps.bin was never written",
+    "effect": "the game server fell back to whatever body was still configured and the measured result (state 9, entity_count 0, loading screen) is NOT valid evidence"
+  },
+  "next": [
+    "build a correct entity body: count1 bits 0..1335, then zero padding to bit 1343, then the 28-bit ps block, then a tail (actors/glass/EOF)",
+    "the tail must be appended after the ps block; the exact tail bit sequence still needs to be taken from the hybrid body",
+    "re-run with ClearPsError and check entity_count == 1 together with an accepted snapshot"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r127-gs.jsonl",
+    "encoder": "runs/_gen_entity_ps.py (failed, kept for the record)"
+  }
+}

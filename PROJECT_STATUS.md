@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Entity body too short: overruns 7 bits before ps]**
+> count1 body is 167 B = 1336 bits but the entity loop consumes to bit 1342 -> 7-bit overrun, which sets the stream error and skips ps.
+> The rebuild failed in the generator (IndexError) so the run is invalid evidence.
+> Next: entity body = count1 bits 0..1335 + zero padding to 1343 + 28-bit ps + tail(from hybrid); re-run with ClearPsError.
+> Acceptance: a screenshot showing the map. Evidence: [entity body too short](evidence/experiments/20261023-codex-entity-body-too-short.json).
 > **2026-10-23 [Entity body: ps block starts at bit 1343]**
 > A=1 body (count1, 169 B): entity_count 1, ps entry 1343 with error 1; ClearPsError at 0x471A36 cleared it (before=1) but ps consumed only 1 bit because it was past the data.
 > Entity loop consumes to bit 1342, so an A=1 body must be rebuilt as entity section (0..1342) + ps block + original tail (1343..1351).
