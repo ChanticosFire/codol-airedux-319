@@ -251,3 +251,30 @@ The prologue in 1649370 is **not** the same: this build reads
 `bit0 + bit1 + 8-bit last+1`. The **field/gap/codec section**, however, is
 almost certainly the same family, so the port should start from
 `gap()` + the codec table above with the 1649370 prologue in front.
+
+## 11. Correction: the positive-width codec for 1649370 (read from `0x670B15`)
+
+```asm
+00670b15  mov  edx, esi
+00670b17  call 0x447190        ; read 1 bit
+00670b1c  test eax, eax
+00670b1e  jne  0x670b37        ; bit == 1 -> read the value
+00670b20  mov  dword ptr [ebx], 0   ; bit == 0 -> value 0, done
+...
+00670b37  mov  eax, dword ptr [ebp - 0x14]
+00670b3a  mov  eax, dword ptr [eax + 4]   ; the field width N
+00670b3e  mov  edi, esi
+00670b40  call 0x66fe30        ; read N bits, plain LSB-first
+00670b48  mov  dword ptr [ebx], eax
+```
+
+So for **this build** a positive-width codec is:
+
+- read **1 gate bit**; if `0` the value is `0` and nothing else is read;
+- otherwise read **`N` bits, plain LSB-first**.
+
+This **supersedes** the `remainder bits first, then whole bytes` rule transcribed
+from the 3.3.3.3 encoder in section 10.2 - that rule belongs to the older
+generation and was a **porting mistake** here. `server1649370/ps_codec.py` was
+corrected accordingly (and still self-tests with 0 failures, including a new
+assertion that a non-zero codec-11 field costs `1 + 11` bits).

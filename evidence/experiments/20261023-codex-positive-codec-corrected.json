@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T04:00:00+00:00",
+  "scope": "CORRECTION from the binary: the positive-width codec is a gate bit followed by N plain LSB-first bits",
+  "source": "0x670B15 (the default branch of the field codec decoder 0x6701D0)",
+  "disassembly_gist": [
+    "0x670B17 call 0x447190 -> read 1 bit",
+    "0x670B1E jne 0x670B37 -> if bit == 1 read the value",
+    "0x670B20 mov [ebx],0 -> if bit == 0 the value is 0 and the field ends",
+    "0x670B3A mov eax,[eax+4] -> N = the field width",
+    "0x670B40 call 0x66FE30 -> read N bits (plain LSB-first)"
+  ],
+  "what_was_wrong": [
+    "round 116 imported the 3.3.3.3 rule 'gate bit, then width%%8 remainder bits FIRST, then whole bytes' and applied it to this build",
+    "this build does NOT do that: it reads the plain N-bit LSB field",
+    "that mistake made every non-zero value we wrote have the wrong bit order, which is consistent with all non-zero attempts being rejected or crashing"
+  ],
+  "code_fix": {
+    "module": "server1649370/ps_codec.py",
+    "change": "positive codec writes/reads gate bit + N plain LSB bits",
+    "new_test": "codec 11 non-zero costs exactly 1 + 11 bits",
+    "self_test": "self-test failures: 0"
+  },
+  "docs": "docs/SNAPSHOT-FORMAT.md section 11 records the correction and supersedes section 10.2",
+  "next": [
+    "re-run the index-22 value test with the corrected encoder: value 0x100 should cost 40 ps bits (29 - 1 + 12) and, if the bit order was the only problem, the snapshot should be accepted"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r155-gs.jsonl"
+  }
+}

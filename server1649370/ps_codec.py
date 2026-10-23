@@ -121,19 +121,16 @@ def write_field(writer: BitWriter, codec: int, value: int) -> None:
         writer.bits(0, 2)
         writer.bits(value & 0xFFFF, 16)
     elif codec > 0:
-        # zero is coded as a single 0 gate bit (measured: a zero-valued record
-        # costs one bit, not a whole field); otherwise gate 1 then
-        # width % 8 remainder bits FIRST, then whole bytes.
+        # 1649370 positive-width codec, read from 0x670B15:
+        #   read 1 bit; if 0 -> value 0 and done
+        #   else read `codec` bits, plain LSB-first
+        # (the 3.3.3.3 "remainder bits first then whole bytes" form does NOT
+        # apply to this build - that was a porting mistake corrected here.)
         if value == 0:
             writer.bit(0)
             return
         writer.bit(1)
-        remainder = codec % 8
-        writer.bits(value, remainder)
-        shift = remainder
-        while shift < codec:
-            writer.byte((value >> shift) & 0xFF)
-            shift += 8
+        writer.bits(value, codec)
     else:
         raise ValueError(f"unsupported codec {codec}")
 
@@ -159,13 +156,7 @@ def read_field(reader: BitReader, codec: int) -> int:
     if codec > 0:
         if reader.bit() == 0:
             return 0
-        remainder = codec % 8
-        value = reader.bits(remainder)
-        shift = remainder
-        while shift < codec:
-            value |= reader.byte() << shift
-            shift += 8
-        return value
+        return reader.bits(codec)
     raise ValueError(f"unsupported codec {codec}")
 
 
@@ -230,6 +221,11 @@ def _self_test() -> int:
         check(f"distance({distance})", read_distance(BitReader(writer.to_bytes())), distance)
 
     # codecs
+    # a non-zero positive-width field costs gate + width bits
+    writer = BitWriter(64)
+    write_field(writer, 11, 0x100)
+    check("codec 11 non-zero width", writer.position, 1 + 11)
+
     # a zero value must cost exactly one bit
     writer = BitWriter(64)
     write_field(writer, 10, 0)

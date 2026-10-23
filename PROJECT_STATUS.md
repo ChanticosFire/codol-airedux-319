@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CORRECTION: positive codec = gate bit + N plain LSB bits]**
+> 0x670B15: gate 0 -> value 0; gate 1 -> read N bits via 0x66FE30 (plain LSB). The 3.3.3.3 'remainder-first' rule imported in round 116 does NOT apply here.
+> That wrong bit order explains why every non-zero value was rejected or crashed. ps_codec.py fixed (self test 0 failures); docs section 11 supersedes 10.2.
+> Next: retest index-22 = 0x100 (expected 40 ps bits) with the corrected encoder.
+> Evidence: [positive codec corrected](evidence/experiments/20261023-codex-positive-codec-corrected.json).
 > **2026-10-23 [NEGATIVE: non-zero ps value rejected]**
 > single22 baseline with index-22 = 0x100: ps 1308 -> actors 1340 = 32 bits (zero case 29), error 0, state 9 at every sample.
 > So the ps delta accepts only all-zero field sets; non-zero values are rejected (state 9) or crash the client. The ps route cannot carry a real origin.
