@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T16:00:00+00:00",
+  "scope": "playerState array is empty; direct memory injection of viewangles and entity origin does not change the frame",
+  "observed": {
+    "state": 10,
+    "clc": "0x1341A9C8",
+    "ps_base": "0x134253D8",
+    "ps_count_field": 1024,
+    "ps_sample": "first 8 entries all zero (viewangles 0,0,0)",
+    "entity_base": "0x1343B3D8",
+    "entity_sample": "first entries all zero before injection"
+  },
+  "memory_injection": {
+    "ps_viewangles": [
+      0.0,
+      90.0,
+      0.0
+    ],
+    "entity_etype": 1,
+    "entity_pos_guess": [
+      5830.0,
+      -4369.0,
+      -95.0
+    ],
+    "write_ok": true,
+    "readback": "entity head 01 00 00 00 ... 00 30 b6 45 00 88 88 c5 00 00 be c2",
+    "screenshot": "unique=5 mean=0 max=34 - unchanged",
+    "user_observation": "loading screen again, then waiting for players -> waiting for player data -> black with spinning icon"
+  },
+  "interpretation": "setting viewangles and a guessed entity origin is not enough; either the offsets are wrong or the renderer still has no scene. Before more field guessing, verify that the renderer draws at all (present hook or draw-call counter).",
+  "next": [
+    "instrument d3d9 Present / SwapBuffers and count frames during state 10",
+    "read backEnd/tr draw counters if their globals can be located",
+    "keep the accepted 167-byte baseline as the fallback"
+  ],
+  "artifacts": {
+    "screenshot": "runs/codex-r16b-screenshot.png",
+    "server_log": "runs/codex-r16-gs.jsonl"
+  }
+}
