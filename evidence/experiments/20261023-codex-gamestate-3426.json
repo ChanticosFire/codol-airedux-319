@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T04:40:00+00:00",
+  "scope": "reassemble the complete gamestate from the three captured fragments",
+  "result": {
+    "fragments": [0, 1, 2],
+    "count": 3,
+    "stride": 1162,
+    "assembled_len": 3426,
+    "saved_to": "runs/gamestate-3426.bin"
+  },
+  "structure": {
+    "head_hex": "00000000 03000000 00 6d705f63726f73735f66697265 00 6d70 00 7bf1e83604bc0009",
+    "head_ascii": ".........mp_cross_fire.mp.{..6....\\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2..cod.1537..@0.0...0...619800.3231 -2496 10.).1....75..40.i.0.T@1..x0..0.S.0.T@10.",
+    "tail_ascii": "ank_majgen1.rank_ltgen1.rank_gen1.rank_comm1.dpad_killstreak_carepackage..specialty_emergency_airdrop_crate........._.A.",
+    "observed_content": [
+      "leading 4 zero bytes then 03 00 00 00 00",
+      "map name mp_cross_fire",
+      "serverinfo text \\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2",
+      "cod / 1537 / @0.0 / 619800 / 3231 -2496 10 numbers",
+      "rank and specialty configstrings near the tail (rank_majgen1, rank_ltgen1, specialty_emergency_airdrop_crate, ...)",
+      "a trailing '_' and '.A.' which may be the EOF marker"
+    ]
+  },
+  "significance": [
+    "this is the first complete, fully decoded gamestate we possess - 3426 bytes, end to end",
+    "it confirms the fragment format working on real data",
+    "it gives us the exact payload our own server must emit"
+  ],
+  "next": [
+    "emit this 3426-byte payload from server1649370 using the fragment structure: seq|FRAGMENT_BIT, index, count-1, stride, chunk, XOR(data)",
+    "split it into fragments of 1162 bytes each (3 fragments) as the original did",
+    "test against the client and watch for an ack or a loader transition"
+  ],
+  "artifacts": ["runs/gamestate-3426.bin", "runs/final-in.jsonl"]
+}
