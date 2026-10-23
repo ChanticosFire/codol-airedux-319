@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [clc->cgame copy breakpoint is conditional; did not fire on empty world]**
+> DumpCg at 0x5142E0 again (hybrid): no dump_cg record, client alive. In r88 the same breakpoint fired with edi=0x131D78A8.
+> Reading: the copy only runs when there is something to copy (empty entity set -> no copy), so polling cg this way is unreliable.
+> Next: capture cg once via InjectEntity and reuse within the session, or find the cg global and read the refdef from there.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [dumpcg nohit](evidence/experiments/20261023-codex-dumpcg-nohit.json).
 > **2026-10-23 [cg entity injection writes but shows nothing - likely a camera/refdef problem]**
 > Captured cg from edi at 0x5142E0 (0x1303A194), injected into cg+0x3B98 (0x1303DD2C): eType=1, origin 5830/-4369/-95; readback after_head=01000000 (eType present). Result: state 10, ui 5, entity_count 0, screenshot black.
 > The write succeeded but the screen did not change. Most plausible: the camera/refdef (vieworg) is still zero, or the entity struct layout at cg+0x3B98 differs from our guess.
