@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T17:30:00+00:00",
+  "scope": "explain the visible flicker reported by the user",
+  "session": {
+    "client": "20261023-flicker, pid 34672, our own runtime/client-1649370",
+    "server": "server1649370 on 28971",
+    "bridge": "forward --target 127.0.0.1:28971 --bind-port 29000"
+  },
+  "measured": {
+    "sampling": "30 samples over 6 s at 200 ms",
+    "phase_ui_transitions": 1,
+    "phase": 5,
+    "ui": 5,
+    "conclusion": "the client state machine does NOT flip; the flicker is a render-layer symptom, not a state oscillation",
+    "screenshot": "runs/flicker-shot.png shows a pure black screen with the loading spinner in the bottom-right corner"
+  },
+  "server_side_during_flicker": {
+    "client_inband": "seq advancing, serverId 0, messageAck 1, 206 bytes, body all zero",
+    "our_outbound": "seq 4..7, 4-byte packets (seq only), length 4",
+    "client_acked_our_seq": false
+  },
+  "interpretation": {
+    "what_the_flicker_is": "the loading screen redrawing repeatedly while waiting for a gamestate that never arrives",
+    "why_the_client_waits": "the 4-byte seq-only packets we send are not a valid netchan message; the client keeps its loader alive and keeps sending empty ack heartbeats",
+    "why_it_matters": "this is the first visually observable reaction from the client to our own server - it left the lobby and entered a loading state, but cannot finish because we have not sent a real gamestate"
+  },
+  "next": [
+    "send a properly framed packet: seq(4) + serverId(1) + messageAck(4) + body, at least matching the 206-byte shape the client itself uses",
+    "then attempt a gamestate body so the loader can complete",
+    "keep the 200 ms state sampling running during the attempt so any transition is captured"
+  ],
+  "artifacts": ["runs/flicker-shot.png", "runs/flicker-gs.jsonl"]
+}
