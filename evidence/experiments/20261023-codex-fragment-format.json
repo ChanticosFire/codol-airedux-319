@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T04:25:00+00:00",
+  "scope": "confirm the fragment format on real captures and locate a complete gamestate",
+  "source_tool": "tools/reassemble_2697_gamestate.py",
+  "fragment_format": {
+    "sequence": "u32 LE, bit31 = FRAGMENT_BIT",
+    "index": "u8",
+    "count_minus_one": "u8",
+    "stride": "u16 LE",
+    "chunk": "u16 LE",
+    "data": "chunk bytes, XOR with (challenge ^ sequence) & 0xFF",
+    "header_is_plaintext": "the ten header bytes are not encrypted",
+    "index0_special": "for index 0 the first four data bytes are kept as-is"
+  },
+  "verified_on_capture": {
+    "datagrams": 5533,
+    "gamestate_seq_3": {"index": 0, "count": 3, "stride": 1162, "chunks": [1162, 1162, 1102], "total": 3426},
+    "next_message_seq_5": {"index": 0, "count": 10, "stride": 1162, "chunks": "all 1162"},
+    "decrypted_index0_head": "8b8b8b8b 03 00 00 00 00 6d705f63726f73735f66697265 00 6d70 00 ...",
+    "decrypted_ascii": "mp_cross_fire.mp...\\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2"
+  },
+  "what_this_finally_explains": {
+    "the_stable_03_00_00_00_00": "it is the start of the payload after the four unencrypted index-0 bytes, not a gamestate opcode",
+    "why_prefix_looked_corrupted": "we decrypted the plaintext ten-byte fragment header along with the data, shifting and corrupting the front of the message",
+    "why_packets_were_rejected": "our replays never contained a valid fragment header (index/count/stride/chunk); the client's fragmentation layer would discard them before any payload parsing"
+  },
+  "next": [
+    "reassemble the seq=3 fragments (1162+1162+1102 = 3426 bytes) into the full gamestate plaintext",
+    "inspect its structure end to end: it should contain every configstring, baselines and the EOF marker",
+    "then emit our own gamestate as the same fragment structure (header + XOR data) and test against the client"
+  ],
+  "artifacts": ["tools/reassemble_2697_gamestate.py", "runs/final-in.jsonl"]
+}
