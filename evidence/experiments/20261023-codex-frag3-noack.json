@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T05:20:00+00:00",
+  "scope": "send the gamestate with correctly shared fragment sequence",
+  "session": {
+    "client": "20261023-frag3, pid 12620",
+    "server": "server1649370 emitting three fragments sharing seq=3"
+  },
+  "what_we_sent": [
+    {"seq": 3, "index": 0, "count": 3, "stride": 1162, "chunk": 1162, "length": 1172},
+    {"seq": 3, "index": 1, "count": 3, "stride": 1162, "chunk": 1162, "length": 1172},
+    {"seq": 3, "index": 2, "count": 3, "stride": 1162, "chunk": 1102, "length": 1112}
+  ],
+  "client_result": {"messageAck": 1, "acked_our_seq": false},
+  "conclusion": "sharing one sequence fixed the earlier mistake but still produced no acknowledgement",
+  "what_is_now_correct": [
+    "fragment header layout (seq|FRAGMENT_BIT, index, count-1, stride, chunk)",
+    "fragment count and chunk sizes identical to the reference capture",
+    "sequence shared across the message",
+    "payload byte-exact from the reassembled reference gamestate"
+  ],
+  "what_could_still_be_wrong": [
+    "the cipher key: the reference used a live challenge; ours uses the value our own server assigned, which the client may not have adopted into its decoder state",
+    "the client may require a prior non-fragmented handshake message (the reliable/gamestate 'start') before accepting fragments",
+    "the index-0 rule (first four bytes unencrypted) may need the original key bytes rather than the plaintext bytes we kept",
+    "stride may not be a constant 1162 but something computed from the message length"
+  ],
+  "next": [
+    "verify the challenge value the client actually stored: read its connection object after connect and compare with what our server issued",
+    "capture the very first outbound packet the dedrun sends after connect and mirror its exact sequence number and cipher key relationship",
+    "test whether the client expects a non-fragmented preamble first"
+  ],
+  "artifacts": ["runs/frag3-gs.jsonl"]
+}

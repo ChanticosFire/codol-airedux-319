@@ -47,30 +47,16 @@ DEFAULT_MAXCLIENTS = 12
 
 
 def _load_gamestate_plaintext() -> bytes:
-    """Recover the gamestate plaintext from the archived 2697 capture.
+    """Load the fully reassembled 3426-byte gamestate.
 
-    The capture was produced with key = challenge ^ seq and an empty command
-    stream on our side, so decrypting it with the recorded challenge gives the
-    exact body a real server sent for mp_cross_fire.  Replaying it byte for byte
-    is the most direct way to learn whether the 1649370 client accepts our
-    outbound framing at all.
+    tools/reassemble_2697_gamestate.py documented the fragment layout and we
+    reassembled the three captured fragments into runs/gamestate-3426.bin.  That
+    file is the exact payload a real server sent for mp_cross_fire.
     """
-    import json
     from pathlib import Path
 
-    path = Path(__file__).resolve().parents[1] / "runs" / "final-in.jsonl"
-    if not path.exists():
-        return b""
-    challenge = -1976592760  # recorded at capture time
-    with path.open(encoding="utf-8") as fh:
-        for line in fh:
-            row = json.loads(line)
-            data = bytes.fromhex(row["hex"])
-            if len(data) >= 4 and not data.startswith(b"\xff\xff\xff\xff"):
-                seq = struct.unpack_from("<i", data, 0)[0]
-                key = (challenge ^ seq) & 0xFF
-                return bytes(b ^ key for b in data[4:])
-    return b""
+    path = Path(__file__).resolve().parents[1] / "runs" / "gamestate-3426.bin"
+    return path.read_bytes() if path.exists() else b""
 
 
 GAMESTATE_PLAINTEXT = _load_gamestate_plaintext()
@@ -247,13 +233,41 @@ class GameServer:
             # included), so this is a byte-exact replay test.
             self.server_seq = getattr(self, "server_seq", 0) + 1
             peer["last_server_seq"] = self.server_seq
-            # Two captures pinned the stable header to 03 00 00 00 00, and the
-            # dedrun's configstring table stores the serverinfo verbatim as
-            # "d 0 \g_gametype\war\mapname\mp_cross_fire\...".  Try the naive
-            # composition first: that header followed by that exact text.
-            serverinfo = (b"d 0 \\g_gametype\\war\\mapname\\mp_cross_fire"
-                          b"\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2\x00")
-            plain = b"\x03\x00\x00\x00\x00" + serverinfo
+            # Emit the reassembled gamestate as the same fragment structure a
+            # real server used: seq|FRAGMENT_BIT, index, count-1, stride, chunk,
+            # then XOR(data).  The ten-byte fragment header is plaintext; only
+            # the data is ciphered (index 0 keeps its first four bytes intact).
+            payload = GAMESTATE_PLAINTEXT
+            frag_size = 1162
+            if payload:
+                count = (len(payload) + frag_size - 1) // frag_size
+                stride = frag_size
+                # All fragments of ONE message share a single sequence; the
+                # reference capture used seq=3 for index 0,1,2 alike.  Only the
+                # next message gets the next sequence.
+                self.server_seq = getattr(self, "server_seq", 0) + 1
+                seq_word = (self.server_seq | 0x80000000) & 0xFFFFFFFF
+                key = ((peer.get("challenge") or 0) ^ (seq_word & 0x7FFFFFFF)) & 0xFF
+                for index in range(count):
+                    chunk = payload[index * frag_size:(index + 1) * frag_size]
+                    data = bytearray(chunk)
+                    if index == 0:
+                        for i in range(4, len(data)):
+                            data[i] ^= key
+                    else:
+                        for i in range(len(data)):
+                            data[i] ^= key
+                    header = (struct.pack("<I", seq_word) + bytes([index & 0xFF])
+                              + bytes([(count - 1) & 0xFF])
+                              + struct.pack("<H", stride)
+                              + struct.pack("<H", len(chunk)))
+                    packet = header + bytes(data)
+                    self.sock.sendto(packet, addr)
+                    self.state.counters["inband_sent"] += 1
+                    self.log({"dir": "out", "kind": "fragment", "to": f"{addr[0]}:{addr[1]}",
+                              "seq": seq_word & 0x7FFFFFFF, "index": index,
+                              "count": count, "stride": stride, "chunk": len(chunk),
+                              "length": len(packet)})
             key = (peer.get("challenge") or 0) ^ self.server_seq
             cipher = bytes(b ^ ((key >> 0) & 0xFF) for b in plain)
             packet = struct.pack("<I", self.server_seq) + cipher
