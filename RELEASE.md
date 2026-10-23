@@ -201,6 +201,7 @@ is already solved, and the two routes that would unblock it are documented in
 Two commands prove the encoder and the runner are sane without launching a match:
 
 ```powershell
+python tools/selfcheck.py           # runs ALL checks below in one go -> "8/8 passed"
 python -m server1649370.ps_codec      # bit-level gap/codec round-trip -> "self-test failures: 0"
 python tools/verify_encoder.py        # decodes the real accepted body
 python tools/check_evidence.py        # audits evidence/ (valid JSON, references) -> "ps block at bit 1308,

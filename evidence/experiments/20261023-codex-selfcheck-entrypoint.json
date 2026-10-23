@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T15:30:00+00:00",
+  "scope": "one entry point that runs all eight self checks; every check maps to a problem that once cost a session",
+  "tool": {
+    "path": "tools/selfcheck.py",
+    "usage": ["python tools/selfcheck.py", "python tools/selfcheck.py --list"],
+    "checks": [
+      "codec round-trip (python -m server1649370.ps_codec)",
+      "encoder vs accepted body (tools/verify_encoder.py)",
+      "evidence audit (tools/check_evidence.py)",
+      "reject bad map name (exit 2 + message)",
+      "reject missing snapshot (exit 2 + message)",
+      "reject hazard breakpoint (exit 1 + message)",
+      "required files present",
+      "runner summary carries the delivery block"
+    ]
+  },
+  "result": {
+    "summary": "selfcheck: 8/8 passed",
+    "exit_code": 0,
+    "detail": {
+      "codec": "self-test failures: 0",
+      "encoder": "ps block at bit 1308, consumed 29 bits (expected 29)",
+      "evidence": "check_evidence: ok (1194 records, invalid JSON 0)",
+      "bad_map": "exit 2, 'is not a plain map name'",
+      "missing_snapshot": "exit 2, 'does not exist'",
+      "hazard": "exit 1, 'refusing known-hazard breakpoints'",
+      "files": "10 files present",
+      "delivery": "delivery ok=True snapshots=20"
+    }
+  },
+  "why_it_matters": [
+    "each check corresponds to a defect that previously consumed a full client session (or two)",
+    "one command now proves the delivered parts are still intact, in about ten seconds",
+    "it is the natural gate before any future experiment: if a check fails, do not interpret experiment results"
+  ],
+  "artifacts": {
+    "tool": "tools/selfcheck.py"
+  }
+}

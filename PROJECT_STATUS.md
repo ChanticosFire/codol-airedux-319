@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Hardening: tools/selfcheck.py -> 8/8 passed]**
+> One command runs codec round-trip, encoder-vs-accepted-body, evidence audit, three argument/hazard rejections, required files, and the runner delivery block. Result: 8/8 passed, exit 0, ~10 s.
+> Each check maps to a defect that once cost a full session. It is the gate before any future experiment. RELEASE.md leads with it.
+> Evidence: [selfcheck entrypoint](evidence/experiments/20261023-codex-selfcheck-entrypoint.json).
 > **2026-10-23 [Hardening: evidence audit tool]**
 > tools/check_evidence.py audits evidence/: 1194 records, invalid JSON 0 (one corrupt record found and repaired), 769 legacy records without schema/scope (informational), 501 unreferenced (informational); --strict for cleanup.
 > Invalid JSON is fatal; legacy gaps are reported. RELEASE.md lists it under Self-checks.
