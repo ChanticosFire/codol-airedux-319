@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Loader state already complete; flag already 1 so forcing does nothing]**
+> At state 10: singleton [0x8269774]=0x424DDBE8, loader=0x42415E70, loader+0xC8=2, +0x644=0, +0x5E8=3, singleton+0x4F8 low byte=1 (u32 0xBAAA9A01).
+> By 0xBA0780 logic the inner status already returns 2 and the flag is already 1, so 0xB7A670 should pass 2 through - yet ui_state stays 5 and the screen is black.
+> Conclusion: the load-completion path is either not called in this state, or the object read is not the one 0xB7A670 uses.
+> Next: break on 0x8018B0 / 0xB7A670 to see whether they run and what they return; if never, find the caller that should fire after loading.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [flag write](evidence/experiments/20261023-codex-flag-write.json).
 > **2026-10-23 [Load-completion is a three-level status chain]**
 > 0x8018B0 -> 0x803830 (singleton [0x8269774]) -> 0xB7A670 (status): ecx=[esi+0x4F4]; null->0; else call 0xBA0780; if [esi+0x4F8]!=0 return it; else rewrite 2 to 1. 0x8018B0 success branch needs exactly 2.
 > So load completion depends on the inner status (0xBA0780) and the flag at [esi+0x4F8] - a stateful chain, not a single flag.
