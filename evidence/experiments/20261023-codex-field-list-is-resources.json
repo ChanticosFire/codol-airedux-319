@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T10:45:00+00:00",
+  "scope": "correction: 0x77D8218 is an ncs_ani resource list, not an entityState field table",
+  "nodes": [
+    {
+      "size": 1,
+      "name": "ncs_ani_code_post_gfx_default_mp"
+    },
+    {
+      "size": 1,
+      "name": "ncs_ani_code_post_gfx_mp"
+    },
+    {
+      "size": 91,
+      "name": "ncs_ani_common_marketplace_lite"
+    },
+    {
+      "size": 321,
+      "name": "ncs_ani_common_mp"
+    },
+    {
+      "size": 1,
+      "name": "ncs_ani_level"
+    }
+  ],
+  "correction": [
+    "the five descriptor names are ncs_ani_* animation resource names",
+    "so 0x671A0D walks a resource list and 0x671700 reads resource/animation fields of an entity, not its full entityState",
+    "the 415 total is a resource size sum, not a field count"
+  ],
+  "next": [
+    "locate entityState field decoding elsewhere (eType/origin are not in the ncs_ani path)",
+    "re-examine 0x471D80: the bit=1 delta-entity path copies 0x34 bytes, which is how a full entity (including eType/origin) can be produced by referencing an existing one",
+    "consider feeding the client a delta entity that copies from a slot we control"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r43-gs.jsonl"
+  }
+}
