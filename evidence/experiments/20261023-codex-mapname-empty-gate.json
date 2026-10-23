@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:15:00+00:00",
+  "scope": "why the client stays on the loading UI after connection state 10",
+  "live_state": {
+    "connection_state": 10,
+    "ui_state": 5,
+    "screen": "black with loading spinner",
+    "clc": "0x130c0aac"
+  },
+  "gate": {
+    "object_slot": "0x333A8EC",
+    "object": "0x8114D8C",
+    "field_offset": "0xC",
+    "string_pointer": "0x789C740",
+    "string_value": "",
+    "static_site": "0x515D61..0x515D6C: mov eax,[0x333A8EC]; mov esi,[eax+0xC]; cmp byte [esi],0; je 0x515EAA",
+    "meaning": "when the map name buffer is empty the client skips the post-state-10 game/UI bring-up path"
+  },
+  "supporting": {
+    "native_gamestate": "89 bytes; configstrings 0/1/2 include the mp_cross_fire serverinfo and slot 2 = cod",
+    "server_commands": "27 captured 2697 commands sent at seq 4",
+    "snapshots": "baseline seq 5.. repeated; client parser accepted the baseline (0x472810) and state reached 10",
+    "videos_backfilled": [
+      "mp_cross_fire_load.bk2 (black.bk2 placeholder)",
+      "default.bk2"
+    ],
+    "state_8_stall": "one session stalled at state 8 with ring_b 5/21 and no CPU growth until the loading video placeholder was added; later sessions reached 10 again"
+  },
+  "hypothesis": "the map name shown in the game/UI layer is not populated from our gamestate; it may be expected to be written by CL_MapLoading or by a configstring/dvar that we do not send yet",
+  "next_experiment": [
+    "reach state 9 with a delayed snapshot (30 s window)",
+    "read [0x333A8EC]+0xC in state 9 and write mp_cross_fire into that buffer",
+    "let the snapshot promote to state 10 and check UI_STATE plus screenshot"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r2g-gs.jsonl",
+    "forward": "runs/codex-r2g-forward.json",
+    "screenshot": "runs/codex-r2g-screenshot.png"
+  }
+}

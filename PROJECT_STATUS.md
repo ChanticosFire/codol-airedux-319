@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【UI 切换门找到：`[0x333A8EC]+0xC` 地图名为空】** ✅实测 state 10 / UI_STATE 5 时，对象 `0x8114D8C` 的 `+0xC` 指向缓冲区 `0x789C740`，内容为空串；静态 `0x515D69` 正是 `cmp byte [esi],0; je 0x515EAA`，地图名为空就跳过 state 10 后的对局/UI 初始化。→ 黑屏=UI 未切换的直接原因已定位。✅用 `black.bk2` 占位 `mp_cross_fire_load.bk2` 可解除一次 state 8 长阻塞，但不改变 UI 状态。下一轮在 state 9 直接把地图名写入该缓冲区，验证 UI 是否离开加载屏。证据：[JSON](evidence/experiments/20261023-codex-mapname-empty-gate.json)。
+
 > **2026-10-23【hires 全量补齐；黑屏=UI 未离开加载屏，而非 world 渲染失败】** ✅从 image/loose 资源库硬链接 22718 张图片 + 18153 个音频/模型到 `runtime/hires`，客户端 `file_missing` 由 7384 降至 61（剩余主要是 `mp_cross_fire_load.bk2` 加载视频与 `patch_*_mp.ff`）。✅发送 2697 抓包的 27 条 server command（seq 4）后再发快照（seq 5 起），state 保持 10、usercmd 持续、无 Com Error。✅决定性诊断：`STATE=10` 与 `UI_STATE=5` 并存；进入 state 10 后 60/110/160 秒三次客户端 `screenshot` 都是黑屏+加载圈（mean=0）。→ 客户端网络层已在游戏中，但 UI 仍停在加载屏，下一步查 `CL_MapLoading`（0x453760）是否返回及 UI 切换条件。证据：[JSON](evidence/experiments/20261023-codex-hires-backfill-ui-state.json)。
 
 > **2026-10-23【重复快照维持 active：ack 推进到 63，usercmd 持续】** ✅同一 baseline 快照以 0.5 秒间隔发送 60 次（seq 4..63），客户端 `messageAck` 从 4 推进到 63，持续发送 25 个 69 字节 usercmd（seq 24..60），状态保持 **10**，无 Com Error/Fatal error。✅关键前提：登录后**等待约 20 秒**让角色加载完成（connect userinfo `rank=69`），否则 `rank=0` 会卡 state 6；LSG 必须在线。⚠️画面仍黑屏、快照体仍为 2697 来源、usercmd 未解码。证据：[JSON](evidence/experiments/20261023-codex-repeat-snapshot-active.json)。
