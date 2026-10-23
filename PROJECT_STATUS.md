@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Snapshot format documented in docs/SNAPSHOT-FORMAT.md]**
+> Consolidated doc: body layout, baseline geometry (ps 1 bit / actors 13 / glass ~14), ps frame loop, delta decoder with the non-linear cost table (28/68/69 bits), field table 0xDA63E8, codec semantics, actors grammar with the 0x7FF terminator, the rejected-attempt table, tooling hazards, and 5 open questions.
+> Makes the visible-world work resumable; a real snapshot capture would answer all five open questions at once. No blind attempts this round.
+> Evidence: docs/SNAPSHOT-FORMAT.md.
 > **2026-10-23 [ps cost is not index-linear; ps semantics are the remaining blocker]**
 > land8: ps 1308 -> actors 1376 = 68 bits, actors error 1, states 9. Costs: index 0 = 28, index 8 = 68, index 22 = 69 - not linear, so the delta keeps decoding past the landing field with bounds we have not identified.
 > Remaining blocker: ps payload semantics. A captured real snapshot would unblock it (replay + compare). Blind iteration is risky: 2 of the last 4 ps bodies killed the client.
