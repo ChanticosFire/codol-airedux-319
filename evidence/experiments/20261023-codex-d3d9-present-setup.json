@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T16:35:00+00:00",
+  "scope": "the client renders through d3d9; Present is a COM vtable method, not an export",
+  "modules": {
+    "d3d9.dll": "0x6C5A0000 size 0x179000",
+    "nvd3dum.dll": "0x623C0000 size 0x2BBD000",
+    "D3DCompiler_43.dll": "0x6B660000 size 0x207000"
+  },
+  "plan": [
+    "scan client memory for an object whose vtable lies inside d3d9 and whose vtable[17] (IDirect3DDevice9::Present) also lies inside d3d9",
+    "one-shot breakpoint at that Present address during state 10 proves the renderer presents frames",
+    "if present fires, the scene draw path runs and the problem is scene content; if it never fires, the renderer is stopped earlier"
+  ],
+  "why": "the previous memory injection of viewangles and entity origin changed nothing, so the next question is whether the renderer presents at all",
+  "artifacts": {
+    "launch_log": "runs/codex-r17-launch.out",
+    "server_log": "runs/codex-r17-lsg.jsonl"
+  }
+}

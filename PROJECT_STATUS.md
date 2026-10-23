@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【渲染接口确认 d3d9；Present 走 COM vtable[17]】** ✅模块：`d3d9.dll` 0x6C5A0000、`nvd3dum.dll` 0x623C0000、`D3DCompiler_43.dll` 0x6B660000。`Present` 不是 d3d9 导出，需扫描“vtable 在 d3d9 范围且 vtable[17] 也在 d3d9”的设备对象定位，再用一次性断点验证 state 10 是否真的 Present——命中则问题在场景内容，不命中则渲染更早停住。证据：[JSON](evidence/experiments/20261023-codex-d3d9-present-setup.json)。
+
 > **2026-10-23【ps 数组全 0；内存注入 viewangles+origin 仍黑】** ✅`[clc+0xA900]^0x3613BDA3=0x134253D8`，容量 1024，前 8 项全 0（viewangles 0,0,0）。✅写 `ps[0].viewangles=(0,90,0)`、实体 eType=1、pos.trBase=(5830,-4369,-95)，写入回读均正确，但截图仍 unique=5/mean=0/max=34。→ 补视角/原点不足以点亮画面。下一轮先 hook Present/SwapBuffers 统计 state 10 帧数，确认渲染器是否真的在绘制。证据：[JSON](evidence/experiments/20261023-codex-memory-inject-negative.json)。
 
 > **2026-10-23【2697 切片必崩；setviewpos 无效】** ✅2697 快照体按第一个 0x05（offset 611）切 612 字节发送 → 客户端再次闪退（ack=1）；10200 字节体内 0x05 出现 52 次，字节级 EOF 无法确定边界 → 2697 快照字节不是 1649370 的安全输入。✅state 10 注入 `setviewpos 5830 -4369 -95 0 90` 后截图仍 unique=5/mean=0/max=29，无变化。下一轮恢复真正的 ps 字段表（0xDA63E8 与 0x670D30 类型分支不匹配），并考虑呈现层计数器确认是否真的在绘制。证据：[JSON](evidence/experiments/20261023-codex-2697-slice-crash.json)、[JSON](evidence/experiments/20261023-codex-setviewpos-negative.json)。
