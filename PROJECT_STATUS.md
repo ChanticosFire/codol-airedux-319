@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Codec -58 is a 45-bit payload]**
+> Landing on index 0 with a 30-bit value: ps 1308 -> actors 1369 = 61 bits, error 0. Prologue is 16 bits, so the value read is 45 bits - the decoder read 15 bits past our payload.
+> First field-level measurement with the corrected encoder in the loop. Next: supply exactly 45 bits, verify the ps lands on 61, then check snapshot acceptance (state 10).
+> Evidence: [codec58 45 bits](evidence/experiments/20261023-codex-codec58-45bits.json).
 > **2026-10-23 [ps_codec.py: authoritative gap + codec encoder, self test 0 failures]**
 > server1649370/ps_codec.py implements write_gap/read_gap and write_field/read_field transcribed from the cols encoder, incl. the corrected positive-width rule (gate bit, remainder bits first, then bytes). -94 left unimplemented on purpose.
 > python -m server1649370.ps_codec -> self-test failures: 0 (gap 1/2/3/15/16/17/30/31/46; codecs -88/-87/-75/-97/-100/-101/6/10/11/12/16/32).

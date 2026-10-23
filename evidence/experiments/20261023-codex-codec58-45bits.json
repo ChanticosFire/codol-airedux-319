@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T19:15:00+00:00",
+  "scope": "codec -58 consumes 45 payload bits (61 ps bits total) with no stream error",
+  "bodies": [
+    "runs/snapshot-c58-f32-30.bin (30-bit payload, predicted 46 ps bits)",
+    "runs/snapshot-c58-u16-16.bin (16-bit payload)"
+  ],
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1369,
+    "ps_bits_consumed": 61,
+    "actors_error": 0,
+    "state": 9
+  },
+  "derivation": {
+    "prologue_bits": "has-ps(1) + mode(1) + last(5) + present(1) + continuation(1) + V(5) + distance(1) + gate(1) = 16",
+    "observed_ps_bits": 61,
+    "implied_field_payload_bits": "61 - 16 = 45",
+    "note": "we supplied only 30 value bits, so the decoder read 15 bits past our payload - i.e. codec -58 wants 45 bits of value"
+  },
+  "significance": [
+    "codec -58 (offset 76, the first field) is a 45-bit payload, not a plain 32-bit float",
+    "the prologue geometry (16 bits before the value) is unchanged from the earlier measurements",
+    "the ps block terminated with error 0 and the actors entry was reached, so this body is structurally accepted so far"
+  ],
+  "next": [
+    "encode exactly 45 value bits and verify the ps block lands on 61 bits with the tail then parsing cleanly",
+    "if the ps length becomes exact, the next question is whether the client accepts the resulting snapshot (state 10) - that is the first fair test of the corrected encoder"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r142-gs.jsonl",
+    "encoder": "runs/_gen_c58.py",
+    "module": "server1649370/ps_codec.py"
+  }
+}
