@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T00:00:00+00:00",
+  "scope": "trace how the CODOL gamestate actually leaves the dedrun",
+  "verified_facts": {
+    "sv_send_client_game_state_codol_branch": "after writing clientNum, checksumFeed and a trailing zero it calls SV_SendReliableServerCommand(client, &msg)",
+    "sv_send_reliable_server_command_codol_branch": "prints 'IW4OL binary reliable command is unsupported for CoDOL clients' and returns immediately - it does NOT transmit",
+    "consequence": "the CODOL gamestate is not sent through SV_SendReliableServerCommand at all; that call is a no-op on this build",
+    "post_call_work": "the function then does SV_GetServerStaticHeader(), sets client->configDataAcknowledge, calls CODOL_ClearDeferredConfigstrings and CODOL_ReassertConfigstringsAfterGamestate, and sets client->gamestateSent = 1"
+  },
+  "implication": {
+    "where_the_gamestate_must_go": "through the reliable command stream that SV_SendClientMessages drains, i.e. reliableCommands[], because that is the only remaining outbound path for a gamestate on CODOL_SERVER",
+    "what_we_captured": "the 1172-byte datagram we decrypted is one of those netchan messages; its body therefore already contains whatever wrapper the reliable path adds",
+    "why_our_replay_failed": "we replayed the body with a hand-made 15-byte header, but the real packet's leading bytes encode the reliable wrapper (command index/type/length), which we replaced with zeros"
+  },
+  "next": [
+    "read SV_SendClientMessages in sv_snapshot.c to see how reliableCommands entries are framed onto the wire (the code at sv_snapshot.c:128-145 iterates reliableAcknowledge+1..reliableSequence)",
+    "compare that framing with the captured plaintext to identify the true header fields (likely command length + command text rather than a gamestate opcode)",
+    "rebuild our outbound body with the correct wrapper instead of a guessed 15-byte header"
+  ],
+  "artifacts": ["runs/2697-native-src/src/sv_client.c", "runs/2697-native-src/src/sv_snapshot.c", "runs/final-in.jsonl"]
+}
