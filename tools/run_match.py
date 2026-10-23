@@ -165,6 +165,27 @@ def capture(name: str, when: int, summary: dict) -> None:
     log(f"  frame t={when}: {stats}")
 
 
+
+def verify_delivery(name: str) -> dict:
+    """Assert the run actually delivered a snapshot to the client.
+
+    Two recent sessions were wasted by interpreting states from runs where
+    nothing reached the parser, so this is checked on every run.
+    """
+    forward = RUNS / f"{name}-forward.json"
+    gs_log = RUNS / f"{name}-gs.jsonl"
+    snapshots = 0
+    if gs_log.exists():
+        for line in gs_log.read_text(encoding="utf-8", errors="replace").splitlines():
+            if '"message": "snapshot"' in line:
+                snapshots += 1
+    return {
+        "forward_summary": forward.exists(),
+        "snapshots_queued": snapshots,
+        "ok": forward.exists() and snapshots > 0,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="run one end-to-end CODOL 1649370 match")
     parser.add_argument("--name", default="match")
@@ -281,10 +302,15 @@ def main() -> int:
         shutil.copyfile(shots[0], target)
         summary["frame"] = analyse_frame(target, RUNS / f"{name}-screenshot.png")
 
+    summary["delivery"] = verify_delivery(name)
     (RUNS / f"{name}-summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     log(f"summary written to runs/{name}-summary.json")
     log(f"states: {[s.get('state') for s in samples]}")
+    log(f"delivery: {summary['delivery']}")
+    if not summary["delivery"]["ok"]:
+        log("WARNING: this run did not deliver as expected - do not interpret"
+            " traces or states from it")
     return 0
 
 
