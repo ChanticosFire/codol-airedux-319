@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T06:00:00+00:00",
+  "scope": "with an entity present the ps block starts at bit 1343 - i.e. exactly where the entity section ends, past the count1 body",
+  "experiment": {
+    "body": "runs/snapshot-count1-b164.bin (169 B = 1352 bits)",
+    "hooks": [
+      "0x471980:SnapTracePlayerState",
+      "0x471A36:ClearPsError",
+      "0x471010:SnapTraceActors"
+    ],
+    "entity_count": 1,
+    "ps_entry_bit": 1343,
+    "ps_entry_error": 1,
+    "clear_ps_error": {
+      "stream": "0x16D9EC",
+      "before": 1
+    },
+    "ps_bits_consumed": 1,
+    "actors_entry_bit": 1344,
+    "actors_error": 0,
+    "state": 9
+  },
+  "reading": [
+    "the entity loop consumes up to bit 1342; the ps block therefore starts at 1343",
+    "clearing the stream error at 0x471A36 works (record shows before=1), so the block is entered",
+    "but it can only read one bit because the count1 body ends at 1352 bits and its remaining bits are the old tail, not a ps block",
+    "so an A=1 body must be rebuilt as: entity section (bits 0..1342) + ps block + the original tail bits (1343..1351)"
+  ],
+  "next": [
+    "build snapshot-entity-ps.bin = count1 bits 0..1342 + a 28-bit ps block + count1 bits 1343..end",
+    "run it with the ClearPsError hook and screenshot; entity_count should be 1 and the snapshot should still be accepted"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r126-gs.jsonl"
+  }
+}

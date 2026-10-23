@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Entity body: ps block starts at bit 1343]**
+> A=1 body (count1, 169 B): entity_count 1, ps entry 1343 with error 1; ClearPsError at 0x471A36 cleared it (before=1) but ps consumed only 1 bit because it was past the data.
+> Entity loop consumes to bit 1342, so an A=1 body must be rebuilt as entity section (0..1342) + ps block + original tail (1343..1351).
+> Next: build snapshot-entity-ps.bin that way, run with ClearPsError, check entity_count 1 + accepted.
+> Acceptance: a screenshot showing the map. Evidence: [entity ps offset](evidence/experiments/20261023-codex-entity-ps-offset.json).
 > **2026-10-23 [ps tail 1336 aligns: 28 bits, error 0, state 10]**
 > snapshot-ps-tail1336: ps entry 1308 -> actors 1336 (28 bits), error 0, state 10. Loading text 等待玩家数据 belongs to state 9; at state 10 the frame is black.
 > So the final gate is cgame rendering nothing at state 10 -> back to the entity payload (rejected by the global stream-error flag).

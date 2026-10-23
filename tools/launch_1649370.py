@@ -2867,6 +2867,15 @@ def main(argv=None) -> int:
                 self.record({"dump_cg": {"cg": hex(cg), "size": len(data), "candidates": hits}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"dump_cg_error": f"{label}: {error}"})
+        if label.startswith("ClearPsError"):
+            try:
+                registers = row.get("registers", {})
+                edi = int(registers.get("edi", "0"), 0)
+                before = struct.unpack("<I", self.process.read(edi, 4))[0]
+                self.process.write(edi, struct.pack("<I", 0))
+                self.record({"clear_ps_error": {"stream": hex(edi), "before": before}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"clear_ps_error_error": f"{label}: {error}"})
         if label.startswith("FillPs"):
             try:
                 registers = row.get("registers", {})
