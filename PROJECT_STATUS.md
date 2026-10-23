@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [2697 dedrun not present; A/B control unavailable]**
+> Searched E:\GAME\COD (depth 2) for *dedrun*: none. No 2697 server build available, so the client+A/B comparison cannot run; the loading-screen stall must be solved client-side.
+> Next: with owner authorisation, force the load-completion callback 0x8018B0 to run from a breakpoint handler (remote thread/code cave) and screenshot.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [no dedrun](evidence/experiments/20261023-codex-no-dedrun.json).
 > **2026-10-23 [Full-process camera scan: only level-like triples, no eye position]**
 > Scanned 0x400000..0x80000000 (6.34 MB), filter 500<|x|,|y|<15000, -2000<z<2000: 15 candidates, e.g. 0xE9D71DC=(5605.51,-13131.45,0), 0x1215F84=(-7522.32,-4096.98,0). All z=0 (level/ground data), no eye position.
 > With no entity/world loaded, a null camera remains the most plausible cause of the black frame.
