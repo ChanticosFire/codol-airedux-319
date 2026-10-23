@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Entity table read (count 1); ps overruns because the body is short at that offset]**
+> ent+ps bodies: entity_count = 1 (entity table accepted), ps entry 1345 -> actors 1370 error 1, state 9. The same ps bits reached state 10 at A=0 where the client consumed 81 bits, so the 1416-bit body is simply too short.
+> Next: entity + pad to 1345 + trio2 ps + ~40 zero bits + tail; if state 10 with entity_count 1, the snapshot carries a live entity table AND a live playerstate for the first time.
+> Evidence: [entity plus ps short](evidence/experiments/20261023-codex-entity-plus-ps-short.json).
 > **2026-10-23 [MILESTONE: first ps-carrying snapshot accepted (state 10)]**
 > snapshot-trio2 (three records, indices 13/14/22, zero values): ps 1308 -> actors 1389 = 81 bits, error 0, state 10 at t=35/50/62.
 > Until now every has-ps=1 body was rejected at state 9; the ps block is now structurally valid. Frame still black (unique 6) - state 10 without entity/actors data renders nothing.

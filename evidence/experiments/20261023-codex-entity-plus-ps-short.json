@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T01:00:00+00:00",
+  "scope": "entity table + working ps block: the entity table IS accepted (count 1) but the ps block overruns because the body is too short at that offset",
+  "bodies": [
+    "runs/snapshot-ent-ps.bin (177 B)",
+    "runs/snapshot-ent-ps-p8.bin (178 B)"
+  ],
+  "measurement": {
+    "entity_count": 1,
+    "ps_entry_bit": 1345,
+    "actors_entry_bit": 1370,
+    "actors_error": 1,
+    "body_bits": 1416,
+    "states": {
+      "t=22": 9,
+      "t=35": 9,
+      "t=50": 9,
+      "t=62": 9
+    }
+  },
+  "reading": [
+    "the entity table with A=1 is now READ: entity_count = 1, so that block is not the blocker any more",
+    "the ps block starts at 1345 (the entity section consumes 9 bits more than the bare count1 body implied)",
+    "with the same ps bits that reached state 10 in the A=0 case (where the client consumed 81 bits), the body is only 1416 bits long; 1345 + 81 + tail does not fit, so the ps runs off the end and sets the stream error"
+  ],
+  "next": [
+    "rebuild as entity(1336) + pad to 1345 + the trio2 ps + ~40 zero bits + tail so the ps has room for the 81 bits the client actually consumes",
+    "if the entity-carrying body then reaches state 10 with entity_count 1, the snapshot has BOTH a live entity table and a live playerstate for the first time"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r151-gs.jsonl",
+    "encoder": "runs/_gen_entps.py"
+  }
+}
