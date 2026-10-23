@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Actors block has no count-based exit]**
+> Zero payload (400 bits): ps 1345 -> actors 1373 -> glass 1786 (err 1), body 1784 bits; actors consumed 413 bits and overran. Same pattern as the entity loop.
+> So an A=1 snapshot cannot be completed by padding; the hybrid (A=0) tail is accepted in 27 bits, so actors depend on the entity-table bit.
+> Next: measure actors in the A=0 case to learn its terminator, then decide whether A=1 is buildable.
+> Acceptance: a screenshot showing the map. Evidence: [actors no exit](evidence/experiments/20261023-codex-actors-no-exit.json).
 > **2026-10-23 [The actors block overruns the 27-bit tail]**
 > v3 body trace: ps 1345 (err 0) -> actors 1373 (err 0) -> glass 1408 (err 1); 1408 = body end, so actors consumed 35 bits and overran.
 > ps is solid; the hybrid no-entity tail has no valid actors payload. Next: zero-feed the actors block, measure the glass entry, rebuild the A=1 tail.

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T09:10:00+00:00",
+  "scope": "the actors block has no count-based exit either - with a zero payload it loops until the stream ends",
+  "body": "runs/snapshot-entity-ps-zero-tail.bin (223 B = 1784 bits: prefix 1373 + 400 zero bits)",
+  "trace": {
+    "ps_entry_bit": 1345,
+    "ps_error": 0,
+    "actors_entry_bit": 1373,
+    "actors_error": 0,
+    "glass_entry_bit": 1786,
+    "glass_error": 1,
+    "length_bits": 1784,
+    "actors_bits_consumed": 413,
+    "note": "413 bits consumed from a 400-bit zero payload - it overran again"
+  },
+  "reading": [
+    "the actors block consumes an unbounded number of bits when the payload is all zeros",
+    "this is the same 'no count-based exit' pattern that makes the entity loop reject A=1 snapshots",
+    "so an A=1 snapshot cannot be completed by padding: the actors block needs a real terminating payload",
+    "by contrast the hybrid (A=0) tail is accepted in 27 bits, which means the actors block's behaviour depends on the entity-table bit"
+  ],
+  "next": [
+    "measure the actors block in the WORKING hybrid case (A=0) with the same three breakpoints to learn its terminator",
+    "then decide whether an A=1 snapshot can be built at all, or whether A=0 must carry the ps data (which we already do successfully)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r132-gs.jsonl",
+    "encoder": "runs/_gen_zero_tail.py"
+  }
+}
