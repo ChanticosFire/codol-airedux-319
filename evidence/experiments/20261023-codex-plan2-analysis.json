@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T01:50:00+00:00",
+  "scope": "re-evaluate the 'patch the dedrun reliableCommands' idea against what we already proved",
+  "key_realization": {
+    "fact_we_already_had": "the 2697 dedrun's own gamestate IS accepted by the 1649370 client - earlier sessions reached client phase 8 with the dedrun, which only happens after the client consumes the gamestate",
+    "consequence": "the gamestate format produced by the dedrun is compatible with our client; our replay failed because we lack the send context, not because the content is wrong"
+  },
+  "what_the_dedrun_has_that_we_lack": [
+    "the exact challenge value at encode time",
+    "a non-empty lastClientCommandString that produces the observed key shift",
+    "a reliableSequence that frames the command as 'unacked' so it is retransmitted",
+    "its own SV_WriteReliableCommand wrapper (opcode + sequence + text)"
+  ],
+  "why_replay_kept_failing": {
+    "we_provided": "raw body bytes and a constant key",
+    "the_client_expected": "a properly framed reliable command inside a netchan message, with a key derived from the server's live fields",
+    "mismatch": "even a byte-perfect body is rejected when the outer framing does not match what the client's parser expects"
+  },
+  "plan_2_refined": {
+    "idea": "do not replace the dedrun; use it as a framing engine by editing the command text it is about to retransmit",
+    "how": [
+      "read client_t.reliableSequence and reliableAcknowledge (ack is 0, so commands 1..sequence are all pending)",
+      "read reliableCommands[1].command to see what the dedrun's first gamestate command text actually looks like",
+      "if it is the gamestate text, we can substitute our own text in place and let the dedrun's encoder frame and cipher it"
+    ],
+    "value": "this isolates 'content' from 'framing' definitively: if a substituted command is accepted, framing was never the problem; if it is rejected, the content is"
+  },
+  "next": [
+    "start one dedrun session and dump reliableCommands[1..8] text",
+    "compare that text with the 1168-byte body we recovered from the wire",
+    "if the wire body is simply that text ciphered, we can reconstruct framing exactly"
+  ],
+  "artifacts": ["runs/final-in.jsonl", "runs/2697-native-src/src/sv_snapshot.c"]
+}
