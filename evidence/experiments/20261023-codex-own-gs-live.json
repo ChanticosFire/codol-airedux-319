@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T15:20:00+00:00",
+  "scope": "first real 1649370 client session against our own game server",
+  "session": {
+    "server": "python -m server1649370.gameserver --port 28971 --log runs/own-gs-live.jsonl",
+    "bridge": "ring_bridge forward --target 127.0.0.1:28971 (not the 2697 dedrun)",
+    "client": "20261023-own-gs, pid 28344, reached ui_state 5 lobby then driven into the connect path"
+  },
+  "verified_client_messages": {
+    "getchallenge": {"command": "getchallenge", "args": ["0", "0cf7ee44e08c4c28"], "length": 38},
+    "connect": {
+      "uid": "0cf7ee44e08c4c28",
+      "length": 410,
+      "userinfo_keys": ["2490", "challenge", "checksum", "clan", "csi", "gameMomementRecording", "invited", "isroomhost", "isshoutcaster", "joinType", "name", "natType", "onlineStats", "openid", "partyMembers", "partyid", "playerLobbyInfo", "rank", "secureProfileReady", "session", "statver", "team", "teamid", "wargodchoice", "xuid"],
+      "name_is_base64": "QWRtaW5pc3RyYUNsaWVudA== decodes to AdministraClient",
+      "xuid": "0cf7ee44e08c4c28",
+      "build_field_2490": "-695030357",
+      "checksum": "-694791800",
+      "challenge_returned": "1728016035 (exactly the value our server issued)",
+      "statver": "19 1248641861"
+    },
+    "stats": {"length": 84},
+    "inband": {
+      "count": 10,
+      "length": 206,
+      "seq_range": "2 .. 11",
+      "head_hex_example": "0b000000 00 01000000 000000000000...",
+      "layout": "seq(4) + serverId(1) + messageAcknowledge(4) + body",
+      "payload_observed": "zeros for the first 64 bytes, i.e. no clc_move content yet"
+    }
+  },
+  "findings": [
+    "the client echoes our challenge value verbatim inside userinfo, so the handshake token check can be enforced server-side",
+    "the client's name arrives base64-encoded, not plaintext",
+    "field 2490 is a negative numeric build id (-695030357), not a version string; any version gate must compare that number",
+    "in-band packets carry seq+serverId+messageAck exactly as the 2697 source describes, which validates our earlier reverse-engineering",
+    "the first 64 bytes of the in-band body are zero and the volume is a fixed 206 bytes, so the client is still in the pre-gamestate phase and has not started sending usercmds"
+  ],
+  "not_yet_verified": [
+    "whether the in-band body is XOR-ciphered or arrives plaintext (the head looks plaintext, but the payload is all zeros, which hides a zero xor-key too)",
+    "what the client does when the server answers in-band (it currently gets silence)"
+  ],
+  "next": [
+    "parse the in-band header in gameserver.py and log serverId/messageAck per packet",
+    "reply in-band with a minimal gamestate so the client advances past the pre-gamestate phase",
+    "keep capturing until the body stops being all zeros, then confirm whether the cipher is active"
+  ],
+  "artifacts": ["runs/own-gs-live.jsonl", "server1649370/gameserver.py"]
+}
