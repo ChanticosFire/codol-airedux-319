@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T17:40:00+00:00",
+  "scope": "with the e2 entity body, none of the three entity-loop breakpoints fire",
+  "experiment": {
+    "body": "runs/snapshot-e2-entity.bin",
+    "breakpoints": [
+      "0x471DE1 SnapTraceLoopHead",
+      "0x471E4A SnapTraceFieldPath",
+      "0x671700 SnapTraceFieldValue"
+    ],
+    "events": "no snap_trace rows written at all",
+    "client": "exited before any breakpoint fired"
+  },
+  "interpretation": [
+    "either the client dies before reaching 0x471D80 (i.e. in the playerState/actor parsing that precedes the entity loop), or the new breakpoint addresses are not safe insertion points and the patched code crashes",
+    "0x471D80 itself worked reliably in earlier rounds, so a good control is to re-run the same body with only that breakpoint"
+  ],
+  "next": [
+    "control run: same body, single breakpoint at 0x471D80, to see whether the loop is entered at all",
+    "if it is entered, the crash is inside the field path; if not, the body breaks parsing before the entity loop"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r51-gs.jsonl",
+    "body": "runs/snapshot-e2-entity.bin"
+  }
+}
