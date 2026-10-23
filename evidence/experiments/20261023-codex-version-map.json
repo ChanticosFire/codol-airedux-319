@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T16:40:00+00:00",
+  "scope": "version map from the user plus the 1649370 client project found on disk",
+  "version_map_from_user": {
+    "1.1.1.3": "earliest leaked build, Shanghai Activision, based on iw4x/cod4/6, ~2011-12, not present locally",
+    "2.6.9.7": "community revival, Raven took over, ~2015, present locally; the 2697 dedrun belongs to this lineage",
+    "3.19.26.13": "Build 1604220, second-to-last before shutdown (2021), present at E:\\GAME\\COD\\3.19.26.13",
+    "3.19.26.22": "Build 1649370, final shutdown build (2021-08), OUR TARGET, two copies: E:\\GAME\\COD\\1649370 (GitHub Welcome_CODOL_client lineage, reaches lobby with saves) and E:\\GAME\\COD\\使命召唤OL (user's own backup client)"
+  },
+  "target_project_found": {
+    "path": "E:\\GAME\\COD\\1649370",
+    "identity": "codol_rebuild - offline client runtime and local profile adaptation for 1649370",
+    "readme_scope": "offline startup, local accounts, local store, native UI adaptation; explicitly says multiplayer and full match loop are NOT implemented",
+    "layout_constants_verified": {
+      "IMAGE_BASE": "0x400000",
+      "MAIN_MENU": "0x4706d0",
+      "FRONTEND_TICK": "0x7ef0d0",
+      "ENGINE_RETURN": "0x77f8b8",
+      "DW_DVAR": "0x849b874 (online service switch object)",
+      "CONNECTING_BRANCH": "0x60c6f7",
+      "CONNECTING_FALSE": "0x60c6fd",
+      "CLIENT_SLOT": "0x82c3b58",
+      "CLIENT_POINTERS": "0x1c1d188",
+      "CLIENT_POINTER_XOR": "0xfbb2c97a",
+      "CLIENT_ALLOCATED": "0x3381398"
+    },
+    "patch_style_verified": {
+      "local_optional_service_patches": "0x6AD010 call 0x63F9A0 -> 90*5 (WarGod credit void request becomes a no-op)",
+      "local_welcome_page_patch": "suppresses automatic welcome/MOTD opening",
+      "build_local_playlist_adapter": "emits machine code that forces an invalid local playlist id when offline, keeping native paths untouched"
+    },
+    "what_it_does_not_have": "no game server: it reaches the lobby by patching the client and serving local profile data, not by speaking the in-game netchan protocol"
+  },
+  "implications": [
+    "the 2697 dedrun is a 2.6.9.7-lineage server, one full generation behind 3.19.26.22; protocol results from it are useful but must be revalidated on the target client",
+    "the target client project gives us verified 1649370 addresses (main menu, frontend tick, DW switch) that we can reuse for observation patches instead of re-deriving them",
+    "nothing on disk provides a 3.19.26.22 game server, so our own server1649370 remains the right path"
+  ],
+  "next": [
+    "reuse layout.py's MAIN_MENU/FRONTEND_TICK/DW_DVAR addresses when instrumenting the target client",
+    "compare the 1649370 client's in-band traffic captured earlier against the 2.6.9.7 dedrun's expectations to separate generation differences from bugs",
+    "continue building server1649370 outbound in-band replies"
+  ],
+  "artifacts": ["E:\\GAME\\COD\\1649370\\src\\codol_rebuild\\adapters\\game\\v1649370\\layout.py", "E:\\GAME\\COD\\1649370\\src\\codol_rebuild\\adapters\\game\\v1649370\\profile.py", "E:\\GAME\\COD\\1649370\\README.md", "319\\版本说明.txt"]
+}
