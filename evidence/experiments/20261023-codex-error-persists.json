@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T12:25:00+00:00",
+  "scope": "final mechanism for the entity limitation: the stream error flag is global and checked after glass",
+  "disassembly": {
+    "0x4723F3": "[esi+0x24] = -1 before calling 0x471980 (playerState)",
+    "0x4723FA": "[esi+0x28] = 0xFFFE7961",
+    "0x472401": "call 0x471980 (playerState)",
+    "0x472416": "reset [esi+0x24]/[esi+0x28] before 0x471010 (actors)",
+    "0x472437": "reset again before 0x471560",
+    "0x472492": "reset again before 0x4475F0 (glass)",
+    "0x4724A5": "xor edi,edi; cmp [esi],edi - the global stream error flag is checked here"
+  },
+  "conclusion": [
+    "every later block (playerState, actors, 0x471560, glass) resets its own cursors before running, so the entity-loop error does not disturb them",
+    "but the stream error flag at [esi] is global: once the entity loop sets it by reading past length, it stays set",
+    "0x4724A5 then tests [esi] against zero and fails, so the snapshot is not accepted and the client stays at state 9",
+    "this is the complete explanation of why A=1 (entity table present) can never reach state 10 on this build - it matches every experiment so far"
+  ],
+  "next": [
+    "the entity path is closed unless the entity loop can terminate without reading past length (no such exit exists in 0x471D80)",
+    "focus remaining effort on the parts that do work: match flow (done), map selection (done), and diagnostics"
+  ],
+  "artifacts": {
+    "previous": "evidence/experiments/20261023-codex-count-positive-error.json"
+  }
+}
