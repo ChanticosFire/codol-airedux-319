@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T06:10:00+00:00",
+  "scope": "count=1 with a seven-bit field tail still lands on state 9",
+  "experiment": {
+    "body": "runs/snapshot-f7.bin",
+    "bytes": 169,
+    "layout": "count1 body + 7 zero field bits + 0x00 + EOF",
+    "result": {
+      "state": 9,
+      "entity_count": 1,
+      "entity_ids": [
+        2078
+      ],
+      "client": "alive (pid 27404)"
+    }
+  },
+  "conclusion": [
+    "the count=1 path always reaches the field loop, and that loop is only terminated by a stream error",
+    "so with count=1 the snapshot cannot pass the parser cleanly and never promotes to state 10",
+    "the empty hybrid body (count=0) skips the field loop entirely, which is why it is the only accepted body so far"
+  ],
+  "strategic_implication": "wire-format entities are blocked on a field count we have not recovered; further blind field-length guessing will keep producing state 9 or crashes",
+  "next": [
+    "either recover the entityState field count from code (the 2-bit index reader plus 0x671700 loop) so the stream can end exactly",
+    "or accept the empty-world hybrid as the current protocol baseline and spend rounds on the match-state/data path instead"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r36-gs.jsonl",
+    "body": "runs/snapshot-f7.bin"
+  }
+}
