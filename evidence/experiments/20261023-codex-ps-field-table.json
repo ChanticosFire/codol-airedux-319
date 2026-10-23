@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T16:35:00+00:00",
+  "scope": "dumped the 24-entry field table 0xDA63E8 and started decoding the per-field codec switch",
+  "field_table_0xDA63E8": {
+    "entry_size": 12,
+    "count": 24,
+    "format": "[offset, codec, hint]",
+    "entries": [
+      {
+        "index": 0,
+        "offset": 76,
+        "codec": -58,
+        "hint": 0
+      },
+      {
+        "index": 1,
+        "offset": 80,
+        "codec": -100,
+        "hint": 0
+      },
+      {
+        "index": 2,
+        "offset": 84,
+        "codec": -100,
+        "hint": 0
+      },
+      {
+        "index": 3,
+        "offset": 65,
+        "codec": -57,
+        "hint": 0
+      },
+      {
+        "index": 4,
+        "offset": 68,
+        "codec": -97,
+        "hint": 0
+      },
+      {
+        "index": 5,
+        "offset": 72,
+        "codec": 16,
+        "hint": 0
+      },
+      {
+        "index": 6,
+        "offset": 66,
+        "codec": -57,
+        "hint": 0
+      },
+      {
+        "index": 7,
+        "offset": 67,
+        "codec": -100,
+        "hint": 0
+      },
+      {
+        "index": 8,
+        "offset": 12,
+        "codec": 10,
+        "hint": 0
+      },
+      {
+        "index": 9,
+        "offset": 56,
+        "codec": 12,
+        "hint": 0
+      },
+      {
+        "index": 10,
+        "offset": 60,
+        "codec": -97,
+        "hint": 0
+      },
+      {
+        "index": 11,
+        "offset": 64,
+        "codec": -57,
+        "hint": 0
+      },
+      {
+        "index": 12,
+        "offset": 52,
+        "codec": 32,
+        "hint": 0
+      },
+      {
+        "index": 13,
+        "offset": 20,
+        "codec": 10,
+        "hint": 0
+      },
+      {
+        "index": 14,
+        "offset": 24,
+        "codec": 10,
+        "hint": 0
+      },
+      {
+        "index": 15,
+        "offset": 40,
+        "codec": 6,
+        "hint": 0
+      },
+      {
+        "index": 16,
+        "offset": 28,
+        "codec": 10,
+        "hint": 0
+      },
+      {
+        "index": 17,
+        "offset": 44,
+        "codec": 6,
+        "hint": 0
+      },
+      {
+        "index": 18,
+        "offset": 32,
+        "codec": 10,
+        "hint": 0
+      },
+      {
+        "index": 19,
+        "offset": 48,
+        "codec": 6,
+        "hint": 0
+      },
+      {
+        "index": 20,
+        "offset": 4,
+        "codec": 11,
+        "hint": 0
+      },
+      {
+        "index": 21,
+        "offset": 8,
+        "codec": 11,
+        "hint": 0
+      },
+      {
+        "index": 22,
+        "offset": 16,
+        "codec": 11,
+        "hint": 0
+      },
+      {
+        "index": 23,
+        "offset": 36,
+        "codec": 6,
+        "hint": 0
+      }
+    ],
+    "struct_size": "0x58 (max offset 84 fits)",
+    "codec_kinds": {
+      "negative (special)": [
+        -58,
+        -100,
+        -57,
+        -97
+      ],
+      "positive (fixed bit width)": [
+        6,
+        10,
+        11,
+        12,
+        16,
+        32
+      ]
+    }
+  },
+  "codec_decoder_0x670D30": {
+    "0x670D49": "ecx = field->codec",
+    "0x670D53": "cmp ecx,-0x5E (-94) -> 0x670EF4",
+    "0x670D65": "cmp ecx,-0x65 (-101) -> angle encode/decode path with float rounding",
+    "note": "further branches exist below 0x670E2C for the other codecs"
+  },
+  "next": [
+    "disassemble the rest of 0x670D30 (0x670E2C..0x670EF4) to map -58/-57/-97/-100",
+    "then implement the encoder in Python and set a minimal but valid local-player ps (origin/viewangles/clientNum)",
+    "verify with the ps-entry/actors-entry bit cursors before trying the UI"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r103-gs.jsonl"
+  }
+}

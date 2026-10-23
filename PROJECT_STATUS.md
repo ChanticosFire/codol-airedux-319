@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Dumped the 24-entry ps field table 0xDA63E8]**
+> Format [offset, codec, hint], 12 B/entry, 24 entries, struct 0x58: 0:76/-58, 1:80/-100, 2:84/-100, 3:65/-57, 4:68/-97, 5:72/16, 6:66/-57, 7:67/-100, 8:12/10, 9:56/12, 10:60/-97, 11:64/-57, 12:52/32, 13:20/10, 14:24/10, 15:40/6, 16:28/10, 17:44/6, 18:32/10, 19:48/6, 20:4/11, 21:8/11, 22:16/11, 23:36/6.
+> Negative codecs = special (-58,-100,-57,-97); positive = fixed widths (6,10,11,12,16,32). Decoder 0x670D30 handles -94/-101 explicitly; more branches below 0x670E2C.
+> Next: map -58/-57/-97/-100, implement the encoder, set a minimal valid local-player ps.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps field table](evidence/experiments/20261023-codex-ps-field-table.json).
 > **2026-10-23 [Found the delta-field decoder (0x670FF0), field table 0xDA63E8, count 24]**
 > ps call site 0x471B9E: per-field skip bit -> push 3; push 0xDA63E8; push 0x18; call 0x670FF0. Table 0xDA63E8 is shared with entityState.
 > Decoder: continuation bit (0x447190), index width from bsr(count), new index via 0x66EC30, distance via 0x670CB0, per-field codec via 0x670D30 - same structure as cols.
