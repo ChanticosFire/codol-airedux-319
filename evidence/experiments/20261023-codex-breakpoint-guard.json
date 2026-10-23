@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T14:10:00+00:00",
+  "scope": "breakpoint hazard guard: known-bad addresses are refused, unknown ones warn",
+  "background": [
+    "round 100: 0x4475F0 was used as a breakpoint and the client silently stalled at state 8 with zero traces; the same body worked without it",
+    "rounds 68-70: mid-function addresses (0x471B9E, 0x471C5C) silently corrupted the parse and produced no records",
+    "the failure mode is always the same: no error, just missing data - the most expensive kind of bug in this project"
+  ],
+  "implementation": {
+    "path": "tools/launch_1649370.py",
+    "safe_list": "SAFE_BREAKPOINTS: the 21 addresses proven to work on this build",
+    "hazard_list": "HAZARD_BREAKPOINTS: {0x4475F0, 0x471B9E, 0x471C5C}",
+    "behaviour": [
+      "a hazard address aborts the launch with an explicit message pointing at docs/SNAPSHOT-FORMAT.md section 6 (exit 1)",
+      "an address outside the safe list prints a warning that names the exact symptom to look for"
+    ]
+  },
+  "verified": {
+    "hazard": "--breakpoint 0x4475f0:Glass -> exit 1, 'refusing known-hazard breakpoints ... silently break the client'",
+    "safe": "check_breakpoints(['--breakpoint','0x471980:Ps']) -> silent, accepted",
+    "unknown": "check_breakpoints(['--breakpoint','0x123456:Foo']) -> prints the warning"
+  },
+  "why_it_matters": [
+    "this failure mode has no error signal, so it can only be prevented, not detected",
+    "the guard turns a silent multi-session trap into an immediate, explanatory refusal"
+  ],
+  "artifacts": {
+    "tool": "tools/launch_1649370.py"
+  }
+}

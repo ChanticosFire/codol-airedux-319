@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Hardening: breakpoint hazard guard]**
+> SAFE_BREAKPOINTS (21 proven addresses) and HAZARD_BREAKPOINTS {0x4475F0, 0x471B9E, 0x471C5C}. Hazard aborts with an explanatory message (exit 1); unknown warns with the exact symptom.
+> Targets the project's most expensive silent failure mode. Verified on all three cases.
+> Evidence: [breakpoint guard](evidence/experiments/20261023-codex-breakpoint-guard.json).
 > **2026-10-23 [Hardening: startup argument validation]**
 > --gamestate-map must be a plain map name (non-empty, <=32 chars, no path separators); --snapshot-file paths must exist. Verified: both bad cases exit 2 with a clear message; valid args start normally.
 > Removes the class of wasted sessions seen in rounds 112-113 (parameter that looked applied; map without fastfile).

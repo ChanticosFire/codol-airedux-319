@@ -64,6 +64,46 @@ from codol_rebuild.runtime import session as session_mod  # noqa: E402
 from codol_rebuild.adapters.persistence.sqlite_accounts import AccountRepository as OriginalAccountRepository  # noqa: E402
 from codol_rebuild.adapters.persistence import game_settings as game_settings_mod  # noqa: E402
 from codol_rebuild.adapters.game.v1649370.observation_points import BREAKPOINTS  # noqa: E402
+
+# Breakpoint addresses proven safe on this build, and addresses that silently
+# break it (hot or mid-function). Patching int3 into a hazard stalls the client
+# at state 8 or drops all traces without any error, which cost several sessions
+# before it was understood.
+SAFE_BREAKPOINTS = {
+    0x471D80, 0x671650, 0x671700, 0x471980, 0x471010, 0x471560,
+    0x470FF0, 0x471A36, 0x670FF0, 0x670CB0, 0x670D30, 0x6701D0,
+    0x670B15, 0x6710BB, 0x4723DD, 0x472401, 0x472424, 0x472445,
+    0x4724A5, 0x472810, 0x471000,
+}
+HAZARD_BREAKPOINTS = {0x4475F0, 0x471B9E, 0x471C5C}
+
+
+def check_breakpoints(user_args: list[str]) -> None:
+    """Reject known-hazard breakpoints and warn about unknown ones."""
+    hazardous, unknown = [], []
+    for index, value in enumerate(user_args):
+        if value != "--breakpoint" or index + 1 >= len(user_args):
+            continue
+        spec = user_args[index + 1]
+        point = spec.split(":", 1)[0]
+        try:
+            target = int(point, 0)
+        except ValueError:
+            continue
+        if target in HAZARD_BREAKPOINTS:
+            hazardous.append(spec)
+        elif target not in SAFE_BREAKPOINTS:
+            unknown.append(spec)
+    if hazardous:
+        raise SystemExit(
+            " refusing known-hazard breakpoints "
+            + ", ".join(hazardous)
+            + " - these are hot/mid-function addresses that silently break the client"
+              " (see docs/SNAPSHOT-FORMAT.md section 6)")
+    for spec in unknown:
+        print(f"[breakpoint] warning: {spec} is not in the safe list;"
+              " if the run stalls at state 8 or loses all traces, this is why")
+
 from codol_rebuild.adapters.game.v1649370 import menu_queue as menu_queue_mod  # noqa: E402
 from codol_rebuild.adapters.game.v1649370 import session_bridge as bridge_mod  # noqa: E402
 from codol_rebuild.adapters.game.v1649370 import ui_movie as ui_movie_mod  # noqa: E402
@@ -2745,6 +2785,7 @@ def main(argv=None) -> int:
             raise SystemExit("--reuse-runtime requires an existing session name")
         reuse_runtime = user[index + 1]
         del user[index:index + 2]
+    check_breakpoints(user)
     audit_breakpoints = "--audit-breakpoints" in user
     capture_ui_movie = "--capture-ui-movie" in user
     host_args = build_host_arguments(user)
