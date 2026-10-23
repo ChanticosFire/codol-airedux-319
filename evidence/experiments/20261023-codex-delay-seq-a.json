@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "experiment": "delay-send A, patch connection+0x34 before gamestate seq=3",
+  "session": "20261023-codex-delay-a2",
+  "settings": {"delay_send_seconds": 8, "reliable_until_state": 0, "bind_port": 29000},
+  "observations": {
+    "login_ui_state": 5,
+    "connection": "0x13c9d1e8",
+    "patched_address": "0x13c9d21c",
+    "field_before_hex": "06000000",
+    "field_after_hex": "02000000",
+    "postpatch_status_unix_approx": 1792735008.17,
+    "fragment_send_unix": [1792735015.49234, 1792735015.49345, 1792735015.494395],
+    "fragment_seq": 3,
+    "fragment_indices": [0, 1, 2],
+    "forward_received": 10,
+    "forward_injected": 10,
+    "ring_b_after": {"read": 10, "write": 10},
+    "stage_after": 5,
+    "client_message_ack_after": 1,
+    "server_getchallenge_count": 0,
+    "connect_challenge_field": "0",
+    "server_challenge": 0
+  },
+  "conclusion": "Patching +0x34 to 2 before seq=3 fragments did not advance stage or messageAck. Sequence mismatch alone is insufficient for this session. No getchallenge occurred, which limits attribution to the sequence gate itself.",
+  "artifacts": ["runs/codex-delay-a2-login.json", "runs/codex-delay-a2-patch.json", "runs/codex-delay-a2-postpatch.json", "runs/codex-delay-a2-forward.json", "runs/codex-delay-a2-status-after.json", "runs/codex-delay-a-gs.jsonl"]
+}

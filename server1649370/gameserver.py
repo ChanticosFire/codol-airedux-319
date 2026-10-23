@@ -86,15 +86,16 @@ class ServerState:
 class GameServer:
     """Minimal, fully logged out-of-band responder."""
 
-    def __init__(self, port: int, log_path: str | None = None):
+    def __init__(self, port: int, log_path: str | None = None, delay_send: float = 0.0):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
-        self.sock.settimeout(1.0)
+        self.sock.settimeout(0.1)
         self.state = ServerState()
         self.log_path = Path(log_path) if log_path else None
         if self.log_path:
             self.log_path.parent.mkdir(parents=True, exist_ok=True)
         self.running = True
+        self.delay_send = delay_send
 
     # ------------------------------------------------------------------ logging
     def log(self, event: dict) -> None:
@@ -158,6 +159,12 @@ class GameServer:
         info = self.parse_userinfo(userinfo_text)
         peer["userinfo"] = info
         peer["build"] = info.get("shortversion") or info.get("2490")
+        # The client can retransmit connect several times in one burst.  Keep
+        # the first deadline so retransmissions cannot postpone the payload.
+        if "gamestate_due" not in peer:
+            peer["gamestate_due"] = time.monotonic() + self.delay_send
+            peer["gamestate_sent"] = False
+            peer["inband_seen"] = False
         self.log({"dir": "in", "kind": "connect", "from": f"{addr[0]}:{addr[1]}",
                   "uid": uid, "userinfo_keys": sorted(info),
                   "name": info.get("name"), "xuid": info.get("xuid"),
@@ -168,6 +175,39 @@ class GameServer:
                     f"\\sv_maxclients\\{DEFAULT_MAXCLIENTS}"
                     f"\\protocol\\1\\shortversion\\{PROTOCOL_GENERATION}")
         self.send_oob(addr, response)
+
+    def send_due_gamestates(self) -> None:
+        """Send once after connect's delay, after the first client in-band packet."""
+        for addr, peer in self.state.peers.items():
+            due = peer.get("gamestate_due")
+            if due is None or peer.get("gamestate_sent") or not peer.get("inband_seen"):
+                continue
+            if time.monotonic() < due:
+                continue
+            peer["gamestate_sent"] = True
+            payload = GAMESTATE_PLAINTEXT
+            if not payload:
+                self.log({"dir": "meta", "kind": "gamestate_missing"})
+                continue
+            seq = 3
+            peer["last_server_seq"] = seq
+            frag_size = 1162
+            count = (len(payload) + frag_size - 1) // frag_size
+            seq_word = seq | 0x80000000
+            key = ((peer.get("challenge") or 0) ^ seq) & 0xFF
+            for index in range(count):
+                chunk = payload[index * frag_size:(index + 1) * frag_size]
+                data = bytearray(chunk)
+                for i in range(4 if index == 0 else 0, len(data)):
+                    data[i] ^= key
+                header = (struct.pack("<I", seq_word) + bytes([index, count - 1])
+                          + struct.pack("<HH", frag_size, len(chunk)))
+                packet = header + data
+                self.sock.sendto(packet, addr)
+                self.state.counters["inband_sent"] += 1
+                self.log({"dir": "out", "kind": "fragment", "to": f"{addr[0]}:{addr[1]}",
+                          "seq": seq, "index": index, "count": count,
+                          "stride": frag_size, "chunk": len(chunk), "length": len(packet)})
 
     def on_stats(self, addr: tuple, args: list[str], peer: dict) -> None:
         self.state.counters["stats"] += 1
@@ -208,6 +248,7 @@ class GameServer:
         # small and monotonic; ciphertext would look random).
         self.state.counters["inband_received"] += 1
         if len(data) >= 9:
+            peer["inband_seen"] = True
             seq = struct.unpack_from("<i", data, 0)[0]
             server_id = data[4]
             message_ack = struct.unpack_from("<i", data, 5)[0]
@@ -221,68 +262,6 @@ class GameServer:
                       "length": len(data), "body_len": len(body),
                       "body_head": body[:48].hex(),
                       "body_nonzero": sum(1 for b in body[:48] if b) > 0})
-            # Answer with the same shape the client uses: seq(4) + serverId(1)
-            # + messageAck(4) + body.  The high bit is the netchan FRAGMENT_BIT,
-            # which marks reliable commands; the bridge (and possibly the client)
-            # treat such packets specially, so set it to test acknowledgement.
-            self.server_seq = getattr(self, "server_seq", 0) + 1
-            peer["last_server_seq"] = self.server_seq
-            # Build an outbound packet the client can actually decrypt.
-            # CL_Netchan_Decode uses key = challenge ^ outgoingSequence with the
-            # server's lastClientCommandString as the rolling term.  Our server
-            # keeps that string empty, so the key is constant per packet and we
-            # can cipher with a plain XOR.  The body is the gamestate plaintext
-            # we recovered from a real 2697 capture (map name and serverinfo
-            # included), so this is a byte-exact replay test.
-            self.server_seq = getattr(self, "server_seq", 0) + 1
-            peer["last_server_seq"] = self.server_seq
-            # Emit the reassembled gamestate as the same fragment structure a
-            # real server used: seq|FRAGMENT_BIT, index, count-1, stride, chunk,
-            # then XOR(data).  The ten-byte fragment header is plaintext; only
-            # the data is ciphered (index 0 keeps its first four bytes intact).
-            payload = GAMESTATE_PLAINTEXT
-            frag_size = 1162
-            if payload:
-                count = (len(payload) + frag_size - 1) // frag_size
-                stride = frag_size
-                # All fragments of ONE message share a single sequence; the
-                # reference capture used seq=3 for index 0,1,2 alike.  Only the
-                # next message gets the next sequence.
-                # We read the client's incomingSequence at connection+0x34 and it
-                # was 1, so the client expects the NEXT server sequence to be 2.
-                # Start there instead of at 3.
-                self.server_seq = getattr(self, "server_seq", 1) + 1
-                seq_word = (self.server_seq | 0x80000000) & 0xFFFFFFFF
-                key = ((peer.get("challenge") or 0) ^ (seq_word & 0x7FFFFFFF)) & 0xFF
-                for index in range(count):
-                    chunk = payload[index * frag_size:(index + 1) * frag_size]
-                    data = bytearray(chunk)
-                    if index == 0:
-                        for i in range(4, len(data)):
-                            data[i] ^= key
-                    else:
-                        for i in range(len(data)):
-                            data[i] ^= key
-                    header = (struct.pack("<I", seq_word) + bytes([index & 0xFF])
-                              + bytes([(count - 1) & 0xFF])
-                              + struct.pack("<H", stride)
-                              + struct.pack("<H", len(chunk)))
-                    packet = header + bytes(data)
-                    self.sock.sendto(packet, addr)
-                    self.state.counters["inband_sent"] += 1
-                    self.log({"dir": "out", "kind": "fragment", "to": f"{addr[0]}:{addr[1]}",
-                              "seq": seq_word & 0x7FFFFFFF, "index": index,
-                              "count": count, "stride": stride, "chunk": len(chunk),
-                              "length": len(packet)})
-            key = (peer.get("challenge") or 0) ^ self.server_seq
-            cipher = bytes(b ^ ((key >> 0) & 0xFF) for b in plain)
-            packet = struct.pack("<I", self.server_seq) + cipher
-            self.sock.sendto(packet, addr)
-            self.state.counters["inband_sent"] += 1
-            self.log({"dir": "out", "kind": "inband", "to": f"{addr[0]}:{addr[1]}",
-                      "seq": self.server_seq, "key": key & 0xFF,
-                      "plain_len": len(plain), "length": len(packet),
-                      "plain_head": plain[:24].hex()})
         else:
             self.log({"dir": "in", "kind": "inband_short", "from": f"{addr[0]}:{addr[1]}",
                       "length": len(data), "hex": data[:64].hex()})
@@ -295,10 +274,12 @@ class GameServer:
             try:
                 data, addr = self.sock.recvfrom(65535)
             except socket.timeout:
+                self.send_due_gamestates()
                 continue
             except OSError:
                 break
             self.handle(data, addr)
+            self.send_due_gamestates()
         self.log({"dir": "meta", "kind": "stop", "counters": self.state.counters})
 
 
@@ -306,8 +287,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=28971)
     parser.add_argument("--log", default="runs/gs.jsonl")
+    parser.add_argument("--delay-send", type=float, default=0.0,
+                        help="seconds after connect before sending gamestate")
     args = parser.parse_args()
-    server = GameServer(args.port, args.log)
+    if args.delay_send < 0:
+        parser.error("--delay-send must be nonnegative")
+    server = GameServer(args.port, args.log, args.delay_send)
     try:
         server.serve()
     except KeyboardInterrupt:
