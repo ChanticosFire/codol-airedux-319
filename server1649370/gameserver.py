@@ -95,7 +95,8 @@ class GameServer:
                  snapshot_seq: int = 5, snapshot_repeat: int = 0,
                  snapshot_interval: float = 0.5,
                  command_path: str | None = None, command_delay: float = 2.0,
-                 command_seq: int = 4, configstring_file: str | None = None):
+                 command_seq: int = 4, configstring_file: str | None = None,
+                 command_repeat: int = 1, command_interval: float = 5.0):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -116,6 +117,8 @@ class GameServer:
         self.command_path = Path(command_path) if command_path else None
         self.command_delay = command_delay
         self.command_seq = command_seq
+        self.command_repeat = max(1, command_repeat)
+        self.command_interval = max(0.2, command_interval)
         self.configstrings = DEFAULT_CONFIGSTRINGS
         if configstring_file:
             self.configstrings = self._load_configstrings(Path(configstring_file))
@@ -263,28 +266,34 @@ class GameServer:
                 peer["snapshot_sent"] = False
             if self.command_path:
                 peer["command_due"] = time.monotonic() + self.command_delay
-                peer["command_sent"] = False
+                peer["command_count"] = 0
 
     def send_due_commands(self) -> None:
-        """Send the captured server-command stream before the first snapshot."""
+        """Send the captured server-command stream once per configured repeat."""
         if not self.command_path:
             return
         for addr, peer in self.state.peers.items():
             due = peer.get("command_due")
-            if due is None or peer.get("command_sent") or time.monotonic() < due:
+            if due is None or time.monotonic() < due:
+                continue
+            count = peer.get("command_count", 0)
+            if count >= self.command_repeat:
+                peer["command_due"] = None
                 continue
             try:
                 data = self.command_path.read_bytes()
             except OSError as error:
-                peer["command_sent"] = True
+                peer["command_due"] = None
                 self.log({"dir": "meta", "kind": "command_missing", "error": str(error)})
                 continue
-            peer["command_sent"] = True
+            seq = self.command_seq + count
             payload = b"\x00\x00\x00\x00" + data
             self.log({"dir": "meta", "kind": "command_source",
                       "path": str(self.command_path), "payload_length": len(payload),
-                      "seq": self.command_seq, "payload_head": payload[:48].hex()})
-            self._send_fragments(addr, peer, payload, self.command_seq, "command")
+                      "seq": seq, "repeat": count + 1, "payload_head": payload[:48].hex()})
+            self._send_fragments(addr, peer, payload, seq, "command")
+            peer["command_count"] = count + 1
+            peer["command_due"] = time.monotonic() + self.command_interval
 
     def _send_fragments(self, addr: tuple, peer: dict, payload: bytes, seq: int,
                         kind: str, frag_size: int = 1162) -> None:
@@ -471,6 +480,10 @@ def main() -> int:
     parser.add_argument("--command-seq", type=int, default=4)
     parser.add_argument("--configstring-file", default=None,
                         help="JSON [[index, value], ...] replacing the built-in configstrings")
+    parser.add_argument("--command-repeat", type=int, default=1,
+                        help="how many times to send the server-command stream")
+    parser.add_argument("--command-interval", type=float, default=5.0,
+                        help="seconds between repeated server-command streams")
     args = parser.parse_args()
     if args.delay_send < 0:
         parser.error("--delay-send must be nonnegative")
@@ -493,7 +506,7 @@ def main() -> int:
                         args.snapshot_file, args.snapshot_delay, args.snapshot_seq,
                         args.snapshot_repeat, args.snapshot_interval,
                         args.command_file, args.command_delay, args.command_seq,
-                        args.configstring_file)
+                        args.configstring_file, args.command_repeat, args.command_interval)
     try:
         server.serve()
     except KeyboardInterrupt:

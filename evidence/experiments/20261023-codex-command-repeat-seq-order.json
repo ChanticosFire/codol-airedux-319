@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T12:10:00+00:00",
+  "scope": "repeated server-command streams: high seq numbers made the client drop the later snapshot",
+  "experiment_1": {
+    "command_repeat": 20,
+    "command_interval_s": 3,
+    "command_seq_base": 4000,
+    "snapshot_seq": 5,
+    "result": "state stayed 9, usercmd 0, messageAck 1 - the snapshot seq 5 was older than the last command seq 4019 and got dropped"
+  },
+  "fix": {
+    "command_seq_rule": "command_seq + repeat index (4,5,6,...) so every outbound seq increases",
+    "snapshot_seq": 1000,
+    "result": "state 10, usercmd 17, messageAck 1053 - the snapshot was accepted"
+  },
+  "rendering": {
+    "state_9_screenshot": "loading screen visible behind the desktop chat window (unique=3438, mean=52)",
+    "state_10_screenshot": "black again (unique=5, max=21)",
+    "reading": "the loading screen renders correctly in state 9; the game view is black in state 10, matching the user's observation"
+  },
+  "answer_to_question": {
+    "current_mode": "protocol-level server stand-in: the client runs its native connect path (getchallenge -> connect -> stats -> gamestate -> snapshots) and loads mp_cross_fire itself",
+    "not_forced": "no clc.state memory patch and no UI skip; the client decides to enter the map",
+    "not_room_hosting": "the server has no world/level/match logic yet; it only speaks the wire protocol",
+    "why_black": "the base snapshot has an empty actor block and no client entities, so the game layer has no local player/camera to render"
+  },
+  "artifacts": {
+    "state9_png": "runs/codex-r9-screenshot.png",
+    "state10_png": "runs/codex-r9b-screenshot.png",
+    "server_log": "runs/codex-r9b-gs.jsonl"
+  }
+}
