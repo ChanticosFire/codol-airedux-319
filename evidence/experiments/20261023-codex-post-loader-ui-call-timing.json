@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T10:20:00+00:00",
+  "scope": "post-loader UI call 0x76EDF0 runs ~10 s; the [0xE89B10] UI object fields stay zero",
+  "timings": {
+    "MapLoading_enter": 1792747042.01,
+    "AfterUIUpdate_0x5157A2": 1792747052.145,
+    "ui_call_duration_s": 10.14,
+    "eax_at_return": "0xff7fffff",
+    "final_state": 10,
+    "ui_state": 5
+  },
+  "ui_object_0xE89B10": {
+    "object": "0x8113F98",
+    "plus_8_byte": 0,
+    "plus_C_dword": 0,
+    "plus_10_dword": 1760288,
+    "plus_40_dword": 0,
+    "plus_44_dword": 0,
+    "consumer": "0x515754..0x51579D passes byte[+8] through 0x76EDF0; 0x444240 skips when [+0xC] == 0"
+  },
+  "reading": "the MapLoading return path spends another ~10 s inside the UI call, then sets state 9. The UI object used by that path still has zero at +8/+0xC, so the loading screen has no map/status text and may never be told to close. eax=0xFF7FFFFF looks like an uninitialised/limit float rather than a success code.",
+  "next": [
+    "disassemble 0x76EDF0's body (0x76EDF0..0x76F14F) to see what it waits on for 10 s",
+    "find writers of [0xE89B10]+8 and +0xC",
+    "check 0x444240 (map-name/UI text path) to identify the expected string source"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-74bcf0c1/events.jsonl",
+    "server_log": "runs/codex-r5-gs.jsonl",
+    "forward": "runs/codex-r5-forward.json",
+    "status": "runs/codex-r5-status.json"
+  }
+}
