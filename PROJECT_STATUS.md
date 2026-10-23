@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Model corrected: header once, then one delta record per field]**
+> loop2 with two full headers: ps_field count 1, stream_error 1. So the second header breaks it; per-iteration structure differs from the prologue.
+> Corrected: prologue 8 bits (has-ps, mode, last, present) + per field [continuation, V, distance, value] + terminator continuation 0. Accepted body = 8+20+1 = 29 exactly.
+> Next: one header + two records + terminator = 25 bits; expect two decodes.
+> Evidence: [header once](evidence/experiments/20261023-codex-header-once-records-after.json).
 > **2026-10-23 [MAJOR: ps block is a per-field LOOP; accepted body decodes exactly 1 field]**
 > PsField probe on the accepted single22 body: exactly ONE decode, table index 0 (offset 0, codec -97), state 10. 29 bits = 14 prologue + 13 distance + 1 gate + 1 exit.
 > So: each iteration starts with has-ps (0 ends); one iteration = one field; fields decode IN ORDER from index 0; V = how many fields to reach. Every 'index 22' body actually wrote field 0 (commandTime), which explains the overruns and crashes.
