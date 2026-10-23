@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T08:00:00+00:00",
+  "scope": "MAGNITUDE RULED OUT: 4096 (a single set bit, larger than 2048) also costs 55 bits, so the 42-bit jump is triggered by a BIT PATTERN",
+  "points": [
+    {
+      "value": 256,
+      "set_bits": "bit 8",
+      "ps_bits": 55
+    },
+    {
+      "value": 512,
+      "set_bits": "bit 9",
+      "ps_bits": 55
+    },
+    {
+      "value": 1024,
+      "set_bits": "bit 10",
+      "ps_bits": 55
+    },
+    {
+      "value": 2048,
+      "set_bits": "bit 11",
+      "ps_bits": 55
+    },
+    {
+      "value": 4096,
+      "set_bits": "bit 12",
+      "ps_bits": 55
+    },
+    {
+      "value": 5830,
+      "set_bits": "bits 1,2,6,7,8,10,12",
+      "ps_bits": 97
+    }
+  ],
+  "conclusion": [
+    "five single-bit values spanning bits 8..12 ALL cost 55 bits, including one LARGER than the last flat point",
+    "so the cost does not depend on magnitude and not on bit length",
+    "5830 is the only expensive value and it is the only one with MULTIPLE low bits set (bits 1, 2) as well as high ones",
+    "that points at a per-set-bit or low-bit-pattern cost inside the codec rather than a magnitude threshold"
+  ],
+  "next_candidates": [
+    "test 6 (bits 1 and 2 only) - if it costs 55, low bits alone are harmless",
+    "test 1742 (5830 with bit 12 cleared) - if it costs 97, bit 12 is irrelevant and the low bits carry the cost",
+    "test 5830 with the low bits cleared (5830 & ~6 = 5824) - the complement"
+  ],
+  "why_this_is_progress": [
+    "a magnitude threshold would have required an unbounded search",
+    "a bit-pattern trigger is a FINITE question: 32 bits, each testable, and the low-bit pair is the obvious first candidate"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r198-gs.jsonl"
+  }
+}
