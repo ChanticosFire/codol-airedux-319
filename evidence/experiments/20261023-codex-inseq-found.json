@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T10:50:00+00:00",
+  "scope": "read netchan sequence fields from a populated connection object",
+  "session": {"client": "20261023-seq2, pid 7296", "server": "server1649370 on 28971"},
+  "verified_facts": {
+    "connection": "0x130c0abc",
+    "object_populated": "connection_adr.type = 2 (non-empty this run)",
+    "hex_0x0_to_0x60": "00000000 00000000 3e890000 c9530000 00000000 02000000 00000000 00000000 00000000 00000000 9d000000 00000000 99510000 01000000 00000000 00000000 ...",
+    "decoded_ints": {
+      "0x08": 35134,
+      "0x0c": 21449,
+      "0x14": 2,
+      "0x28": 157,
+      "0x30": 20889,
+      "0x34": 1
+    },
+    "ring_b": {"read": 5, "write": 5},
+    "stage": 5,
+    "state": 5
+  },
+  "candidate_interpretation": {
+    "0x34_equals_1": "a lone small integer with value 1; in a netchan structure this is the most plausible incomingSequence / incomingReliableAcknowledge slot",
+    "0x28_equals_157": "matches connection_adr.channel, so 0x28 belongs to the address block",
+    "0x30_20889_and_0x0c_21449_and_0x08_35134": "large, likely timestamps or handles, not sequence counters"
+  },
+  "why_0x34_matters": {
+    "if_it_is_incomingSequence_equal_to_1": "the client expects the NEXT server sequence to be 2",
+    "we_send_sequence_3": "which would be rejected as out-of-order BEFORE payload parsing, explaining every failed attempt regardless of content",
+    "consistency_check": "the reference dedrun also started at seq=3, but its client had already exchanged packets 1 and 2 beforehand (the reference capture only shows in-band from seq 3 onward because 1-2 were the OOB handshake)"
+  },
+  "next": [
+    "test by emitting our fragments on seq=1 or seq=2 instead of 3, keeping everything else identical",
+    "if the client then advances stage/messageAck, the sequence offset was the blocker all along",
+    "alternatively set the field at conn+0x34 to 2 (so it expects 3) and resend with seq=3"
+  ],
+  "artifacts": ["runs/seq2-status.json"]
+}
