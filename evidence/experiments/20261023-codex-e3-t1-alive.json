@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T20:40:00+00:00",
+  "scope": "changed=1 + codec=1 + last=1 with a single eType field survives",
+  "body": {
+    "file": "runs/snapshot-e3-t1.bin",
+    "bytes": 172,
+    "layout": "count1 header + changed(1)=1 + codec(1)=1 + last(6)=1 + gap(1) + eType raw byte 1 + actor/sub4/glass + EOF"
+  },
+  "result": {
+    "client": "alive (pid 37720)",
+    "entity_count": 0,
+    "connection": "did not visibly reach state 10 in this short run"
+  },
+  "significance": [
+    "this is the first entity body with real field data that does NOT crash",
+    "it confirms the crash was caused by codec=1 with last=0 (declared fields but no room), not by field data itself",
+    "entity_count stayed 0, so either the short run did not complete the handshake or the header still needs adjusting"
+  ],
+  "next": [
+    "rerun the same body with the normal 120s window and confirm state 10 + entity_count",
+    "then extend from one field (eType) to eType + three positions"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r55-gs.jsonl",
+    "body": "runs/snapshot-e3-t1.bin"
+  }
+}
