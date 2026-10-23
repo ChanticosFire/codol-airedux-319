@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T23:15:00+00:00",
+  "scope": "breakthrough: entity_count=1 in a full session when the actor block is removed",
+  "body": {
+    "file": "runs/snapshot-no-actor.bin",
+    "bytes": 169,
+    "layout": "count1 header + 9 zero bits + EOF (no actor/sub4/glass)"
+  },
+  "result": {
+    "client": "alive (pid 31800)",
+    "state": 9,
+    "entity_count": 1
+  },
+  "significance": [
+    "this is the first full session where entity_count became 1, so the entity-table header (1/1/8/12) does work",
+    "the same body WITH the actor/sub4/glass tail crashed (c0k0l0), so the crash cause is the tail block placement, not the entity table",
+    "state stayed 9 because the snapshot then ends without the rest of the game state"
+  ],
+  "next": [
+    "find the correct tail layout: the entity body is 9 bits after bit 1329, so the actor block should start at bit 1338",
+    "try actor at bit 1338 with the originally captured pattern (0,1,2047) and see whether the crash returns",
+    "if it does, vary the actor block length/values"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r59-gs.jsonl",
+    "body": "runs/snapshot-no-actor.bin"
+  }
+}
