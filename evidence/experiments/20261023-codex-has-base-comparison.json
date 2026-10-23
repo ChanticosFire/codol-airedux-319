@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T20:35:00+00:00",
+  "scope": "has_base=1 without a prior base snapshot is rejected; only the 2697-derived header is accepted",
+  "comparison": [
+    {
+      "body": "hybrid 167B (2697 header + empty actors)",
+      "has_base": 0,
+      "result": "accepted (state 10)"
+    },
+    {
+      "body": "hand-built 14B (empty entity table + empty ps)",
+      "has_base": 0,
+      "result": "state 9, ack not advanced"
+    },
+    {
+      "body": "hand-built 14B with has_base=1",
+      "has_base": 1,
+      "result": "state 9, ack not advanced, accepted=0"
+    },
+    {
+      "body": "2697 slice 211B/612B",
+      "has_base": "n/a",
+      "result": "client crash"
+    }
+  ],
+  "session": {
+    "pid": 15304,
+    "state": 9,
+    "ack": 1,
+    "accepted": 0,
+    "cl_snap": "all zero"
+  },
+  "conclusion": "has_base=1 requires a previously accepted base; our hand-built header is too small - the 164-byte 2697 prefix carries structure the parser needs beyond the 8-byte header",
+  "next": [
+    "diff the hybrid prefix byte-by-byte against the hand-built header to find the required structure",
+    "extend the hand-built body to reproduce that structure, then append real entity/ps fields",
+    "keep the hybrid 167B as the only accepted fallback"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r24-gs.jsonl",
+    "bodies": [
+      "runs/snapshot-ps-empty-base1.bin",
+      "runs/snapshot-hybrid-empty-actors.bin"
+    ]
+  }
+}

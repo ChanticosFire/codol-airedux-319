@@ -81,10 +81,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=Path("runs/snapshot-empty-entity-table.bin"))
     parser.add_argument("--server-time", type=int, default=SERVER_TIME)
+    parser.add_argument("--has-base", type=int, default=0)
     parser.add_argument("--entity", type=int, action="append", default=[],
                         help="entity id to include (repeatable)")
     args = parser.parse_args()
-    payload = build(server_time=args.server_time, entity_ids=tuple(args.entity))
+    payload = build(server_time=args.server_time, entity_ids=tuple(args.entity), has_base=args.has_base)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_bytes(payload)
     print(f"wrote {args.out} ({len(payload)} bytes) sha256={hashlib.sha256(payload).hexdigest()}")
