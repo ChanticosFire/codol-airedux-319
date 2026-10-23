@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【确认 CL_MapLoading 执行，修正上一轮判断】** ✅同一会话中 `0x51574F`（调用点）、`0x453760`（CL_MapLoading）、`0x472810`（快照接受）三断点全部命中：加载器于 1792746647.12 进入，快照在 1792746666.48 被接受（19.4 秒），最终 state 10、无 Com Error。上一会话未命中属时序差异，不能说明加载器被跳过。✅statResponse 延迟改为 0.8/2.0/4.0 秒后仍稳定到 10。剩余问题在“加载产物/世界内容”：UI 仍停在加载屏、渲染目标全黑。下一轮在 `0x515754`（返回点）与 `0x4549F0` 附近取证并读取 world/camera。证据：[JSON](evidence/experiments/20261023-codex-maploading-executes.json)。
+
 > **2026-10-23【state 8 阻塞定位到 0x451BD0（mp_ui_viewer）】** ✅同一轮装 `0x451BD0`/`0x453760`/`0x472810` 三个断点，只有 `0x451BD0` 命中（栈含 `mp_ui_viewer`），`CL_MapLoading` 与快照接受均未发生；客户端停在 state 8、`ring_b 5/21`。对照其他会话可到 state 10，说明卡点取决于客户端时序/资源而非网络载荷。下一轮查 `0x451BD0` 内部等待点。证据：[JSON](evidence/experiments/20261023-codex-state8-initworld-stall.json)。
 
 > **2026-10-23【排除 mapname 门；渲染目标本身全黑】** ✅在 state 9 把 `[0x333A8EC]+0xC` 写入 `mp_cross_fire`（回读成功），state 仍推进到 10，但 UI_STATE 保持 5；静态复查确认该字段走的是控制台命令历史（`0x76595A4`），不是 UI 门——上一轮推断已修正。✅`r_fullscreen 0` 后 PrintWindow 与桌面抓屏仍全黑（unique=1/mean=0），黑屏不是抓屏方式问题。✅state 10 时 demo 曾增长到 60–90KiB，说明帧循环在跑。下一轮查 state 8→9 的 0x515AD6 函数与渲染器 world/camera 指针。证据：[JSON](evidence/experiments/20261023-codex-mapname-patch-negative.json)。

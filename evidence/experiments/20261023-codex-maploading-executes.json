@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:25:00+00:00",
+  "scope": "CL_MapLoading is entered on this server; the stall is after loading, not before it",
+  "session": {
+    "breakpoints": [
+      "0x51574F:MapLoadingCallSite",
+      "0x453760:MapLoading",
+      "0x472810:Accepted"
+    ],
+    "hits": {
+      "MapLoadingCallSite": 1792746647.123775,
+      "MapLoading": 1792746647.124248,
+      "Accepted": 1792746666.479085
+    },
+    "delta_loading_to_snapshot_accept_s": 19.36,
+    "final_state": 10,
+    "ring_b": {
+      "read": 76,
+      "write": 76
+    },
+    "com_error": null
+  },
+  "reading": "the state-5 branch calls 0x51574F and CL_MapLoading (0x453760) runs; the first baseline snapshot is accepted about 19 s later. Previously the same breakpoints missed, which was a session/timing artifact rather than proof that the loader was skipped.",
+  "implication": "the client does execute the map-loading path; the remaining black screen / loading UI must come from what the loader produced (or failed to produce) and from the snapshot world content, not from a missing loader call",
+  "next": [
+    "breakpoint 0x515754 (return site of CL_MapLoading) to confirm the loader returns and record elapsed time",
+    "breakpoint inside the loader around the 0x4549F0 cod check and read the world/camera globals after return",
+    "compare a session that reaches state 10 quickly with one that stalls at state 8 to find the loader-side branch"
+  ],
+  "artifacts": {
+    "forward": "runs/codex-r4b-forward.json",
+    "server_log": "runs/codex-r4b-gs.jsonl",
+    "status": "runs/codex-r4b-status.json"
+  }
+}

@@ -337,7 +337,7 @@ class GameServer:
         # offsets so one of them lands after the state transition regardless of
         # frame timing; extra copies in later states are ignored.
         now = time.monotonic()
-        for offset in (0.15, 0.5, 1.0):
+        for offset in (0.8, 2.0, 4.0):
             self.pending_oob.append((now + offset, addr, f"statResponse {challenge}"))
 
     def flush_pending_oob(self) -> None:
