@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T15:00:00+00:00",
+  "scope": "a 612-byte 2697 snapshot slice also crashes the client",
+  "experiment": {
+    "file": "runs/snapshot-2697-body-612.bin",
+    "source": "first 612 bytes of the extracted 2697 snapshot body (first 0x05 byte after offset 500)",
+    "seq": 1000,
+    "result": "client exited again (same immediate flash-exit the user reported)",
+    "ack": 1
+  },
+  "candidates": {
+    "eof_offsets": [
+      77,
+      204,
+      267,
+      482,
+      611,
+      1233,
+      1242,
+      1356,
+      1987,
+      1996,
+      2113
+    ],
+    "note": "0x05 appears 52 times in the body; byte-level EOF scanning cannot identify a real snapshot boundary"
+  },
+  "conclusion": "2697 snapshot bytes are not a safe source for the 1649370 client; both the hand-built ps body and the 2697 slices crash. The only viable path is a fully hand-built playerState using the recovered 0x670FF0/0x670D30/0x670CB0 encoding.",
+  "next": [
+    "recover the field table that 0x670FF0 actually receives (the 0xDA63E8 dwords are not the ps field table: their type words do not match the -0x5E/-0x65/-0x66 cases)",
+    "alternative low-cost probe: try the client console command setviewpos in state 10 to move the camera without a ps",
+    "keep the 167-byte baseline as the accepted fallback"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r15-gs.jsonl",
+    "slice": "runs/snapshot-2697-body-612.bin"
+  }
+}
