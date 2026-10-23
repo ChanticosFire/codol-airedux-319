@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Frame-loop encoder overruns; the 5-bit value is a field distance]**
+> runs/_gen_ps_frame.py: ps entry 1308 -> actors entry 1390 (82 bits) with stream error 1 and state 9; 1390 > 1376 bits, so the block overran.
+> Re-read 0x670FF0: the 5-bit value advances the decoder position (distance), skipped fields are copy-only (0x670D30), only the landing field is decoded (0x6701D0). With V=8 it landed near index 7 and decoded many fields until overrun.
+> Next: choose V so the landing index is 8 (first origin component), supply only that field codec bits, verify the predicted actors entry bit.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps distance model](evidence/experiments/20261023-codex-ps-distance-model.json).
 > **2026-10-23 [BREAKTHROUGH: ps block is a frame loop that re-reads has-ps each iteration]**
 > 0x471A3E = loop head (read has-ps; 0 -> exit); 0x471A4D mode (bit+1 or 5-bit last); ring copy; 0x471B9E present bit (1 skip, 0 -> call 0x670FF0); 0x471CA3 loops back when no error.
 > Explains the round-58 measurement: all-zero body = 1+1+5+1+1 = 9-10 bits, matching the measured 10.

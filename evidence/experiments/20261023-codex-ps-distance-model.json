@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T20:55:00+00:00",
+  "scope": "frame-loop encoder overruns (82 bits) - the 5-bit value is a FIELD DISTANCE, not an absolute index",
+  "measurement": {
+    "body": "runs/snapshot-ps-frame-origin0.bin (172 B)",
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1390,
+    "ps_bits_consumed": 82,
+    "stream_error": 1,
+    "note": "1390 > 1376 (the body length) so the ps block overran the buffer",
+    "state": 9
+  },
+  "corrected_model_0x670FF0": {
+    "0x671023": "read 5 bits -> value V (bits from bsr(24): 5)",
+    "0x671033": "if V > count(24) -> error path",
+    "0x671052": "if V == -1 (all ones) -> special path 0x6710CD",
+    "0x67105C": "call 0x670CB0(stream, table) -> distance D",
+    "0x671061": "esi = edi(-1) + D ; edi++",
+    "0x671070": "for each index strictly between old and esi: call 0x670D30 = COPY (no bits)",
+    "0x6710AD": "decode the field at index esi via 0x6701D0 (bits read here)"
+  },
+  "reading": [
+    "the 5-bit value is not an absolute field index; it advances the decoder position (a field distance)",
+    "fields skipped by the advance are COPY-only (0x670D30 reads no bits), so only the landing field costs bits",
+    "that explains the 82-bit overrun: with V=8 the decoder landed near index 7 and decoded many fields, each reading bits, until it ran past the buffer"
+  ],
+  "next": [
+    "encode the advance as V so that the landing index is the field we want (e.g. V=9 to land on index 8, the first origin component)",
+    "then supply only that field's codec bits (positive width 10 = 1 zero-flag + 10 bits)",
+    "expect ps consumption = 1+1+5 (header) + 1 (present) + 1 (continuation) + 5 (V) + distance bits + 1 + 10 + 1 (exit) and verify against the actors entry bit"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r109-gs.jsonl",
+    "encoder": "runs/_gen_ps_frame.py"
+  }
+}
