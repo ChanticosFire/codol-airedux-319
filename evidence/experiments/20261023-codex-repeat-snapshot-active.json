@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:55:00+00:00",
+  "scope": "repeat baseline snapshots keep the client active and are acknowledged",
+  "verified": [
+    "a 20 second wait after login lets the client load its character (connect rank=69); without it rank=0 and the client stalls at state 6",
+    "state 4->5->7->8->9->10 on the same native gamestate + 167-byte baseline snapshot",
+    "60 baseline snapshots were sent at 0.5 s intervals (seq 4..63); the client acknowledged up to messageAck=63",
+    "the client kept sending 69-byte usercmds (25 packets, seq 24..60) and stayed in state 10 until the bridge stopped",
+    "no Com Error or Fatal error was captured during the repeat window"
+  ],
+  "snapshot_sends": 60,
+  "usercmd_packets": 25,
+  "usercmd_first": {
+    "seq": 24,
+    "ack": 10,
+    "body_head": "00000000880b0a0a0a7b7e6b666124626b662a3a2a3a2a3a2a3a2a3a2a3a0a08ce290b0a0bbe0a050aca674f0a0a7dce"
+  },
+  "usercmd_last": {
+    "seq": 60,
+    "ack": 63,
+    "body_head": "000000003d3e3f3f3f4e4b5e535411575e531f0f1f0f1f0f1f0f1f0f1f0f3f3d03b23e3f3dcb3f303fff527a3f3f48fb"
+  },
+  "state_timeline": [
+    {
+      "t": 319958.576,
+      "state": 0
+    },
+    {
+      "t": 319959.587,
+      "state": 4
+    },
+    {
+      "t": 319959.696,
+      "state": 5
+    },
+    {
+      "t": 319959.905,
+      "state": 7
+    },
+    {
+      "t": 319969.716,
+      "state": 8
+    },
+    {
+      "t": 319979.551,
+      "state": 9
+    },
+    {
+      "t": 319988.631,
+      "state": 10
+    }
+  ],
+  "final_state": 10,
+  "snapshot_source": {
+    "ts": 1792744565.060617,
+    "dir": "meta",
+    "kind": "snapshot_source",
+    "path": "runs\\snapshot-hybrid-empty-actors.bin",
+    "payload_length": 171,
+    "seq": 4,
+    "payload_head": "0000000000001a0100000c960760001800c06d45b100004443000077c4000000002b0000000000000000641ce70100004099000070423c0c1ce718000400e617"
+  },
+  "artifacts": {
+    "server_log": "runs/codex-repeat3-gs.jsonl",
+    "forward": "runs/codex-repeat3-forward.json",
+    "launch": "runs/codex-repeat3-launch.out",
+    "login": "runs/codex-repeat3-login.json",
+    "events": "runs/codex-repeat3-events.jsonl"
+  },
+  "remaining": [
+    "screen capture still black; in-world rendering not visually verified",
+    "snapshot body is still the 2697-derived baseline; entity/player state is not native",
+    "usercmd body is not decoded yet",
+    "match end and return to lobby not attempted"
+  ]
+}

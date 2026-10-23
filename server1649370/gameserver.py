@@ -92,7 +92,8 @@ class GameServer:
                  checksum_feed: int | None = None, gamestate_source: str = "native",
                  registration_checksum: int = 0xFFB56D7E,
                  snapshot_path: str | None = None, snapshot_delay: float = 3.0,
-                 snapshot_seq: int = 4):
+                 snapshot_seq: int = 4, snapshot_repeat: int = 0,
+                 snapshot_interval: float = 0.5):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -108,6 +109,8 @@ class GameServer:
         self.snapshot_path = Path(snapshot_path) if snapshot_path else None
         self.snapshot_delay = snapshot_delay
         self.snapshot_seq = snapshot_seq
+        self.snapshot_repeat = snapshot_repeat
+        self.snapshot_interval = snapshot_interval
         self.pending_oob: list[tuple[float, tuple, str]] = []
 
     # ------------------------------------------------------------------ logging
@@ -262,25 +265,35 @@ class GameServer:
                       "stride": frag_size, "chunk": len(chunk), "length": len(packet)})
 
     def send_due_snapshots(self) -> None:
-        """Send the staged snapshot once the gamestate has been acknowledged."""
+        """Send the staged snapshot; optionally repeat it to keep the client active."""
         if not self.snapshot_path:
             return
         for addr, peer in self.state.peers.items():
             due = peer.get("snapshot_due")
-            if due is None or peer.get("snapshot_sent") or time.monotonic() < due:
+            if due is None or time.monotonic() < due:
                 continue
             try:
                 data = self.snapshot_path.read_bytes()
             except OSError as error:
-                peer["snapshot_sent"] = True
+                peer["snapshot_due"] = None
                 self.log({"dir": "meta", "kind": "snapshot_missing", "error": str(error)})
                 continue
-            peer["snapshot_sent"] = True
+            index = peer.get("snapshot_index", 0)
             payload = b"\x00\x00\x00\x00" + data
-            self.log({"dir": "meta", "kind": "snapshot_source", "path": str(self.snapshot_path),
-                      "payload_length": len(payload), "seq": self.snapshot_seq,
-                      "payload_head": payload[:64].hex()})
-            self._send_fragments(addr, peer, payload, self.snapshot_seq, "snapshot")
+            if len(payload) >= 9 and payload[4] == 0:
+                server_time = 72192 + index * 500
+                payload = payload[:5] + struct.pack("<I", server_time) + payload[9:]
+            seq = self.snapshot_seq + index
+            self._send_fragments(addr, peer, payload, seq, "snapshot")
+            peer["snapshot_index"] = index + 1
+            if self.snapshot_repeat and index + 1 < self.snapshot_repeat:
+                peer["snapshot_due"] = time.monotonic() + self.snapshot_interval
+            else:
+                peer["snapshot_due"] = None
+            if index == 0:
+                self.log({"dir": "meta", "kind": "snapshot_source",
+                          "path": str(self.snapshot_path), "payload_length": len(payload),
+                          "seq": seq, "payload_head": payload[:64].hex()})
 
     def on_stats(self, addr: tuple, args: list[str], peer: dict) -> None:
         self.state.counters["stats"] += 1
@@ -290,10 +303,12 @@ class GameServer:
         # Echo the challenge the client was given: a bare 0 does not let the
         # client confirm that it is talking to the server that issued it.
         # The client only accepts statResponse in state 5, but it sends stats
-        # in the same burst as connect (state 4).  Hold the reply briefly so
-        # connectResponse is consumed first; otherwise the client drops the
-        # stats reply and reconnects forever.
-        self.pending_oob.append((time.monotonic() + 0.35, addr, f"statResponse {challenge}"))
+        # in the same burst as connect (state 4).  Re-send the reply on a few
+        # offsets so one of them lands after the state transition regardless of
+        # frame timing; extra copies in later states are ignored.
+        now = time.monotonic()
+        for offset in (0.15, 0.5, 1.0):
+            self.pending_oob.append((now + offset, addr, f"statResponse {challenge}"))
 
     def flush_pending_oob(self) -> None:
         if not self.pending_oob:
@@ -400,6 +415,10 @@ def main() -> int:
     parser.add_argument("--snapshot-delay", type=float, default=3.0,
                         help="seconds after gamestate before the snapshot is sent")
     parser.add_argument("--snapshot-seq", type=int, default=4)
+    parser.add_argument("--snapshot-repeat", type=int, default=0,
+                        help="total snapshot sends; 0 = send once")
+    parser.add_argument("--snapshot-interval", type=float, default=0.5,
+                        help="seconds between repeated snapshots")
     args = parser.parse_args()
     if args.delay_send < 0:
         parser.error("--delay-send must be nonnegative")
@@ -409,9 +428,14 @@ def main() -> int:
         parser.error("--snapshot-delay must be nonnegative")
     if not 0 < args.snapshot_seq <= 0x7FFFFFFF:
         parser.error("--snapshot-seq must be a positive 31-bit integer")
+    if args.snapshot_repeat < 0:
+        parser.error("--snapshot-repeat must be nonnegative")
+    if args.snapshot_interval <= 0:
+        parser.error("--snapshot-interval must be positive")
     server = GameServer(args.port, args.log, args.delay_send, args.checksum_feed,
                         args.gamestate_source, args.registration_checksum,
-                        args.snapshot_file, args.snapshot_delay, args.snapshot_seq)
+                        args.snapshot_file, args.snapshot_delay, args.snapshot_seq,
+                        args.snapshot_repeat, args.snapshot_interval)
     try:
         server.serve()
     except KeyboardInterrupt:
