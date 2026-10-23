@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T12:55:00+00:00",
+  "scope": "added an encoder verification that decodes the real accepted body and asserts the exact field sequence",
+  "tool": {
+    "path": "tools/verify_encoder.py",
+    "input": "runs/snapshot-single22.bin (the only playerState body the client accepts reproducibly)",
+    "assertions": [
+      "has-ps == 1",
+      "mode == 0",
+      "last == 0",
+      "present == 0",
+      "continuation == 1",
+      "V == 22",
+      "distance == 23",
+      "codec-11 landing value == 0",
+      "exit == 0",
+      "ps length == 29 bits"
+    ],
+    "result": "ps block at bit 1308, consumed 29 bits (expected 29); verify_encoder failures: 0"
+  },
+  "why_it_matters": [
+    "the encoder is no longer validated only against itself: it now round-trips a body the CLIENT accepted",
+    "the 29-bit length and the whole field sequence are pinned, so any future encoder change that breaks the accepted layout fails this check immediately",
+    "it runs in seconds and needs no client session"
+  ],
+  "also": "RELEASE.md gained a Self-checks section pointing at both this and the ps_codec self test",
+  "artifacts": {
+    "tool": "tools/verify_encoder.py",
+    "module": "server1649370/ps_codec.py"
+  }
+}

@@ -195,3 +195,19 @@ The capabilities above are **delivered and reproducible**. The visible world is
 cgame has no scene data. The blockers, the exact addresses, the cost model that
 is already solved, and the two routes that would unblock it are documented in
 **`docs/PHASE-SUMMARY.md`**.
+
+### Self-checks
+
+Two commands prove the encoder and the runner are sane without launching a match:
+
+```powershell
+python -m server1649370.ps_codec      # bit-level gap/codec round-trip -> "self-test failures: 0"
+python tools/verify_encoder.py        # decodes the real accepted body -> "ps block at bit 1308,
+                                      #  consumed 29 bits (expected 29)", "failures: 0"
+```
+
+`verify_encoder.py` reads `runs/snapshot-single22.bin` - the only playerState
+carrying body the client accepted reproducibly - and asserts the exact field
+sequence (`has-ps 1, mode 0, last 0, present 0, continuation 1, V 22, distance 23,
+codec-11 value 0, exit 0`, 29 bits). A change that breaks the encoder cannot pass
+this check.

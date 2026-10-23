@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Hardening: encoder verified against the accepted body]**
+> tools/verify_encoder.py decodes runs/snapshot-single22.bin and asserts the full field sequence and 29-bit length: "ps block at bit 1308, consumed 29 bits", failures 0.
+> The encoder now round-trips a body the client accepted, not just itself; any breaking change fails in seconds without a client session. RELEASE.md gained a Self-checks section.
+> Evidence: [encoder verified against client](evidence/experiments/20261023-codex-encoder-verified-against-client.json).
 > **2026-10-23 [Hardening: delivery assertion in run_match.py, verified live]**
 > verify_delivery() records {forward_summary, snapshots_queued, ok} and warns when ok is false. Live run: ok True, 20 snapshots, states 8->10->10->10.
 > Encodes the round-143 lesson (two sessions wasted on non-delivering runs). Deliberate hardening per the frozen-phase decision.
