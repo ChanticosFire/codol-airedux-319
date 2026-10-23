@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Bisect A: room is consumed as actor data]**
+> value 0 + 60 room: ps 29, actors 1337, decide stream_error 1 (parse FAILS), state 9, client ALIVE. Three-way: single22 (29/0) parse OK state 10; bisect-a (29/60) parse FAIL; room60 (32/60) parse OK but CRASH.
+> So the room is consumed by the actors block, not padding; room60's crash is consistent with bogus actor records plus a non-zero ps value.
+> Next: sweep tail offset for value 5 (+0, +3, +8, +16 bits) with NO room.
+> Evidence: [bisect a](evidence/experiments/20261023-codex-bisect-a.json).
 > **2026-10-23 [room60 alone: clean parse confirmed, client crashes]**
 > Single body: actors error 0 at 1340, decide stream_error 0, client gone from t=32. Parsing solved and reproducible; crash remains.
 > Two variables differ from the accepted body: value (0 vs 5) and 60 zero room. Bisect: A = value 0 + room; B = value 1 + room.

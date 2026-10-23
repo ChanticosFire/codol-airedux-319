@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T19:00:00+00:00",
+  "scope": "bisect A: value 0 + 60 zero room does NOT crash but FAILS the parse - so the room itself is interpreted as data",
+  "body": "runs/snapshot-bisect-a.bin (zero gate, ps 29 bits, 60 zero bits, tail)",
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "ps_bits": 29,
+    "actors_entry_bit": 1337,
+    "actors_entry_error": 0,
+    "decide_stream_error": 1,
+    "states": {"t=25": 9, "t=32": 9, "t=40": 9, "t=48": 9, "t=56": 9, "t=62": 9},
+    "client": "ALIVE throughout (no crash)"
+  },
+  "three_way_comparison": {
+    "single22": {"ps": 29, "room": 0, "parse": "OK", "state": 10, "client": "alive"},
+    "bisect_a": {"ps": 29, "room": 60, "parse": "FAIL (stream_error 1)", "state": 9, "client": "alive"},
+    "room60": {"ps": 32, "room": 60, "parse": "OK", "state": 9, "client": "CRASH"}
+  },
+  "reading": [
+    "the zero-value body works ONLY when the tail follows the ps immediately; inserting 60 zero bits makes the parse fail",
+    "this means the actors block reads those bits as actor data and runs out of stream - the room is not 'padding', it is consumed",
+    "in room60 the same room is consumed the same way, yet the parse reports OK; the difference must be that the ps is 3 bits longer so the tail lands differently",
+    "and room60 CRASHES while bisect_a does not: the crash appears only in the body that both parses OK and contains the non-zero value",
+    "a consistent explanation: the 60 room bits become bogus actor records, and with a non-zero playerstate value in the mix cgame tries to use them and dies"
+  ],
+  "next": [
+    "sweep the tail offset for the value-5 body: tail immediately after the ps (offset 0), then +3, +8 and +16 bits",
+    "if one of those offsets parses OK (stream_error 0) WITHOUT room, then no bogus actors are created and the crash may disappear",
+    "that sweep is the direct way to separate 'alignment' from 'bogus actor records'"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r168-gs.jsonl",
+    "encoder": "runs/_gen_bisect_a.py"
+  }
+}
