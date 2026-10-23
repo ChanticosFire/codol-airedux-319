@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T02:11:00+00:00",
+  "scope": "count CL_Init / cl-creation / CL_Shutdown around one 0x5B2C10 connection attempt, and identify why the attempt ends",
+  "sessions": [
+    {
+      "name": "20261023-clinit-lifecycle-1",
+      "pid": 25572,
+      "outcome": "unhandled_exception 0xC0000005 @ 0xA7CCA43 after set-state 8",
+      "crash_registers": {
+        "eax": "0x130706A4 (cl2+0x1C)",
+        "edi": "0x13070694 (cl2+0xC)",
+        "edx": "0xA7CCA43 (call target)",
+        "eip": "0xA7CCA43",
+        "ecx": "0x1AF340",
+        "esi": "0x1AF3BC"
+      },
+      "note": "0x66F170 was NOT neutralised in this session, so the decoded callback pointer was called directly."
+    },
+    {
+      "name": "20261023-clinit-lifecycle-2",
+      "pid": 32776,
+      "outcome": "survived to observation_timeout; 0x66F20E was patched to 90 90 before set-state 8",
+      "t0": {
+        "utc": "2026-10-23T02:01:46Z",
+        "counters": {"cl_init_enter": 0, "cl_create": 0, "cl_shutdown": 0, "b2c10_enter": 0},
+        "phase": 0,
+        "cl": "0x13932A00",
+        "cl2": "0x12FF02F0",
+        "cl2_a8f0_encoded": "0x852AF411",
+        "cl2_a8dc_mask": "0x1F",
+        "cl2_a8d8": "0x20",
+        "cl2_callback_2C": "0x0",
+        "cl2_callback_30": "0x0",
+        "callback_key_E60B78": "0xBBF195E1",
+        "callback_decode": "0xA90E96FD",
+        "cl_flag_100260": "0x0",
+        "cl_109250": "0x0",
+        "cl_phase_guard_7508B80": "0x0"
+      },
+      "timeline": [
+        {"point": "T1", "utc": "2026-10-23T02:01:56Z", "after": "first set-state 8", "counters": {"cl_init_enter": 1, "cl_create": 1, "cl_shutdown": 1, "b2c10_enter": 2}, "phase": 8, "cl": "0x13933600", "cl2": "0x12FF0EF0", "cl_109250": "0x1", "cl_limit_140": "0x1", "cl_flag_100260": "0x0", "cl2_callback_30": "0x0", "decode": "0xA90E9AFD", "callers": {"cl_init_enter": "0x004FE780", "cl_shutdown": "0x004FE779", "b2c10_enter": "0x005B31B9"}},
+        {"point": "T2", "utc": "2026-10-23T02:01:57Z", "counters": {"cl_init_enter": 1, "cl_create": 1, "cl_shutdown": 1, "b2c10_enter": 2}, "phase": 8},
+        {"point": "T3", "utc": "2026-10-23T02:01:59Z", "counters": {"cl_init_enter": 2, "cl_create": 2, "cl_shutdown": 2, "b2c10_enter": 2}, "phase": 0, "cl": "0x12FF0460", "cl2": "0x1311AB60"},
+        {"point": "T4", "utc": "2026-10-23T02:02:02Z", "counters": {"cl_init_enter": 2, "cl_create": 2, "cl_shutdown": 2, "b2c10_enter": 2}, "phase": 0},
+        {"point": "T5", "utc": "2026-10-23T02:02:23Z", "after": "second set-state 8", "counters": {"cl_init_enter": 3, "cl_create": 3, "cl_shutdown": 3, "b2c10_enter": 4}, "phase": 8, "cl": "0x12FF0DA8", "cl2": "0x1311B4A8", "decode": "0xA8E02135"},
+        {"point": "T6", "utc": "2026-10-23T02:02:26Z", "counters": {"cl_init_enter": 4, "cl_create": 4, "cl_shutdown": 4, "b2c10_enter": 4}, "phase": 0, "cl": "0x12FF0084", "cl2": "0x1311A784"}
+      ],
+      "ring_observation": {
+        "command": "set-state 8 then read ring A/B cursors at 120/520/1120 ms",
+        "ring_a": "0/0 at every sample",
+        "ring_b": "0/0 at every sample",
+        "cl_adr_at_plus_0x14": "all zero at 120/520/1120 ms",
+        "conclusion": "with 0x66F20E neutralised, 0x5B2C10 does not emit any loopback packet; there is no challenge to answer"
+      }
+    }
+  ],
+  "answers": {
+    "question": "how many times does CL_Init run during one 0x5B2C10 call",
+    "answer": "zero inside 0x5B2C10. CL_Init is not called by 0x5B2C10; it is called once by 0x4FE740 (return address 0x4FE780) immediately after phase is forced to 8, together with one CL_Shutdown (return address 0x4FE779). 0x5B2C10 itself is called twice per phase-8 attempt by the heartbeat path 0x5C2AED -> 0x5B3160 (return address 0x5B31B9)."
+  },
+  "findings": [
+    {
+      "id": "reset-chain",
+      "finding": "0x4FE740 is the reset routine: CL_Shutdown() then CL_Init(1). Its callers are 0x4FD98B and 0x5C0093. Forcing phase 8 reliably triggers it once per attempt; the object pair cl/cl2 is re-created (cl 0x13932A00 -> 0x13933600)."
+    },
+    {
+      "id": "heartbeat-calls-5B2C10",
+      "finding": "0x5B3160 (called from 0x5C2AED) is the per-frame client update: if [0x76446B0] >= 7 and != 0x0A and [0xC7AF6A8]-[cl+8] >= 0x1F4 ms, it calls 0x5B2B70 and then 0x5B2C10. Therefore phase >= 7 makes the client retry the connection initialiser every 500 ms. The old conclusion 'the frame tick never calls 0x5B2C10' was produced with the 9-byte entry stub in place and is contradicted by this measurement."
+    },
+    {
+      "id": "phase-8-is-illegal",
+      "finding": "[0x76446B0]=8 is not a legal client phase. 0x77C290's tail at 0x77C343 writes 0 unconditionally unless phase == 5 (when cl != 0). The legitimate phase values written by the shipped code are 3 (0x470467), 4 (0x5BEA8B), 5, 7 (0x5BE90A and 0x813D34). The 8 used in earlier rounds is why every attempt is torn down 1-3 s later."
+    },
+    {
+      "id": "callback-pointer",
+      "finding": "0x66F170 decodes its callback as (cl2+0x2C) ^ [cl2+0x30] ^ [0xE60B78] and calls it. In every measured state cl2+0x2C and [cl2+0x30] are zero, while [0xE60B78] changes per process (0xBBF195E1 in session 2), so the call target is a different garbage address each run. Session 1 crashed at exactly that target with eax=cl2+0x1C and edi=cl2+0xC, confirming the decode site."
+    },
+    {
+      "id": "a8f0-already-valid",
+      "finding": "The cl2 object is fully initialised where previous rounds expected it to be broken: cl2+0xA8F0 holds an encoded pointer (0x852AF411 etc.), cl2+0xA8DC is 0x1F and cl2+0xA8D8 is 0x20. The missing piece is only the callback object at cl2+0x1C..0x30, which is all zero."
+    },
+    {
+      "id": "no-packet",
+      "finding": "Even when 0x5B2C10 runs (twice) without crashing, ring A and ring B stay at cursor 0 and cl+0x14 (connection netadr) stays all zero, so the initialiser produces no outbound packet. This explains why the phase is torn down: there is nothing to answer."
+    }
+  ],
+  "next": [
+    "use phase 7 (or the official sequence at 0x813D11: CL_Shutdown; CL_Init(3 or 7); [0x76446B0]=7) instead of the illegal phase 8",
+    "initialise cl2+0x1C..0x30 by finding the shipped writer, or redirect the decoded callback to a controlled stub to learn its contract",
+    "make 0x5B2C10 emit a packet: either provide the callback object or drive the older CL_Connect path with a loopback netadr written into the rebuilt cl",
+    "do not repair cl+0xA8F0 again; the field belongs to cl2 and is already valid"
+  ],
+  "artifacts": [
+    "tools/cl_lifecycle_probe.py",
+    "evidence/experiments/20261023-codex-a8f0-object-correction.json",
+    "runs/20261023-clinit-timeline-summary.json",
+    "runs/20261023-clinit-2-T0..T6.json",
+    "runs/rb-before/120/520/1120.json"
+  ]
+}
