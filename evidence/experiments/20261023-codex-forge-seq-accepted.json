@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:40:00+00:00",
+  "scope": "raise the forged netchan sequence above incomingSequence and observe the dedrun reaction",
+  "change": "ring_bridge --forge-seq-base (default 100000) starts forge_seq there and increments per packet; the body stays serverId(1)+messageAck(4) and the header stays seq-only",
+  "session": {
+    "name": "20261023-world-22",
+    "pid": 29932,
+    "order": "dedrun -> forward --bind-port 29000 --forge-seq-base 100000 -> client -> login -> drain block + refresh hook -> start-challenge",
+    "forge_tail": [
+      {"seq": 100005, "ack": 73, "qport": 29000, "message_ack": 0, "plain": "0100000000", "challenge": 306014288},
+      {"seq": 100006, "ack": 87, "qport": 29000, "message_ack": 0, "plain": "0100000000", "challenge": 306014288}
+    ]
+  },
+  "server_evidence": {
+    "before": "AdministraClient ... state 4 ack 1 gamestate 4 out 128..500+",
+    "after": "CoDOL: AdministraClient on stale serverId 0 (server 1) state 2 ack 0 gamestate -1 out 4 sent 0",
+    "new_log_line": "-- Unacknowledged Server Commands for client 0:AdministraClient --",
+    "interpretation": "out collapsed from 500+ to 4 and gamestate went to -1, so the dedrun DID process the forged packets once the sequence exceeded incomingSequence. The client state then fell to 2 because the packet bodies carried no valid clc commands."
+  },
+  "client_evidence": {
+    "phase": 0,
+    "ui_state": 5,
+    "ring_a": [5, 5],
+    "dialog": "错误 / 服务器连接错误 (with an 退出 button)",
+    "screenshot": "evidence/experiments/20261023-world-conn-error.png",
+    "background": "the crossfire world is still rendered behind the dialog"
+  },
+  "conclusions": [
+    "the sequence gate was the last blocking layer for packet acceptance: raising it made the dedrun consume the forged acks (out 500+ -> 4)",
+    "the forged body is still too thin: serverId+messageAck alone is not a valid client command stream, so the dedrun drops the client to state 2 and the client reports a connection error",
+    "next work is now inside the plain body (a real clc_move / userinfo / ack composition), not in the cipher or the header"
+  ],
+  "next": [
+    "build a valid client command body: u32 acknowledgement (reliableAck) + clc_move opcode + cmdCount + a minimal usercmd, following runs/2697-native-src/src/sv_client.c SV_ExecuteClientMessage",
+    "keep the pinned port 29000 and the seq base 100000",
+    "re-run and watch whether the dedrun returns to state 4/CS_ACTIVE with out draining"
+  ],
+  "artifacts": ["evidence/experiments/20261023-world-conn-error.png", "runs/forge-ack-log.jsonl", "runs/2697-server-test/main/qconsole.log"]
+}

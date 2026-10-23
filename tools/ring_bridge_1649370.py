@@ -682,7 +682,7 @@ def cmd_forward(client: Client, args) -> dict:
     last_keepalive = time.monotonic()
     keepalive_seq = 2
     last_forge = 0.0
-    forge_seq = 1
+    forge_seq = int(getattr(args, "forge_seq_base", 100000) or 100000)
     deadline = time.monotonic() + args.seconds
     last_status = None
     next_retry = 0.0
@@ -964,6 +964,8 @@ def main() -> int:
                    help="client->serverId used in the netchan key (dedrun reports server 1)")
     p.add_argument("--bind-port", type=int, default=0,
                    help="fixed local UDP port for the forward socket; keep it stable so the dedrun keeps one remoteAddress")
+    p.add_argument("--forge-seq-base", type=int, default=100000,
+                   help="netchan sequence to start from; must exceed the dedrun's incomingSequence")
     p.add_argument("--dump-in", help="write every injected server packet as JSONL (length/state/hex)")
     p.set_defaults(func=cmd_forward)
 
