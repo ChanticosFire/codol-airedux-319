@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T10:30:00+00:00",
+  "scope": "DECISIVE: the non-zero snapshot is rejected because stream_error == 1 at the decision point",
+  "probe": "Decide at 0x4724A5, recording [esi] (the stream error flag) plus the three fields the cmp chain tests",
+  "record": {
+    "stream_error": 1,
+    "struct_3bd0": 72192,
+    "field_54": 1,
+    "field_50": 12,
+    "field_34": 0,
+    "ctx_3bd4": 72192
+  },
+  "verdict": {
+    "check_1": "cmp [esi],0 ; jne 0x47281A  -> stream_error = 1 => REJECT",
+    "check_2": "cmp [ebp-0x3BD0],0 ; je -> 72192 != 0 => passes",
+    "check_3": "cmp [ebp-0x54],0 ; je -> 1 != 0 => passes",
+    "conclusion": "the rejection is the STREAM ERROR raised during parsing, not a semantic field check"
+  },
+  "what_this_means": [
+    "the non-zero playerState body overruns the bit stream while being decoded, so the parser sets the error flag",
+    "the earlier 'ps consumed 32 bits' reading was the actors entry point, not the end of a clean decode - the block kept reading past our payload",
+    "the all-zero body (single22, 29 bits) decodes cleanly (error 0) and therefore reaches state 10",
+    "so the fix is to give the playerState block ROOM: pad zero bits inside the ps before the exit bit so the decode can finish without running off the end"
+  ],
+  "next": [
+    "rebuild nz1 with extra zero padding inside the ps block (e.g. +20, +40 bits) and re-run the Decide probe",
+    "the run is successful in the diagnostic sense when stream_error == 0 at 0x4724A5; that is now a direct oracle instead of inferring from client state"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r162-gs.jsonl",
+    "probe": "tools/launch_1649370.py (Decide branch, now includes stream_error)"
+  }
+}

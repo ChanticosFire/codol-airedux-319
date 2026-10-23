@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [DECISIVE: rejection is stream_error == 1]**
+> Decide probe now records [esi]: stream_error = 1, struct_3bd0 = 72192, field_54 = 1 -> check 1 fires and rejects; checks 2/3 pass.
+> So the non-zero ps body overruns the stream during decoding; the all-zero body decodes cleanly and reaches state 10.
+> Fix direction: pad zero bits INSIDE the ps block before the exit so the decode can finish. New oracle: stream_error == 0 at 0x4724A5.
+> Evidence: [stream error is the rejector](evidence/experiments/20261023-codex-stream-error-is-the-rejector.json).
 > **2026-10-23 [Decide probe run invalid - no delivery]**
 > Decide probe at 0x4724A5 armed; run produced zero records because runs/codex-r160-forward.json was never written (the bridge did not deliver). GS queued 6 snapshots, client stayed state 9, accept/reject code never ran.
 > Not a probe problem - nothing reached the parser. Next: re-run with delivery verified (forward summary + snap_trace records) before interpreting Decide output.

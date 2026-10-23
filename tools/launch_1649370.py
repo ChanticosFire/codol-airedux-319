@@ -2927,7 +2927,10 @@ def main(argv=None) -> int:
                     raw = self.process.read(ebp + offset, 4)
                     return struct.unpack("<I", raw)[0]
 
+                esi = int(registers["esi"], 0)
+                stream_error = struct.unpack("<I", self.process.read(esi, 4))[0]
                 self.record({"decide": {
+                    "stream_error": stream_error,
                     "struct_3bd0": peek(-0x3BD0),
                     "field_54": peek(-0x54),
                     "field_50": peek(-0x50),
