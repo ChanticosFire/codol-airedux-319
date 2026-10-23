@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T20:00:00+00:00",
+  "scope": "the tail-offset sweep is INCONCLUSIVE with alternating bodies: only one parse was observed",
+  "bodies": ["runs/snapshot-tg0.bin", "runs/snapshot-tg3.bin", "runs/snapshot-tg8.bin", "runs/snapshot-tg16.bin"],
+  "why_inconclusive": [
+    "the four bodies were queued alternately (8 rounds of 4), so each parsed snapshot could be any of them",
+    "only ONE decide record came back for the whole session, with stream_error = 1, and there is no way to tell which body produced it",
+    "round 153 already showed that a single body must be run alone to attribute a result"
+  ],
+  "result": {
+    "decide_records": 1,
+    "stream_error": 1,
+    "final_state": 9,
+    "client": "alive"
+  },
+  "lesson": [
+    "alternating bodies are fine for observing 'does ANY body in this set parse', but useless for attributing a result to one body",
+    "a decisive tail-offset sweep needs ONE SESSION PER GAP (four sessions), which is expensive, so it should be planned deliberately rather than mixed with other work"
+  ],
+  "reasoning_for_the_next_attempt": [
+    "single22 works with ps 29 and the tail immediately after (1337)",
+    "value-5 ps is 32 and the tail at 1340 fails, while 60 bits of room at 1400 parses",
+    "so between 1340 and 1400 there is a tail position that parses; the most economical next test is a single body with the tail at 1343 (gap 3), run ALONE",
+    "if gap 3 parses and does not crash, the crash was caused by the bogus actor bits that the 60-bit room introduced"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r169-gs.jsonl",
+    "encoder": "runs/_gen_tailgap.py"
+  }
+}

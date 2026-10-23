@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Tail-offset sweep inconclusive]**
+> Four gaps (+0/+3/+8/+16) queued alternately produced exactly ONE decide record (stream_error 1) with no way to attribute it. Alternating bodies cannot attribute results; a decisive sweep needs one session per gap.
+> Next: tail at 1343 (gap 3) run ALONE - if it parses without crashing, the crash came from the room's bogus actor bits.
+> Evidence: [tailgap inconclusive](evidence/experiments/20261023-codex-tailgap-inconclusive.json).
 > **2026-10-23 [Bisect A: room is consumed as actor data]**
 > value 0 + 60 room: ps 29, actors 1337, decide stream_error 1 (parse FAILS), state 9, client ALIVE. Three-way: single22 (29/0) parse OK state 10; bisect-a (29/60) parse FAIL; room60 (32/60) parse OK but CRASH.
 > So the room is consumed by the actors block, not padding; room60's crash is consistent with bogus actor records plus a non-zero ps value.
