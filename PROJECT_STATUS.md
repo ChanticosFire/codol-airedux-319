@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【SnapTrace：实体表 bit1307、playerState bit1308、actor bit1309】** ✅实测 hybrid/state 10：`0x671650` 命中 `cursor=164,bit=1307`；`0x471980` 命中 `cursor=164,bit=1308`；actor 块起于 1309。三者相邻各 1 bit——实体表读 bit1307=0 直接返回（count 保持 memset 0）、ps 读 bit1308=0 返回，故 hybrid 是空世界。`SnapTraceAccepted` 的 esi 非 message，字段无效。下一轮按此布局位级重建：byte163 bit3=1 → form=1 → count(8) → 实体号(12) → 字段 delta → ps → actor/sub4/glass → EOF。证据：[JSON](evidence/experiments/20261023-codex-snaptrace-bit-positions.json)。
+
 > **2026-10-23【hybrid 解析出 0 实体；单翻 count 位失败】** ✅hybrid 被接受、state 10（pid 39200）时 `[0x7859558]`=0、实体号数组全 0、cl.snap 全 0——空世界确认；`accepted` 会在解析开始时清零，单次读取会抓中间态，后续以 entity_count/cl.snap 为主判据。✅把 byte7 bit3 置 1（count 名义 1）→ state 9、ack 未推进、count 停在 0xFF：count>0 时必须同时给 12-bit 实体号与字段 delta。下一轮做位级重建（count=1 + 实体号 + 字段 delta + 原尾部）。证据：[JSON](evidence/experiments/20261023-codex-hybrid-entity-count-zero.json)、[JSON](evidence/experiments/20261023-codex-count-flip-fails.json)。
 
 > **2026-10-23【四个手写变体全被拒；改就地修补 hybrid】** ✅ps-empty、ps-skip、ps-term、ps-form1 四个手写体均 state 9、accepted=0；对照 hybrid 167B 始终 accepted/state 10。→ 8 字节头无法复现 2697 前缀里解析器消费的结构。下一轮改为就地修补 hybrid：在前 164 字节定位实体表位，count 改 1 并写 12-bit 实体号 + 字段 delta，用 accepted/cl.snap 判定。证据：[JSON](evidence/experiments/20261023-codex-hand-built-rejected.json)。
