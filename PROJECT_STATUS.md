@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ps block is well-formed with headroom: 28 bits, error 0]**
+> Bodies padded to bit 1500 before the tail: last=0 gives ps entry 1308 -> actors 1336 (28 bits), stream error 0. 28 = 9 header + 1 present + 1 continuation + 5 index + ~12 distance/codec.
+> So the encoder is well-formed; earlier overruns came from placing the tail too early.
+> Next: tail at bit 1336, verify state 10, then screenshot t=20 to see if 等待玩家数据 disappears.
+> Acceptance: a screenshot showing the map. Evidence: [ps 28bits clean](evidence/experiments/20261023-codex-ps-28bits-clean.json).
 > **2026-10-23 [DEFINITIVE: loading screen says 等待玩家数据 (waiting for player data)]**
 > Timed frames: t=20 state 9 unique 4130 (real loading screen with map/mode 交叉火力, minimap, score bar) -> t=35/50 black. Bottom-right text: 等待玩家数据.
 > Decisive: the client names the missing input - the player data. Next: finish the ps delta encoding; the loading text is the pass/fail signal.

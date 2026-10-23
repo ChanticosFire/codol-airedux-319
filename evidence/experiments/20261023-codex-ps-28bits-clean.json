@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T05:20:00+00:00",
+  "scope": "with headroom and last=0 the ps block consumes exactly 28 bits and exits with no stream error",
+  "setup": {
+    "bodies": [
+      "runs/snapshot-ps-last0.bin",
+      "runs/snapshot-ps-last1.bin",
+      "runs/snapshot-ps-last3.bin"
+    ],
+    "note": "each body pads with zero bits to 1500 before the tail, so the block has room to run and we can measure its true length"
+  },
+  "measurement_last0": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1336,
+    "ps_bits_consumed": 28,
+    "stream_error": 0
+  },
+  "reading": [
+    "28 bits = 9 header (has-ps, mode, 5-bit last) + 1 present + 1 continuation + 5 index + ~12 bits of distance/codec",
+    "the block terminates cleanly - so with enough headroom the encoder does produce a well-formed ps block",
+    "the previous overruns were caused by the tail being placed too early, not by a malformed field section"
+  ],
+  "next": [
+    "place the tail exactly at bit 1336 (the measured end) and verify state 10",
+    "then screenshot the loading screen at t=20 to see whether 等待玩家数据 disappears"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r124-gs.jsonl",
+    "encoder": "runs/_gen_ps_last.py"
+  }
+}
