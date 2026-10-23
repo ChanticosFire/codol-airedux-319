@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T18:25:00+00:00",
+  "scope": "set the netchan FRAGMENT_BIT on our replies and see whether the client acknowledges",
+  "change": "server1649370 now sends seq_word = server_seq | 0x80000000, so the bridge classifies the packet as a reliable command instead of a snapshot",
+  "session": {
+    "client": "20261023-frag, pid 37652",
+    "bridge": "forward --target 127.0.0.1:28971 --reliable-until-state 0 (filter disabled so delivery is not the variable)",
+    "server": "server1649370 on 28971"
+  },
+  "verified_facts": {
+    "our_packets": [
+      {"seq": 5, "hex_head": "0500008000000000000000000000", "fragment": true, "length": 206},
+      {"seq": 8, "hex_head": "0800008000000000000000000000", "fragment": true, "length": 206}
+    ],
+    "client_packets": [
+      {"seq": 8, "messageAck": 1, "acked_our_seq": false},
+      {"seq": 9, "messageAck": 1, "acked_our_seq": false}
+    ],
+    "client_message_ack_never_moves": true
+  },
+  "interpretation": {
+    "delivery_and_fragment_flag_are_not_enough": "with the bridge filter disabled AND the FRAGMENT_BIT set, the client still reports messageAck 1, so neither delivery nor the flag explains the silence",
+    "what_is_left": "the body. 197 zero bytes are not a valid service message; the client likely parses the body, finds no usable command, and never advances its acknowledgement",
+    "next_step_is_content_not_plumbing": "the transport path is now as permissive as we can make it, so the remaining work is writing an actual svc payload"
+  },
+  "next": [
+    "emit a minimal service byte in the body (for example svc_nop or the first gamestate opcode) instead of zeros and watch for any ack movement",
+    "log the exact first body byte so each attempt is documented",
+    "if a single opcode does not move the ack, try the full gamestate header sequence seen in the 2697 source"
+  ],
+  "artifacts": ["runs/frag-gs.jsonl", "server1649370/gameserver.py"]
+}
