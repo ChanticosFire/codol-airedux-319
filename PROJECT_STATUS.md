@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Tail-length sweep NEGATIVE: padding cannot terminate the actors block]**
+> Tail lengths 40/60/80 in one session: every sample state 9. With the earlier 27/120/400 runs, actors never terminates on padding - it consumes to the end and sets the error.
+> Consequence: a has-ps=1 snapshot cannot be completed by padding; the actors payload needs its own encoding (same class as the entity loop blocker).
+> Status: everything else is delivered (RELEASE.md); the visible world is blocked on the actors payload format. Next options: RE the actors block, or accept the deliverable and track the world separately.
+> Evidence: [tail sweep negative](evidence/experiments/20261023-codex-tail-sweep-negative.json).
 > **2026-10-23 [Actors end not observable; switch to a length sweep oracle]**
 > Zero-tail bodies (120/400 bits): ps 1345 -> actors 1373, state 9; actors end not traceable (glass breakpoint unsafe).
 > Actors sets the stream error when reading past the body; the terminator depends on ps content (baseline has-ps=0 terminates in 27 bits).

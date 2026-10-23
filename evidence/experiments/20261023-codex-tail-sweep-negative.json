@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T11:45:00+00:00",
+  "scope": "length sweep result: NO tail length in {40,60,80} is accepted - padding cannot terminate the actors block",
+  "experiment": {
+    "bodies": [
+      "runs/snapshot-tail-L40.bin",
+      "runs/snapshot-tail-L60.bin",
+      "runs/snapshot-tail-L80.bin"
+    ],
+    "method": "all three sent in one session (cycle 2 s), state sampled at t=20/30/40/50/60",
+    "states": {
+      "t=20": 9,
+      "t=30": 9,
+      "t=40": 9,
+      "t=50": 9,
+      "t=60": 9
+    }
+  },
+  "conclusion": [
+    "no zero-padded tail length between 40 and 80 is accepted",
+    "combined with the earlier runs (27, 120, 400 zero bits) the actors block never terminates on padding - it consumes to the end of the stream and sets the global error",
+    "so a snapshot that carries a real playerState (has-ps=1) cannot be completed by padding: the actors payload needs its own valid encoding",
+    "this is the same class of blocker as the entity loop: a block with no count-based exit whose payload format is still unknown"
+  ],
+  "status": {
+    "what_works": "handshake, gamestate, snapshots (state 10) when the ps is skipped; match end; lobby return; full observability",
+    "what_blocks_the_world": "the actors payload format (required as soon as a playerState is present)"
+  },
+  "next_options": [
+    "reverse-engineer the actors block payload (0x471010 and its callees) - a fresh RE sub-project with the same tooling constraints",
+    "or accept the current deliverable (RELEASE.md) and track the visible world as a separate phase"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r137-gs.jsonl",
+    "encoder": "runs/_gen_tail_L.py"
+  }
+}
