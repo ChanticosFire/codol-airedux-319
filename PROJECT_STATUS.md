@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【seq 顺序陷阱与 state 9/10 画面差异】** ✅命令重发用 4000+ 序号会把后续快照顶掉（ack 停在 1、state 9、无 usercmd）；改为命令 seq 严格递增 + 快照从 1000 起后恢复 **state 10、usercmd 17、ack 1053**。✅state 9 时加载屏正常渲染（unique=3438/mean=52），state 10 时全黑（unique=5/max=21）——黑屏只发生在游戏视图。当前是**协议层服务器替身**，非内存强制、也非真正建房；黑屏根因是快照无本地玩家实体。证据：[JSON](evidence/experiments/20261023-codex-command-repeat-seq-order.json)。
+
 > **2026-10-23【补充：加载图标持续变化，黑屏是等待态而非卡死】** ✅用户确认黑屏右下角加载图标仍间歇变化，客户端帧循环与网络活动继续，与“等待玩家数据”文案一致。→ 黑屏是主动等待，下一步逆向 `0x471D80` 的实体 delta 格式（`0x447190`/`0x671700`）并发出带 viewOrigin 的本地玩家实体。证据：[JSON](evidence/experiments/20261023-codex-loading-screen-blank-sequence.json)。
 
 > **2026-10-23【关键：加载屏正常，黑屏在其关闭之后】** ✅用户截图确认“交叉火力”加载屏完整显示（缩略图、阵营、胜利条件、比分条、进度条），随后进度条置空→黑屏；加载屏右下角为“等待玩家数据”。→ 地图/UI 资源均已正确加载，黑屏属加载屏关闭后的游戏场景/相机初始化问题，且与快照没有 client 实体吻合。下一轮逆向 actor/clients 子块格式并发出本地玩家实体。证据：[JSON](evidence/experiments/20261023-codex-loading-screen-blank-sequence.json)。
