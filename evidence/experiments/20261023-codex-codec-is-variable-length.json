@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T05:00:00+00:00",
+  "scope": "DECISIVE: both values take the SAME branch (0x471C41) and decode ONE delta, so the landing codec itself is variable-length",
+  "measurement": {
+    "body": "runs/snapshot-real5830.bin (value 5830, 55-bit framing)",
+    "delta_path_hits": 1,
+    "delta_calls": 1,
+    "snap_trace": 1,
+    "ps_bits_measured": 97
+  },
+  "comparison_with_value_0x100": {
+    "delta_path_hits": "same (1)",
+    "delta_calls": "same (1)",
+    "ps_bits": 55
+  },
+  "conclusion": [
+    "the branch is IDENTICAL for both values, so explanation (a) from the previous round is ruled out",
+    "the landing codec is therefore VARIABLE-LENGTH: the same field costs 33 bits for 0x100 and 75 bits for 5830 (97 minus the 22 non-value bits)",
+    "that also explains why the codec description in cols (-97 = 1 bit gate + LE32) does not hold on this path - this build uses a variable form"
+  ],
+  "the_relationship_to_measure": [
+    "the only remaining unknown is the function value -> bit length",
+    "measuring it at 3-4 magnitudes (e.g. 0x100, 0x200, 0x1000, 5830) gives the table, and with that table any value can be encoded with a known length",
+    "each measurement is one session, so this is a bounded, finite task rather than an open-ended search"
+  ],
+  "why_this_is_the_right_next_step": [
+    "the framing is already pinned (55 bits for one field with a zero-ish value)",
+    "the branch is known",
+    "the codec is the only variable left, and it is a monotone function of the value in all likely encodings"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r194-gs.jsonl",
+    "probe": "tools/launch_1649370.py (DPath branch at 0x471C41)"
+  }
+}

@@ -2848,6 +2848,14 @@ def main(argv=None) -> int:
                 self.record({"map_loading_configstrings": {"pool_cursor": cursor, "slots": rows}})
             except (OSError, ValueError, struct.error) as error:
                 self.record({"map_loading_configstrings_error": str(error)})
+        if label.startswith("DPath"):
+            try:
+                n = getattr(self, "_dpath_count", 0)
+                if n < 12:
+                    self.record({"delta_path": {"n": n}})
+                self._dpath_count = n + 1
+            except (OSError, ValueError) as error:
+                self.record({"dpath_error": f"{label}: {error}"})
         if label.startswith("Delta"):
             try:
                 n = getattr(self, "_delta_count", 0)
