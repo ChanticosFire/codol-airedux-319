@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "utc": "2026-10-23T19:10:00+00:00",
+  "scope": "locate the sibling codol-server repository referenced by cols-launcher",
+  "attempts": {
+    "enceka/codol-server": "missing",
+    "enceka/cols-server": "missing",
+    "enceka/COLS": "missing",
+    "enceka/cols": "missing",
+    "enceka/codol_server": "missing",
+    "enceka/cols-launcher-server": "missing",
+    "enceka/codol": "missing"
+  },
+  "verified_from_within_cols_launcher": {
+    "delivery_boundary": "DESIGN.md states only the server and the standalone Rust launcher are released; the launcher never downloads, bundles or copies the client or game resources",
+    "server_is_separate": "README and DESIGN both refer to server/target/release/codol-server and to the server repository's docs/NATIVE_LAUNCHER.md, so the server lives in a different repository",
+    "launcher_package": "Cargo.toml name = cols-launcher, version 0.1.0, edition 2024, license MIT, description 'Standalone native-client launcher and TCP routing prototype'",
+    "no_server_code_in_clone": true
+  },
+  "conclusion": {
+    "server_repository_is_not_publicly_reachable": true,
+    "but_the_contract_is_public": "docs/SERVER_INTERFACE.md in the launcher repo fully describes the server-side CLI surface and the readiness record, which is the part we actually need for design guidance"
+  },
+  "what_we_still_take_from_it": [
+    "readiness record version 1 fields: PID, client SHA-256, lobby 210, game UDP v3, title id, AUTH/LOBBY/STUN/game addresses, loaded map and directory, bot room, continuous-play marker",
+    "atomic publish of backend-ready.json / resources-ready.json after assembly, with a 16 KiB read cap and no links",
+    "temporary INI/CA rewrite with summary-verified restore, and refusal to overwrite when an external change is detected",
+    "backend.room_bot_fill 4..12, mutually exclusive with --native-bot-rooms"
+  ],
+  "impact_on_our_goal": "no shortcut for 1649370; we still have to implement the in-game netchan, but we can adopt the readiness-record pattern as our server's self-check interface, which the goal explicitly asks for (full logging and observation hooks)",
+  "next": [
+    "add a readiness/self-check file to server1649370 that records version, ports, map, counters and the client exe hash it observed",
+    "keep the body-content experiment going (svc_gamestate byte was sent, client still did not ack; next is a fuller gamestate header)"
+  ],
+  "artifacts": ["runs/cols-launcher/docs/SERVER_INTERFACE.md", "runs/cols-launcher/docs/DESIGN.md", "runs/cols-launcher/Cargo.toml"]
+}

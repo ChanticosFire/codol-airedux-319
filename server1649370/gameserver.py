@@ -209,12 +209,17 @@ class GameServer:
             self.server_seq = getattr(self, "server_seq", 0) + 1
             peer["last_server_seq"] = self.server_seq
             seq_word = (self.server_seq | 0x80000000) & 0xFFFFFFFF
+            # 2697 net_game_conf.h: svc_nop=0, svc_gamestate=1, svc_configstring=2,
+            # svc_baseline=3, svc_serverCommand=4, svc_download=5, svc_snapshot=6,
+            # svc_EOF=7.  The client never acks an all-zero body, so start with a
+            # real service byte; a full gamestate payload comes later.
+            body = b"\x01" + bytes(196)
             reply = (struct.pack("<I", seq_word) + b"\x00"
-                     + struct.pack("<i", 0) + bytes(197))
+                     + struct.pack("<i", 0) + body)
             self.sock.sendto(reply, addr)
             self.state.counters["inband_sent"] += 1
             self.log({"dir": "out", "kind": "inband", "to": f"{addr[0]}:{addr[1]}",
-                      "seq": self.server_seq, "fragment": True,
+                      "seq": self.server_seq, "fragment": True, "svc": "gamestate",
                       "length": len(reply), "hex_head": reply[:24].hex()})
         else:
             self.log({"dir": "in", "kind": "inband_short", "from": f"{addr[0]}:{addr[1]}",
