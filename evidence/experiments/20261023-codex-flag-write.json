@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T07:10:00+00:00",
+  "scope": "the load-completion flag byte is already 1; forcing it changes nothing",
+  "measurements": {
+    "singleton_0x8269774": "0x424DDBE8",
+    "loader_singleton_plus_0x4F4": "0x42415E70",
+    "loader_c8": 2,
+    "loader_644": 0,
+    "loader_5e8": 3,
+    "singleton_plus_0x4F8_u32": 3131961345,
+    "singleton_plus_0x4F8_low_byte": 1
+  },
+  "reading": [
+    "by the 0xBA0780 logic, [loader+0xC8]=2 and [loader+0x5E8]=3 already make the inner status return 2",
+    "the byte at [singleton+0x4F8] is already 1 (low byte of 0xBAAA9A01), so 0xB7A670 should NOT rewrite 2 to 1",
+    "yet ui_state stays 5 and the screen stays black, so the load-completion path is either not being called in this state, or the object we read is not the one 0xB7A670 uses",
+    "writing is a no-op because the value is already 1"
+  ],
+  "next": [
+    "break on 0x8018B0 / 0xB7A670 to see whether they are called at all in state 10 and what they return",
+    "if they are not called, find the caller that should run after loading and why it is not reached"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r92-gs.jsonl",
+    "screenshot": "runs/codex-r92-screenshot.png"
+  }
+}
