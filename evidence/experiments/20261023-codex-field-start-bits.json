@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T03:45:00+00:00",
+  "scope": "the entity field loop starts at bit 1329, at the very end of the body",
+  "trace": {
+    "SnapTraceFieldIndex_0x471E05": {
+      "cursor": 167,
+      "bit": 1329
+    },
+    "SnapTraceFieldValue_0x671700": {
+      "cursor": 167,
+      "bit": 1330
+    },
+    "length": 167,
+    "client": "alive (pid 42788)",
+    "state": 9
+  },
+  "meaning": [
+    "with count=1 the parser consumes the table, count byte and the 12-bit id, then reaches the field loop at bit 1329",
+    "the body is only 167 bytes (1336 bits), so there is almost no room left for field data",
+    "the field loop therefore needs the body to be extended past byte 166 with the field delta stream"
+  ],
+  "next": [
+    "extend the body: keep bytes 0..164, rewrite the tail from bit 1329 with a field stream, then the actor/sub4/glass/EOF blocks",
+    "start with the shortest possible field encoding (a single 0 bit per field) and watch state and entity_count",
+    "objective signals: state 10 and cl.snap non-zero"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-3610b778/events.jsonl",
+    "server_log": "runs/codex-r32-gs.jsonl"
+  }
+}
