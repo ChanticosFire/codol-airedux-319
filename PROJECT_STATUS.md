@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Geometry sweep negative: EOF is not the blocker; ps content is the suspect]**
+> Totals 1363/1368/1376/1400 all rejected (state 9). ps parses 28 bits error 0; actors grammar known (terminator 0x7FF); header region has no bit reads; the good tail's first 13 bits decode as 2047.
+> So the framing should work - the remaining suspect is the ps CONTENT (we send an all-zero field payload where a coherent playerstate is expected).
+> Honest: finishing needs either ps field semantics or a captured real snapshot; both are large efforts and the hot-breakpoint tooling keeps interfering.
+> Evidence: [geom sweep negative](evidence/experiments/20261023-codex-geom-sweep-negative.json).
 > **2026-10-23 [Body defect: v3 tail = increment form, not terminator]**
 > tail1336 tail = 011111111111100000010100000 -> absolute 2047 = terminator (correct). v3 tail = 111... -> increment form (wrong; reused misaligned v2 bits).
 > Red herrings cleared: 0x4710FC..0x471175 is init only (no hidden header); the earlier glass=1382 came from the unsafe 0x4475F0 breakpoint run.

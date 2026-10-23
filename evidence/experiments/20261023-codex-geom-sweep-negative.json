@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T13:25:00+00:00",
+  "scope": "length sweep negative again: 1363/1368/1376/1400 all rejected - the EOF check is not the blocker",
+  "bodies": [
+    "runs/snapshot-geom-1363.bin",
+    "runs/snapshot-geom-1368.bin",
+    "runs/snapshot-geom-1376.bin",
+    "runs/snapshot-geom-1400.bin"
+  ],
+  "result": {
+    "t=25": 9,
+    "t=40": 9,
+    "t=55": 9,
+    "t=68": 9
+  },
+  "established_facts": [
+    "the ps block parses in 28 bits with error 0 (measured repeatedly)",
+    "the actors grammar is known: 1 bit -> prev+1, else 1 bit -> (1 = 11-bit absolute index, 0 = 9-bit delta), and index 0x7FF ends the block",
+    "the known-good tail's first 13 bits decode as absolute index 2047 - the terminator",
+    "the actors header region 0x4710FC..0x471175 performs no bit reads",
+    "therefore, with our ps in place, the tail SHOULD terminate actors in 13 bits"
+  ],
+  "open_problem": [
+    "despite all of that, every variant is rejected (state 9)",
+    "the rejection is therefore not (only) about block framing: the ps CONTENT we send is the remaining suspect",
+    "the ps we send sets field 0 (offset 76, codec -58 float) with an all-zero payload; a real client expects a coherent playerstate (commandTime, pm_flags, origin...) and may reject the snapshot when it is incoherent"
+  ],
+  "honest_assessment": {
+    "round": 106,
+    "what_is_needed_next": "either reverse the playerstate field semantics well enough to send a coherent ps, or drive the client with a captured real snapshot",
+    "effort_estimate": "large and open-ended; the tooling (hot breakpoints) has repeatedly interfered with measurement"
+  },
+  "artifacts": {
+    "server_log": "runs/codex-r138-gs.jsonl",
+    "encoder": "runs/_gen_geom.py"
+  }
+}
