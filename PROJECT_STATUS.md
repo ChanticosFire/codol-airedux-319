@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Corrected LSB: 32 bits measured vs 40 predicted; landing field is the suspect]**
+> nz1 (V=22, distance=23, codec 11, 0x100 plain LSB): ps 1308 -> actors 1340 = 32 bits, state 9. The client consumed only 4 field bits after the gate.
+> Width rule looks right ([entry+4] = codec), so the record probably is not decoding field 22. Next: PsField probe to log the actual index/codec/width.
+> Evidence: [nz1 32 bits](evidence/experiments/20261023-codex-nz1-32bits.json).
 > **2026-10-23 [CORRECTION: positive codec = gate bit + N plain LSB bits]**
 > 0x670B15: gate 0 -> value 0; gate 1 -> read N bits via 0x66FE30 (plain LSB). The 3.3.3.3 'remainder-first' rule imported in round 116 does NOT apply here.
 > That wrong bit order explains why every non-zero value was rejected or crashed. ps_codec.py fixed (self test 0 failures); docs section 11 supersedes 10.2.

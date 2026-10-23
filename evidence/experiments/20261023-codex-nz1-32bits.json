@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T04:40:00+00:00",
+  "scope": "corrected LSB encoding still measures 32 ps bits (predicted 40); the landing field is probably not the one we assume",
+  "body": "runs/snapshot-nz1.bin (V=22, distance=23, codec 11, value 0x100, plain LSB)",
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1340,
+    "ps_bits_consumed": 32,
+    "builder_predicted_bits": 40,
+    "difference": -8,
+    "actors_error": 0,
+    "states": "state 9 at every sample (rejected)"
+  },
+  "analysis": [
+    "with gate + 11 plain LSB bits the field costs 12, so the record should end at 40",
+    "the client stopped at 32, i.e. it consumed only 4 bits of the field after the gate",
+    "either the landing field is NOT index 22 (so a different, narrower codec was used), or the width is not the table's codec value",
+    "0x670B3A reads the width from [entry+4], which in the 0xDA63E8 table layout IS the codec value - so the width rule looks right and the LANDING is the suspect"
+  ],
+  "next": [
+    "settle the landing index with the existing PsField probe: log which field index 0x6701D0 is called with, for this exact body",
+    "that removes the last guess from the picture: we would know the index, the codec and the width the client actually used"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r156-gs.jsonl",
+    "encoder": "runs/_gen_nz1.py"
+  }
+}
