@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Found viewaxis identity candidates; three have plausible eye positions]**
+> Scan for the 9-float identity: 12 hits. Near 0x231BED90 the floats are (204,-856,56); near 0x232BED58/0x2362ED58 they are (180,-754.99,31.01) - eye-like, unlike the earlier z~0 ground hits.
+> So a camera/refdef may exist. Next: write a plausible vieworg into those candidates and screenshot.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [refdef candidates](evidence/experiments/20261023-codex-refdef-candidates.json).
 > **2026-10-23 [Absurd origin in one ps slot crashes the client; ps array is consumed]**
 > FillPs wrote (12345,23456,-999) into slot 0 at 0x471010: record fired once then the client exited. Plausible values in all 24 slots left it alive (no frame change); absurd values in one slot killed it.
 > So the ps array feeds real client logic but not the rendered scene. Next: plausible values in one slot, and run the scan before risky writes.

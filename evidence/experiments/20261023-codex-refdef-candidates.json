@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T03:20:00+00:00",
+  "scope": "found identity-matrix (viewaxis) candidates; three have plausible 3-float coordinates nearby - likely refdef/vieworg",
+  "scan": {
+    "signature": "9 floats (1,0,0, 0,1,0, 0,0,1)",
+    "hits": 12,
+    "interesting": [
+      {
+        "addr": "0x231BED90",
+        "nearby_floats": [
+          204.0,
+          -856.0,
+          56.0
+        ]
+      },
+      {
+        "addr": "0x232BED58",
+        "nearby_floats": [
+          180.0,
+          -754.99,
+          31.01
+        ]
+      },
+      {
+        "addr": "0x2362ED58",
+        "nearby_floats": [
+          180.0,
+          -754.99,
+          31.01
+        ]
+      }
+    ],
+    "state": 10,
+    "ui": 5
+  },
+  "reading": [
+    "the client does maintain identity view axes at several places (viewaxis candidates)",
+    "three of them are preceded by plausible map-space coordinates such as (204,-856,56) and (180,-754.99,31.01), which look like eye positions rather than level data",
+    "so a camera/refdef may exist even while the UI stays on the loading screen - worth testing by writing a known-good position"
+  ],
+  "next": [
+    "write a plausible vieworg (mp_cross_fire centre) into the candidate refdef locations and screenshot",
+    "if the frame changes, we have the camera handle and can revisit entities"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r121-gs.jsonl"
+  }
+}
