@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【重大修正：0x77D8218 是 ncs_ani 资源表，非实体字段表】** ✅state 10 复核 5 个描述符：ncs_ani_code_post_gfx_default_mp(1)、ncs_ani_code_post_gfx_mp(1)、ncs_ani_common_marketplace_lite(91)、ncs_ani_common_mp(321)、ncs_ani_level(1)——全是动画资源。→ 0x671A0D 遍历资源表、0x671700 读实体资源/动画字段，不是完整 entityState；415 只是资源 size 累加，不是字段数。这解释了单字段实验崩溃：eType/origin 不在该路径。新方向：0x471D80 的 bit=1 分支（读 [ebp+8] 位宽索引 + rep movsd 复制 0x34 字节完整 entityState）——发送 delta 实体指向可控槽位。安全回退仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-field-list-is-resources.json)。
+
 > **2026-10-23【字段链表：5 节点，size 累加 415】** ✅遍历 [0x77D8218]=0x77DB518：node0 size=1、node1 size=1、node2 size=91、node3 size=321、node4 size=1，累加 415；与尾部 0x671A0D 的累加逻辑一致，415 是实体字段空间的合理上界（955 更像全局位游标）。⚠️本轮因时序停在 state 9，需在 state 10 复核。下一步注释 5 个描述符（0x2EEF5E4 等）得到每组字段数与位宽，字段流按此分组构造。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-field-list-structure.json)。
 
 > **2026-10-23【跳转表+公共尾部解析；字段表全局 955/0x77DB518/2157】** ✅跳转表 13 项：类型 3→0x6717A1（11-bit）、类型 4→0x6717B5（浮点）、类型 11/12 实体引用、类型 5 越界。✅尾部 0x671A0D 遍历 [0x77D8218] 链表、位图 0x77DC6C3 标记、追加类型 0x12，然后 jmp 0x671711 回类型选择器 → 0x671700 是多字段循环。✅运行时：0x77D821C=955、0x77D8218=0x77DB518、0x77DC8C8=2157、0x77DB880=0。→ 955 更像全局游标而非每实体字段数。下一轮两次快照间采样这两个计数并注释循环上界；确认前不发未验证字段流。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-field-count-candidates.json)。
