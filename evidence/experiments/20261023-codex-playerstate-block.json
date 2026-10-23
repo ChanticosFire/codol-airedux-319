@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T13:55:00+00:00",
+  "scope": "0x471980 is the playerState block (0x58 bytes) - the missing camera source",
+  "finding": {
+    "function": "0x471980",
+    "what": "playerState (ps) block of the snapshot",
+    "stride": "0x58 bytes",
+    "array": "[clc+0xA900] ^ 0x3613BDA3",
+    "defaults": "0x769710 memcpy of 0x58 bytes from 0xDA9920",
+    "sequence": "0x671D80 baseline -> 0x471D80 entities -> 0x471980 playerState -> 0x471010 actors -> 0x471560 -> 0x4475F0 glass"
+  },
+  "why_black": "our accepted baseline has an empty actor block and an empty playerState block, so the client has no local view angles/origin even though the map is loaded",
+  "hand_snapshot_test": {
+    "file": "runs/snapshot-empty-entity-table.bin",
+    "bytes": 11,
+    "header": "00 + serverTime 72192 + delta 0 + flags 0x0C + has_base bit 0 + entity table (1,1,count=0)",
+    "result": "state 9, messageAck stayed 1, client stayed alive (no crash)",
+    "reading": "the header/entity-table encoding is close but the body is incomplete: the playerState sub-block encoding is missing"
+  },
+  "next": [
+    "disassemble 0x471A3E..0x471CAC to recover the playerState bit fields",
+    "emit a playerState with clientNum 0 and a valid viewOrigin inside mp_cross_fire",
+    "then add one entity and verify the camera appears"
+  ],
+  "artifacts": {
+    "builder": "tools/build_1649370_snapshot_entity.py",
+    "hand_snapshot": "runs/snapshot-empty-entity-table.bin",
+    "server_log": "runs/codex-r13-gs.jsonl"
+  }
+}

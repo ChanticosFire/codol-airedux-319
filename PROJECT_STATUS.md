@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【相机来源锁定：`0x471980` = playerState 块（0x58 字节）】** ✅该子块步长 0x58、数组 `[clc+0xA900]^0x3613BDA3`、默认值 0xDA9920 拷贝 0x58 字节；顺序为 `0x671D80`→`0x471D80`(entities)→`0x471980`(**playerState**)→`0x471010`→`0x471560`→`0x4475F0`。→ 已接受的 baseline 里 playerState 为空，客户端没有本地视角/原点，正是黑屏来源。✅手写 11 字节快照（`00`+serverTime+delta+flags 0x0C+has_base 0+实体表 count=0）发送后客户端存活、但 ack 未推进、state 9——头部编码接近，缺 playerState 子块位编码。下一轮反汇编 `0x471A3E..0x471CAC` 恢复 ps 字段并写入 viewOrigin。证据：[JSON](evidence/experiments/20261023-codex-playerstate-block.json)。
+
 > **2026-10-23【教训：截断快照切片会让客户端崩溃退出】** ✅从 10200 字节体按“0x00 + 合理 time”扫描边界仅得 2 候选（第二个为误匹配），切出 211 字节以 seq 1000 发送 → ack 仍 1、客户端进程消失、用户看到“加载画面瞬间退出”。❌不完整快照不是被拒绝而是崩溃，位流切片不可再用。167 字节 hybrid baseline 仍是可回退的稳定路径。下一轮手写最小实体（先恢复 `0x671D80` pre-block）或写镜像解析器精确切分。证据：[JSON](evidence/experiments/20261023-codex-truncated-snapshot-crash.json)。
 
 > **2026-10-23【实体快照格式恢复；10KB 拼接快照未被确认】** ✅主解析链 `0x4722A0..0x4724A5`（`0x47238C` 读 has_base 位；`0x671D80`→`0x471D80`→`0x471980`→`0x471010`→`0x471560`→`0x4475F0`）。✅实体编码：`0x671650` 实体号表（1+1 bit、8-bit 数量、每实体 12 bits）、`0x671700` 字段 delta、`0x447190` 读位、`0x66EC30` 读 N 位。✅从 seq5 服务流提取 2697 真实快照体 10200 字节，以 9 片 seq 1000 发送 → 未确认、state 9。下一轮改发单个快照或手写单实体。证据：[JSON](evidence/experiments/20261023-codex-entity-snapshot-format.json)。
