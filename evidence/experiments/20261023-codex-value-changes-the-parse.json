@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T04:00:00+00:00",
+  "scope": "changing only the landing VALUE from 0x100 to 5830 breaks the pinned 55-bit parse (it becomes 97 bits with a stream error)",
+  "bodies": {
+    "runs/snapshot-tr15.bin (value 0x100, framed to 55)": {
+      "built": 55,
+      "measured": 55,
+      "error": 0
+    },
+    "runs/snapshot-real5830.bin (value 5830, same framing)": {
+      "built": 55,
+      "measured": 97,
+      "error": 1
+    }
+  },
+  "what_this_shows": [
+    "the framing is not the only thing that matters: the VALUE ITSELF changes how many bits the decoder consumes",
+    "with value 0x100 the client consumed exactly the 55 framed bits with no error",
+    "with value 5830 (0x16C6) it consumed 97 bits and raised a stream error",
+    "so the landing field is NOT the fixed 'gate + 32 bits' form that the -97 codec description suggests - at least not on this path",
+    "the difference must come from a variable-length component that depends on the value's magnitude or popcount"
+  ],
+  "candidate_explanations": [
+    "the landing index is not 0 for this body: with last = 0 the block may take the `current == last` branch at 0x471B9E, which reads a present bit and then a DIFFERENT codec than the 0x471C41 path",
+    "if that path uses a variable-length codec (the -100/-101 family), the observed 97 bits for 5830 versus 55 for 0x100 is consistent with a value-dependent length"
+  ],
+  "next": [
+    "probe 0x471B9E (present bit) versus 0x471C41 (delta path) hit counts for both values to see which branch each takes",
+    "that single comparison says whether the value changed the branch or the codec width"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r193-gs.jsonl",
+    "encoder": "runs/_gen_real.py"
+  }
+}
