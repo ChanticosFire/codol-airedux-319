@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T06:30:00+00:00",
+  "scope": "forge a netchan acknowledgement towards the 2697 dedrun to stop the reliable retransmission",
+  "session": {
+    "name": "20261023-world-12",
+    "pid": 41900,
+    "hook": "0x5B31B4 -> cave (refresh [cl2+0x30] before each 0x5B2C10 call)",
+    "bridge": "forward --start-challenge --fake-stats --send-move --keepalive",
+    "forge": "tools/forge_client_ack.py --ack 1 --seq 1 --target 127.0.0.1:28970 --send"
+  },
+  "forge_output": {
+    "gamestateMessageNum": 4,
+    "challenge": 1743857647,
+    "ack": 1,
+    "seq": 1,
+    "server_id": 0,
+    "qport": 0,
+    "client_port": 0,
+    "adr_address": "0x0",
+    "plain_hex": "010000000000",
+    "packet_hex": "010000000000efeeeeeeeeee",
+    "sent": true,
+    "after_reliableSequence": 89,
+    "after_reliableAcknowledge": 0
+  },
+  "server": [
+    "AdministraClient ... out 110",
+    "AdministraClient ... out 231",
+    "AdministraClient ... out 354"
+  ],
+  "analysis": {
+    "packet_was_sent": true,
+    "rejected_by_server": "after_reliableAcknowledge stayed 0 and out kept growing, so the dedrun discarded the forged packet",
+    "likely_reasons": [
+      "qport is 0 and client_port is 0: find_qport failed to locate the netchan address inside client_t, so the packet carries the wrong qport and cannot match the connected client",
+      "the packet came from a fresh ephemeral socket instead of the forward bridge's socket, so its source port does not match the endpoint the dedrun registered for AdministraClient",
+      "plain body was ack(4) + 00 00; the documented layout is u32 acknowledgement + clc_move + cmdCount, so the body may be malformed"
+    ]
+  },
+  "next": [
+    "move the forged-ack logic into ring_bridge_1649370.py's forward loop so the packet is sent from the same UDP socket that the dedrun already associates with AdministraClient",
+    "read qport from the dedrun's client_t remoteAddress by following the netchan structure instead of the current heuristic, or derive it from sock.getsockname()",
+    "fix the plain body to u32 ack + clc_move(0x00 or the real opcode) + cmdCount and re-test whether after_reliableAcknowledge advances"
+  ],
+  "artifacts": ["runs/w12-forge.json", "runs/w12-in.jsonl"]
+}
