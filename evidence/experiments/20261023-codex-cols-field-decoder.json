@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T15:35:00+00:00",
+  "scope": "the open-source 3.3.3.3 server (enceka/cols) contains the authoritative field-stream decoder",
+  "repo": {
+    "url": "https://github.com/enceka/cols",
+    "local": "E:/GAME/COD/codol-airedux/cols",
+    "what": "pure-Rust 3.3.3.3 server with native game channel, authoritative matches, snapshots and field tables"
+  },
+  "key_files": {
+    "crates/protocol/src/game/snapshot/mod.rs": "snapshot writer and the field-stream decoder",
+    "crates/protocol/src/game/channel/wire.rs": "wire format",
+    "fixtures/protocol/player-state-fields-3.3.3.3.json": "235 playerState fields [offset, codec_bits, hint]",
+    "fixtures/protocol/entity-state-fields-3.3.3.3.json": "62 entityState fields, entity_state_bytes 272"
+  },
+  "decoder_facts": {
+    "last": "r.bits(8) - 1: an 8-bit upper bound on the field index, not a count",
+    "loop": "while index < last: read distance (1 bit + optional 4-bit parts) then the codec value for fields[index]",
+    "codecs": {
+      "-97": "1 bit flag (1) + u32",
+      "-88": "raw u32",
+      "-87": "u16 short angle",
+      "-100": "2 bits (0) + u16 angle",
+      "-75": "1 bit (0) + u8",
+      "-94": "1 bit (1) + u8 event id + optional parameter",
+      "0": "1 bit + 1 bit + u32"
+    }
+  },
+  "mapping_to_our_findings": {
+    "byte164": "this is the 8-bit `last` field bound, not an entity count - writes of 1 mean last=0",
+    "per-entity bit": "there is no per-entity bit in this decoder; the loop is over field indices",
+    "field table": "1649370's own table is at 0xDA63E8 and uses the same [offset, codec, hint] layout (first row: 76, -58, 0)"
+  },
+  "reuse_plan": [
+    "port this decoder to Python and drive it against 1649370's table at 0xDA63E8",
+    "then encode one entity as: last(8) + distance/field pairs according to the table",
+    "start with eType (codec -77 raw byte) and the 16-bit position codec, as cols does for its local player"
+  ],
+  "artifacts": {
+    "repo": "E:/GAME/COD/codol-airedux/cols"
+  }
+}
