@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【纠正帧偏差：0x471D80 真实参数已读出】** ✅新增 CallSite 断点处理器，在 0x4723DD 实测 5 个参数：cl=0x134DAC28、stream=0x16D9EC、0x11A00、0、&stream=0x169E08。✅纠正：SnapTrace 在 0x471D80 入口的断点发生在 push ebp/mov ebp,esp 之前，ebp 属调用者，[ebp+8]=0x18DA98 是调用者参数而非位宽；真实第一个参数是 cl。→ 0x471E0E push cl 给 0x66EC30 字面上不可能是位宽，只剩 (a) 取指针低 5 位（cl&0x1F=8）或 (b) push 映射认错。下一轮逐字节复核 0x471E05..0x471E2D。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-callsite-params.json)。
+
 > **2026-10-23【动态读到实体循环参数：ebp+8=1628824，非位宽】** ✅给 SnapTrace 加 param_ebp8/10/14 后实测：ebp+8=1628824(0x18DA98)、ebp+0x10=0、ebp+0x14=0，cursor=164/bit=1307。→ 1628824 是指针量级，不可能是位宽；但 0x471E0E 把它当宽度 push 给 0x66EC30，说明调用帧或语义需复核。工具改进已落地（launch 的 SnapTrace 记录含 param_ebp8/10/14）。下一轮记录 [ebp+4] 返回地址确认帧并检查 0x66EC30 对大参数分支，在 0x4723DD 断点比对真实传入值。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-entityloop-params.json)、[JSON](evidence/experiments/20261023-codex-ebx-not-found.json)。
 
 > **2026-10-23【delta 实体（8 位索引）崩溃；索引位宽未知】** ✅`snapshot-del8.bin`（count1 + bit=1 + 8 位索引 0 + 尾部）→ 客户端退出。✅反汇编 0x4721F0..0x4722A2 只看到快照头解析，`ebx`（push 给 0x471D80 的位宽参数）赋值在更早处，本轮未定位。→ delta 路径同受“索引位宽未知”阻塞：位宽错→位流错位→复制源非法→崩溃。下一轮在函数入口前找 ebx 赋值或用断点读 [ebp+8]，拿到位宽后再构造。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-delta8-crash.json)。
