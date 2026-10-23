@@ -653,13 +653,16 @@ def forge_ack_packet(seq: int, ack_override: int | None,
         # outgoingSequence is the first netchan field, hence name - 0x2A8.
         netchan = base - 0x2B8 + 0x10
         outgoing_seq = 0
+        incoming_seq = 0
         raw_seq = rdc.read(handle, netchan, 0x10)
         if raw_seq and len(raw_seq) == 0x10:
             outgoing_seq = struct.unpack_from("<i", raw_seq, 0x00)[0]
             incoming_seq = struct.unpack_from("<i", raw_seq, 0x0C)[0]
             adr_address = netchan + 0x10
-        else:
-            incoming_seq = 0
+        # Netchan_Process expects the next sequence after what it has already
+        # accepted; a far-future sequence is dropped as out of order.
+        if incoming_seq:
+            seq = (incoming_seq + 1) & 0x7FFFFFFF
         message_ack = outgoing_seq & 0x7FFFFFFF
         # append clc_nop (3 bits = 4) so the command stream is non-empty and harmless
         plain = bytes([server_id & 0xFF]) + struct.pack("<I", message_ack) + b"\x04"

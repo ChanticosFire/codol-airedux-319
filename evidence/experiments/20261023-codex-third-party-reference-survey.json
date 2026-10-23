@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T13:40:00+00:00",
+  "scope": "survey 319/他人文件参考 for reusable server implementations and interfaces",
+  "folder_size": "218 files, about 180 MB",
+  "findings_by_version": {
+    "codol3333_3.3.3.3": {
+      "paths": [
+        "他人文件参考/codol3333服务端开发文档/ (100+ markdown docs)",
+        "他人文件参考/服务端.zip (Python server: codol_server.py, lib/codol_server/{accounts,authchan,config,identity,iips,lobby,silence,store,tlsx,wire}.py, lib/codol_dw/tiger.py, bd_data/*)"
+      ],
+      "stack": "pure Rust server per docs; the zip is a separate Python v0.0.1 launcher-helper server",
+      "transport": "GAME_TRANSPORT_PROGRESS.md documents ECDH secp224r1 + KDF SHA1(sharedX||key) + AES-CTR + HMAC-SHA1, INIT/INIT_ACK/COOKIE_ECHO/COOKIE_ACK/DATA frames",
+      "relevance": "architecture and protocol-shape reference only: 3.3.3.3 transport explicitly differs from 1.1.1.13 (Tiger/AES-192/old IV)"
+    },
+    "lsg_bdlobby_319": {
+      "paths": ["他人文件参考/bdproto319.py", "他人文件参考/bdsvc319.py"],
+      "content": "bdLobby (LSG) protocol ported from codol-node/lsg.js: SHA1(packetBuffer) -> HMAC-SHA1 key schedule -> calcHmacs, frame header [AB 85], AES-CBC + 8-byte HMAC, fixed SESSION_KEY, makeServiceReply layout",
+      "relevance": "this is the lobby/auth channel reference that our server319.lsg already follows; not the in-game transport"
+    },
+    "codol_2_6_9_7": {
+      "paths": ["他人文件参考/CODOL-2.6.9.7-技术文档.md", "他人文件参考/3.19服务-客户端.7z"],
+      "relevance": "older build reference (AlphaBuild 1.1.1.13 lineage); useful for connectResponse/stats shapes but not for 1649370-specific offsets"
+    },
+    "2697_game_server_source": {
+      "path": "runs/2697-native-src",
+      "relevance": "the only source that matches the server we actually run: SV_Netchan_Decode/Encode with CODOL_Xor, SV_PacketEvent seq-only targeting, SV_ExecuteClientMessage 3-bit command stream, SV_UserMove CODOL_UsercmdKey"
+    }
+  },
+  "what_is_directly_reusable_for_our_own_game_server": [
+    "runs/2697-native-src/src/sv_net_chan.c : exact XOR cipher both directions",
+    "runs/2697-native-src/src/sv_main.c : SV_PacketEvent frame handling, seq-only netchan, NET_CompareAdr matching",
+    "runs/2697-native-src/src/sv_client.c : SV_ExecuteClientMessage / SV_UserMove body parsing and usercmd key",
+    "tools/ring_bridge_1649370.py : working client-side encoder for the same cipher (mirror it for the server side)",
+    "他人文件参考/bdproto319.py + bdsvc319.py : LSG/bdLobby framing for the auth/lobby side we already run"
+  ],
+  "plan_for_our_own_game_server": {
+    "phase_1_echo": "UDP listener on a free port (e.g. 28970): answer getchallenge with challengeResponse, connect with connectResponse (mapname/gametype/sv_maxclients/protocol/shortversion), stats with statsResponse, using the 2697 XOR cipher",
+    "phase_2_netchan": "accept seq/serverId/messageAck headers exactly as SV_PacketEvent does, decode the bit-packed command stream (clc_move/clc_nop), and reply with a minimal gamestate + snapshot so the client leaves the loading screen",
+    "phase_3_observe": "because we own the server, log every received byte, the computed key, and the decoded command; expose a small HTTP or console query to dump client state",
+    "phase_4_playable": "add map/collision-free baseline gamestate and a snapshot loop so the client can stand and move; then bots and match end"
+  },
+  "caveats": [
+    "do not copy 3.3.3.3 transport constants into the 1.1.1.13 path; the docs themselves warn they differ",
+    "the Python zip is a lobby/auth server, not a game server; it does not provide in-game gamestate/snapshot logic",
+    "the toolchain for building the Rust/C server is still missing locally (choco mingw failed); a Python server avoids that dependency and can be built immediately"
+  ],
+  "recommendation": "write the game server in Python first (reuses our working cipher code and needs no toolchain), inside tools/ or a new server1649370/ package, with exhaustive logging from day one.",
+  "artifacts": ["他人文件参考/bdproto319.py", "他人文件参考/bdsvc319.py", "他人文件参考/服务端.zip", "runs/2697-native-src/src/sv_net_chan.c"]
+}

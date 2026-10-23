@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T13:10:00+00:00",
+  "scope": "make the forged sequence follow the dedrun's incomingSequence instead of a far-future base",
+  "change": "forge_ack_packet reads netchan.incomingSequence at client_t+0x10+0x0C and, when non-zero, overrides seq with incomingSequence + 1",
+  "verified_facts": {
+    "ip_rewrite": "remoteAddress ip set to 127.0.0.1 again (after_ip 04000000 7f000001 7148...), write_ok true",
+    "incoming_sequence_advances": "server netchan.incomingSequence 4 -> 5 -> 5 -> 6 while the session ran, so genuine bridge packets from 127.0.0.1:29000 ARE accepted after the ip rewrite",
+    "outgoing_sequence_advances": "172 -> 196 -> 220 -> 244",
+    "message_acknowledge_stays_zero": "0, 0, 0, 0",
+    "forge_log_values": [
+      "seq 100002, message_ack 134",
+      "seq 100003, message_ack 184",
+      "seq 100004, message_ack 234"
+    ]
+  },
+  "interpretation": {
+    "client_packets_now_accepted": "incomingSequence moving proves the address match works; genuine packets are processed",
+    "forged_packets_still_rejected": "messageAcknowledge remains 0 while the forged body claimed 134/184/234",
+    "the_seq_override_did_not_apply": "the forge log still shows seq 100002+, which means incoming_seq evaluated to 0 inside forge_ack_packet even though the standalone probe read 4/5/6 from the same address"
+  },
+  "unknown": [
+    "why forge_ack_packet sees incomingSequence as 0 while a standalone read of netchan+0x0C sees 4/5/6",
+    "whether the seq override would make messageAcknowledge track the forged value once it actually applies"
+  ],
+  "next": [
+    "log incoming_seq and the final seq_used inside forge_ack_packet to see what it actually computes",
+    "if incoming_seq reads 0 there, the read length or the netchan base inside that function differs from the probe; align them",
+    "once seq is truly incomingSequence+1, re-check whether messageAcknowledge follows the forged body"
+  ],
+  "artifacts": ["runs/forge-ack-log.jsonl", "runs/2697-server-test/main/qconsole.log"]
+}
