@@ -2959,6 +2959,29 @@ def main(argv=None) -> int:
                                          "bit": bit}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"ps_loop_error": f"{label}: {error}"})
+        if label.startswith("Slot"):
+            try:
+                registers = row.get("registers", {})
+                ebp = int(registers["ebp"], 0)
+                esi = int(registers["esi"], 0)
+                edi = int(registers["edi"], 0)
+
+                def peek(offset: int) -> int:
+                    raw = self.process.read(ebp + offset, 4)
+                    return struct.unpack("<I", raw)[0]
+
+                count = getattr(self, "_slot_count", 0)
+                if count < 40:
+                    self.record({"slot": {
+                        "slot_d0": peek(-0xD0),
+                        "esi": hex(esi),
+                        "edi": hex(edi),
+                        "count_3ba0": peek(-0xCC),
+                        "idx_c8": peek(-0xC8),
+                    }})
+                self._slot_count = count + 1
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"slot_error": f"{label}: {error}"})
         if label.startswith("Decide"):
             try:
                 registers = row.get("registers", {})

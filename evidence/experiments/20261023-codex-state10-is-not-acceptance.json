@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T07:00:00+00:00",
+  "scope": "CRITICAL: state 10 is reached WITHOUT any snapshot parse, so 'state 10' was never proof that a snapshot was accepted",
+  "run": {
+    "body": "runs/snapshot-single22.bin",
+    "snap_trace_records": 0,
+    "slot_records": 0,
+    "final_state": 10,
+    "gamestate": "sent as usual (--gamestate-source native, native gamestate payload)",
+    "snapshots": "queued by the game server every 2 s with --snapshot-delay 20"
+  },
+  "the_finding": [
+    "the client reached network state 10 with ZERO calls into the snapshot parser (0x471980 / 0x471BB3 never fired)",
+    "so state 10 is produced by the GAMESTATE alone, not by processing a snapshot",
+    "therefore every conclusion of the form 'body X reaches state 10, so the snapshot was accepted' is INVALID - including the baseline 'hybrid 167-byte body reaches state 10' that this project has treated as its ground truth since early rounds"
+  ],
+  "what_state_10_actually_means": [
+    "most likely: the client finished the load handshake and entered the in-match network state, with cgame alive but with no scene data - which also explains why the frame is black",
+    "it does NOT mean a snapshot was parsed, validated, and applied"
+  ],
+  "implications": [
+    "the only reliable oracle for snapshot parsing is the breakpoint evidence (snap_trace / stream_error at 0x4724A5), not the network state",
+    "the rounds that used state 10 as an accept signal (roughly 60-140) measured the wrong thing, although their breakpoint-based measurements remain valid where traces exist",
+    "the 'rejection' results that DID show stream_error = 1 were real rejections of the parse; the 'acceptance' results that showed state 10 without traces were not acceptances at all"
+  ],
+  "what_to_check_next": [
+    "confirm that the snapshot parser fires at all in a run where the snapshot actually arrives (i.e. traces > 0 with the same body): if it never fires, the snapshots may not be reaching the client at all, which would re-contextualise the last two rounds entirely",
+    "verify the forward/ring bridge path end-to-end with the delivery assertion plus a non-zero snap_trace count before drawing any further conclusion"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r179-gs.jsonl"
+  }
+}

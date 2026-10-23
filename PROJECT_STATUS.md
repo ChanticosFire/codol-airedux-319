@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CRITICAL: state 10 happens without any snapshot parse]**
+> Slot probe run: snap_trace 0, slot 0, final state 10. So state 10 comes from the gamestate alone, not from processing a snapshot.
+> Every 'state 10 = snapshot accepted' conclusion is invalid, including the hybrid baseline. State 10 most likely means the load handshake completed with no scene data (hence the black frame).
+> Reliable oracle is breakpoint evidence (snap_trace / stream_error), not the network state. Next: confirm the parser fires at all with the delivery assertion and a non-zero snap_trace count.
+> Evidence: [state10 is not acceptance](evidence/experiments/20261023-codex-state10-is-not-acceptance.json).
 > **2026-10-23 [One field per snapshot; client chooses the index]**
 > p7f2 (7-bit prologue + two present+delta groups) still decodes one field. Six shapes falsified; probe now validated (0x670FF0 calls 0x6701D0 once).
 > Theory: ps writes exactly one field per snapshot; the loop bound [eax+0x3BA0] advances with the loop and the exit is the has-ps bit; the landing index is derived from that slot count, so the CLIENT picks the field.
