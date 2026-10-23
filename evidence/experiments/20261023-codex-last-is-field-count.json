@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T04:00:00+00:00",
+  "scope": "two present+delta groups still decoded ONE field - and the reason is visible in the loop bound: `last` is the field count",
+  "body": "runs/snapshot-pf2.bin (prologue with last=0, two [present(0)+delta] groups, terminator, 27 bits)",
+  "measurement": {
+    "ps_field_records": 1,
+    "decide_stream_error": 1,
+    "state": 9,
+    "builder_ps_bits": 27
+  },
+  "why": [
+    "the disassembly loops with `cmp ecx, [eax+0x3BA0]` - i.e. the number of iterations is bounded by a COUNT read from the stream structure, not by how many delta groups we write",
+    "the prologue reads that count as `mode` + 5-bit `last` (0x471A4D): in the accepted body `last = 0` and exactly ONE field was decoded",
+    "so `last` is the field count (0 -> 1 field), which is also how the cols encoder writes it (`last_changed + 1`)",
+    "our pf2 body wrote TWO groups but still `last = 0`, so the loop stopped after the first field and the leftover bits became a stream error"
+  ],
+  "next_test": {
+    "change": "set the prologue's 5-bit `last` to 1 and keep two [present(0)+delta] groups",
+    "prediction": "TWO ps_field decodes and the body parses (stream_error 0)",
+    "if true": "the loop bound is understood, and the encoder can emit any number of fields by writing the right `last`"
+  },
+  "artifacts": {
+    "server_log": "runs/codex-r176-gs.jsonl",
+    "encoder": "runs/_gen_pf2.py"
+  }
+}

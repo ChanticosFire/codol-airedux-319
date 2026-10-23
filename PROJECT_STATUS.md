@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [last = field count]**
+> pf2 (last=0, two groups) decoded one field with stream_error 1. The loop bound is `cmp ecx,[eax+0x3BA0]`, a COUNT from the prologue's mode+last. Accepted body had last=0 -> 1 field.
+> Next: last=1 with two groups; predict two decodes and stream_error 0.
+> Evidence: [last is field count](evidence/experiments/20261023-codex-last-is-field-count.json).
 > **2026-10-23 [DECISIVE: per-field = present bit + optional delta; table is 0xDA63E8 (24)]**
 > 0x471B9E reads one present bit; present==1 skips the field; present==0 calls 0x670FF0 with table 0xDA63E8 and count 0x18. Loop iterates over history slots.
 > rec2 failed because its second record's continuation bit landed in the next field's PRESENT position.
