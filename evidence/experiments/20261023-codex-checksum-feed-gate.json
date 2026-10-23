@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "experiment": "instrument exact gamestate checksum comparison and override captured field at offset 26",
+  "reused_runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/runtime",
+  "reliable_until_state": 0,
+  "baseline_comparison": {"incoming": "0x36e8f17b", "current": "0xffb56d7e", "equal": false, "error": "EXE_POSSIBLECONFIGSTRINGMISMATCH"},
+  "override_comparison": {"incoming": "0xffb56d7e", "current": "0xffb56d7e", "equal": true, "error": "XBOXLIVE_CANTJOINSESSION"},
+  "checksum_field_offset": 26,
+  "client_states_after_override": [4, 5, 7, 8, 0],
+  "client_stage_after": 5,
+  "client_message_ack_after": 1,
+  "client_sent_gamestateupdate": true,
+  "bridge_received": 6,
+  "bridge_injected": 6,
+  "ring_b_after": {"read": 6, "write": 6},
+  "new_error_static_site": "0x472e48 reads configstring type byte [0x77d8250+edi]; 0x472e4e requires type < 0x17; 0x472e53 excludes type 0x15; 0x472e64 calls Com_Error with XBOXLIVE_CANTJOINSESSION",
+  "verified_conclusion": "The captured checksum at plaintext offset 26 is the exact argument compared with the client's current value. Replacing only this uint32 removes EXE_POSSIBLECONFIGSTRINGMISMATCH and advances the client to state 8. The next failure is a configstring index/type rejection, not a proven Xbox Live network failure.",
+  "unknown": "Which configstring index and type first triggers 0x472e58, and what 1649370-native configstring table is required.",
+  "artifacts": ["runs/codex-config2-forward.json", "runs/codex-config2-login.json", "runs/codex-checksum-forward.json", "runs/codex-checksum-gs.jsonl", "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-597845f5/events.jsonl", "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-1b1d89b7/events.jsonl"]
+}

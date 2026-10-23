@@ -2769,6 +2769,17 @@ def main(argv=None) -> int:
 
     def observed_breakpoint(self, event, address, original, label, row, thread, ctx):
         original_breakpoint(self, event, address, original, label, row, thread, ctx)
+        if label == "ConfigstringCompare":
+            try:
+                registers = row.get("registers", {})
+                ebp = int(registers["ebp"], 0)
+                incoming = struct.unpack("<I", self.process.read(ebp + 8, 4))[0]
+                current = struct.unpack("<I", self.process.read(0x77D8240, 4))[0]
+                self.record({"configstring_compare": {"incoming": incoming, "current": current,
+                                                       "equal": incoming == current,
+                                                       "return_address": hex(struct.unpack("<I", self.process.read(ebp + 4, 4))[0])}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"configstring_compare_error": str(error)})
         if label == "BeforeCbuf":
             try:
                 pointer, capacity, length = struct.unpack("<3I", self.process.read(0x76595A4, 12))

@@ -86,7 +86,8 @@ class ServerState:
 class GameServer:
     """Minimal, fully logged out-of-band responder."""
 
-    def __init__(self, port: int, log_path: str | None = None, delay_send: float = 0.0):
+    def __init__(self, port: int, log_path: str | None = None, delay_send: float = 0.0,
+                 checksum_feed: int | None = None):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -96,6 +97,7 @@ class GameServer:
             self.log_path.parent.mkdir(parents=True, exist_ok=True)
         self.running = True
         self.delay_send = delay_send
+        self.checksum_feed = checksum_feed
 
     # ------------------------------------------------------------------ logging
     def log(self, event: dict) -> None:
@@ -189,6 +191,13 @@ class GameServer:
             if not payload:
                 self.log({"dir": "meta", "kind": "gamestate_missing"})
                 continue
+            if self.checksum_feed is not None:
+                original = struct.unpack_from("<I", payload, 26)[0]
+                if original != 0x36E8F17B:
+                    raise ValueError(f"unexpected captured checksum at offset 26: {original:#x}")
+                payload = payload[:26] + struct.pack("<I", self.checksum_feed) + payload[30:]
+                self.log({"dir": "meta", "kind": "checksum_feed_override",
+                          "before": hex(original), "after": hex(self.checksum_feed)})
             seq = 3
             peer["last_server_seq"] = seq
             frag_size = 1162
@@ -289,10 +298,14 @@ def main() -> int:
     parser.add_argument("--log", default="runs/gs.jsonl")
     parser.add_argument("--delay-send", type=float, default=0.0,
                         help="seconds after connect before sending gamestate")
+    parser.add_argument("--checksum-feed", type=lambda value: int(value, 0),
+                        help="experimental uint32 replacement at gamestate offset 26")
     args = parser.parse_args()
     if args.delay_send < 0:
         parser.error("--delay-send must be nonnegative")
-    server = GameServer(args.port, args.log, args.delay_send)
+    if args.checksum_feed is not None and not 0 <= args.checksum_feed <= 0xFFFFFFFF:
+        parser.error("--checksum-feed must be a uint32")
+    server = GameServer(args.port, args.log, args.delay_send, args.checksum_feed)
     try:
         server.serve()
     except KeyboardInterrupt:
