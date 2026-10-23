@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T14:20:00+00:00",
+  "scope": "padding does not extend the ps block (it stays 28 bits for V=1) and the client exits during the run",
+  "bodies": [
+    "runs/snapshot-psend-1360.bin",
+    "runs/snapshot-psend-1378.bin",
+    "runs/snapshot-psend-1400.bin"
+  ],
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1336,
+    "ps_bits_consumed": 28,
+    "actors_error": 0,
+    "states": {
+      "t=22": 9,
+      "t=35": "client gone",
+      "t=50": "client gone",
+      "t=65": "client gone"
+    },
+    "note": "the timing is the reverse of the V=23 case: here the ps block stops at its natural 28 bits even though we appended zeros, and the client process exited before t=35"
+  },
+  "reading": [
+    "the ps block length is driven by its own content (landing index), not by the padding after it - so padding cannot be used to 'extend' it",
+    "the client exited during this run, which is the second time a ps-carrying body ended the process",
+    "the most plausible cause is that the playerstate we produce contains values the game logic later uses (e.g. a garbage float from codec -58) and the client crashes on them"
+  ],
+  "next": [
+    "avoid the float codecs (-58/-100) in the delta and carry values only through fixed-width fields",
+    "that means landing on an index whose codec is a fixed width, and encoding every field before it with the zero-flag form only"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r140-gs.jsonl",
+    "encoder": "runs/_gen_psend.py"
+  }
+}

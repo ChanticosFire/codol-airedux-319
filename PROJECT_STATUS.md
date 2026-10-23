@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Padding does not extend ps; client exited during the run]**
+> ps_end 1360/1378/1400 bodies: ps 1308 -> actors 1336 (28 bits, error 0) - padding ignored; client gone by t=35.
+> So ps length is content-driven, and this is the second ps-carrying body that ends the client process - likely garbage values from codec -58.
+> Next: avoid float codecs; land on a fixed-width field and encode earlier fields with the zero-flag form only.
+> Acceptance: a screenshot showing the map. Evidence: [ps padding ignored](evidence/experiments/20261023-codex-ps-padding-ignored.json).
 > **2026-10-23 [Landing on the origin field costs 69 ps bits]**
 > V=23 bodies: ps 1308 -> actors 1377 = 69 bits, actors error 1 (overran the 28+27 available). V=1 costs 28 bits -> ~2.8 bits per index step, confirming the cost-scales rule.
 > So a ps with a real origin needs ~70+ bits (23 field encodings). Next: build the full 23-field payload, measure its length, align the tail.
