@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T18:10:00+00:00",
+  "scope": "prove or disprove the ring-B delivery hypothesis by disabling the snapshot filter",
+  "root_cause_candidate_confirmed_in_code": {
+    "location": "tools/ring_bridge_1649370.py cmd_forward",
+    "filter": "if (not data.startswith(b'\\xff\\xff\\xff\\xff') and not fragment and state_now < args.reliable_until_state): drop as 'drop_snapshot'",
+    "defaults": {"--reliable-until-state": 9, "--oob-until-state": 0},
+    "STATE": "0x76446B0 (the client phase)",
+    "meaning": "with the default of 9, every non-fragment server packet is discarded while the client phase is below 9; our sessions sit at phase 5, so NONE of our 206-byte replies were ever written into ring B"
+  },
+  "experiment": {
+    "change": "ran forward with --reliable-until-state 0 to disable the snapshot filter",
+    "client": "20261023-ringb, pid 30336, our runtime/client-1649370",
+    "result": "client messageAck still 1, acked_our_seq still false, while our seq 6/7 206-byte replies were emitted",
+    "inband_count_client_to_server": 14
+  },
+  "interpretation": {
+    "filter_was_a_real_blocker": "the code path proves our earlier replies were dropped before injection, which invalidates the earlier 'body is wrong' reasoning",
+    "filter_off_did_not_fix_it": "with the filter off the client still does not acknowledge, so a second issue exists downstream",
+    "remaining_candidates": [
+      "the 206-byte all-zero body is not a valid service message and is discarded by the client before it forms an ack",
+      "inject_oob_raw writes an adr stub with type/ip/port that the client's receive path rejects",
+      "the client only acknowledges packets carrying a netchan fragment/reliable command (FRAGMENT_BIT), which our replies never set"
+    ]
+  },
+  "next": [
+    "log forward's injected counter explicitly (it is only emitted in the final record, which a kill loses) so delivery into ring B can be proven per packet",
+    "try setting the FRAGMENT_BIT (0x80000000) in our reply seq, since the bridge treats fragment packets as reliable commands and the client may only ack those",
+    "then replace the zero body with a minimal service message"
+  ],
+  "artifacts": ["tools/ring_bridge_1649370.py", "runs/ringb-gs.jsonl"]
+}
