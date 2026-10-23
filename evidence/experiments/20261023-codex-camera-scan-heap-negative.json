@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T05:20:00+00:00",
+  "scope": "heap scan for a camera triple finds only small UI-like values",
+  "session": {
+    "pid": 30780,
+    "state": 10
+  },
+  "scan": {
+    "range": "0x10000000..0x40000000 (stopped after 20 hits)",
+    "scanned_bytes": 188416,
+    "hits": 20,
+    "sample": [
+      [
+        -513.19,
+        -1.13,
+        0.0
+      ],
+      [
+        -1.31,
+        1.84,
+        0.0
+      ],
+      [
+        214.31,
+        -3146.15,
+        0.0
+      ],
+      [
+        13182.98,
+        144.42,
+        -1.62
+      ]
+    ],
+    "reading": "all hits have z near zero and look like UI/animation values; none looks like a map-space camera origin, and the scan stopped early once 20 hits were collected"
+  },
+  "next": [
+    "rerun the scan without the early-stop and with a stricter map-space filter (z in 0..2000, |x|,|y| in 500..8000)",
+    "or locate the renderer camera by code analysis rather than memory search"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r35-gs.jsonl"
+  }
+}
