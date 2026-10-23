@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T05:30:00+00:00",
+  "scope": "the load-completion path resolves to a status query that returns 2 only in a specific flag state",
+  "chain": {
+    "0x8018B0": "calls 0x803830 (singleton), then 0xB7A670 (status); if result == 2 it jumps to 0xB7AAD0 (success)",
+    "0x803830": "lazy singleton for [0x8269774] - not the load check",
+    "0xB7A670": "ecx = [esi+0x4F4]; if null return 0; else call 0xBA0780; if [esi+0x4F8] != 0 return that value; else if it was 2 return 1 instead"
+  },
+  "reading": [
+    "the success branch requires the status query to return exactly 2, but the query rewrites 2 to 1 when [esi+0x4F8] == 0",
+    "so load completion depends on both the inner status (0xBA0780) and the flag at [esi+0x4F8]",
+    "this is a stateful, three-level chain - not something a single injection can flip reliably"
+  ],
+  "next": [
+    "inspect 0xBA0780 (the inner status) to learn what states it can return and what makes it 2",
+    "identify the object at [esi+0x4F4] (probably the map/level loader) and its flag [esi+0x4F8]"
+  ],
+  "artifacts": {
+    "previous": "evidence/experiments/20261023-codex-ui-transition.json"
+  }
+}
