@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T07:00:00+00:00",
+  "scope": "move the forged acknowledgement into the forward loop so it leaves from the same socket",
+  "implementation": {
+    "tool": "tools/ring_bridge_1649370.py",
+    "new_options": ["--forge-ack", "--forge-interval", "--forge-ack-value"],
+    "helper": "forge_ack_packet(seq, ack_override, qport_override): locates the dedrun's AdministraClient client_t, encodes plain = u32 ack + 00 00 with forge_client_ack.encode, and prefixes seq + qport",
+    "socket": "forward now binds 127.0.0.1:0 explicitly and passes its own port as qport, so the ack leaves from the endpoint the dedrun already knows",
+    "verification": "an isolated call produced packet_hex 0700000022c8137878787878 with qport 51234, proving the override is applied"
+  },
+  "observed_run": {
+    "forge_ok": 0,
+    "forge_failed": 37,
+    "failure": "client_t not found",
+    "server": [
+      "Player AdministraClient^7, 0 dropped: EXE_TIMEDOUT",
+      "Going to CS_ZOMBIE for AdministraClient"
+    ],
+    "bridge_totals": {"sent": 88, "received": 4860, "injected": 4853}
+  },
+  "analysis": {
+    "implementation_works": "the forward loop emits forge attempts every 0.8 s from its own socket, and the packet builder was verified independently",
+    "why_no_ack_landed": "by the time this forward started, the client had already been timed out and the dedrun had moved it to CS_ZOMBIE, so find_name no longer finds AdministraClient and no packet can be built",
+    "lesson": "the forged acknowledgement must begin as soon as the client_t exists (right after the connect/challenge exchange), not minutes later"
+  },
+  "next": [
+    "run a fresh session and start forward with --forge-ack immediately after login, before the client reaches the dedrun timeout",
+    "keep the refresh hook for cl2+0x30 as well; the two mechanisms are complementary",
+    "watch for the first forge_ack event carrying a real qport and then check whether out stops growing / reliableAcknowledge advances"
+  ],
+  "artifacts": ["runs/w13-forward3.json", "runs/w13-in2.jsonl"]
+}

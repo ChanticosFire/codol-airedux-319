@@ -593,10 +593,64 @@ def build_fake_stats_packets() -> list[bytes]:
             + stream[i * 1238:(i + 1) * 1238] for i in range(count)]
 
 
+def forge_ack_packet(seq: int, ack_override: int | None,
+                     qport_override: int | None = None) -> tuple[bytes | None, dict]:
+    """Build a 2697 netchan acknowledgement so this bridge speaks as the client.
+
+    The 1649370 client never acknowledges the dedrun's reliable stream, so the
+    server keeps retransmitting and eventually drops the client.  Sending the
+    encoded ack from the very socket the dedrun already knows keeps the source
+    endpoint valid; the plain body follows forged_client_ack's layout.
+    """
+    try:
+        import read_dedrun_client as rdc
+        import forge_client_ack as fca
+    except Exception as error:  # pragma: no cover - optional tooling
+        return None, {"error": f"imports failed: {error!r}"}
+
+    pid = rdc.find_pid()
+    if not pid:
+        return None, {"error": "dedrun not running"}
+    handle = rdc.k32.OpenProcess(0x1F0FFF, False, pid)
+    if not handle:
+        return None, {"error": "OpenProcess failed"}
+    try:
+        best = None
+        for base in rdc.find_name(handle, b"AdministraClient\0"):
+            raw = rdc.read(handle, base + fca.OFF_RELIABLE_SEQUENCE, 24)
+            if not raw or len(raw) < 24:
+                continue
+            values = struct.unpack("<6i", raw)
+            challenge_raw = rdc.read(handle, base + fca.OFF_CHALLENGE, 4)
+            if not challenge_raw or len(challenge_raw) < 4:
+                continue
+            challenge = struct.unpack("<i", challenge_raw)[0]
+            if (0x400000 <= base < 0x8000000 and 0 <= values[0] < 100000
+                    and -1 <= values[1] <= values[0] and 0 <= values[4] < 1000000):
+                best = (base, values, challenge)
+        if not best:
+            return None, {"error": "client_t not found"}
+        base, values, challenge = best
+        command = (rdc.read(handle, base + fca.OFF_COMMANDS, 64) or b"").split(b"\0")[0]
+        ack = values[0] if ack_override is None else ack_override
+        plain = struct.pack("<I", ack) + b"\x00" + b"\x00"
+        body = fca.encode(plain, challenge, 0, values[3], command)
+        qport, client_port, _ = fca.find_qport(handle, base)
+        if qport_override:
+            qport = qport_override & 0xFFFF
+        packet = struct.pack("<IH", seq, qport) + body
+        return packet, {"ack": ack, "qport": qport, "client_port": client_port,
+                        "challenge": challenge, "reliable_sequence": values[0],
+                        "reliable_ack": values[1], "message_ack": values[3]}
+    finally:
+        rdc.k32.CloseHandle(handle)
+
+
 def cmd_forward(client: Client, args) -> dict:
     host, port_text = args.target.rsplit(":", 1)
     target = (host, int(port_text))
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("127.0.0.1", 0))
     dump_handle = open(args.dump_in, "w", encoding="utf-8") if getattr(args, "dump_in", None) else None
     sock.setblocking(False)
     events = []
@@ -611,6 +665,8 @@ def cmd_forward(client: Client, args) -> dict:
     move_sent = False
     last_keepalive = time.monotonic()
     keepalive_seq = 2
+    last_forge = 0.0
+    forge_seq = 1
     deadline = time.monotonic() + args.seconds
     last_status = None
     next_retry = 0.0
@@ -683,6 +739,19 @@ def cmd_forward(client: Client, args) -> dict:
                 move_sent = True
                 events.append({"t": round(time.monotonic(), 3), "dir": "clc_move",
                                "length": len(move), "seq": 1})
+            if getattr(args, "forge_ack", False) and time.monotonic() - last_forge >= args.forge_interval:
+                packet, info = forge_ack_packet(forge_seq, args.forge_ack_value,
+                                                sock.getsockname()[1] & 0xFFFF)
+                if packet:
+                    sock.sendto(packet, target)
+                    sent += 1
+                    forge_seq += 1
+                    events.append({"t": round(time.monotonic(), 3), "dir": "forge_ack",
+                                   "seq": forge_seq - 1, "info": info})
+                else:
+                    events.append({"t": round(time.monotonic(), 3), "dir": "forge_ack_failed",
+                                   "info": info})
+                last_forge = time.monotonic()
             if args.keepalive and time.monotonic() - last_keepalive >= 2.0:
                 packet = struct.pack("<I", keepalive_seq) + b"\x00" + bytes([1]) + bytes(200)
                 sock.sendto(packet, target)
@@ -861,6 +930,11 @@ def main() -> int:
     p.add_argument("--dedup", action="store_true",
                    help="forward each identical outgoing payload only once")
     p.add_argument("--max-events", type=int, default=300)
+    p.add_argument("--forge-ack", action="store_true",
+                   help="send an encoded 2697 netchan acknowledgement from this socket each interval")
+    p.add_argument("--forge-interval", type=float, default=1.0)
+    p.add_argument("--forge-ack-value", type=int, default=None,
+                   help="acknowledgement value; default uses the dedrun's reliableSequence")
     p.add_argument("--dump-in", help="write every injected server packet as JSONL (length/state/hex)")
     p.set_defaults(func=cmd_forward)
 
