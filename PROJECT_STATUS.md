@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CORRECTION: landing index is V-1; accepted body writes field 21 (event), not 22]**
+> 29 bits decompose exactly as 1+1+5+1+1+5+13+1+1. With V=22 the landing is index 21 = offset 268 / codec -94 (event), which costs 1 bit for an empty event - so the body never touches origin[0]. Codec 11 would cost gate+11 bits.
+> This index-off-by-one is what made the recent measurements incoherent. Next: V=23 distance=23 -> landing index 22 (codec 11), predicted ps = 40 bits.
+> Evidence: [landing is V minus one](evidence/experiments/20261023-codex-landing-is-v-minus-one.json).
 > **2026-10-23 [Two-field body: one delta then stream error]**
 > loop2f (2 full header groups, 33 ps bits): delta_call = 1, stream_error 1, state 9. One iteration should cost 16 bits, so 33 should fit two - it does not, so the real per-iteration cost is larger (extra bits inside 0x670FF0).
 > Next: arm the existing PsRead probe to log the stream cursor per read and measure the exact iteration budget.

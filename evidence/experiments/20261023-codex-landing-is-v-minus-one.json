@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T20:00:00+00:00",
+  "scope": "CORRECTION: the landing field index is V-1, so the accepted body writes field 21 (an event codec), not field 22 - which explains why its ps is only 29 bits",
+  "the_bit_arithmetic_of_the_accepted_body": {
+    "has-ps": 1,
+    "mode": 1,
+    "last": 5,
+    "present": 1,
+    "delta_continuation": 1,
+    "delta_V": 5,
+    "delta_distance_23": 13,
+    "landing_value": 1,
+    "terminator": 1,
+    "sum": 29,
+    "note": "exactly the measured 29 bits"
+  },
+  "the_key_correction": [
+    "the landing index is `V - 1` (V is the target position and the landing is distance-1 from the previous position), so with V=22 the landing is index 21",
+    "index 21 in the 0xDA63E8 table is offset 268 / codec -94 (an EVENT codec), not offset 16 / codec 11",
+    "an empty event costs a single bit, which is exactly the 1 bit the body spends on its 'landing value'",
+    "whereas codec 11 (index 22) would cost a gate bit plus 11 value bits",
+    "so the accepted body does not touch origin[0] at all - it writes an event field, which is harmless by construction"
+  ],
+  "why_this_matters": [
+    "the long-standing assumption 'single22 writes field 22 = offset 16' was wrong by one index",
+    "every attempt to reach origin therefore aimed at V=23..23 with distance 23, which lands on index 22 only if the landing rule is distance-1 from position -1, i.e. distance 23 -> 22 - the two rules disagree and that ambiguity is what made the measurements incoherent",
+    "this round settles it in favour of V-1: the 29-bit fit only works for a single-bit landing value, i.e. an event codec"
+  ],
+  "next": [
+    "encode a body with V=23 and distance 23 so the landing is index 22 (codec 11, gate + 11 bits) and measure the ps length: the arithmetic now predicts 7 + 1 + 1 + 5 + 13 + 12 + 1 = 40 bits",
+    "if the measured length is 40, both the landing rule and the codec width are confirmed and origin[0] can actually be written"
+  ],
+  "artifacts": {
+    "table": "0xDA63E8, 24 entries of [offset, codec, hint]",
+    "measurement": "runs/snapshot-single22.bin = 29 bits, stream_error 0"
+  }
+}
