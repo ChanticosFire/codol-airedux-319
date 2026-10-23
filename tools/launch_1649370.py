@@ -2848,6 +2848,22 @@ def main(argv=None) -> int:
                 self.record({"map_loading_configstrings": {"pool_cursor": cursor, "slots": rows}})
             except (OSError, ValueError, struct.error) as error:
                 self.record({"map_loading_configstrings_error": str(error)})
+        if label.startswith("Ring"):
+            try:
+                registers = row.get("registers", {})
+                edi = int(registers["edi"], 0)
+                ebx = int(registers.get("ebx", "0"), 0)
+                ring_idx = 0
+                if ebx:
+                    raw = self.process.read(ebx + 0xA8DC, 4)
+                    ring_idx = struct.unpack("<I", raw)[0]
+                n = getattr(self, "_ring_count", 0)
+                if n < 20:
+                    self.record({"ring": {"label": label, "edi": hex(edi),
+                                          "ring_idx": ring_idx, "n": n}})
+                self._ring_count = n + 1
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"ring_error": f"{label}: {error}"})
         if label.startswith("SnapTrace"):
             try:
                 registers = row.get("registers", {})

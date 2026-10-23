@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T15:00:00+00:00",
+  "scope": "edi is 0 at the push point and the ring-calculation path never runs; the observed ring index is 31, suggesting a sequence-window issue",
+  "breakpoints": ["0x4722C0:RingCalc (ring address computed)", "0x4723CB:RingPush (just before pushing arg3)"],
+  "records": [
+    {"label": "RingPush", "edi": "0x0", "ring_idx": 31, "n": 0}
+  ],
+  "counts": {"ring_records": 1, "ringcalc": 0},
+  "final_state": 10,
+  "what_this_shows": [
+    "the ring-address computation at 0x4722B0..0x4722C0 is NEVER executed for our snapshots - that branch is not taken",
+    "the value pushed as arg3 is literally zero, and the client keeps 31 in [ebx+0xA8DC] (the index the ring branch would mask and multiply by 0x3BBC)",
+    "so the client is in the 'no valid snapshot slot' path, and the index it holds (31) is suspicious: if the ring has a small power-of-two size, an out-of-window sequence number would make the slot invalid"
+  ],
+  "the_new_hypothesis": [
+    "we send snapshots with --snapshot-seq 1000, an arbitrary large sequence number",
+    "a real server sends a small, incrementing sequence; the client masks it into its snapshot ring (0x3BBC stride) and the ring index observed (31) is consistent with a small modulo window",
+    "a sequence number far outside the window would make every snapshot land on an invalid slot - which is exactly the NULL history we measure"
+  ],
+  "next_test": [
+    "re-run with --snapshot-seq 1 (and a short interval) and check whether 0x4722C0 (RingCalc) now fires and arg3 becomes non-zero",
+    "if it does, the sequence window is the blocker and the whole content path opens up; if not, the blocker is earlier in the load flow"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r185-gs.jsonl",
+    "probe": "tools/launch_1649370.py (Ring branch)"
+  }
+}

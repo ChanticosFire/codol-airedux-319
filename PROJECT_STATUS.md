@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Ring calc never runs; arg3 = 0; client holds ring idx 31]**
+> RingCalc (0x4722C0) never fired; RingPush fired once with edi = 0 and ring_idx = 31. So the client is in the 'no valid snapshot slot' path.
+> Hypothesis: --snapshot-seq 1000 is far outside the client's small modulo window (index 31 observed), so every snapshot lands on an invalid slot.
+> Next: re-run with --snapshot-seq 1 and check if RingCalc fires and arg3 becomes non-zero.
+> Evidence: [ring idx 31](evidence/experiments/20261023-codex-ring-idx-31.json).
 > **2026-10-23 [History is a 0x3BBC-stride snapshot ring or constant 0xC89A490]**
 > Caller: 0x472268 edi = 0xC89A490; or 0x4722A2 edi = [ebx+0xA8DC] & eax, *0x3BBC, +edx -> ring entry; 0x47239A tests it; 0x4723CB pushes it as arg3.
 > Both paths give a non-zero edi, yet the probe read arg3 = 0, so a branch passes NULL when the client has no valid snapshot slot.
