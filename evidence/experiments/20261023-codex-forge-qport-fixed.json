@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T07:40:00+00:00",
+  "scope": "keep one forward session alive, log every forged ack, and use the socket's own qport",
+  "session": {
+    "name": "20261023-world-15",
+    "pid": 33516,
+    "hook": "tools/install_refresh_hook.py --install",
+    "bridge": "forward --adr-type 2 --start-challenge --fake-stats --send-move --keepalive --forge-ack --forge-interval 1.5",
+    "new": "each successful forge_ack is appended to runs/forge-ack-log.jsonl so a kill cannot lose the evidence"
+  },
+  "forge_log_tail": [
+    {"seq": 8, "ack": 83, "qport": 51968, "challenge": -1618267891, "reliable_ack": 0, "message_ack": 1},
+    {"seq": 9, "ack": 87, "qport": 51968, "challenge": -1618267891, "reliable_ack": 0, "message_ack": 1},
+    {"seq": 10, "ack": 87, "qport": 51968, "challenge": -1618267891, "reliable_ack": 0, "message_ack": 1}
+  ],
+  "server": ["out 100", "out 213", "out 326", "out 439", "out 552"],
+  "analysis": {
+    "qport_fixed": true,
+    "source_port_stable": true,
+    "ack_still_ignored": true,
+    "remaining_suspects": [
+      "command bytes: forge_client_ack reads base+OFF_COMMANDS without indexing by (ack & 0xFF); reliableCommands[ack & 0xFF].command is what the decoder uses, and an empty command leaves the rolling key unadvanced",
+      "plain body: ack(4) + 00 00 may not be u32 ack + clc_move + cmdCount; the opcode may need to be a real clc_move value",
+      "the packet header may need more than seq(4)+qport(2) for this build"
+    ]
+  },
+  "next": [
+    "index reliableCommands by (ack & 0xFF) when building the command stream: offset = OFF_COMMANDS + (ack & 0xFF) * (4 + 1024) and read the 1024-byte command string",
+    "re-test with the same single-session setup and watch whether out stops growing",
+    "if still ignored, try the plain body variants u32 ack + 0x0A + 0x00 and u32 ack + 0x00 + 0x01"
+  ],
+  "artifacts": ["runs/forge-ack-log.jsonl", "runs/w15-forward.json"]
+}

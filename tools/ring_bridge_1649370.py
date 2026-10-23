@@ -746,8 +746,14 @@ def cmd_forward(client: Client, args) -> dict:
                     sock.sendto(packet, target)
                     sent += 1
                     forge_seq += 1
-                    events.append({"t": round(time.monotonic(), 3), "dir": "forge_ack",
-                                   "seq": forge_seq - 1, "info": info})
+                    event = {"t": round(time.monotonic(), 3), "dir": "forge_ack",
+                             "seq": forge_seq - 1, "info": info}
+                    events.append(event)
+                    try:
+                        with open(ROOT / "runs" / "forge-ack-log.jsonl", "a", encoding="utf-8") as fh:
+                            fh.write(json.dumps({"ts": time.time(), **event}, default=str) + "\n")
+                    except OSError:
+                        pass
                 else:
                     events.append({"t": round(time.monotonic(), 3), "dir": "forge_ack_failed",
                                    "info": info})
