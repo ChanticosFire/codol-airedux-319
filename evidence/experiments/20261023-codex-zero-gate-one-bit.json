@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T23:40:00+00:00",
+  "scope": "a ZERO-valued field costs ONE gate bit - the client stopped after 25 ps bits on a body we had padded to 73",
+  "bodies": {
+    "runs/snapshot-trio.bin": "three records (indices 13, 14, 22) all-zero values; builder length 73 bits",
+    "runs/snapshot-trio-x.bin": "single record (index 22); builder length 40 bits"
+  },
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1333,
+    "ps_bits_consumed": 25,
+    "actors_error": 0,
+    "states": {
+      "t=22": 9,
+      "t=35": 9,
+      "t=50": 9,
+      "t=62": 9
+    }
+  },
+  "interpretation": {
+    "builder_length": 73,
+    "client_length": 25,
+    "explanation": "the client stopped far earlier because a zero-valued field is coded as a SINGLE 0 gate bit; our encoder wrote a full 27/28-bit field for zero, so the extra bits were then read as the has-ps bit and the tail",
+    "consequence": "the zero gate is real and the earlier 'one bit per zero flag' intuition was right for the zero case; the remainder-bits-first rule applies only to NON-zero values"
+  },
+  "code_fix": {
+    "module": "server1649370/ps_codec.py",
+    "change": "write_field emits a single 0 bit for value == 0; read_field returns 0 when the gate bit is 0",
+    "test_added": "zero value costs exactly 1 bit",
+    "self_test": "self-test failures: 0"
+  },
+  "next": [
+    "rebuild the three-record origin payload with the corrected encoder (predicted: 14 + (1+5+7+1) + (1+5+4+1) + (1+5+7+1) + 1 = 55 bits for all-zero values)",
+    "then replace the zero values with real coordinates once the 27/28-bit float layout is known - the length model now predicts every step"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r149-gs.jsonl",
+    "encoder": "runs/_gen_trio.py"
+  }
+}

@@ -121,7 +121,12 @@ def write_field(writer: BitWriter, codec: int, value: int) -> None:
         writer.bits(0, 2)
         writer.bits(value & 0xFFFF, 16)
     elif codec > 0:
-        # gate bit, then width % 8 remainder bits FIRST, then whole bytes
+        # zero is coded as a single 0 gate bit (measured: a zero-valued record
+        # costs one bit, not a whole field); otherwise gate 1 then
+        # width % 8 remainder bits FIRST, then whole bytes.
+        if value == 0:
+            writer.bit(0)
+            return
         writer.bit(1)
         remainder = codec % 8
         writer.bits(value, remainder)
@@ -152,8 +157,8 @@ def read_field(reader: BitReader, codec: int) -> int:
             raise ValueError("-101 expects 2 zero bits")
         return reader.bits(16)
     if codec > 0:
-        if reader.bit() != 1:
-            raise ValueError("positive codec expects a 1 gate bit")
+        if reader.bit() == 0:
+            return 0
         remainder = codec % 8
         value = reader.bits(remainder)
         shift = remainder
@@ -225,6 +230,11 @@ def _self_test() -> int:
         check(f"distance({distance})", read_distance(BitReader(writer.to_bytes())), distance)
 
     # codecs
+    # a zero value must cost exactly one bit
+    writer = BitWriter(64)
+    write_field(writer, 10, 0)
+    check("zero value costs 1 bit", writer.position, 1)
+
     cases = [
         (-88, 0x3F800000),
         (-87, 0x1234),

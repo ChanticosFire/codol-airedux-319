@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Zero-valued field = one gate bit]**
+> Three-record all-zero payload (builder 73 bits): measured ps = 25 bits, error 0 - the client finished early because zero costs a single 0 gate bit; remainder-bits-first applies only to non-zero values.
+> write_field/read_field fixed accordingly, with a 1-bit zero assertion; self test 0 failures. Next: rebuild with the corrected encoder (predicted 55 bits for all-zero), then real coordinates.
+> Evidence: [zero gate one bit](evidence/experiments/20261023-codex-zero-gate-one-bit.json).
 > **2026-10-23 [Codec 10 ~27 bits; origin trio ~28 bits per component]**
 > V=13/distance=14/codec 10 measured ps = 49 bits (14 prologue + 1 exit + 7 distance + 27 field). Codec 11 was 28, so both are wide (float-like) codecs.
 > A full three-record origin payload is therefore ~124 bits - affordable. The old blowups were caused by distance=1 walking, not by field widths.
