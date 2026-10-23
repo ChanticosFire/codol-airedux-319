@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T11:50:00+00:00",
+  "scope": "compute netchan's offset from the packed client_t layout instead of scanning bytes",
+  "verified_facts": {
+    "client_t_is_pack1": "server.h wraps client_s in #pragma pack(1), and netchan follows four int fields (state, unksnapshotvar, deltaMessage, rateDelayed)",
+    "netchan_offset": "client_t + 0x10",
+    "name_offset": "client_t + 0x2B8, consistent with OFF_RELIABLE_SEQUENCE 265420 = 133324 (name -> reliableCommands) + 132096 (reliableCommands size)",
+    "readback_at_name_minus_0x2A8": {
+      "name": "0x52A2908",
+      "netchan": "0x52A2660",
+      "outgoingSequence": 347,
+      "sock": 1,
+      "dropped": 0,
+      "incomingSequence": 8,
+      "remoteAddress_hex": "040000000000000071480000b4030000",
+      "interpretation": "outgoingSequence and incomingSequence are small plausible counters; remoteAddress has type 4 (NA_IP) and port 0x7148 = 29000 stored big-endian, which matches this bridge's bound port"
+    },
+    "later_samples": ["outgoingSequence 866", "outgoingSequence 1359"],
+    "server_state_during_run": "state 4 (CS_ACTIVE) for several lines, ack still 1",
+    "final": "Player AdministraClient^7, 0 dropped: EXE_TIMEDOUT then Going to CS_ZOMBIE"
+  },
+  "not_verified": {
+    "ack_advance": "the dedrun never advanced reliableAcknowledge beyond 1 even with messageAck = outgoingSequence and the cipher key switched back to the server-side messageAcknowledge",
+    "candidate_causes": [
+      "the cipher key still does not match what SV_Netchan_Decode computes",
+      "Netchan_Process may reject the packet before the body is parsed (fragment flags, seq window)",
+      "the plain body may need the real reliableAcknowledge instead of a clc_nop-only tail"
+    ]
+  },
+  "unknown": [
+    "why the dedrun keeps reliableAcknowledge at 1",
+    "whether the 3-bit clc_nop tail is legal as a whole message"
+  ],
+  "next": [
+    "instrument the dedrun side: read client->reliableAcknowledge and client->messageAcknowledge right after a forged packet and compare with what the packet claimed",
+    "try a body that carries reliableAcknowledge(4) followed by clc_nop, matching the layout SV_ExecuteClientMessage expects after the serverId/messageAck header",
+    "if the dedrun still ignores it, hook SV_Netchan_Decode to log the received bytes and the computed key"
+  ],
+  "artifacts": ["runs/forge-ack-log.jsonl", "runs/2697-server-test/main/qconsole.log"]
+}

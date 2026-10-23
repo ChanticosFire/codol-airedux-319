@@ -648,26 +648,24 @@ def forge_ack_packet(seq: int, ack_override: int | None,
         start = max(0, base - span)
         block = rdc.read(handle, start, span) or b""
         adr_address = 0
-        # netadr_t = { type(4); ip[4]; port(2); pad(2) }. Require the port that
-        # follows 127.0.0.1 to equal this bridge's own port, so we do not mistake
-        # some other structure for netchan.remoteAddress.
-        needle = b"\x7f\x00\x00\x01"
-        wanted_port = struct.pack("<H", int(qport_override or 0) & 0xFFFF)
-        pos = block.find(needle)
-        while pos >= 0:
-            if not qport_override or block[pos + 4:pos + 6] == wanted_port:
-                adr_address = start + pos - 4
-                break
-            pos = block.find(needle, pos + 1)
+        # client_t uses #pragma pack(1): state/unksnapshotvar/deltaMessage/rateDelayed
+        # are four ints, so netchan sits at client_t+0x10 and name at client_t+0x2B8.
+        # outgoingSequence is the first netchan field, hence name - 0x2A8.
+        netchan = base - 0x2B8 + 0x10
         outgoing_seq = 0
-        if adr_address:
-            raw = rdc.read(handle, adr_address - 0x10, 4)
-            if raw and len(raw) == 4:
-                outgoing_seq = struct.unpack("<i", raw)[0]
+        raw_seq = rdc.read(handle, netchan, 0x10)
+        if raw_seq and len(raw_seq) == 0x10:
+            outgoing_seq = struct.unpack_from("<i", raw_seq, 0x00)[0]
+            incoming_seq = struct.unpack_from("<i", raw_seq, 0x0C)[0]
+            adr_address = netchan + 0x10
+        else:
+            incoming_seq = 0
         message_ack = outgoing_seq & 0x7FFFFFFF
         # append clc_nop (3 bits = 4) so the command stream is non-empty and harmless
         plain = bytes([server_id & 0xFF]) + struct.pack("<I", message_ack) + b"\x04"
-        body = fca.encode(plain, challenge, server_id, message_ack, command)
+        # The netchan cipher key uses the SERVER-side messageAcknowledge (values[3]),
+        # never the sequence we are reporting in the body.
+        body = fca.encode(plain, challenge, server_id, values[3], command)
         qport, client_port, _ = fca.find_qport(handle, base)
         if qport_override:
             qport = qport_override & 0xFFFF
