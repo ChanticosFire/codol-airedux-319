@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T11:50:00+00:00",
+  "scope": "final round: patch incomingSequence before sending the gamestate",
+  "session": {"client": "20261023-final2, pid 24560", "server": "server1649370 on 28971"},
+  "verified_facts": {
+    "connection": "0x133aae70 (populated, adr.type=2)",
+    "field_before": "conn+0x30=15960, conn+0x34=1",
+    "patch_result": "conn+0x34 written to 2, verified by read-back",
+    "start_challenge_result": "{\"status\":\"challenge_armed\"} with ring_b still 0/0 and no fragment logged",
+    "meaning": "start-challenge only arms the challenge; it does not cause our server to emit the gamestate"
+  },
+  "the_ordering_paradox": {
+    "problem": "the gamestate is only produced when 'forward' runs against our server, but forward performs its own connect and resets the connection state we just patched",
+    "consequence": "patching before forward is undone; patching after forward is too late because the fragments were already consumed",
+    "solution_candidates": [
+      "patch during the forward window: start forward in the background, poll status for a populated connection, patch conn+0x34 immediately, then trigger a second gamestate emission (forward again or a dedicated send command)",
+      "or make our server send the gamestate twice: first frame gets dropped under the wrong sequence, second frame arrives after the patch",
+      "or add a server mode that waits N seconds after connect before emitting, giving us time to patch"
+    ]
+  },
+  "status_of_the_sequence_hypothesis": {
+    "verdict": "still untested end-to-end",
+    "supporting_evidence": "conn+0x34 read 1 in two independent populated runs, and the reference server's first in-band sequence was 3 after a real handshake",
+    "what_would_settle_it": "the patch-then-send ordering described above, with stage/messageAck as the readout"
+  },
+  "artifacts": ["runs/f2-status1.json", "runs/f2-status2.json"]
+}
