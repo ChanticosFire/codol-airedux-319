@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ENTITY LIST LAYOUT READ: bit, bit, count (byte at 0x7859558), then 12 bits per id]**
+> 0x471DA3 calls 0x671650 and skips the block if it returns 0. 0x671650: memset lists, READ BIT1 (0 -> 0x6716F0), READ BIT2 (0 -> 0x6716ED), call 0x66ED70 -> count stored as a BYTE at 0x7859558, then 12 bits per entity id, looping count times.
+> entity_count read 0xFFFF0000 because it is a byte 0x00 with 0xFF neighbours from the memset - the count really is zero.
+> Recipe for one entity: bit1=1, bit2=1, count=1, then 12 id bits. Next: read 0x66ED70 for the count encoding.
+> Evidence: [entity list layout](evidence/experiments/20261023-codex-entity-list-layout.json).
 > **2026-10-23 [CORRECTION: entity block IS called; it decodes zero entities]**
 > single22 + probe at 0x471D80: 1 hit, state 10, entity_count 0xFFFF0000 (sentinel). Round 197's 'never entered' came from using count1-b164, which ends at state 9 and never reaches the content calls. The call at 0x4723DD is unconditional.
 > So the real problem: the entity block reads zero entities. Next: read 0x471D80 and find the store to 0x7859558 and the bits before it.

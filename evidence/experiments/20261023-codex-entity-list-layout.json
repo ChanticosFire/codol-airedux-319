@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T20:00:00+00:00",
+  "scope": "THE ENTITY LIST LAYOUT, READ FROM 0x671650: two gate bits, a count, then 12 bits per entity id",
+  "the_decoder_0x671650": {
+    "0x671650": "memset(0x7859358, 0, 0x1204) - clear the entity id list",
+    "0x671661": "memset(0x785955A, 0xFF, 0x1001) - clear the second array",
+    "0x671678": "call 0x447190 -> READ BIT 1; if 0 -> 0x6716F0",
+    "0x671685": "call 0x447190 -> READ BIT 2; if 0 -> 0x6716ED",
+    "0x67168F": "call 0x66ED70 -> read a value",
+    "0x671698": "mov [0x7859558], al - THIS IS THE ENTITY COUNT, stored as a BYTE",
+    "0x6716A1": "call 0x66EC30 with push 0xC -> READ 12 BITS per entity id",
+    "0x6716AD": "mov word [ecx*2 + 0x7859358], ax - store the id",
+    "0x6716BF": "cmp bl,al ; jb 0x6716A1 - loop count times"
+  },
+  "why_the_count_read_as_0xFFFF0000": [
+    "the count is a BYTE at 0x7859558, and our earlier dword read returned 0xFFFF0000",
+    "so the byte is 0x00 and its neighbours are 0xFF, which is exactly what the 0xFF memset at 0x671661 leaves",
+    "therefore the count really is ZERO - and the block either took one of the two gate branches, or 0x66ED70 returned 0"
+  ],
+  "the_recipe_to_get_one_entity": [
+    "bit 1 at 0x671678 must be 1",
+    "bit 2 at 0x671685 must be 1",
+    "then the count must decode to 1 (whatever 0x66ED70 requires)",
+    "then 12 bits give the entity id"
+  ],
+  "next": [
+    "read 0x66ED70 to learn how the count is encoded - it is the only unknown left in this recipe",
+    "then build a body with bit1=1, bit2=1, count=1, id=whatever, and check that 0x7859558 reads 1"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x471DA3 gate to 0x671650",
+      "0x671650 the entity list decoder",
+      "0x7859558 entity count byte",
+      "0x66ED70 count reader"
+    ]
+  }
+}
