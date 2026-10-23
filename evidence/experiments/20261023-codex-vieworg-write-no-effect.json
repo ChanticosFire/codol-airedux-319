@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T03:50:00+00:00",
+  "scope": "writing a vieworg candidate has no effect on the frame",
+  "experiment": {
+    "scan": "12 identity-matrix hits",
+    "write": "at 0x2323EDB4 (the 3 floats preceding the matrix) changed (204,-856,56) -> (204,-856,300)",
+    "client": "alive, state 10, ui 5",
+    "screenshot": "black (unique 6, mean 0)"
+  },
+  "reading": [
+    "the client tolerated the write but the frame did not change",
+    "so that candidate is not the camera that feeds the rendered scene (or the scene is not rendered at all while the UI is on the loading screen)",
+    "combined with the earlier results, the frame appears to be gated by the UI/game-module state rather than by any single data structure we can poke"
+  ],
+  "status_of_visible_world": {
+    "paths_tried": [
+      "entity delta encoding (rejected by the client entity loop)",
+      "clc entity array injection (no cg copy)",
+      "cg entity array injection (write ok, no image)",
+      "UI state forcing (all black)",
+      "remote call of the load-completion callback (no effect)",
+      "playerState ring write (no effect)",
+      "playerState single-slot write (absurd values crash, plausible values no image)",
+      "vieworg candidate write (no effect)"
+    ],
+    "remaining": [
+      "the per-snapshot playerState copy that cgame consumes",
+      "bit-exact delta encoding once the ~4.3-bit per-field component is identified"
+    ]
+  },
+  "next": [
+    "locate cl.snapshots[] (the per-snapshot ring) and inspect the copy cgame reads",
+    "if that also fails, conclude that the offline rebuild does not render a 3D scene on this path and record it as a build-level limitation"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r122-gs.jsonl",
+    "screenshot": "runs/codex-r122-screenshot.png"
+  }
+}

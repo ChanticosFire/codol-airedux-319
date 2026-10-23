@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Vieworg candidate write has no effect on the frame]**
+> Wrote (204,-856,300) over a vieworg candidate (0x2323EDB4): client alive, state 10, ui 5, screenshot black. Eight distinct data-poking paths tried; none produced a frame.
+> Remaining: the per-snapshot ps copy, and bit-exact delta encoding. Next: locate cl.snapshots[] and inspect the copy cgame reads; if that fails, record a build-level limitation.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [vieworg write no effect](evidence/experiments/20261023-codex-vieworg-write-no-effect.json).
 > **2026-10-23 [Found viewaxis identity candidates; three have plausible eye positions]**
 > Scan for the 9-float identity: 12 hits. Near 0x231BED90 the floats are (204,-856,56); near 0x232BED58/0x2362ED58 they are (180,-754.99,31.01) - eye-like, unlike the earlier z~0 ground hits.
 > So a camera/refdef may exist. Next: write a plausible vieworg into those candidates and screenshot.
