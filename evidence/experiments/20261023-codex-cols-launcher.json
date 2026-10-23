@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "utc": "2026-10-23T18:55:00+00:00",
+  "scope": "assess github.com/enceka/cols-launcher and answer whether it is reusable for our 1649370 goal",
+  "repo": {
+    "url": "https://github.com/enceka/cols-launcher",
+    "head": "1960f877b2288a306314b9887ba83fbf2a893121",
+    "language": "Rust (Cargo.toml, Cargo.lock 93 KB)",
+    "license": "present (LICENSE)",
+    "structure": ["src/{main,gui,lib,native,native_files,native_readiness,player,process,profile,relay,session,wine,inspection}.rs", "docs/{DESIGN,SERVER_INTERFACE,WINE_RECOVERY}.md", "profiles/*.json", "tests/", "tools/"],
+    "what_it_is": "a launcher that manages a separate Rust game server (codol-server), starts the untouched native client, temporarily rewrites dwauth.ini/stun.ini/iips.ini/cacert.pem and appends a local CA, then restores everything on exit"
+  },
+  "version": {
+    "target": "codol3333 / 3.3.3.3",
+    "evidence": "profiles/codol3333.example.json is the shipped example profile; README calls the product COLS and the docs describe 3.3.3.3-era behaviour",
+    "is_it_1649370": false
+  },
+  "what_it_documents_that_we_can_use": {
+    "server_contract": "SERVER_INTERFACE.md defines the launcher/server boundary: executable + CLI + external session records, with serve-auth, observe, create-local-player, --launcher-ready-file, and a version-1 readiness record containing PID, client SHA-256, lobby-210/game-UDP-v3, addresses, loaded map and bot room",
+    "proven_flow": "the repo states that on macOS/Wine it completed auth, lobby, 12-bot assembly, the Afghan map, movement, shooting, reload and match settlement; Windows and shared-human matches are not yet accepted",
+    "restore_model": "backup and restore of the four INI/CA files, CA appended only to the client bundle, no system trust store change, no EXE/DLL/asset modification",
+    "player_model": "per-player directories with random player IDs, nickname encoded into the auth ticket, level/item grants only at creation time",
+    "room_bot_fill": "backend.room_bot_fill 4..12, mutually exclusive with --native-bot-rooms, validated against the readiness record"
+  },
+  "what_it_does_not_give_us": [
+    "no 1649370 support: the profile, the server contract and the docs are for 3.3.3.3",
+    "the game server itself is a separate repository (README refers to server/target/release/codol-server and docs/NATIVE_LAUNCHER.md in the server repo); it is not in this clone",
+    "it does not solve our in-game netchan framing: our own server1649370 still has to speak the 1649370 client's protocol"
+  ],
+  "answer": {
+    "reference_value": "high for architecture and acceptance flow (launcher/server boundary, readiness record, temporary INI/CA restore, bot room assembly, per-player directories), and it proves this class of project can reach movement/shooting/settlement on a 3.3.3.3 client",
+    "can_we_use_it_directly": "not for 1649370: it targets codol3333/3.3.3.3. It is a model to copy from, not a drop-in component for our build",
+    "highest_value_next_actions": [
+      "locate the sibling codol-server repository (enceka account) and read docs/NATIVE_LAUNCHER.md for the server-side acceptance contract",
+      "compare its 3.3.3.3 lobby/game-UDP framing with our 1649370 captures to isolate the generation delta",
+      "reuse the readiness-record idea as our own server's self-check endpoint"
+    ]
+  },
+  "artifacts": ["runs/cols-launcher/README.md", "runs/cols-launcher/docs/SERVER_INTERFACE.md", "runs/cols-launcher/profiles/codol3333.example.json"]
+}
