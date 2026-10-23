@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MILESTONE: server-driven end of match - OOB disconnect returns the client to the lobby]**
+> Added --oob-command/--oob-delay (send_due_oob wired into both serve-loop branches); sent UDP OOB `disconnect` 25 s after the gamestate.
+> Result: t=15s state 8, t=30s state 10 (adr type 2), OOB sent at 1792779300.41, t=45s state 0 (new conn, adr type 0), t=60s still state 0.
+> Completes the return-to-lobby half at protocol level: server takes client from state 10 to state 0.
+> Next: package as end-of-match flow (OOB disconnect after a configured duration), optionally preceded by intermission (PS field 83) for a visible match-over screen.
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [oob disconnect](evidence/experiments/20261023-codex-oob-disconnect-success.json).
 > **2026-10-23 [Route B breakthrough: the client CAN leave the match - state 10 -> 0]**
 > cbuf injected console `disconnect` while at state 10: before state 10 / adr type 2 / conn 0x133BA698; after state 0 / adr type 0 / conn 0x139A2994, stable at +5/+15/+30 s.
 > Proves (1) the client's leave-match path works and lands at state 0 (lobby), (2) cbuf injection reliably runs console commands.
