@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Route B: hard disconnect stops usercmd, but the client stays in the match]**
+> Killed the gameserver process while the client was connected.
+> Result: `ring_a` froze at 34 immediately (client stopped sending usercmd, so it noticed the disconnect), yet **state stayed 9 for 90 s** and the process never exited or returned to the lobby.
+> Caveat: the kill landed while the client was still at state 9, so this is not yet a clean state-10 hard-disconnect test.
+> Next: repeat with a longer wait so the kill lands at state 10; if the client still never leaves, lobby return must be driven by a game-side message rather than by connection loss.
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [hard-kill](evidence/experiments/20261023-codex-hard-kill.json).
 > **2026-10-23 [Route B: all three soft-disconnect attempts failed]**
 > Per user feedback, mid-match map switching is not a player need and was dropped; this round only tested "end of match -> return to lobby".
 > (1) Stopping the snapshot stream (3 sends then stop) -> **state stayed 10 for 90 s**, `ring_a` grew 33 -> 96 (client kept sending usercmd).
