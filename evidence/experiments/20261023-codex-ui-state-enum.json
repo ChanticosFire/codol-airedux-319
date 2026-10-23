@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T17:30:00+00:00",
+  "scope": "enumerating UI states 0/2/3/4/5/6/7 all produce a black frame",
+  "experiment": {
+    "client_state": 10,
+    "ui_states_tested": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "screenshots": {
+      "ui5": {
+        "unique": 6,
+        "mean": 0,
+        "max": 51
+      },
+      "ui0": {
+        "unique": 5,
+        "mean": 0,
+        "max": 26
+      },
+      "ui2": {
+        "unique": 5,
+        "mean": 0,
+        "max": 19
+      },
+      "ui3": {
+        "unique": 6,
+        "mean": 0,
+        "max": 53
+      },
+      "ui4": {
+        "unique": 5,
+        "mean": 0,
+        "max": 21
+      },
+      "ui6": {
+        "unique": 5,
+        "mean": 0,
+        "max": 25
+      },
+      "ui7": {
+        "unique": 6,
+        "mean": 0,
+        "max": 51
+      }
+    }
+  },
+  "conclusion": [
+    "the UI state variable is not what gates the rendered frame - every UI value still shows black",
+    "the black frame comes from the renderer having no scene (no camera/entities), not from the UI state",
+    "this closes the 'UI state enumeration' idea and points back to the scene/entity problem"
+  ],
+  "next": [
+    "with the user's authorization to patch the client, revisit the entity path: the ClearStreamError patch already makes entity_count = 1 at state 10",
+    "the next step is to feed a valid entity (eType + origin) under the same patch and check the frame"
+  ],
+  "artifacts": {
+    "screenshots": [
+      "runs/r83-ui5.tga",
+      "runs/r83-ui0.tga",
+      "runs/r83-ui2.tga",
+      "runs/r83-ui3.tga",
+      "runs/r83-ui4.tga",
+      "runs/r83-ui6.tga",
+      "runs/r83-ui7.tga"
+    ]
+  }
+}
