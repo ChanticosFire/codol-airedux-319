@@ -92,8 +92,10 @@ class GameServer:
                  checksum_feed: int | None = None, gamestate_source: str = "native",
                  registration_checksum: int = 0xFFB56D7E,
                  snapshot_path: str | None = None, snapshot_delay: float = 3.0,
-                 snapshot_seq: int = 4, snapshot_repeat: int = 0,
-                 snapshot_interval: float = 0.5):
+                 snapshot_seq: int = 5, snapshot_repeat: int = 0,
+                 snapshot_interval: float = 0.5,
+                 command_path: str | None = None, command_delay: float = 2.0,
+                 command_seq: int = 4):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -111,6 +113,9 @@ class GameServer:
         self.snapshot_seq = snapshot_seq
         self.snapshot_repeat = snapshot_repeat
         self.snapshot_interval = snapshot_interval
+        self.command_path = Path(command_path) if command_path else None
+        self.command_delay = command_delay
+        self.command_seq = command_seq
         self.pending_oob: list[tuple[float, tuple, str]] = []
 
     # ------------------------------------------------------------------ logging
@@ -192,6 +197,7 @@ class GameServer:
                       "previous_gamestate_sent": True})
             peer["gamestate_sent"] = False
             peer["snapshot_sent"] = False
+            peer["command_sent"] = False
             peer["inband_seen"] = False
             peer["gamestateupdates"] = 0
         if "gamestate_due" not in peer or not peer.get("gamestate_sent"):
@@ -242,6 +248,30 @@ class GameServer:
             if self.snapshot_path:
                 peer["snapshot_due"] = time.monotonic() + max(self.snapshot_delay, 15.0)
                 peer["snapshot_sent"] = False
+            if self.command_path:
+                peer["command_due"] = time.monotonic() + self.command_delay
+                peer["command_sent"] = False
+
+    def send_due_commands(self) -> None:
+        """Send the captured server-command stream before the first snapshot."""
+        if not self.command_path:
+            return
+        for addr, peer in self.state.peers.items():
+            due = peer.get("command_due")
+            if due is None or peer.get("command_sent") or time.monotonic() < due:
+                continue
+            try:
+                data = self.command_path.read_bytes()
+            except OSError as error:
+                peer["command_sent"] = True
+                self.log({"dir": "meta", "kind": "command_missing", "error": str(error)})
+                continue
+            peer["command_sent"] = True
+            payload = b"\x00\x00\x00\x00" + data
+            self.log({"dir": "meta", "kind": "command_source",
+                      "path": str(self.command_path), "payload_length": len(payload),
+                      "seq": self.command_seq, "payload_head": payload[:48].hex()})
+            self._send_fragments(addr, peer, payload, self.command_seq, "command")
 
     def _send_fragments(self, addr: tuple, peer: dict, payload: bytes, seq: int,
                         kind: str, frag_size: int = 1162) -> None:
@@ -388,6 +418,7 @@ class GameServer:
             except socket.timeout:
                 self.flush_pending_oob()
                 self.send_due_gamestates()
+                self.send_due_commands()
                 self.send_due_snapshots()
                 continue
             except OSError:
@@ -395,6 +426,7 @@ class GameServer:
             self.flush_pending_oob()
             self.handle(data, addr)
             self.send_due_gamestates()
+            self.send_due_commands()
             self.send_due_snapshots()
         self.log({"dir": "meta", "kind": "stop", "counters": self.state.counters})
 
@@ -419,6 +451,11 @@ def main() -> int:
                         help="total snapshot sends; 0 = send once")
     parser.add_argument("--snapshot-interval", type=float, default=0.5,
                         help="seconds between repeated snapshots")
+    parser.add_argument("--command-file", default=None,
+                        help="server-command service stream sent before the snapshot")
+    parser.add_argument("--command-delay", type=float, default=2.0,
+                        help="seconds after gamestate before server commands")
+    parser.add_argument("--command-seq", type=int, default=4)
     args = parser.parse_args()
     if args.delay_send < 0:
         parser.error("--delay-send must be nonnegative")
@@ -432,10 +469,15 @@ def main() -> int:
         parser.error("--snapshot-repeat must be nonnegative")
     if args.snapshot_interval <= 0:
         parser.error("--snapshot-interval must be positive")
+    if args.command_delay < 0:
+        parser.error("--command-delay must be nonnegative")
+    if not 0 < args.command_seq <= 0x7FFFFFFF:
+        parser.error("--command-seq must be a positive 31-bit integer")
     server = GameServer(args.port, args.log, args.delay_send, args.checksum_feed,
                         args.gamestate_source, args.registration_checksum,
                         args.snapshot_file, args.snapshot_delay, args.snapshot_seq,
-                        args.snapshot_repeat, args.snapshot_interval)
+                        args.snapshot_repeat, args.snapshot_interval,
+                        args.command_file, args.command_delay, args.command_seq)
     try:
         server.serve()
     except KeyboardInterrupt:

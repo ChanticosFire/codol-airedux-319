@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:05:00+00:00",
+  "scope": "backfill hires resources and sent the captured server-command stream; separate network-active from UI-state",
+  "hires_backfill": {
+    "images_from": "resources/v1649370/offline-image-library/main/images",
+    "sound_models_from": "resources/v1649370/offline-loose-library/main/{sound,models}",
+    "images_links_created": 22718,
+    "sound_models_links_created": 18153,
+    "method": "CreateHardLink into runtime/hires/<subdir>, existing files skipped"
+  },
+  "file_missing_progression": {
+    "before_backfill": 7384,
+    "after_backfill": 61,
+    "remaining": [
+      "./main/video/mp_cross_fire_load.bk2 and ./raw/video/mp_cross_fire_load.bk2 (map loading movie, absent locally)",
+      "./client_shipRetail/chinese/patch_mp_cross_fire.ff, patch_common_gametype_mp.ff, defaultknife_mp.ff",
+      "./client_shipRetail/chinese/patch_ui_mp.ff, patch_code_*_gfx_mp.ff, ui_mp_const.ff",
+      "config_mp.cfg, settings_*.zip.iw4, TCLS/config/LoginQ.dat, video/*.bk2"
+    ]
+  },
+  "server_command_stream": {
+    "source": "ring-dump-43 seq 33, opcode 1 messages",
+    "commands": 27,
+    "payload_length": 1139,
+    "seq": 4,
+    "examples": [
+      "f \"MP_CONNECTED...\"",
+      "s cg_drawSpectatorMessages \"1\" ...",
+      "P \"thermal_mp\" 1000",
+      "s g_scriptMainMenu \"class_opfor\"",
+      "u 30",
+      "U 5830 -4369 -95"
+    ]
+  },
+  "observed": {
+    "connection_state": 10,
+    "client_ui_state": 5,
+    "screenshot": "black with bottom-right loading spinner at t+60/110/160 s",
+    "usercmd_packets": 17,
+    "snapshots_sent": 400,
+    "ring_b": 250,
+    "com_error": null
+  },
+  "conclusion": "The network layer is fully active (state 10, snapshots acknowledged, usercmds flowing) while the UI layer stays at ui_state=5 with the loading screen. Black screenshots are therefore not a rendering failure of the world but the client never leaving its loading UI.",
+  "next": [
+    "breakpoint 0x453760 (CL_MapLoading) and its return site to verify the loader completes",
+    "if the loader aborts, find which configstring/asset check fails and supply it",
+    "if it completes, find the UI_SetActiveMenu call site and what event it waits for",
+    "consider supplying ui_mapname/configstring slots expected by the 1649370 loader"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r2d-gs.jsonl",
+    "forward": "runs/codex-r2d-forward.json",
+    "screenshots": [
+      "runs/codex-r2e-shot1.png",
+      "runs/codex-r2e-shot2.png",
+      "runs/codex-r2e-shot3.png"
+    ]
+  }
+}
