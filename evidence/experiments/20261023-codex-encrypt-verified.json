@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T06:40:00+00:00",
+  "scope": "byte-for-byte verify our re-encryption against the reference fragments",
+  "method": "for each captured fragment: decrypt with the recorded challenge, then re-encrypt using our server's rule (index0 keeps first four plaintext bytes, rest XOR; others XOR all), and compare with the original ciphertext",
+  "results": [
+    {"index": 0, "chunk": 1162, "key": 139, "reencrypt_matches_reference": true},
+    {"index": 1, "chunk": 1162, "key": 139, "reencrypt_matches_reference": true},
+    {"index": 2, "chunk": 1102, "key": 139, "reencrypt_matches_reference": true}
+  ],
+  "conclusion": {
+    "our_cipher_is_byte_exact": true,
+    "meaning": "given the same challenge and the same plaintext, our server produces exactly the ciphertext the reference server produced, including the index-0 special case",
+    "therefore": "the packet we emit is not malformed: header fields, fragment splitting, key derivation and cipher application all match a real server"
+  },
+  "what_this_leaves": {
+    "the_packet_is_right_but_rejected": "the client discards a byte-correct gamestate, so the rejection must depend on context rather than content",
+    "possible_context_dependencies": [
+      "the client may require a prior non-fragmented message on the same sequence stream before accepting fragments",
+      "the client may require the challenge it stores to be used at a specific moment (session handshake) that our server never performs",
+      "the client may only accept fragments after it has sent a specific request (stats/connect sequencing)",
+      "the seq numbering may need to start at a value the client expects after the connect exchange"
+    ]
+  },
+  "next": [
+    "diff the dedrun's first outbound packet sequence number against ours: the reference started at seq=3, so check whether the client expects 1 or 2 first",
+    "capture the dedrun's outbound traffic immediately after connect and list the first ten sequence numbers to learn the expected stream start",
+    "consider emitting a non-fragmented message on seq 1 and 2 before the gamestate fragments"
+  ],
+  "artifacts": ["runs/final-in.jsonl"]
+}
