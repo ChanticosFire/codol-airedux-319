@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Final mechanism: global stream-error flag closes the entity path]**
+> Chain after the entity loop (0x4723E2..0x4724A5): each later block resets its own cursors ([esi+0x24]=-1, [esi+0x28]=0xFFFE7961) before playerState/actors/0x471560/glass, so the entity-loop error does not disturb them. But the stream error flag at [esi] is global: once the entity loop reads past length it stays set, and 0x4724A5 (cmp [esi],edi) fails -> snapshot not accepted -> state 9.
+> Complete explanation for why A=1 can never reach state 10 on this build; matches every experiment.
+> Conclusion: entity path closed unless the loop can terminate without overrunning (no such exit in 0x471D80). Remaining scope: keep match flow, map selection, diagnostics; a visible world needs a client-side change.
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [error persists](evidence/experiments/20261023-codex-error-persists.json), [match flow](evidence/experiments/20261023-codex-match-flow.json).
 > **2026-10-23 [MILESTONE: full match flow - connect, load, play, automatic end, back to lobby]**
 > Added --match-duration S (alias for --oob-delay): seconds from connect to the automatic OOB disconnect.
 > Experiment --match-duration 50: t=20s state 9 (loading) -> t=40s state 10 -> t=55s still 10 -> OOB disconnect at 1792779468.89 -> t=70s state 0 (new conn, adr type 0) -> t=90s still 0.
