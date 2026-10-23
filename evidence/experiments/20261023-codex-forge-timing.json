@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T07:20:00+00:00",
+  "scope": "start the forged ack immediately after login and keep the refresh hook active",
+  "session": {
+    "name": "20261023-world-14",
+    "pid": 7308,
+    "new_tool": "tools/install_refresh_hook.py (--install/--read/--revert) so the hook install is repeatable",
+    "hook": {"site": "0x5B31B4", "cave": "0x11760000", "counter_hits": 2},
+    "bridge": "forward --adr-type 2 --start-challenge --fake-stats --send-move --keepalive --forge-ack --forge-interval 2.0"
+  },
+  "evidence": {
+    "client_t_readable": true,
+    "forge_packet": "010000003930adc7c7c7c7c7",
+    "forge_info": {"ack": 106, "qport": 12345, "client_port": 0, "challenge": -1222257466, "reliable_sequence": 106, "reliable_ack": 0, "message_ack": 1},
+    "server_out": ["out 162", "out 293", "out 425"],
+    "server_messages": ["CoDOL reliable letter 'f' ... \"MP_CONNECTEDAdministraClient^7\"", "menucmd -> 0 (AdministraClient): v/u"],
+    "hook_hits": 2
+  },
+  "analysis": {
+    "packet_buildable": "the dedrun's client_t is present and the encoder produces a packet, so the earlier 'client_t not found' was purely a timing problem",
+    "not_accepted_yet": "the server still retransmits (out grows). The remaining suspects are (1) find_qport returns 0 so the qport field does not match the endpoint the dedrun uses, and (2) every forward restart creates a new source port, which invalidates the endpoint the dedrun learned",
+    "test_value_qport": "the standalone probe used qport 12345 instead of the forward socket's port, so it could not have matched anyway"
+  },
+  "next": [
+    "run one continuous forward session: login, install the refresh hook, then start forward --forge-ack once and never restart it, so the source port stays constant",
+    "use the forward socket's own port as qport (already implemented) and log the first successful forge_ack with its info so the qport can be compared with the endpoint the dedrun echoes in its replies",
+    "if out still grows, fix the plain body to u32 ack + clc_move + cmdCount and try both clc_move opcodes"
+  ],
+  "artifacts": ["tools/install_refresh_hook.py", "runs/w14-drain.json"]
+}
