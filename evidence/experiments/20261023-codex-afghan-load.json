@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T10:10:00+00:00",
+  "scope": "map switching works: an mp_afghan gamestate loads to state 10",
+  "server_change": "native_gamestate takes a mapname; gameserver exposes --gamestate-map; configstring 0 is rewritten to match",
+  "experiment": {
+    "map": "mp_afghan",
+    "body": "runs/snapshot-hybrid-empty-actors.bin",
+    "result": {
+      "client": "alive (pid 17960)",
+      "state": 10,
+      "entity_count": 0
+    },
+    "note": "this was the FIRST gamestate of the session, not a mid-session map change"
+  },
+  "significance": [
+    "the map name in the gamestate is honoured by the client and a different map still reaches state 10",
+    "so the gamestate path can drive map selection; what remains untested is a MID-SESSION change (state 10 -> new gamestate -> reload)"
+  ],
+  "next": [
+    "send cross_fire first, wait for state 10, then send an afghan gamestate and watch for state 8 -> 10",
+    "that would prove in-session map change, the basis for match restart / map rotation"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r68-gs.jsonl"
+  }
+}

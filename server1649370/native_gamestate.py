@@ -80,8 +80,10 @@ def _validated(entries) -> list[tuple[int, bytes]]:
 
 def build_native_gamestate(registration_checksum: int, *, checksum_feed: int = 0x1649370,
                            client_number: int = 0,
-                           configstrings=DEFAULT_CONFIGSTRINGS) -> bytes:
+                           configstrings=None, mapname: bytes = b"mp_cross_fire") -> bytes:
     """Return plaintext after netchan sequence, including the 4-byte ack field."""
+    if configstrings is None:
+        configstrings = ((0, b"\\g_gametype\\war\\mapname\\" + mapname), (1, b""), (2, b"cod"))
     if not 0 <= registration_checksum <= 0xFFFFFFFF:
         raise ValueError("registration checksum must be uint32")
     if not 0 <= checksum_feed <= 0xFFFFFFFF:
@@ -93,7 +95,7 @@ def build_native_gamestate(registration_checksum: int, *, checksum_feed: int = 0
     writer.raw(struct.pack("<I", 0))  # reliable command acknowledgement
     writer.raw(b"\x03")               # svc: initial state
     writer.raw(struct.pack("<I", 0))  # server command sequence
-    writer.string(b"mp_cross_fire")
+    writer.string(mapname)
     writer.string(b"mp")
     writer.raw(struct.pack("<I", registration_checksum))
     writer.raw(b"\x04")               # svc: configstrings
