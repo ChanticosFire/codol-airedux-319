@@ -640,13 +640,10 @@ def forge_ack_packet(seq: int, ack_override: int | None,
         cmd_base = fca.OFF_RELIABLE_SEQUENCE - 128 * (4 + 4 + 1024)
         cmd_offset = cmd_base + (values[1] & 0x7F) * (4 + 4 + 1024) + 8
         command = (rdc.read(handle, base + cmd_offset, 1024) or b"").split(b"\0")[0]
-        plain = struct.pack("<I", ack)
-        if plain_variant == 1:
-            plain += b"\x0a\x00"
-        elif plain_variant == 2:
-            plain += b"\x00\x01"
-        else:
-            plain += b"\x00\x00"
+        # 2697 client->server body after Netchan_Process:
+        #   serverId (1 byte) + messageAcknowledge (4 bytes, & 0x7fffffff)
+        # The earlier ack(4)+0000 layout was wrong for this server build.
+        plain = bytes([server_id & 0xFF]) + struct.pack("<I", values[3] & 0x7FFFFFFF)
         body = fca.encode(plain, challenge, server_id, values[3], command)
         qport, client_port, _ = fca.find_qport(handle, base)
         if qport_override:

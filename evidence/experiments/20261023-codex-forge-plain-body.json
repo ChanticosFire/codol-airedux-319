@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:20:00+00:00",
+  "scope": "fix the plain body layout of the forged ack using the 2697 SV_PacketEvent source",
+  "source_finding": {
+    "file": "runs/2697-native-src/src/sv_main.c SV_PacketEvent",
+    "target2697_branch": "when CODOL_Target2697ArchivesActive() the packet starts with sequence only (no qport) and the client is matched by NET_CompareAdr(from, candidate->netchan.remoteAddress)",
+    "client_to_server_body": "after Netchan_Process the body begins with serverId (MSG_ReadByte, 1 byte) then messageAcknowledge (MSG_ReadLong & 0x7fffffff)",
+    "implication": "the old plain = u32 ack + 00 00 was the wrong shape for this build"
+  },
+  "change": "forge_ack_packet now builds plain = bytes([server_id]) + u32(messageAck & 0x7fffffff) and keeps the seq-only header",
+  "session": {
+    "name": "20261023-world-21",
+    "pid": 19788,
+    "order": "dedrun -> forward --bind-port 29000 -> client -> login -> drain block + refresh hook -> start-challenge",
+    "forge_tail": [
+      {"ack": 70, "qport": 29000, "server_id": 1, "header": "seq-only", "plain": "0101000000", "challenge": -515095516, "message_ack": 1}
+    ],
+    "server": ["out 128", "out 239", "out 346"],
+    "verdict": "the body shape is now source-accurate but the dedrun still ignores the packet"
+  },
+  "new_candidate": {
+    "finding": "Netchan_Process checks seq against the netchan's incomingSequence; our seq starts at 1 while the real client has already sent many packets, so a stale seq is dropped before the body is even inspected",
+    "fix": "read client->netchan.incomingSequence from the dedrun client_t and send seq = incomingSequence + 1, incrementing afterwards"
+  },
+  "next": [
+    "extend forge_ack_packet to read incomingSequence and use a monotonically increasing seq that starts just above it",
+    "re-run one session with the pinned port and watch reliableAcknowledge/out"
+  ],
+  "artifacts": ["tools/ring_bridge_1649370.py", "runs/forge-ack-log.jsonl"]
+}
