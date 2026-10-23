@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【根因：count 整字节读与 A/B 位共用 byte163】** ✅SnapTrace：0x471D80 命中 cursor=164/bit=1307，0x671700 从未命中，客户端退出。✅0x66ED70 是 `movzx eax,byte[cursor]; cursor++`（整字节）；A/B 位在 byte163 bit3/4，位读不推进 cursor（bit&7≠0），故 count 读到 byte163=0xF8=248 → 读 248×12 bits 实体号越界崩溃。下一轮断点 0x66ED70 验证 eax=0xF8，并让 A/B 落在上一字节以对齐 count。证据：[JSON](evidence/experiments/20261023-codex-count-byte-read.json)、[JSON](evidence/experiments/20261023-codex-field-trace-crash.json)。
+
 > **2026-10-23【位布局验证正确；缺字段 delta 崩溃】** ✅按 SnapTrace 布局构造 `snapshot-entity1-v2.bin`（170B/1345bits）：hybrid[0:163] + byte163 置 bit1307/1308 + count(8)=1 + id(12)=0 + ps 缺席 + actor/sub4/glass + EOF；发送后 ack 仍 1、客户端 pid=0。→ 解析器确实进入实体字段循环（布局对），但无字段 delta 流导致越界崩溃。下一轮确定 0x471D80 的字段数量与 0x671700 编码，先生成全零字段流再测 entity_count/cl.snap。证据：[JSON](evidence/experiments/20261023-codex-entity-no-fields-crash.json)。
 
 > **2026-10-23【SnapTrace：实体表 bit1307、playerState bit1308、actor bit1309】** ✅实测 hybrid/state 10：`0x671650` 命中 `cursor=164,bit=1307`；`0x471980` 命中 `cursor=164,bit=1308`；actor 块起于 1309。三者相邻各 1 bit——实体表读 bit1307=0 直接返回（count 保持 memset 0）、ps 读 bit1308=0 返回，故 hybrid 是空世界。`SnapTraceAccepted` 的 esi 非 message，字段无效。下一轮按此布局位级重建：byte163 bit3=1 → form=1 → count(8) → 实体号(12) → 字段 delta → ps → actor/sub4/glass → EOF。证据：[JSON](evidence/experiments/20261023-codex-snaptrace-bit-positions.json)。
