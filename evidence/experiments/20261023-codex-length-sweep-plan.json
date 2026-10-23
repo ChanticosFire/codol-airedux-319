@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T11:15:00+00:00",
+  "scope": "actors end cannot be measured with the safe breakpoints; switch to a length sweep as the acceptance oracle",
+  "run": {
+    "bodies": [
+      "runs/snapshot-tail-zero120.bin (1504 bits)",
+      "runs/snapshot-tail-zero400.bin (1784 bits)"
+    ],
+    "breakpoints": [
+      "0x471980",
+      "0x471010"
+    ],
+    "trace": {
+      "ps_entry_bit": 1345,
+      "ps_bits": 28,
+      "actors_entry_bit": 1373,
+      "body_bits": 1504
+    },
+    "state": 9,
+    "note": "only ps/actors are traced; the glass breakpoint is unsafe, so the actors END is not directly observable"
+  },
+  "constraint": [
+    "the actors block sets the stream error when it reads past the body, so the snapshot is rejected whenever the actors payload does not terminate it",
+    "the baseline (has-ps=0) terminates actors within 27 bits; with has-ps=1 the same 27 bits at the actors start make it consume 46+ bits",
+    "therefore the actors terminator depends on ps content, not only on the tail bits"
+  ],
+  "plan": {
+    "method": "length sweep as an acceptance oracle",
+    "detail": "build bodies with L zero tail bits for L in a range (e.g. 27, 40, 60, 80, 100, 130) placed before the 0x05 EOF, run them all in one session, and record which L yields state 10",
+    "why": "state 10 is only reached when every block parses AND the EOF check passes, so an accepted L pins down the actors+glass length exactly"
+  },
+  "artifacts": {
+    "server_log": "runs/codex-r136-gs.jsonl",
+    "encoder": "runs/_gen_zero2.py"
+  }
+}

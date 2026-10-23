@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Actors end not observable; switch to a length sweep oracle]**
+> Zero-tail bodies (120/400 bits): ps 1345 -> actors 1373, state 9; actors end not traceable (glass breakpoint unsafe).
+> Actors sets the stream error when reading past the body; the terminator depends on ps content (baseline has-ps=0 terminates in 27 bits).
+> Plan: sweep tail length L in {27,40,60,80,100,130} before the 0x05 EOF and record which L yields state 10 - that pins the actors+glass length.
+> Acceptance: a screenshot showing the map. Evidence: [length sweep plan](evidence/experiments/20261023-codex-length-sweep-plan.json).
 > **2026-10-23 [BASELINE GEOMETRY: ps block is exactly 1 bit (has-ps=0) in the working body]**
 > Hybrid body with the two safe breakpoints: ps entry 1308 -> actors 1309 (ps = 1 bit, the "no playerstate" form), state 10; the remaining 27 bits (1309..1335) are actors+glass+EOF.
 > So the baseline skips the whole ps payload. Our 28-bit ps shifts the tail; placing the same 27 bits at 1336 makes actors consume 46 bits - the actors block depends on ps content (likely commandTime).
