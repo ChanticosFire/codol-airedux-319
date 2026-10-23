@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T10:40:00+00:00",
+  "scope": "BASELINE GEOMETRY MEASURED: in the working hybrid body the ps block is exactly ONE bit (has-ps = 0)",
+  "measurement": {
+    "body": "runs/snapshot-hybrid-empty-actors.bin (167 B = 1336 bits)",
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1309,
+    "ps_bits_consumed": 1,
+    "actors_error": 0,
+    "state": 10,
+    "tail_bits_after_ps": 27,
+    "tail_note": "actors + glass + EOF occupy bits 1309..1335"
+  },
+  "significance": [
+    "the known-good body works because its ps block is a single 'no playerstate' bit - the whole ps payload is skipped",
+    "everything after that single bit is the actors/glass/EOF tail",
+    "our ps block (28 bits) shifts the tail by 27 bits, and when we place the same 27 tail bits at 1336 the actors block then consumes 46 bits and overruns",
+    "so the tail bits alone are not enough - the actors block's behaviour changes once a real playerstate is present (it likely depends on a ps field such as commandTime)"
+  ],
+  "next": [
+    "find which ps field the actors block depends on, by varying the ps content while keeping the tail fixed",
+    "a cheap probe: keep has-ps=1 but write all-zero ps fields, then try a large commandTime, and compare the actors length"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r135-gs.jsonl"
+  }
+}

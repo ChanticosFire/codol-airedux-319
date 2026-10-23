@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [BASELINE GEOMETRY: ps block is exactly 1 bit (has-ps=0) in the working body]**
+> Hybrid body with the two safe breakpoints: ps entry 1308 -> actors 1309 (ps = 1 bit, the "no playerstate" form), state 10; the remaining 27 bits (1309..1335) are actors+glass+EOF.
+> So the baseline skips the whole ps payload. Our 28-bit ps shifts the tail; placing the same 27 bits at 1336 makes actors consume 46 bits - the actors block depends on ps content (likely commandTime).
+> Next: vary ps content with the tail fixed (zero fields, then a large commandTime) and compare the actors length.
+> Acceptance: a screenshot showing the map. Evidence: [baseline geometry](evidence/experiments/20261023-codex-baseline-geometry.json).
 > **2026-10-23 [Round 100] Glass breakpoint breaks the baseline run**
 > Baseline body + 3 breakpoints (incl. 0x4475F0): state 8, zero snap_trace records; same body without breakpoints reaches state 10.
 > 0x4475F0 is hot; third instance of the breakpoint hazard. Next: measure geometry with only 0x471980 + 0x471010.
