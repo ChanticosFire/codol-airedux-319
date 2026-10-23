@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T03:10:00+00:00",
+  "scope": "locate the configstring table and the serverinfo entry inside the dedrun",
+  "session": {"client": "20261023-cs, pid 19840"},
+  "verified_facts": {
+    "client_t": "0x52A2908",
+    "serverinfo_search": "the literal '\\\\g_gametype' has ZERO hits anywhere in the first 600000 bytes of client_t, so the serverinfo value is not stored there",
+    "configstring_table_candidates": {
+      "d_0_hits": [64180, 66244, 67276],
+      "map_name_hits": [41498, 48722, 64208, 66272],
+      "alignment": "64180 and 64208 are 28 bytes apart, matching a 'd 0 <value>' entry where the value is mp_cross_fire-ish text"
+    },
+    "table_base": "name + 64180 is the first 'd 0 ' entry, i.e. the configstring table base for config index 0"
+  },
+  "interpretation": {
+    "table_is_real": "the presence of three 'd 0 ' entries with map-name strings nearby confirms a deferred configstring table in client_t",
+    "serverinfo_missing": "index 0 should normally hold the serverinfo string (backslash key/value pairs), but no backslash-key text exists in client_t, so the table here may be a partial or re-assert buffer rather than the full gamestate source",
+    "what_we_gained": "we now have the exact base address of the configstring area, which is where the gamestate text is assembled from"
+  },
+  "next": [
+    "dump name+64100 .. name+64600 and read the entries as '<marker> <index> <value>' lines",
+    "check whether index 0 really is the serverinfo or whether the table starts at a different index",
+    "if this table is the source, our server can emit the same entries inline in the gamestate body"
+  ],
+  "artifacts": ["runs/cs-in.jsonl"]
+}
