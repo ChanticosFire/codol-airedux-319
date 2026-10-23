@@ -183,11 +183,24 @@ class GameServer:
                           "text": text[:200]})
             return
 
-        # in-band: phase 2 territory, log verbatim so nothing is lost
+        # in-band: seq(4) + serverId(1) + messageAcknowledge(4) + body, per the
+        # 2697 SV_PacketEvent source. Log every field so we can tell whether the
+        # client ciphers this part (a plaintext serverId/messageAck pair would be
+        # small and monotonic; ciphertext would look random).
         self.state.counters["inband_received"] += 1
-        seq = struct.unpack_from("<i", data, 0)[0] if len(data) >= 4 else None
-        self.log({"dir": "in", "kind": "inband", "from": f"{addr[0]}:{addr[1]}",
-                  "seq": seq, "length": len(data), "hex_head": data[:64].hex()})
+        if len(data) >= 9:
+            seq = struct.unpack_from("<i", data, 0)[0]
+            server_id = data[4]
+            message_ack = struct.unpack_from("<i", data, 5)[0]
+            body = data[9:]
+            self.log({"dir": "in", "kind": "inband", "from": f"{addr[0]}:{addr[1]}",
+                      "seq": seq, "serverId": server_id, "messageAck": message_ack,
+                      "length": len(data), "body_len": len(body),
+                      "body_head": body[:48].hex(),
+                      "body_nonzero": sum(1 for b in body[:48] if b) > 0})
+        else:
+            self.log({"dir": "in", "kind": "inband_short", "from": f"{addr[0]}:{addr[1]}",
+                      "length": len(data), "hex": data[:64].hex()})
 
     # ------------------------------------------------------------------ serving
     def serve(self) -> None:

@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T15:40:00+00:00",
+  "scope": "parse the in-band header on a real 1649370 session against our own server",
+  "session": {
+    "server": "python -m server1649370.gameserver --port 28971 --log runs/own-gs2.jsonl",
+    "bridge": "forward --target 127.0.0.1:28971 --bind-port 29000",
+    "client": "20261023-own-gs2, pid 42176"
+  },
+  "verified_facts": {
+    "handshake": {
+      "getchallenge": {"token": "0", "challenge_assigned": 1728140037},
+      "connect": {"uid": "0cf7ee44e08c4c28", "name_base64": "QWRtaW5pc3RyYUNsaWVudA==", "challenge_returned": "1728140037", "build_field_2490": "-695030357"},
+      "stats": "received"
+    },
+    "inband_samples": [
+      {"seq": 3, "serverId": 0, "messageAck": 1, "length": 206, "body_len": 197, "body_nonzero": false},
+      {"seq": 4, "serverId": 0, "messageAck": 1, "length": 206, "body_len": 197, "body_nonzero": false},
+      {"seq": 8, "serverId": 0, "messageAck": 1, "length": 206, "body_len": 197, "body_nonzero": false}
+    ],
+    "header_is_plaintext": "serverId stays 0 and messageAck stays 1 across seq 3..8, with a stable 206-byte size; a ciphered header would look random, so the client is NOT ciphering the in-band header on this build",
+    "body_is_empty": "all 197 body bytes are zero and never change, so the client has nothing to report (no usercmd, no acknowledged reliable command) - it is waiting for the server to send the gamestate"
+  },
+  "conclusions": [
+    "on 1649370 the client->server in-band header is plaintext, which removes the whole cipher problem for inbound parsing",
+    "the 206-byte packet is an empty ack heartbeat: seq advances, serverId/messageAck fixed, payload zero",
+    "the blocker is now purely outbound: we must generate a gamestate packet for the client to leave the waiting state"
+  ],
+  "next": [
+    "implement the outbound gamestate: svc opcode + gamestate payload, sent as seq(4) + body with the same plaintext convention the client uses",
+    "watch whether the client's messageAck starts advancing once it receives data (that would prove our outbound framing is understood)",
+    "if the client still ignores it, capture what the 2697 dedrun sends first and replay its first outbound datagram shape"
+  ],
+  "artifacts": ["runs/own-gs2.jsonl", "server1649370/gameserver.py"]
+}
