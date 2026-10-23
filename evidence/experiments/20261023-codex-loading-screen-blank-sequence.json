@@ -12,20 +12,22 @@
       "bottom-right: 等待玩家数据",
       "bottom progress bar filled, then empties"
     ],
-    "sequence": "loading screen with progress -> progress empties -> black screen"
+    "sequence": "loading screen with progress -> progress empties -> black screen",
+    "follow_up": "the loading icon at the bottom-right keeps flickering, so the client is not frozen; it keeps running (frames + network activity) and is waiting for server data"
   },
   "interpretation": {
     "confirmed": [
       "the client does reach the real map loading screen for mp_cross_fire",
       "UI resources, map art, mode text and the map minimap all load correctly",
-      "the black screen happens after the loading screen closes, not instead of it"
+      "the black screen happens after the loading screen closes, not instead of it",
+      "the black screen is an active waiting state, not a hang"
     ],
-    "new_lead": "the loading screen asks for 等待玩家数据 (waiting for player data); our snapshot carries an empty actor block and no client entities, so the game layer may have no local player/camera to render"
+    "new_lead": "the loading icon activity means the client still polls the server; supplying a player entity or the data it waits for should move it forward"
   },
   "next": [
-    "reverse the snapshot actor/sub-block format (0x471010 and 0x471560) to emit one local player",
-    "or keep the 2697 client block and repair the mismatch that made sub-block 3 fail",
-    "verify the view origin appears once a player entity is present"
+    "reverse the entity delta format used by 0x471D80 (0x447190 delta test, 0x671700 field read)",
+    "emit a base snapshot containing one local player entity with viewOrigin/viewangles",
+    "alternatively keep the 2697 client block and repair the sub-block 3 mismatch"
   ],
   "artifacts": {
     "user_screenshot": "attachments/v1/objects/f6/f61e0d3e7420a456452dc057d092fc861ef1ba06ff4b1c89c2082b92aabc5c67"
