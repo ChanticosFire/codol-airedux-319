@@ -202,7 +202,8 @@ Two commands prove the encoder and the runner are sane without launching a match
 
 ```powershell
 python -m server1649370.ps_codec      # bit-level gap/codec round-trip -> "self-test failures: 0"
-python tools/verify_encoder.py        # decodes the real accepted body -> "ps block at bit 1308,
+python tools/verify_encoder.py        # decodes the real accepted body
+python tools/check_evidence.py        # audits evidence/ (valid JSON, references) -> "ps block at bit 1308,
                                       #  consumed 29 bits (expected 29)", "failures: 0"
 ```
 

@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Hardening: evidence audit tool]**
+> tools/check_evidence.py audits evidence/: 1194 records, invalid JSON 0 (one corrupt record found and repaired), 769 legacy records without schema/scope (informational), 501 unreferenced (informational); --strict for cleanup.
+> Invalid JSON is fatal; legacy gaps are reported. RELEASE.md lists it under Self-checks.
+> Evidence: [evidence audit](evidence/experiments/20261023-codex-evidence-audit.json).
 > **2026-10-23 [Hardening: breakpoint hazard guard]**
 > SAFE_BREAKPOINTS (21 proven addresses) and HAZARD_BREAKPOINTS {0x4475F0, 0x471B9E, 0x471C5C}. Hazard aborts with an explanatory message (exit 1); unknown warns with the exact symptom.
 > Targets the project's most expensive silent failure mode. Verified on all three cases.

@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T14:50:00+00:00",
+  "scope": "added an evidence audit tool and repaired the one corrupt record it found",
+  "tool": {
+    "path": "tools/check_evidence.py",
+    "checks": [
+      "every evidence/experiments/*.json parses as JSON",
+      "records carry schema and scope (informational: legacy records predate the convention)",
+      "records are referenced by one of the six main documents (informational)",
+      "strict mode turns missing fields and unreferenced records into failures"
+    ]
+  },
+  "first_run_findings": {
+    "records": 1193,
+    "referenced": 693,
+    "invalid_json": 1,
+    "missing_schema_or_scope": 769,
+    "unreferenced": 500
+  },
+  "defect_repaired": {
+    "file": "evidence/experiments/20261023-codex-off10-failed.json",
+    "problem": "a dangling `\"next\",` key with no value made the whole record invalid JSON",
+    "fix": "replaced with `\"next\": [],` - the record now parses and keeps all its content"
+  },
+  "policy": [
+    "invalid JSON fails the audit (a broken record cannot be cited)",
+    "legacy records without schema/scope are reported but not fatal, because 769 predate the convention and rewriting them would fabricate metadata",
+    "strict mode is available for future cleanup"
+  ],
+  "why_it_matters": [
+    "the evidence trail is the project's main claim to rigor; a corrupt record silently weakens it",
+    "the audit runs in about a second and can be part of any future check",
+    "RELEASE.md lists it under Self-checks"
+  ],
+  "artifacts": {
+    "tool": "tools/check_evidence.py",
+    "repaired": "evidence/experiments/20261023-codex-off10-failed.json"
+  }
+}

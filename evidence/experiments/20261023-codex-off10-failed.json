@@ -29,7 +29,7 @@
       "the prefix of ten bytes varies with the session key and is therefore cipher-side, not content"
     ]
   },
-  "next",
+  "next": [],
   "alternative_approaches": [
     "stop replaying and instead instrument the dedrun to dump the plaintext buffer right before SV_Netchan_Encode is called - that removes the prefix ambiguity completely",
     "or bypass the wrapper question by having the dedrun itself send our content: patch its reliableCommands entry text and let its own encoder frame it",
