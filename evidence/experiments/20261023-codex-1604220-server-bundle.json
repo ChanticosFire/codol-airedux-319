@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T14:20:00+00:00",
+  "scope": "extract and assess the 3.19 server/client bundle found in 他人文件参考",
+  "bundle_identity": {
+    "archive": "他人文件参考/3.19服务-客户端.7z",
+    "inside": ["CODOL-1604220-client-repro-20261019.zip", "CODOL-1604220-server-repro-20261019.zip", "docs/{REPRODUCTION-GUIDE,SUCCESS-SUMMARY,VALIDATION}.md", "release.json", "SHA256SUMS.txt"],
+    "actual_build": "Build 1604220; the copy's version.xml and GUI label say 3.19.26.17; earlier material called it 3.19.26.13 as a historical label",
+    "client_identity": {
+      "exe": "codoMP_client_shipRetail.exe",
+      "sha256": "3da9ef965a65a41bd27d60da1b65fa14ee77ec278eb61624111142c8b1b2e85f",
+      "base_dll_sha256": "7bbc5fb07ebca9b4671ec0e9a953bbd4e1baaca6a9ca29888531c3213e400f64"
+    }
+  },
+  "server_package_contents": {
+    "entry": "server/codol_server.py",
+    "modules": ["accounts.py", "authchan.py", "config.py", "dw_stun.py", "identity.py", "lobby.py", "reproduction.py", "silence.py", "store.py", "tlsx.py", "transport.py"],
+    "patches": ["patches/wire-task-header.py"],
+    "tests": ["test_dw_stun.py", "test_inputs.py", "test_lobby_transport.py", "test_playerdata_1604220.py", "test_task_header.py", "test_title_time.py"],
+    "tools": ["preflight.py", "import_inputs.py", "verify_package.py"],
+    "wheelhouse": ["pycryptodome-4.0.1", "cryptography-50.0.2", "cffi-2.1.1", "pycparser-3.11"],
+    "python": "3.14 x64 on Windows, offline install into the package's own .venv"
+  },
+  "verified_results_of_that_package": {
+    "state": "ready_byte=1, connecting=0, scene=6, 10/10 publisher files consumed",
+    "scope_note": "user-confirmed operable lobby belongs to the original working copy's first run only; the extracted package reports automated observation, no additional user interaction",
+    "explicit_limits": ["80/230 are valid empty inventory/currency/entitlement collections", "chat, matchmaking, map loading, actual matches and multiplayer sync are NOT implemented or accepted"]
+  },
+  "relevance_to_our_goal": {
+    "what_it_proves": "a 3.19-generation client can reach scene=6 (lobby) purely from a Python server on loopback",
+    "what_it_does_not_provide": "no in-game gamestate/snapshot/clc_move layer; README states complete game functionality and matches are not implemented",
+    "version_gap": "1604220 (3.19.26.17) vs our 1649370 (3.19.26.22) - close but not identical, so payloads must be re-validated against our client",
+    "useful_modules_for_us": ["lobby.py (bdLobby session flow)", "dw_stun.py (NAT/STUN replies)", "transport.py (framed reader with post-handshake zero control)", "authchan.py (auth ticket)", "store.py/accounts.py (account + inventory shapes)"]
+  },
+  "next": [
+    "compare lobby.py/dw_stun.py against our server319.lsg to find behavioural differences for 3.19.26.22",
+    "reuse transport.py's frame reader logic in our own game-server skeleton for the lobby channel",
+    "still to build ourselves: the in-game UDP netchan server (challenge/connect/stats/gamestate/snapshot/clc_move) that this bundle does not contain"
+  ],
+  "artifacts": ["runs/3.19-bundle/", "runs/1604220-server/server/lib/codol_server/"]
+}
