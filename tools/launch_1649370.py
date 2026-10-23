@@ -2867,6 +2867,29 @@ def main(argv=None) -> int:
                 self.record({"dump_cg": {"cg": hex(cg), "size": len(data), "candidates": hits}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"dump_cg_error": f"{label}: {error}"})
+        if label.startswith("PsField"):
+            try:
+                registers = row.get("registers", {})
+                ecx = int(registers["ecx"], 0)
+                ebp = int(registers["ebp"], 0)
+                index = (ecx - 0xDA63E8) // 12 if ecx >= 0xDA63E8 else -1
+                stream = struct.unpack("<I", self.process.read(ebp + 8, 4))[0]
+                bit = None
+                if stream:
+                    try:
+                        bit = struct.unpack("<I", self.process.read(stream + 0x24, 4))[0]
+                    except OSError:
+                        bit = None
+                codec = None
+                try:
+                    codec = struct.unpack("<i", self.process.read(ecx + 4, 4))[0]
+                except OSError:
+                    codec = None
+                self.record({"ps_field": {"entry": hex(ecx), "index": index,
+                                          "codec": codec, "stream": hex(stream) if stream else None,
+                                          "bit": bit}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"ps_field_error": f"{label}: {error}"})
         if label.startswith("PsBegin"):
             self._in_ps = True
             self.record({"ps_begin": {"bit": row.get("registers", {}).get("ecx")}})

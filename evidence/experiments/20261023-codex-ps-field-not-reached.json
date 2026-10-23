@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T19:50:00+00:00",
+  "scope": "field decoder is never reached during the ps block - the body errors in the header/loop logic",
+  "instrumentation": {
+    "breakpoint": "0x6701D0:PsField",
+    "records_during_ps_block": 0,
+    "records_elsewhere": 1,
+    "sample": {
+      "entry": "0xDA8520",
+      "index": 708,
+      "codec": -97,
+      "stream": "0x11A00",
+      "bit": 1
+    },
+    "note": "the single record is a startup call from a different code path (entry not in the ps table range)"
+  },
+  "reading": [
+    "with the origin0 body the ps block consumes 28 bits and sets the stream error WITHOUT ever calling the field decoder",
+    "so the divergence is earlier than the field codec: the header or the field-loop control flow in 0x471980..0x471CAC is not modelled correctly",
+    "the instrument itself works (it captured a different caller), so once the loop is modelled right we will see the real field sequence"
+  ],
+  "remaining_unknowns": [
+    "exact control flow between 0x471B9E (present bit) and 0x670FF0 (delta decoder)",
+    "meaning of the 5-bit header value we called `last`",
+    "quantisation used by positive-width codecs (6/10/11/12/16/32) when converting bits to float"
+  ],
+  "next": [
+    "disassemble 0x471BC8..0x471CAC completely (the loop tail and exit) to model the control flow exactly",
+    "then rebuild the encoder and re-run the same instrumentation"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r108-gs.jsonl"
+  }
+}

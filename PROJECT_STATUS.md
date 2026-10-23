@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Field decoder never reached - ps block errors earlier]**
+> Instrumented 0x6701D0 (ecx = table entry -> index; [stream+0x24] = bit). origin0 body consumes 28 bits, sets stream error, and never calls the field decoder; the single captured record (entry 0xDA8520, index 708) is a startup call, so the instrument works.
+> So the divergence is in the header/loop control flow (0x471980..0x471CAC), not the codec. Unknowns: present-vs-continuation flow, the 5-bit header value, and positive-width quantisation.
+> Next: disassemble 0x471BC8..0x471CAC fully, then rebuild the encoder and re-run the instrumentation.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps field not reached](evidence/experiments/20261023-codex-ps-field-not-reached.json).
 > **2026-10-23 [First ps encoder (v0): header reproduces, field section errors at bit 1336]**
 > runs/_gen_ps_body.py implements has-ps(1)+mode(1)+5-bit last+per-field present(1)+delta decoder, then the hybrid tail. Bodies: enc-baseline (169B), enc-origin0 (173B), enc-origin012 (179B).
 > origin0 test: ps entry 1308 -> actors entry 1336 (28 bits) with stream error 1, state 9. Model wrote 34 bits, so the field encoding diverges.
