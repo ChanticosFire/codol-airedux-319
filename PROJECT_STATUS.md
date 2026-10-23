@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【delta 崩溃根因：ebp+0x14=0 空 base 解引用】** ✅寄存器映射：ebp+8=cl（被当宽度、截断为 8）、ebp+0xC=stream、ebp+0x10=0x11A00、ebp+0x14=0（base）、ebp+0x18=&stream。✅崩溃链：0x471E19 edx=[ebp+0x14]=0 → 0x471E1E 读 [edx+0x3BB4] 未映射 → 崩溃。→ 8 位宽度正确，del8 崩溃是 has_base=0 时空 base 所致；delta 需有效 base。✅序列实验：hybrid+count1(has_base=1) 拼 334 字节 → state 10、entity_count=0、存活——拼接体只处理第一个快照。下一轮改为两个独立快照（不同 seq，先后发送）。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-delta-needs-base.json)、[JSON](evidence/experiments/20261023-codex-snapshot-sequence-test.json)。
+
 > **2026-10-23【纠正帧偏差：0x471D80 真实参数已读出】** ✅新增 CallSite 断点处理器，在 0x4723DD 实测 5 个参数：cl=0x134DAC28、stream=0x16D9EC、0x11A00、0、&stream=0x169E08。✅纠正：SnapTrace 在 0x471D80 入口的断点发生在 push ebp/mov ebp,esp 之前，ebp 属调用者，[ebp+8]=0x18DA98 是调用者参数而非位宽；真实第一个参数是 cl。→ 0x471E0E push cl 给 0x66EC30 字面上不可能是位宽，只剩 (a) 取指针低 5 位（cl&0x1F=8）或 (b) push 映射认错。下一轮逐字节复核 0x471E05..0x471E2D。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-callsite-params.json)。
 
 > **2026-10-23【动态读到实体循环参数：ebp+8=1628824，非位宽】** ✅给 SnapTrace 加 param_ebp8/10/14 后实测：ebp+8=1628824(0x18DA98)、ebp+0x10=0、ebp+0x14=0，cursor=164/bit=1307。→ 1628824 是指针量级，不可能是位宽；但 0x471E0E 把它当宽度 push 给 0x66EC30，说明调用帧或语义需复核。工具改进已落地（launch 的 SnapTrace 记录含 param_ebp8/10/14）。下一轮记录 [ebp+4] 返回地址确认帧并检查 0x66EC30 对大参数分支，在 0x4723DD 断点比对真实传入值。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-entityloop-params.json)、[JSON](evidence/experiments/20261023-codex-ebx-not-found.json)。
