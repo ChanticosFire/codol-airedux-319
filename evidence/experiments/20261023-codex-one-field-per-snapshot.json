@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T06:00:00+00:00",
+  "scope": "sixth falsification: even a 7-bit prologue with two fields decodes ONE field - the emerging theory is one field per snapshot",
+  "body": "runs/snapshot-p7f2.bin (7-bit prologue, two [present(0)+delta] groups, terminator, 26 bits)",
+  "measurement": {
+    "ps_field_records": 1,
+    "decide_stream_error": 1,
+    "state": 9
+  },
+  "falsified_so_far": [
+    "has-ps + full header per iteration",
+    "header once + N continuation records",
+    "8-bit prologue + N [present+delta] with last=0",
+    "8-bit prologue + N [present+delta] with last=1",
+    "7-bit prologue + N [present+delta]",
+    "and the accepted single-field body itself measures exactly 29 bits"
+  ],
+  "the_emerging_theory": [
+    "the ps block writes EXACTLY ONE field per snapshot in this build",
+    "the disassembly supports it: after each decoded field the client runs `add [eax+0x3BA0],1` (ps count) and the loop bound is that same count, so the bound advances with the loop instead of limiting it - the loop exits on the has-ps bit instead, and in every body we send that bit arrives after one field",
+    "the field INDEX is not chosen by us either: the landing index comes from a slot index the client derives from that same count (`esi = edx*0x58`), so the CLIENT decides which field of the table is written on each snapshot",
+    "if that is true, a playerState is built up across MANY snapshots, one field each, and the server cannot target a field directly at all in a single body"
+  ],
+  "why_this_ends_black_box_work": [
+    "if the client chooses the field index itself, then constructing a body to write 'origin' is not a matter of getting the bits right - the index is out of our control",
+    "confirming or refuting that requires observing the index the client picks on a real sequence, which is a debugger observation, not a construction experiment",
+    "six hypotheses have been falsified with a probe that is now itself validated (0x670FF0 calls 0x6701D0 exactly once, confirmed in the disassembly), so the failure is in the model, not the instrument"
+  ],
+  "what_would_settle_it": [
+    "a debugger breakpoint at 0x471BB3 (where the slot/index is loaded) logging `[ebp-0xd0]`, `edi` and `esi` for each snapshot of a real sequence",
+    "or a captured real snapshot stream: the per-frame field indices would be visible in the decoded output"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r178-gs.jsonl",
+    "encoder": "runs/_gen_p7f2.py"
+  }
+}
