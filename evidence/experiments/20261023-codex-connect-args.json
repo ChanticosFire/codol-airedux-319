@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T09:30:00+00:00",
+  "scope": "attempt to patch the peer address before the gamestate is sent",
+  "result": {
+    "connect_invocation": "failed - we passed --target/--adr-type/--fake-stats but the connect subcommand only accepts --address and --settle",
+    "status_after_failed_connect": {
+      "connection": "0x13952b24",
+      "connection_adr": {"type": 0, "ip": "0.0.0.0", "port": 0, "channel": 0},
+      "ring_b": {"read": 0, "write": 0},
+      "ring_a": {"read": 0, "write": 0}
+    },
+    "meaning": "the game connection was never opened this round, so there was nothing to patch and no test occurred"
+  },
+  "correct_usage_learned": {
+    "connect": "ring_bridge_1649370.py connect --address <ip:port> [--settle N]",
+    "note": "the address argument is what the client will believe its peer is; this is exactly the lever needed for the address experiment"
+  },
+  "next": [
+    "call connect --address 127.0.0.1:29000 first (so the client derives the peer address from our value)",
+    "then read status to confirm connection_adr shows loopback",
+    "then start-challenge to send the gamestate fragments and observe stage/messageAck"
+  ],
+  "artifacts": ["runs/adr3-status.json"]
+}
