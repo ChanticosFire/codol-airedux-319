@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T06:00:00+00:00",
+  "scope": "refresh the encoded callback immediately before every 0x5B2C10 call and count the hits",
+  "session": {
+    "name": "20261023-world-11",
+    "pid": 38008,
+    "hook": {
+      "site": "0x5B31B4 (call 0x5B2C10 inside 0x5B3160)",
+      "original": "e8 57 fa ff ff",
+      "cave": "0x50620000",
+      "callback_stub": "0x50630000 (xor eax,eax; ret)",
+      "counter": "0x50620200",
+      "cave_logic": "cl2 = [0x76638F4]^0x6891D1C7; [cl2+0x30] = stub ^ (cl2+0x2C) ^ [0xE60B78]; inc counter; call 0x5B2C10; jmp 0x5B31B9",
+      "patch_readback": "e9 47 ce 06 50"
+    },
+    "bridge": "forward --start-challenge --fake-stats --send-move --keepalive (0x66F20E untouched)"
+  },
+  "evidence": {
+    "hook_hits": 2,
+    "client_alive": true,
+    "crash": "none",
+    "phase": 0,
+    "cl": "0x130803A0",
+    "cl2_now": "0x131AAAA0",
+    "cb30_now": "0",
+    "ring_a": [4, 4],
+    "server": ["CoDOL menucmd -> 0 (AdministraClient): v", "CoDOL menucmd -> 0 (AdministraClient): u 7", "AdministraClient ... out 108", "out 232", "out 354"]
+  },
+  "conclusion": "the refresh hook works: the callback pointer is written in time and the client no longer crashes at 0x66F170. However the no-op stub does not acknowledge, so the server keeps growing its reliable queue (out 108 -> 354) and the client still ends up outside the match. The callback must perform the real work (the acknowledgement / client packet send), not merely exist.",
+  "next": [
+    "identify what 0x66F170's callback must do: its arguments are (cl2+0x1C, &local8) and the caller only reads result+4, so it likely returns a sequence/ack value rather than sending",
+    "try a stub that returns a plausible result (e.g. write 0 to result+4 and 0x1000 variants) and watch whether the server out counter stops growing",
+    "alternately have the stub call the loopback sender 0x6750A0/0x5BAA00 with the 0x2C-byte message that 0x66F170 builds in esi; that would turn the callback into an actual transmit"
+  ],
+  "artifacts": ["runs/w11-hook.json", "runs/w11-in.jsonl"]
+}
