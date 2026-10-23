@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T02:00:00+00:00",
+  "scope": "EXACT MATCH: with 6 padding bits the measured ps length equals the built length (55 = 55), so the block layout is fully pinned",
+  "measurements": [
+    {
+      "pad": 0,
+      "built": 49,
+      "measured": 65,
+      "note": "reads into the hybrid tail"
+    },
+    {
+      "pad": 1,
+      "built": 50,
+      "measured": "(see run)"
+    },
+    {
+      "pad": 6,
+      "built": 55,
+      "measured": 55,
+      "note": "EXACT"
+    },
+    {
+      "pad": 15,
+      "built": 64,
+      "measured": 55,
+      "note": "stops at the sixth zero"
+    }
+  ],
+  "the_pinned_layout": {
+    "has_ps": 1,
+    "mode": 1,
+    "last": 5,
+    "present": 1,
+    "delta_continuation": 1,
+    "delta_V": 5,
+    "delta_distance_1": 1,
+    "delta_value_codec_minus97": 33,
+    "post_delta_reads": 6,
+    "terminator_has_ps": 1,
+    "total": 55,
+    "verification": "8 + 40 + 6 + 1 = 55, and the client consumed exactly 55"
+  },
+  "what_the_six_bits_are": [
+    "not yet identified: after the delta the block reads exactly SIX bits before the has-ps terminator",
+    "they are not the hint2 radar entry (that one is gated and our padding is zeros)",
+    "the next thing to try is to identify them by reading 0x471CA3..0x471D60, the tail of the block after the delta"
+  ],
+  "why_this_is_the_milestone": [
+    "for the first time the encoder can produce a ps block whose LENGTH is known in advance and whose parse is clean",
+    "that makes it possible to vary exactly one thing (the landing value) while keeping the framing fixed - which is what a real field write requires"
+  ],
+  "next": [
+    "read 0x471CA3..0x471D60 to identify the six bits, then substitute a real origin value with the framing unchanged",
+    "and watch whether the actors entry bit moves by exactly the expected amount when the value width changes"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r192-gs.jsonl",
+    "encoder": "runs/_gen_padscan.py"
+  }
+}
