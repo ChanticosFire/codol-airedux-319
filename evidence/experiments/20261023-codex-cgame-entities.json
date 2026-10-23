@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T21:50:00+00:00",
+  "scope": "found the clc->cgame entity copy: the destination array is at [cg]+0x3B98",
+  "references_to_entity_key": [
+    "0x471DFD",
+    "0x471E35",
+    "0x514315",
+    "0x514346",
+    "0x5AD7BC",
+    "0x5AD834",
+    "0x5BEBC7",
+    "0x5BECF0",
+    "0x5C8994"
+  ],
+  "copy_routine_0x5142E0": {
+    "0x51430D": "ecx = [ebx+0xA904] (clc entity array pointer)",
+    "0x514313": "xor ecx, 0xDF5B8C38 (pointer decode)",
+    "0x51431D": "edx = entity[index] (source, stride 0x34)",
+    "0x514320": "edx = edi + 0x3B98 (destination base)",
+    "0x51432C": "call 0xC3C603 - memcpy with size 0xD000",
+    "0x51434B": "lea ecx,[esi+edi+0x3B98] - destination for the tail copy"
+  },
+  "conclusion": [
+    "the renderer's entity array is (cg pointer) + 0x3B98",
+    "the clc->cgame copy is a memcpy inside 0x5142E0..0x514358, with the destination rooted at edi",
+    "if we can find the cg pointer (edi here), we can inject synthetic entities directly into the renderer's array, or patch this copy to run"
+  ],
+  "next": [
+    "identify the cg global: trace edi at 0x5142E0 (a CallSite-style breakpoint) or find who passes it",
+    "then inject eType/origin into cg+0x3B98 and screenshot"
+  ],
+  "artifacts": {
+    "cols": "E:/GAME/COD/codol-airedux/cols"
+  }
+}
