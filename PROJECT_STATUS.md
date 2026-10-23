@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Multi-point loop instrumentation failed]**
+> Four breakpoints at once: state 10 but 0x471980 produced zero records; only two stray startup ps_loop records. Patching int3 into hot loop addresses (0x471B9E/0x471C5C) evidently disturbs the ps parse.
+> Next: one address at a time, starting with 0x670FF0 alone, confirming the ps block still parses before adding more.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [loop instrument failed](evidence/experiments/20261023-codex-loop-instrument-failed.json).
 > **2026-10-23 [Accepted ps is empty - frame loop consumes 55 bits without decoding a field]**
 > Accepted body + 0x6701D0 instrument: state 10 but the ps block never calls the field decoder (only the startup record 0xDA8520/index 708). So ps is valid but EMPTY - cgame gets no data, frame unchanged.
 > Next: instrument 0x471B9E / 0x471C5C / 0x670FF0 entry-exit with (bit, branch) logging to reconstruct the iteration sequence.

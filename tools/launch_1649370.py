@@ -2867,6 +2867,24 @@ def main(argv=None) -> int:
                 self.record({"dump_cg": {"cg": hex(cg), "size": len(data), "candidates": hits}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"dump_cg_error": f"{label}: {error}"})
+        if label.startswith("PsLoop"):
+            try:
+                registers = row.get("registers", {})
+                ebp = int(registers["ebp"], 0)
+                if "Delta" in label:
+                    stream = struct.unpack("<I", self.process.read(ebp + 8, 4))[0]
+                else:
+                    stream = int(registers.get("edi", "0"), 0)
+                bit = None
+                if stream:
+                    try:
+                        bit = struct.unpack("<I", self.process.read(stream + 0x24, 4))[0]
+                    except OSError:
+                        bit = None
+                self.record({"ps_loop": {"at": label, "stream": hex(stream) if stream else None,
+                                         "bit": bit}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"ps_loop_error": f"{label}: {error}"})
         if label.startswith("PsField"):
             try:
                 registers = row.get("registers", {})

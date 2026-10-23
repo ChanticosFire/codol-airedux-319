@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T23:20:00+00:00",
+  "scope": "multi-point loop instrumentation did not capture the ps block - likely breakpoint side effects",
+  "experiment": {
+    "breakpoints": [
+      "0x471980:SnapTracePlayerState",
+      "0x471B9E:PsLoopPresentA",
+      "0x471C5C:PsLoopPresentB",
+      "0x670FF0:PsLoopDeltaIn"
+    ],
+    "body": "runs/snapshot-ps-tail1363.bin",
+    "state": 10,
+    "ps_loop_records": 2,
+    "snap_trace_records": 0,
+    "reading": "the two records look like startup traffic (PsLoopPresentB bit=0, PsLoopDeltaIn stream=0x13494DC0 with an absurd bit), and 0x471980 never fired at all"
+  },
+  "diagnosis": [
+    "with four breakpoints active, the ps entry trace produced ZERO records while the client still reached state 10",
+    "the most likely cause is a breakpoint side effect: int3 patched into a hot loop address (0x471B9E / 0x471C5C) disturbed the ps parse so the block was skipped",
+    "this matches the earlier lesson that mid-function breakpoints can silently break this client"
+  ],
+  "next": [
+    "instrument ONE address at a time, starting with 0x670FF0 alone (no other breakpoints), and confirm the ps block still parses",
+    "if a single breakpoint works, add the next only after the previous one is proven harmless"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r113-gs.jsonl"
+  }
+}
