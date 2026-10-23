@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T07:20:00+00:00",
+  "scope": "S 234 -> S 0 does not change the loading-screen text",
+  "experiment": {
+    "commands": "runs/servercmd-s0.bin (27 commands, S 234 replaced by S 0)",
+    "body": "runs/snapshot-f7.bin",
+    "state": 9,
+    "screenshot": "runs/codex-r37-screenshot.png - loading screen with 等待玩家数据 unchanged",
+    "client": "alive (pid 40768)"
+  },
+  "reading": "the S command does not drive the waiting text; either it maps to something unrelated or the text comes from the snapshot/gamestate path",
+  "next": [
+    "compare D/C/v/H variants with screenshots to find which command affects the loading text",
+    "or stop chasing text and instead look for the match-state variable the client reads"
+  ],
+  "artifacts": {
+    "screenshot": "runs/codex-r37-screenshot.png",
+    "server_log": "runs/codex-r37-gs.jsonl"
+  }
+}
