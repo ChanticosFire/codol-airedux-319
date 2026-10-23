@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T10:10:00+00:00",
+  "scope": "test the address hypothesis with the address armed before the gamestate",
+  "session": {"client": "20261023-adr5, pid 2352", "server": "server1649370 on 28971"},
+  "verified_facts": {
+    "connect_armed_address": "connect --address 127.0.0.1:29000 -> address_string became 'localhost'",
+    "forward_reached_server": "connect logged, stats logged, three fragments emitted (seq 3, index 0/1/2)",
+    "ring_b_after": {"read": 5, "write": 5},
+    "ring_a_after": {"read": 148, "write": 148},
+    "stage": 5,
+    "state": 5,
+    "messageAck": 1,
+    "connection_adr": "still type 2, ip 0.0.0.0, port 0"
+  },
+  "conclusion": {
+    "address_hypothesis_rejected": "even with address_string set to 'localhost' and all five injected datagrams consumed (ring_b 5/5), the client did not advance stage or messageAck",
+    "so": "a mismatched peer address is not what blocks acceptance; at minimum it is not the only blocker, and our synthetic connection is consumed regardless of connection_adr"
+  },
+  "cumulative_exclusions": [
+    "fragment header, count, stride, chunk, sequence sharing and start value",
+    "cipher derivation and application (byte-exact)",
+    "payload content (byte-exact)",
+    "stats reply content",
+    "peer address (address_string armed to localhost)",
+    "transport and consumption (ring_b read == write every run)"
+  ],
+  "what_remains": {
+    "inside_client_after_ring_read": "the client reads the datagram from ring B but the datagram never becomes an accepted message",
+    "candidate_causes": [
+      "the client's reader expects the datagram to arrive through its own socket path (recvfrom) and the ring injection bypasses a state machine step that the normal path sets",
+      "the netchan sequence numbers it tracks (incomingSequence/outgoingAcknowledgement) diverge from the ones our packets carry, so every packet looks out of order",
+      "a reliable-command layer expects a specific first message that we never send"
+    ]
+  },
+  "highest_value_next_step": {
+    "idea": "read the client's netchan sequence fields (incomingSequence / outgoingSequence for the game connection) and compare them with the sequence we put on the wire (3)",
+    "why": "if the client's incomingSequence is not 2 (expecting 3 next), our datagrams are dropped as out-of-order before payload parsing - which would explain every rejection regardless of content",
+    "how": "scan the game connection object for small int pairs near the address struct, or reuse any existing netchan field offset knowledge from the 2697 work"
+  },
+  "artifacts": ["runs/adr5-status.json", "runs/adr5-gs.jsonl"]
+}
