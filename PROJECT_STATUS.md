@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [DECISIVE: ps loop runs zero times; every body is an EMPTY playerState]**
+> Decide probe extended with loop variables: loop_c8 = 0, cur_c4 = 0, slot_d0 = 0, stream_error 0, state 10, snap_trace 1.
+> The ps block is entered at 1308 but its loop never runs; an empty ps is accepted. So the hybrid baseline AND every field-write attempt carried an empty playerState, and our extra bits were eaten by the following blocks - which explains the incoherent tail measurements.
+> Open: disassembly says has-ps=1 enters the loop but ours does not. Next: observe the read at 0x471A3E (hot path, probe carefully).
+> Evidence: [ps loop zero](evidence/experiments/20261023-codex-ps-loop-zero.json).
 > **2026-10-23 [TWO CORRECTIONS: round 166 withdrawn; PsField is not ps-specific]**
 > With all three breakpoints armed: snap_trace 1, slot 0, decide 2, state 10. Round 166's run armed only 0x471BB3, so its snap_trace 0 was my own mistake - WITHDRAWN.
 > 0x471BB3 (ps delta path) never fires, yet PsField (0x6701D0) always reported 1 -> 0x6701D0 is a generic codec used by other blocks too. All PsField-based ps conclusions are invalid (rounds 159, 165).

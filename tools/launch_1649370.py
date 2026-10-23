@@ -2959,6 +2959,16 @@ def main(argv=None) -> int:
                                          "bit": bit}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"ps_loop_error": f"{label}: {error}"})
+        if label.startswith("Present"):
+            try:
+                registers = row.get("registers", {})
+                edi = int(registers["edi"], 0)
+                count = getattr(self, "_present_count", 0)
+                if count < 20:
+                    self.record({"present_probe": {"edi": hex(edi), "n": count}})
+                self._present_count = count + 1
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"present_error": f"{label}: {error}"})
         if label.startswith("Slot"):
             try:
                 registers = row.get("registers", {})
@@ -2994,6 +3004,9 @@ def main(argv=None) -> int:
                 esi = int(registers["esi"], 0)
                 stream_error = struct.unpack("<I", self.process.read(esi, 4))[0]
                 self.record({"decide": {
+                    "loop_c8": peek(-0xC8),
+                    "cur_c4": peek(-0xC4),
+                    "slot_d0": peek(-0xD0),
                     "stream_error": stream_error,
                     "struct_3bd0": peek(-0x3BD0),
                     "field_54": peek(-0x54),

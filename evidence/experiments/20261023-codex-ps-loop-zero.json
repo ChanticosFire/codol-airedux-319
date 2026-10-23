@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T09:00:00+00:00",
+  "scope": "DECISIVE: in the accepted body the ps field loop runs ZERO times (loop_c8 = 0) while the snapshot still parses cleanly",
+  "probe": "Decide at 0x4724A5, extended to log the loop counter (-0xC8), the current slot pointer (-0xC4) and the slot source (-0xD0)",
+  "record": {
+    "loop_c8": 0,
+    "cur_c4": 0,
+    "slot_d0": 0,
+    "stream_error": 0,
+    "struct_3bd0": 72192,
+    "field_54": 1,
+    "field_50": 12,
+    "field_34": 0,
+    "ctx_3bd4": 72192
+  },
+  "counts": {"snap_trace": 1, "decide": 2},
+  "final_state": 10,
+  "what_this_proves": [
+    "the ps block IS entered (snap_trace fires at bit 1308) but its per-field loop executes ZERO times",
+    "the snapshot still parses with stream_error = 0, so an EMPTY playerState is perfectly acceptable",
+    "therefore every body this project has produced - including the 167-byte hybrid baseline and every 'field write' attempt - carries an EMPTY playerState",
+    "and every extra bit we added after the ps entry was consumed by the FOLLOWING blocks (entities / actors / glass), which is why the tail alignment kept changing and why the earlier length measurements were incoherent"
+  ],
+  "the_open_question": [
+    "the disassembly says the loop is entered when the has-ps bit is 1, and our bodies do write 1 at bit 1308, yet the loop runs zero times",
+    "so either the block reads additional bits before the loop (and the 'has-ps' bit is not at 1308), or the loop is gated by another condition (e.g. the ps count being zero)",
+    "the next observation should be the value the block reads at 0x471A3E (the has-ps read) - but that address must be probed carefully because a breakpoint there is on the hot path"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r182-gs.jsonl",
+    "probe": "tools/launch_1649370.py (Decide branch, now includes loop_c8 / cur_c4 / slot_d0)"
+  }
+}
