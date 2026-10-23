@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T07:00:00+00:00",
+  "scope": "fifth curve point: 2048 also costs 55 bits, so the threshold is above 2048",
+  "points": [
+    {
+      "value": 256,
+      "ps_bits": 55
+    },
+    {
+      "value": 512,
+      "ps_bits": 55
+    },
+    {
+      "value": 1024,
+      "ps_bits": 55
+    },
+    {
+      "value": 2048,
+      "ps_bits": 55
+    },
+    {
+      "value": 5830,
+      "ps_bits": 97
+    }
+  ],
+  "observation": [
+    "four consecutive powers of two all cost exactly 55 bits",
+    "so in the range 256..2048 the field is a FIXED allocation regardless of magnitude or bit length",
+    "the only point that differs is 5830, which is not a power of two and whose binary form has many set bits",
+    "that asymmetry suggests the 42-bit jump may be triggered by a specific BIT PATTERN rather than by magnitude"
+  ],
+  "next": [
+    "test 4096 (already generated as runs/snapshot-v4096.bin) - a single set bit, larger than 2048",
+    "if 4096 also gives 55 bits, magnitude is ruled out and the trigger is a bit pattern",
+    "then test 5830 with one bit cleared at a time to find which bit causes the jump"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r197-gs.jsonl",
+    "prepared": "runs/snapshot-v4096.bin"
+  }
+}
