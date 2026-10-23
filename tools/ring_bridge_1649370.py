@@ -651,9 +651,10 @@ def forge_ack_packet(seq: int, ack_override: int | None,
         qport, client_port, _ = fca.find_qport(handle, base)
         if qport_override:
             qport = qport_override & 0xFFFF
-        packet = struct.pack("<IH", seq, qport) + body
+        packet = struct.pack("<I", seq) + body
         return packet, {"ack": ack, "qport": qport, "client_port": client_port,
                         "challenge": challenge, "server_id": server_id,
+                        "header": "seq-only",
                         "reliable_sequence": values[0],
                         "reliable_ack": values[1], "message_ack": values[3],
                         "plain": plain.hex(), "plain_variant": plain_variant,

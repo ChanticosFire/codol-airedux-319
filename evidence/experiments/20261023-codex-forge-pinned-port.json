@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:00:00+00:00",
+  "scope": "pin the forward source port and try a seq-only packet header for the forged ack",
+  "session": {
+    "name": "20261023-world-20",
+    "pid": 31556,
+    "order": "dedrun -> forward (--bind-port 29000) -> client -> login -> drain block + refresh hook -> start-challenge",
+    "note": "the forward was started before the client so the dedrun would learn 29000 as the remote address"
+  },
+  "results": {
+    "fixed_port_active": true,
+    "forge_log_tail": [
+      {"ack": 131, "qport": 29000, "server_id": 1, "header": "seq-only", "challenge": -1074144666, "command_len": 0, "plain": "830000000000"},
+      {"ack": 132, "qport": 29000, "server_id": 1, "header": "seq-only", "challenge": -1074144666, "command_len": 0, "plain": "840000000000"}
+    ],
+    "server": ["out 290", "out 422", "out 555", "out 686"],
+    "reliable_ack_in_log": 1,
+    "verdict": "out keeps growing and the dedrun's reliableAcknowledge stays 1, so neither the pinned port nor the seq-only header made the packet acceptable"
+  },
+  "analysis": {
+    "ruled_out": ["qport=0 (now the real socket port)", "source port drift (pinned to 29000)", "serverId 0 vs 1 (tried 1)", "reliableCommands offset (0xa50 verified from source)", "empty command stream (server sees the same empty string, so the key should still match)"],
+    "remaining": [
+      "the packet header layout expected by SV_PacketEvent for a 2697 netchan packet (seq width, qport presence, leading byte)",
+      "the exact challenge value the dedrun uses for AdministraClient; our offset may read a different int",
+      "the plain body shape; neither ack+00 00 nor ack+0a 00 was accepted"
+    ]
+  },
+  "next": [
+    "hook or breakpoint SV_Netchan_Decode inside the dedrun and dump the first bytes it receives from 127.0.0.1:29000 together with client->challenge / serverId / messageAcknowledge; that removes all guesswork",
+    "alternatively capture one genuine 1649370 client packet from ring A and replay it to the dedrun to see whether the header matches",
+    "keep the refresh hook and the single-forward-session discipline"
+  ],
+  "artifacts": ["tools/ring_bridge_1649370.py", "runs/forge-ack-log.jsonl"]
+}
