@@ -2922,23 +2922,16 @@ def main(argv=None) -> int:
             try:
                 registers = row.get("registers", {})
                 ecx = int(registers["ecx"], 0)
-                ebp = int(registers["ebp"], 0)
-                index = (ecx - 0xDA63E8) // 12 if ecx >= 0xDA63E8 else -1
-                stream = struct.unpack("<I", self.process.read(ebp + 8, 4))[0]
-                bit = None
-                if stream:
-                    try:
-                        bit = struct.unpack("<I", self.process.read(stream + 0x24, 4))[0]
-                    except OSError:
-                        bit = None
-                codec = None
-                try:
-                    codec = struct.unpack("<i", self.process.read(ecx + 4, 4))[0]
-                except OSError:
-                    codec = None
-                self.record({"ps_field": {"entry": hex(ecx), "index": index,
-                                          "codec": codec, "stream": hex(stream) if stream else None,
-                                          "bit": bit}})
+                esp = int(registers["esp"], 0)
+                args = []
+                for step in range(1, 6):
+                    raw_arg = self.process.read(esp + 4 * step, 4)
+                    args.append(struct.unpack("<I", raw_arg)[0])
+                count = getattr(self, "_psfield_count", 0)
+                if count < 24:
+                    self.record({"ps_field": {"ecx": hex(ecx),
+                                              "args": [hex(a) for a in args]}})
+                self._psfield_count = count + 1
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"ps_field_error": f"{label}: {error}"})
         if label.startswith("PsBegin"):

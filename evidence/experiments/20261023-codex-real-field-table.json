@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T05:50:00+00:00",
+  "scope": "MAJOR: the field table the ps delta decoder actually uses is at 0xDA8520, NOT 0xDA63E8",
+  "probe_evidence": {
+    "ecx_at_0x6701d0_entry": "0xDA8520",
+    "stack_args": [
+      "0x16D9EC (stream)",
+      "0x11A00",
+      "0x166244",
+      "0",
+      "0"
+    ],
+    "entry_read": "offset 0, codec -97, hint 0"
+  },
+  "consequences": [
+    "EVERY field-index/codec mapping in this project so far was built on the 0xDA63E8 table (24 entries, offsets 76/80/84/... and codecs -58/-100/...)",
+    "the table the decoder is actually indexing starts at 0xDA8520 (or is indexed from there) and its first entry is offset 0 / codec -97",
+    "so all previous conclusions of the form 'index N has offset X and codec Y' are INVALID - they described a different table",
+    "this single fact explains why the cost model kept matching while the content never did: the framing arithmetic was measured, but the field identities were wrong"
+  ],
+  "table_dump_at_0xda8520": [
+    "[ 0] offset=0 codec=-97",
+    "[ 1] offset=264 codec=-75",
+    "[ 2] offset=300 codec=-75",
+    "[ 3] offset=704 codec=-16",
+    "[ 4] offset=1384 codec=-70",
+    "[ 5] offset=224 codec=16",
+    "[ 6] offset=1032 codec=-88",
+    "[ 7] offset=220 codec=12",
+    "[ 8] offset=48 codec=-88",
+    "[ 9] offset=700 codec=12",
+    "[10] offset=56 codec=-88",
+    "[11] offset=52 codec=-88",
+    "[12] offset=44 codec=8",
+    "[13] offset=64 codec=-88",
+    "[14] offset=60 codec=-88",
+    "[15] offset=256 codec=-8",
+    "[16] offset=68 codec=-88",
+    "[17] offset=716 codec=6",
+    "[18] offset=356 codec=-87",
+    "[19] offset=352 codec=-87",
+    "[20] offset=12 codec=32",
+    "[21] offset=268 codec=-94",
+    "[22] offset=276 codec=-94",
+    "[23] offset=284 codec=-94"
+  ],
+  "open": [
+    "the struct behind this table is much larger than 88 bytes (offsets up to 1384), so this is probably the player ENTITY state, not the small playerstate",
+    "the decoder entry with field index 0 on our V=22 body suggests V means 'number of fields / last changed index + 1' and that decoding starts at field 0 every time"
+  ],
+  "next": [
+    "re-derive the field semantics from THIS table (0xDA8520) and re-check the V semantics against it",
+    "the -97 codec at index 0 costs 1 bit + 32 bits (absolute scalar), which is a plausible commandTime"
+  ],
+  "artifacts": {
+    "tool": "tools/launch_1649370.py (PsField probe, now logging ECX + stack args)",
+    "server_log": "runs/codex-r158-gs.jsonl"
+  }
+}

@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MAJOR: the real field table is 0xDA8520, not 0xDA63E8]**
+> Probe (ECX + 5 stack args) on nz1: ecx = 0xDA8520 at 0x6701D0 entry; entry = offset 0 / codec -97. Stack args [stream 0x16D9EC, 0x11A00, 0x166244, 0, 0].
+> All previous index/codec mappings were built on 0xDA63E8 and are INVALID. This explains why the cost model matched while content never did.
+> Table at 0xDA8520 starts 0/-97, 264/-75, 300/-75, 704/-16, 1384/-70, ... (offsets up to 1384 => probably player ENTITY state).
+> Next: re-derive semantics from 0xDA8520; V likely = last-changed+1 with decoding from field 0.
+> Evidence: [real field table](evidence/experiments/20261023-codex-real-field-table.json).
 > **2026-10-23 [PsField probe is unreliable]**
 > Probe on nz1 recorded index 708 / codec -97, but the implied address 0xDA8518 holds zeros. The assumption that ECX is the table entry at 0x6701D0 entry is wrong.
 > The call site computes the entry as [ebp+0x1c] + 12*esi, so the table base is the delta decoder's 5th argument.
