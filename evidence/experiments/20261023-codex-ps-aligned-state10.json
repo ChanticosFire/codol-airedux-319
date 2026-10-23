@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T14:25:00+00:00",
+  "scope": "MILESTONE: a snapshot carrying a playerState block (has-ps=1, count=0) is fully accepted - state returns to 10",
+  "body": {
+    "file": "runs/snapshot-ps-count0-aligned.bin",
+    "size_bytes": 170,
+    "layout": "header bits 0..1307 copied from hybrid; bit 1308 = has-ps = 1; bit 1309 = 0; bits 1310..1317 = count = 0; hybrid tail (27 bits) re-appended at bit 1318; trailing 0x05",
+    "ps_block_entry_bit": 1308,
+    "actors_entry_bit": 1318,
+    "ps_bits_consumed": 10
+  },
+  "result": {
+    "state": 10,
+    "ui": 5,
+    "entity_count": 0,
+    "screenshot": "black (unique 4, mean 0)"
+  },
+  "significance": [
+    "first time a snapshot containing a playerState block is accepted end-to-end (state 10)",
+    "confirms the layout: has-ps(1) + flag(1) + 8-bit count, and that count=0 means 'no changed fields'",
+    "gives a working baseline on which real ps fields can be added one at a time, with the entry/exit bit cursors as the probe"
+  ],
+  "next": [
+    "add one real field: count=1, then the field encoding (gap + codec + value) and measure how many bits the ps block grows to",
+    "iterate until a commandTime / origin / eType is accepted, then check whether the UI leaves the loading screen"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r100-gs.jsonl",
+    "screenshot": "runs/codex-r100-screenshot.png"
+  }
+}

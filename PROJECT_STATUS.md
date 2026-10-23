@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MILESTONE: snapshot with a playerState block accepted end-to-end (state 10)]**
+> runs/snapshot-ps-count0-aligned.bin (170 B): bits 0..1307 hybrid header, bit 1308 has-ps=1, bit 1309=0, bits 1310..1317 count=0, hybrid tail (27 bits) at bit 1318, trailing 0x05.
+> Traced ps entry 1308 -> actors entry 1318 (10 bits consumed), result state 10, ui 5, entity_count 0, black.
+> First accepted snapshot containing a ps block; confirms has-ps(1)+flag(1)+count(8) and provides a baseline for adding real fields one at a time with bit-cursor probing.
+> Next: add one real field (count=1 + gap + codec + value), measure growth, iterate toward commandTime/origin/eType; watch the UI.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps aligned state10](evidence/experiments/20261023-codex-ps-aligned-state10.json).
 > **2026-10-23 [playerState block decoded: has-ps(1) + flag(1) + count(8); minimal 10 bits]**
 > Traced ps entry (0x471980) and actors entry (0x471010): hybrid ps_entry bit 1308 -> actors 1323; has-ps=1 mixed bits 15 bits consumed, error 0; has-ps=1 all-zero bits 10 bits consumed, error 0.
 > Layout: bit 1308 has-ps, bit 1309 second flag, bits 1310..1317 8-bit field count (last+1, zero = no fields).
