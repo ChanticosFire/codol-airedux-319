@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T09:50:00+00:00",
+  "scope": "use connect --address to make the client believe its peer is loopback, then send the gamestate",
+  "verified_facts": {
+    "connect_with_address": "connect --address 127.0.0.1:29000 --settle 2 returned address_written=true",
+    "address_string_after": "localhost",
+    "connection_adr_after": "type 2, ip 0.0.0.0, port 0, channel 157 (unchanged)",
+    "start_challenge": "returned status=challenge_armed, connection=0x13972f58, state=3",
+    "ring_b_after": {"read": 0, "write": 0},
+    "ring_a_after": {"read": 0, "write": 4},
+    "server_fragments": "none logged - the server never emitted because no connect reached it this round"
+  },
+  "conclusions": {
+    "address_string_vs_connection_adr": "the client accepted our address into address_string ('localhost') but connection_adr remains 0.0.0.0:0, so these are two different fields with different lifecycles",
+    "no_server_traffic": "with connect invoked in this mode our server logged no connect and no fragments, so the gamestate was never produced; the test therefore could not exercise payload acceptance",
+    "state_did_move": "state went 4 -> 3 across connect/start-challenge, which shows the client reacted to the bridge commands even though no gamestate flowed"
+  },
+  "next": [
+    "run forward as before (which does reach the server and produces fragments) but immediately after connecting with --address, so the address is in place when the gamestate arrives",
+    "or read what command_armed/challenge_armed does and whether it expects the server to initiate",
+    "keep the finding that address_string and connection_adr diverge: the receive path most likely compares against connection_adr, which the client never fills in for our synthetic connection"
+  ],
+  "artifacts": ["runs/adr4-connect.json", "runs/adr4-status1.json", "runs/adr4-status2.json"]
+}
