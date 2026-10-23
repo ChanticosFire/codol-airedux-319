@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T01:00:00+00:00",
+  "scope": "the field-value reader is never reached; the crash happens inside the entity-table read",
+  "trace": {
+    "SnapTraceEntityLoop_0x471D80": {
+      "error": 0,
+      "cursor": 164,
+      "bit": 1307,
+      "length": 170
+    },
+    "SnapTraceFieldValue_0x671700": "never hit",
+    "client": "exited"
+  },
+  "meaning": [
+    "the entity loop starts exactly where the hybrid did (bit 1307)",
+    "0x671700 is never called, so the crash is inside 0x671650 (table/form/count/id) or the field-index read right after it",
+    "the most likely mismatch is the width of the count field - 0x66ED70 may not be an 8-bit reader"
+  ],
+  "next": [
+    "disassemble 0x66ED70 to confirm the count width",
+    "if the width differs, rebuild with the correct count encoding",
+    "trace 0x671650 itself to see the cursor before and after the count read"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-ee391eb6/events.jsonl",
+    "server_log": "runs/codex-r29-gs.jsonl"
+  }
+}

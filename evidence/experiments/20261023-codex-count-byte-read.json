@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T01:15:00+00:00",
+  "scope": "the entity count is read as a whole byte from the same byte that carries the A/B bits, which explains the crash",
+  "disassembly": {
+    "0x66ED70": "byte reader: movzx eax, byte [cursor]; cursor++ - it does NOT read bits",
+    "0x671650": "A (bit) -> B (bit) -> 0x66ED70 (whole byte) -> 12-bit ids"
+  },
+  "trace": {
+    "SnapTraceEntityLoop_0x471D80": {
+      "cursor": 164,
+      "bit": 1307,
+      "length": 170
+    },
+    "SnapTraceFieldValue_0x671700": "never hit",
+    "client": "exited"
+  },
+  "deduction": {
+    "bit_cursor_at_1307": "A is at byte163 bit3, B at bit4; the bit reader does not advance the byte cursor for these two (1307&7=3, 1308&7=4)",
+    "byte_cursor_stays_163": "so 0x66ED70 reads byte163 as the whole count",
+    "our_byte163": "0xF8 = 248, because bit3/bit4 were set and the count bit landed in bit5",
+    "consequence": "count=248 makes the parser read 248*12 bits of ids, runs off the buffer and crashes before any field value is read"
+  },
+  "next": [
+    "verify by breaking on 0x66ED70 and reading eax (expected 0xF8)",
+    "then find the correct way to encode count=1 together with A/B, e.g. the cursor may need alignment by writing A/B in the previous byte",
+    "keep the hybrid as the safe fallback"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-ee391eb6/events.jsonl",
+    "body": "runs/snapshot-entity1-v2.bin"
+  }
+}
