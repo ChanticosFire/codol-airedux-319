@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T18:00:00+00:00",
+  "scope": "room60 alone reproduces both facts: the parse succeeds (stream_error 0) and the client crashes",
+  "body": "runs/snapshot-room60.bin (ps 32 bits + 60 zero room + tail)",
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1340,
+    "actors_entry_error": 0,
+    "decide_stream_error": 0,
+    "states": {"t=25": 9, "t=32": "client gone", "t=40": "client gone", "t=48": "client gone", "t=56": "client gone", "t=62": "client gone"},
+    "note": "a single body, no alternation, so the result is not an artefact of switching files"
+  },
+  "confirmed": [
+    "the parse of a non-zero playerState body is now CLEAN (stream_error == 0) and reproducible with a single body",
+    "the client then crashes, reproducibly, ~10-15 s after the snapshot arrives",
+    "so there are now two independent problems, and the parsing one is SOLVED"
+  ],
+  "differences_from_the_accepted_body": [
+    "value: single22 has 0, room60 has 5",
+    "room: single22 has no extra bits, room60 has 60 zero bits between the ps exit and the tail"
+  ],
+  "bisect_plan": [
+    "test A: value 0 + 60 room -> if accepted (state 10) the room is harmless and the VALUE causes the crash; if it crashes the room is the problem",
+    "test B: value 1 + 60 room -> whether the crash depends on the magnitude",
+    "this is a two-way bisect over exactly two variables, so one of the two tests already identifies the culprit"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r167-gs.jsonl",
+    "encoder": "runs/_gen_room.py"
+  }
+}

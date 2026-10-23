@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [room60 alone: clean parse confirmed, client crashes]**
+> Single body: actors error 0 at 1340, decide stream_error 0, client gone from t=32. Parsing solved and reproducible; crash remains.
+> Two variables differ from the accepted body: value (0 vs 5) and 60 zero room. Bisect: A = value 0 + room; B = value 1 + room.
+> Evidence: [room60 confirmed](evidence/experiments/20261023-codex-room60-confirmed.json).
 > **2026-10-23 [MAJOR: parser accepts a non-zero ps body (stream_error 0); client then crashes]**
 > 32-bit aligned ps (value 5 in 3 bits) + 60/120 zero room + tail: actors entry error 0 at 1340, decide stream_error 0. First non-zero ps value to pass the accept test.
 > Failure mode changed from rejected to crash-after-parse, i.e. the parsed content is used by game logic and inconsistent.
