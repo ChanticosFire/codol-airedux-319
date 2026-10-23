@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【字段循环入口：bit1329 索引、bit1330 取值】** ✅SnapTrace：0x471E05 命中 cursor=167/bit=1329，0x671700 命中 cursor=167/bit=1330，length=167，客户端存活、state 9。→ count=1 时解析器正确消费实体表/count/id 后在**体末尾**进入字段循环，当前仅剩约 7 bit，字段必须主动延长体提供。下一轮保留 byte0..164，从 bit1329 起重写尾部（最短字段编码 + actor/sub4/glass/EOF），验收 state 10 + cl.snap 非零。证据：[JSON](evidence/experiments/20261023-codex-field-start-bits.json)。
+
 > **2026-10-23【实体 id 窗口摸清；count=1 稳定不崩】** ✅byte163=0xD8→id 2078、0x18→id 2072，差 6 对应 bit1310/1311 → id 窗口起于 bit1309；id 与 byte164(count) 重叠，无法同时 count=1 且 id=0，但 2072 在实体数组容量 32768 内被接受。两次会话 entity_count 均为 1、客户端存活、state 9。下一轮补字段 delta 流（需恰好吃到 ps/actor 起点），验收 entity_count=1 + cl.snap 非零 + state 10。证据：[JSON](evidence/experiments/20261023-codex-entity-id-window.json)。
 
 > **2026-10-23【突破：count 编码成功，entity_count=1】** ✅修正：SnapTrace 的 cursor=164 说明 count 字节是 **byte164**（此前 count 恒 0xFF 正对应 hybrid 的 byte164）。✅重建 `snapshot-count1-b164.bin`：byte163|=0x18（A/B）+ byte164=0x01（count）→ 实测 entity_count=**1**、ids=[2078]、客户端存活、state 9。→ count 编码已解开；id 2078 是 bit1309..1320 与 byte163 高位/byte164 重叠导致的误读，且缺字段 delta 故未到 10。下一轮对齐 id 并补字段 delta。证据：[JSON](evidence/experiments/20261023-codex-count-encoding-solved.json)、[JSON](evidence/experiments/20261023-codex-count-is-byte164.json)。
