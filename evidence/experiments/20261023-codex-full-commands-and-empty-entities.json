@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T12:10:00+00:00",
+  "scope": "2697 capture carries only server commands; the client's entity array is empty",
+  "capture_analysis": {
+    "messages": 599,
+    "first_byte_histogram": {
+      "1": 599,
+      "3": 1
+    },
+    "meaning": "the 2697 ring capture holds server-command messages (opcode 1) and one gamestate; snapshots travelled on another sequence and are not in this dump",
+    "unique_commands": 99,
+    "notable": [
+      "d 0 \\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2 (1188x)",
+      "D 0 / C 0 / v / S 234 / H / u 30 / U <x y z>",
+      "f \"MP_CONNECTED...\" and d <slot> \"Training N\" (per-client UI text)"
+    ]
+  },
+  "command_experiment": {
+    "payload": "runs/servercmd-2697-full.bin",
+    "commands": 31,
+    "bytes": 1258,
+    "added": [
+      "d 0 <serverinfo>",
+      "D 0",
+      "C 0",
+      "v"
+    ],
+    "result": "state 10, usercmd flowing, screenshot still black (unique=5, max=21)"
+  },
+  "entity_array": {
+    "clc": "0x1346AAD4",
+    "count_field": "[clc+0xA8EC] = 32768",
+    "pointer": "[clc+0xA904] ^ 0xDF5B8C38 = 0x134A98E4",
+    "stride": "0x34 bytes",
+    "sampled": 32,
+    "all_zero": true,
+    "reading": "the client parsed no entity state at all; the black view has nothing to draw because the snapshot actor/entity block is empty"
+  },
+  "user_sequence": "map loading screen -> waiting for other players -> waiting for player data -> black with a flickering loading icon",
+  "conclusion": "server commands alone do not fill the world; the next step must be a snapshot that actually carries a player entity",
+  "artifacts": {
+    "server_log": "runs/codex-r10b-gs.jsonl",
+    "screenshot": "runs/codex-r10b-screenshot.png",
+    "commands": "runs/servercmd-2697-full.bin"
+  }
+}

@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【2697 抓包无 snapshot；客户端实体数组全 0】** ✅599 条消息全是 opcode 1（server command），唯一命令 99 条；补发 31 条含 `d 0 <serverinfo>`/`D 0`/`C 0`/`v` 后仍 state 10 全黑。✅实体数组 `[clc+0xA904]^0xDF5B8C38`、stride 0x34，抽查 32 项全 0——客户端未解析到实体。下一步必须让 base 快照携带玩家实体（`0x471D80`+`0x447190`+`0x671700`）。证据：[JSON](evidence/experiments/20261023-codex-full-commands-and-empty-entities.json)。
+
 > **2026-10-23【seq 顺序陷阱与 state 9/10 画面差异】** ✅命令重发用 4000+ 序号会把后续快照顶掉（ack 停在 1、state 9、无 usercmd）；改为命令 seq 严格递增 + 快照从 1000 起后恢复 **state 10、usercmd 17、ack 1053**。✅state 9 时加载屏正常渲染（unique=3438/mean=52），state 10 时全黑（unique=5/max=21）——黑屏只发生在游戏视图。当前是**协议层服务器替身**，非内存强制、也非真正建房；黑屏根因是快照无本地玩家实体。证据：[JSON](evidence/experiments/20261023-codex-command-repeat-seq-order.json)。
 
 > **2026-10-23【补充：加载图标持续变化，黑屏是等待态而非卡死】** ✅用户确认黑屏右下角加载图标仍间歇变化，客户端帧循环与网络活动继续，与“等待玩家数据”文案一致。→ 黑屏是主动等待，下一步逆向 `0x471D80` 的实体 delta 格式（`0x447190`/`0x671700`）并发出带 viewOrigin 的本地玩家实体。证据：[JSON](evidence/experiments/20261023-codex-loading-screen-blank-sequence.json)。
