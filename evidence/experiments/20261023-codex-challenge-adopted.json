@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T06:20:00+00:00",
+  "scope": "prove whether the client stores the challenge our own server issued",
+  "session": {
+    "client": "20261023-scan2, pid 39576",
+    "server": "server1649370 on 28971 (our own, correctly this time)"
+  },
+  "verified_facts": {
+    "server_challenge": 1731970647,
+    "client_memory_hit": "0x13CFD8F4",
+    "hit_kind": "heap address, not inside the 0x400000 image",
+    "hit_count": 1
+  },
+  "conclusion": {
+    "challenge_is_adopted": true,
+    "meaning": "the client stored the exact challenge value our server issued, so the cipher key basis (challenge ^ sequence) is grounded in a value the client actually holds",
+    "what_this_eliminates": "the hypothesis that our challenge was ignored and that every packet failed because of a wrong key source"
+  },
+  "what_remains_unknown": [
+    "the exact number of bytes the client ciphers and where the cipher starts inside a fragment",
+    "whether the index-0 special case really keeps four plaintext bytes, or whether those four bytes are something else",
+    "whether stride must equal the actual per-fragment payload size or a fixed value",
+    "whether the client needs a non-fragmented message first"
+  ],
+  "next": [
+    "compare our emitted fragments byte-for-byte with the reference fragments for the same index (header fields and cipher output) using the same challenge",
+    "in particular verify the index-0 first four data bytes: the reference had 8b8b8b8b which equals the key repeated, ours keeps plaintext",
+    "test emitting the reference bytes verbatim by re-encrypting the captured plaintext with OUR key and comparing outputs"
+  ],
+  "artifacts": ["runs/scan2-gs.jsonl"]
+}
