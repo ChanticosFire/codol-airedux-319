@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T00:05:00+00:00",
+  "scope": "the DumpCg breakpoint at 0x5142E0 did not fire this run",
+  "experiment": {
+    "breakpoint": "0x5142E0:DumpCg",
+    "body": "hybrid (empty world)",
+    "result": "no dump_cg record in events.jsonl; client stayed alive"
+  },
+  "reading": [
+    "the clc->cgame copy at 0x5142E0 is evidently conditional (it fired in the previous run but not this one)",
+    "this means the copy only runs when there is something to copy, which matches an empty entity set",
+    "so polling cg through this breakpoint is unreliable; the cg pointer must be obtained another way"
+  ],
+  "next": [
+    "obtain cg from a stable hook (e.g. capture it once via InjectEntity and then reuse it within the same session)",
+    "or find the cg global directly and read the refdef from there"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r90-gs.jsonl"
+  }
+}

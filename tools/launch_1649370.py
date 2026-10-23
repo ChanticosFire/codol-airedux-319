@@ -2849,6 +2849,24 @@ def main(argv=None) -> int:
                                                "after_head": after[:0x20].hex()}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"inject_entity_error": f"{label}: {error}"})
+        if label.startswith("DumpCg"):
+            try:
+                registers = row.get("registers", {})
+                cg = int(registers["edi"], 0)
+                data = self.process.read(cg, min(0x20000, 0x20000))
+                hits = []
+                for off in range(0, len(data) - 12, 4):
+                    x, y, z = struct.unpack_from("<3f", data, off)
+                    if not all(isinstance(v, float) for v in (x, y, z)):
+                        continue
+                    if not (100.0 < abs(x) < 20000.0 and 100.0 < abs(y) < 20000.0 and -2000.0 < z < 3000.0):
+                        continue
+                    hits.append({"offset": hex(off), "value": [round(x, 2), round(y, 2), round(z, 2)]})
+                    if len(hits) >= 12:
+                        break
+                self.record({"dump_cg": {"cg": hex(cg), "size": len(data), "candidates": hits}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"dump_cg_error": f"{label}: {error}"})
         if label == "CallSite":
             try:
                 esp = int(row.get("registers", {})["esp"], 0)
