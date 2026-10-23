@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T20:15:00+00:00",
+  "scope": "capture a live dedrun gamestate and attempt to decrypt it with the netchan key",
+  "session": {
+    "client": "20261023-dec, pid 21252",
+    "bridge": "forward --target 127.0.0.1:28970 --dump-in runs/dec-in.jsonl",
+    "captured": "dec-in.jsonl first in-band datagram: 1172 bytes"
+  },
+  "verified_facts": {
+    "first_datagram": {
+      "length": 1172,
+      "seq_raw": -2147483644,
+      "seq_hex": "0x80000004",
+      "fragment_bit_set": true,
+      "body_hex_head": "00028a048a0400000000dcdfdfdfdfb2"
+    },
+    "client_t_snapshot": {"challenge": -334841637, "messageAck": 1, "relSeq": 63},
+    "decrypt_attempt": {
+      "key_used": "challenge ^ 1(serverId) ^ 1(messageAck), empty command stream",
+      "result_head_hex": "dbd951df51dfdbdbdbdb070404040469745b67766b77775b626d7661046974047ff5ec3200b8040d58635b6365696170",
+      "looks_like_plaintext": false,
+      "diagnosis": "the key guess is wrong; the first 8 bytes decode to noise and the 07/04 patterns are ciphertext artifacts, not a valid svc_EOF/svc_gamestate header"
+    }
+  },
+  "why_the_key_could_be_wrong": [
+    "the encoder may use sv_serverid rather than client->serverId in the low byte",
+    "messageAck in the key may be the value at encode time, not the value we sampled afterwards",
+    "the command stream may not be empty: reliableCommands[reliableAck&127] could contain a command that advances the rolling key",
+    "the cipher may start at a different offset (the first 4 bytes we strip as seq may already be part of the ciphered region)"
+  ],
+  "next": [
+    "brute force the key byte over 0..255 and score each candidate by whether the plaintext begins with 07 00 00 00 00 01 00 00 00 (svc_EOF then svc_gamestate as a long)",
+    "if no single-byte key works, try the full command-driven rolling key with candidate command strings",
+    "keep the capture (runs/dec-in.jsonl) so the analysis can be redone offline without another session"
+  ],
+  "artifacts": ["runs/dec-in.jsonl", "runs/20261023-dec-lsg.jsonl"]
+}
