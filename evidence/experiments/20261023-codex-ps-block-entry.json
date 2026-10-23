@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T06:30:00+00:00",
+  "scope": "playerState block entry decoded: one has-ps bit, one last-mode bit, then fields",
+  "disassembly": {
+    "0x471A36": "if stream error -> skip ps",
+    "0x471A3E": "read bit1; if 0 -> skip the whole ps block (0x471CAC)",
+    "0x471A4D": "read bit2; if 1 -> last = previous + 1 (incremental)",
+    "0x471A5D": "if bit2 == 0 -> read 5 bits as the last field index",
+    "0x471A78": "if byte cursor passed length -> Com_Error(0xdb465c)"
+  },
+  "implication": [
+    "the 1649370 ps block is much simpler at the entry than cols' header: 1 has-ps bit + 1 last-mode bit + optional 5-bit last",
+    "our hybrid body sets bit 1312 = 1 (has ps) and bit 1313 = 1 (incremental last), which is consistent with it parsing a ps block and still reaching state 10",
+    "to send intermission we need a ps block whose last covers field 83 and whose field 83 carries value 6 - but the field-83 encoding on 1649370 still has to be confirmed"
+  ],
+  "next": [
+    "locate 1649370's playerState field table (the cols equivalent is 0xc55f70; the template at 0xDA9920 is nearby)",
+    "then encode a ps block: bit1=1, bit2=0, 5-bit last=83, and the fields up to 83"
+  ],
+  "artifacts": {
+    "cols": "E:/GAME/COD/codol-airedux/cols/crates/protocol/src/game/snapshot/mod.rs"
+  }
+}
