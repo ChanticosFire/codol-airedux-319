@@ -2844,6 +2844,15 @@ def main(argv=None) -> int:
                                            "args": [hex(value) for value in args]}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"call_site_error": f"{label}: {error}"})
+        if label.startswith("ClearStreamError"):
+            try:
+                esi = int(row.get("registers", {})["esi"], 0)
+                before = struct.unpack("<I", self.process.read(esi, 4))[0]
+                self.process.write(esi, struct.pack("<I", 0))
+                after = struct.unpack("<I", self.process.read(esi, 4))[0]
+                self.record({"clear_stream_error": {"esi": hex(esi), "before": before, "after": after}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"clear_stream_error_error": f"{label}: {error}"})
         if label == "SnapshotParse":
             try:
                 message = int(row.get("registers", {})["ecx"], 0)

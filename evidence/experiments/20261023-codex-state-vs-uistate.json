@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T16:40:00+00:00",
+  "scope": "critical correction: client state 10 is NOT the in-game view; the UI state is still 5 (loading screen)",
+  "measurement": {
+    "client_state_0x76446B0": 10,
+    "ui_state_0x84ABA50": 5,
+    "entity_count_0x7859558": 0,
+    "screenshot": "black (unique 5, mean 0)"
+  },
+  "interpretation": [
+    "the network state machine (0x76446B0) and the UI state machine (0x84ABA50) are separate",
+    "state 10 means the client accepted the gamestate and is in its network 'active' phase, but the UI is still on the loading screen (ui state 5)",
+    "this matches exactly what the user sees: map loading -> waiting for other players -> waiting for player data -> black screen",
+    "my earlier claim that entering state 10 equals 'entering the map' was wrong; the correct criterion is the UI state, and it never leaves the loading screen"
+  ],
+  "next": [
+    "enumerate the UI state values: set the UI state to candidate in-game values and screenshot each",
+    "or drive the same transition the UI script uses when it decides the match is ready (likely gated on receiving a valid playerState/entity set)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r82-gs.jsonl"
+  }
+}
