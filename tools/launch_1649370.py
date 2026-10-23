@@ -2872,7 +2872,8 @@ def main(argv=None) -> int:
                 registers = row.get("registers", {})
                 ebp = int(registers["ebp"], 0)
                 if "Delta" in label:
-                    stream = struct.unpack("<I", self.process.read(ebp + 8, 4))[0]
+                    esp = int(registers.get("esp", "0"), 0)
+                    stream = struct.unpack("<I", self.process.read(esp + 4, 4))[0]
                 else:
                     stream = int(registers.get("edi", "0"), 0)
                 bit = None

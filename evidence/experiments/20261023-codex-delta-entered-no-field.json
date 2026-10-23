@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T00:05:00+00:00",
+  "scope": "corrected delta-probe: the delta decoder IS called once per snapshot, but it never reaches the per-field decoder",
+  "instrumentation_fix": {
+    "bug": "at a function entry the arguments live at [esp+4], not [ebp+8] (ebp still belongs to the caller)",
+    "fix": "read the stream from [esp+4] at entry",
+    "result": "records now show stream = 0x16D9EC (the same stream object seen in all earlier traces)"
+  },
+  "finding": {
+    "ps_loop records": 1,
+    "record": {
+      "at": "PsLoopDeltaIn",
+      "stream": "0x16D9EC",
+      "bit": 0
+    },
+    "ps_field_records": 0
+  },
+  "important_correction": [
+    "[stream+0x24] is NOT the bit cursor: the ps header writes `last` into it (0x471A58/0x471A69), so after the header it holds the field index, not a bit position",
+    "that is why the value reads 0 here while the ps entry trace (taken before the header runs) reads 1308",
+    "future probes must use a different cursor source (e.g. [stream+0x1C] byte cursor plus the shift counter) or log deltas rather than absolutes"
+  ],
+  "next": [
+    "log at 0x6710BB (the call site of the per-field decoder) and at the 0x670FF0 exit to see which branch is taken after the delta is entered",
+    "that pinpoints whether the delta returns early (continuation bit 0) or takes the special path (index == -1)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r115-gs.jsonl"
+  }
+}

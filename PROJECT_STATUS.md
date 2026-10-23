@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Delta decoder entered once but never reaches the per-field decoder]**
+> Probe fix: function entry args are at [esp+4]. Now records read stream=0x16D9EC. The delta decoder 0x670FF0 is called once per snapshot but 0x6701D0 is never called -> it returns early or takes the index==-1 path.
+> Correction: [stream+0x24] is not the bit cursor (the ps header writes `last` into it). Use deltas or another cursor source.
+> Next: log 0x6710BB (per-field call site) and the 0x670FF0 exit to see which branch is taken.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [delta entered no field](evidence/experiments/20261023-codex-delta-entered-no-field.json).
 > **2026-10-23 [Multi-point loop instrumentation failed]**
 > Four breakpoints at once: state 10 but 0x471980 produced zero records; only two stray startup ps_loop records. Patching int3 into hot loop addresses (0x471B9E/0x471C5C) evidently disturbs the ps parse.
 > Next: one address at a time, starting with 0x670FF0 alone, confirming the ps block still parses before adding more.
