@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T02:15:00+00:00",
+  "scope": "writing the client's playerState ring directly does not reach cgame - it consumes a per-snapshot copy",
+  "experiment": {
+    "hook": "0x471010:FillPs (actors entry, after the ps block)",
+    "clc": "0x131D0634",
+    "ps_array": "0x138E55C4 (decoded with xor 0x3613BDA3)",
+    "slots_written": 24,
+    "fields_written": "origin(12,16,20)=(5830,-4369,-95) and viewangles(36,40,44)=0 in every slot",
+    "ps_count": 0,
+    "state": 10,
+    "screenshot": "black (unique 6, mean 0)"
+  },
+  "reading": [
+    "the ring write succeeded (24 slots) but nothing changed on screen",
+    "cgame almost certainly consumes the per-snapshot copy (cl.snap.ps), not the history ring we wrote",
+    "so bypassing the wire format requires writing the snapshot copy after it is built, not the ring"
+  ],
+  "next": [
+    "locate the per-snapshot playerState copy (the one cgame reads) and test writing that instead",
+    "if that also fails, the only remaining route is the bit-exact delta encoding on the wire"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r119-gs.jsonl",
+    "screenshot": "runs/codex-r119-screenshot.png"
+  }
+}

@@ -2867,6 +2867,24 @@ def main(argv=None) -> int:
                 self.record({"dump_cg": {"cg": hex(cg), "size": len(data), "candidates": hits}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"dump_cg_error": f"{label}: {error}"})
+        if label.startswith("FillPs"):
+            try:
+                registers = row.get("registers", {})
+                clc = int(registers.get("ebx", "0"), 0)
+                arr = struct.unpack("<I", self.process.read(clc + 0xA900, 4))[0] ^ 0x3613BDA3
+                count = struct.unpack("<I", self.process.read(clc + 0x3BA0, 4))[0]
+                slots = 0
+                for i in range(24):
+                    base = arr + i * 0x58
+                    try:
+                        self.process.write(base + 12, struct.pack("<3f", 5830.0, -4369.0, -95.0))
+                        self.process.write(base + 36, struct.pack("<3f", 0.0, 0.0, 0.0))
+                        slots += 1
+                    except OSError:
+                        break
+                self.record({"fill_ps": {"clc": hex(clc), "array": hex(arr), "count": count, "slots": slots}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"fill_ps_error": f"{label}: {error}"})
         if label.startswith("DeltaCall"):
             try:
                 registers = row.get("registers", {})

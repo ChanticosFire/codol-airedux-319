@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Writing the ps history ring has no effect]**
+> Hooked 0x471010 and wrote origin+viewangles into all 24 ring slots (clc 0x131D0634, array 0x138E55C4): 24 slots written, state 10, screenshot black.
+> So cgame consumes the per-snapshot copy (cl.snap.ps), not the ring. Next: locate that copy and write it; otherwise the wire encoding is the only route.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ring write no effect](evidence/experiments/20261023-codex-ring-write-no-effect.json).
 > **2026-10-23 [Full-field ps still overruns; ~4.3 extra bits per field]**
 > nine (V=9, 9 zero flags): ps entry 1308 -> actors 1373 = 65 bits, error 1 (overran 171 B by 5 bits), state 9. Written 26 bits vs consumed 65 -> 39-bit gap (~4.3/field).
 > So a single zero flag per field is not the per-field encoding; an extra component exists (per-field present bit or index delta).
