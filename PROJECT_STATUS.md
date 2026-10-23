@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Prediction falsified: V=9 costs 70 bits, not 27-31]**
+> Corrected-encoder bodies landing on the presumed index 8: ps 1308 -> actors 1378 = 70 bits, error 1. So V does not select a field index as assumed and intermediate fields are not skipped in practice.
+> Cumulative: has-ps=0 -> 1; V=1 -> 28; V=1+45 zero -> 55; V=1+30bit -> 61; V=9 -> 68; V=9 corrected -> 70; V=23 -> 69.
+> Honest position: encoder/gap/codec are verified progress, but every V hypothesis is now falsified. Needs a real capture or deeper RE of 0x670FF0/0x6701D0. Deliverable unaffected.
+> Evidence: [idx8 prediction falsified](evidence/experiments/20261023-codex-idx8-prediction-falsified.json).
 > **2026-10-23 [Non-zero -58 kills the client; land on index 8 instead]**
 > Six-amplitude scan: only v0 traced (ps 55 bits); the client died on the non-zero values. So -58 must stay zero and the origin cannot go through field 0.
 > Intermediate fields are COPIED without reading bits, so a landing on index 8 avoids -58. Prediction with the corrected encoder: ~16 + 5 + 11 = ~32 ps bits (vs 68 measured under the wrong model).

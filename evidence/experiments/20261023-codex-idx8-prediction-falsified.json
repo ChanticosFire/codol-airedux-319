@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T20:50:00+00:00",
+  "scope": "prediction FALSIFIED: V=9 with the corrected encoder costs 70 ps bits, not ~27-31",
+  "bodies": {
+    "runs/snapshot-idx8-g1.bin": "V=9, gap=1, codec 10 value 0x2FF -> builder predicted ps 27 bits",
+    "runs/snapshot-idx8-g8.bin": "V=9, gap=8, codec 10 value 0x2FF -> builder predicted ps 31 bits"
+  },
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1378,
+    "ps_bits_consumed": 70,
+    "actors_error": 1,
+    "states": {
+      "t=22": 9,
+      "t=35": 9,
+      "t=50": 9,
+      "t=65": 9
+    }
+  },
+  "why_the_prediction_was_wrong": [
+    "the prediction assumed V is the landing field index and that intermediate fields are copied without reading bits",
+    "the measured cost (70 bits) matches the earlier V=9 run (68 bits) and the V=23 run (69 bits), all far above the predicted 27-31",
+    "so V does NOT select a field index in the way assumed; the delta decoder keeps decoding many fields regardless of V",
+    "the only configuration that ever cost 1 bit was has-ps = 0 (the whole payload skipped)"
+  ],
+  "cumulative_measurements": {
+    "V=1": 28,
+    "V=1 (45 zero value bits)": 55,
+    "V=1 (30-bit value)": 61,
+    "V=9": 68,
+    "V=9 (corrected encoder)": 70,
+    "V=23": 69,
+    "has-ps=0": 1
+  },
+  "honest_position": [
+    "the corrected encoder and the codec/gap rules are real, verified progress (documented and self-tested)",
+    "but the ps iteration semantics are still not modelled: every structural hypothesis about V has now been falsified by measurement",
+    "closing this needs either a captured real snapshot (replay + compare) or a deeper RE of 0x670FF0 / 0x6701D0 internals",
+    "the delivered server (handshake, gamestate, state 10, match end, lobby return, one-command runner, docs, 100+ evidence files) is unaffected and remains reproducible"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r145-gs.jsonl",
+    "encoder": "runs/_gen_idx8.py",
+    "module": "server1649370/ps_codec.py"
+  }
+}
