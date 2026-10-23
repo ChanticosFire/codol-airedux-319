@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T11:00:00+00:00",
+  "scope": "THREE DISTINCT LENGTHS in arithmetic progression: 55, 76, 97 - a step of exactly 21 bits",
+  "points": [
+    {
+      "value": 5,
+      "binary": "0b101",
+      "ps_bits": 76,
+      "ps_error": 0
+    },
+    {
+      "value": 6,
+      "binary": "0b110",
+      "ps_bits": 97,
+      "ps_error": 1
+    },
+    {
+      "value": 255,
+      "binary": "0b11111111",
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 256,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 512,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 1024,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 2048,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 4096,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 5830,
+      "ps_bits": 97,
+      "ps_error": 1
+    }
+  ],
+  "the_arithmetic": {
+    "baseline": "55 = 22 non-value bits + 33 value bits (the gate=1 form of codec -97)",
+    "step": "76 = 55 + 21, and 97 = 76 + 21, so each extra unit costs exactly 21 bits",
+    "implication": "the value's bits are being consumed BEYOND the 33-bit field, in units of 21 bits, one or two units depending on the value"
+  },
+  "what_a_21_bit_unit_could_be": [
+    "a further delta record: 1 bit continuation + 5 bits V + distance + a small value would land near 21",
+    "so the value's remaining bits are most likely being read as a NEW field header, producing one or two extra decoded fields",
+    "that also explains why value 6 raises a stream error: after two extra units the decoder runs past the terminator"
+  ],
+  "why_the_high_values_are_clean": [
+    "255, 256, 512, 1024, 2048 and 4096 all cost exactly 55, so for those the decoder consumed the 33-bit field and stopped",
+    "the difference must be in how the low bits of the value look to the decoder AFTER the field - a value whose trailing bits happen to look like a valid header continues, others do not"
+  ],
+  "next": [
+    "read what 0x66EC30 does with the 8-bit form (push 8) - it is the N-bit reader used by both the 8-bit branch and elsewhere, and its exact bit order matters",
+    "then construct a body whose value bits are chosen so the decoder stops exactly at the intended boundary, i.e. pick the value that keeps the parse at 55"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r201-gs.jsonl"
+  }
+}
