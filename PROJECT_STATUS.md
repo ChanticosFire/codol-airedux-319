@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MILESTONE: snapshot with a non-empty playerState field accepted - state 10]**
+> Tail-offset sweep 1335/1345/1355/1363 with one frame (V=1, value 0x1FF width 10): ps entry 1308 -> actors 1363 (55 bits), error 0, state 9->10->10 at t=25/45/65s. Screenshot still black.
+> So a real non-empty ps field is accepted end-to-end; the encoder direction is proven. Remaining gap is content (which fields to fill), not framing.
+> Next: instrument 0x6701D0 with this accepted body to see the real field indices/bit positions, then fill origin/viewangles/clientNum.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps nonempty accepted](evidence/experiments/20261023-codex-ps-nonempty-accepted.json).
 > **2026-10-23 [ps block parses without a stream error; 55 bits consumed]**
 > Swept the field advance V=1/5/9/13: ps entry 1308 -> actors 1363 (55 bits) with error=0 at ps exit (previously always errored). The decoder accepted header + present + delta index + codec; the extra bits mean it decoded more fields after our value.
 > state 9 now only because the tail offset is wrong - mechanical fix.
