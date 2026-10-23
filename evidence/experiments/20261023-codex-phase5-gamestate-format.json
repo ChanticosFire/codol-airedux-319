@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T03:05:00+00:00",
+  "scope": "reproduce phase 3->5 with the map-bearing connectResponse and decide how the gamestate must be delivered",
+  "session": {"name": "20261023-gamestate-1", "pid": 36828, "result": "phase 3 -> 4 -> 5, then observation ended cleanly"},
+  "sequence": [
+    {"step": "write loopback netadr into cl+0x14 and [0x76446B0]=3", "state": 3},
+    {"step": "read challenge from ring A", "challenge": "0cf7ee44e08c4c28"},
+    {"step": "inject challengeResponse 0 \"0cf7ee44e08c4c28\"", "state_after": 4},
+    {
+      "step": "inject connectResponse with mapname",
+      "payload": "\\mapname\\mp_cross_fire\\gametype\\war\\sv_maxclients\\12\\protocol\\1\\shortversion\\1.1.1.13",
+      "payload_len": 106,
+      "state_after": 5,
+      "note": "the map-bearing connectResponse still stops at CS_PRIMED (phase 5); it does not trigger the loading screen by itself"
+    }
+  ],
+  "ring": {"a": [19, 19], "b": [2, 2], "ui_state": 5},
+  "gamestate_delivery": {
+    "ring_b_slot_payload_capacity": 1256,
+    "captured_gamestate_size": 3428,
+    "conclusion": "a 3428-byte gamestate cannot be queued in one loopback ring B slot; the historical successful run delivered it through a real server netchan, not a raw ring write",
+    "historical_evidence": {
+      "file": "evidence/experiments/20261022-codex-gamestate-consumed-heartbeat.json",
+      "facts": [
+        "2697 dedrun + ring forward reached client phase 8 and kept it there",
+        "server logged SV_SendClientGameState() then CS_CONNECTED -> CS_PRIMED",
+        "the client sent gamestateupdate 1",
+        "screenshots runs/codex-ring-bridge-8-world.png and -world2.png show the rendered game scene (with a server-timeout dialog)",
+        "the remaining blocker there was 'configstring 0 deferred': the server waits for a reliable acknowledgement the client never sends, and the client eventually times out"
+      ]
+    }
+  },
+  "dedrun_resources": {
+    "launch_command_file": "runs/2697-server-test/cmd.json",
+    "server_root": "runs/2697-server-test",
+    "map": "mp_cross_fire",
+    "bot_settings": {"scr_codol_bots": 0, "scr_codol_botfill": 12, "scr_codol_botmax": 11, "sv_botDifficulty": "regular"},
+    "patched_binaries": "runs/2697-enterworld-patched/codol_dedrun_enterworld12.exe plus runs/2697-defer-patched/codol_dedrun_deferpatch.exe",
+    "enter_world_tool": "tools/enter_world_dedrun.py (SV_ClientEnterWorld 0x4705F4, sets CS_ACTIVE and client->gentity)",
+    "defer_tool": "tools/patch_dedrun_defer.py"
+  },
+  "next": [
+    "start the 2697 dedrun from runs/2697-server-test/cmd.json (patched binary) and confirm it binds UDP 28969 and loads mp_cross_fire",
+    "run the 1649370 client to the lobby, start-challenge, then ring forward --target 127.0.0.1:28969 so the real server answers the challenge/connect sequence over the loopback ring",
+    "once the client reaches phase 8, call tools/enter_world_dedrun.py --call to force CS_ACTIVE and real snapshots",
+    "apply the defer patch if configstring 0 is still deferred; then verify world rendering and a controllable player"
+  ]
+}
