@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【hybrid 解析出 0 实体；单翻 count 位失败】** ✅hybrid 被接受、state 10（pid 39200）时 `[0x7859558]`=0、实体号数组全 0、cl.snap 全 0——空世界确认；`accepted` 会在解析开始时清零，单次读取会抓中间态，后续以 entity_count/cl.snap 为主判据。✅把 byte7 bit3 置 1（count 名义 1）→ state 9、ack 未推进、count 停在 0xFF：count>0 时必须同时给 12-bit 实体号与字段 delta。下一轮做位级重建（count=1 + 实体号 + 字段 delta + 原尾部）。证据：[JSON](evidence/experiments/20261023-codex-hybrid-entity-count-zero.json)、[JSON](evidence/experiments/20261023-codex-count-flip-fails.json)。
+
 > **2026-10-23【四个手写变体全被拒；改就地修补 hybrid】** ✅ps-empty、ps-skip、ps-term、ps-form1 四个手写体均 state 9、accepted=0；对照 hybrid 167B 始终 accepted/state 10。→ 8 字节头无法复现 2697 前缀里解析器消费的结构。下一轮改为就地修补 hybrid：在前 164 字节定位实体表位，count 改 1 并写 12-bit 实体号 + 字段 delta，用 accepted/cl.snap 判定。证据：[JSON](evidence/experiments/20261023-codex-hand-built-rejected.json)。
 
 > **2026-10-23【has_base=1 无前置 base 被拒；只有 2697 头被接受】** ✅对照：hybrid 167B（has_base=0）→ accepted/state 10；手写 14B（has_base=0）→ state 9 ack 不推进；手写 14B（has_base=1）→ state 9、accepted=0、cl.snap 全 0；2697 切片 → 崩溃。→ has_base=1 需先前 base；8 字节手写头太薄，2697 的 164 字节前缀含解析器必需结构。下一轮逐字节对比 hybrid 前缀与手写头。证据：[JSON](evidence/experiments/20261023-codex-has-base-comparison.json)。
