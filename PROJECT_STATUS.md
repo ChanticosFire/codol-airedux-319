@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [clc entity injection does not reach the renderer - a second cgame copy exists]**
+> Injected entity 0 into clc+0xA904 (eType=1, origin 5830/-4369/-95, count=1) then scanned 0x10000000..0x40000000 for the float pair: only hit is the injected location itself (0x131E5590), no cgame copy, screenshot black.
+> Conclusion: the renderer does not read the clc entity array; it consumes a second cgame copy that was never populated. Pure clc injection cannot produce a visible entity.
+> Next: locate the cgame entity array and inject there, or patch the clc->cgame update to copy our synthetic entity.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [inject no copy](evidence/experiments/20261023-codex-inject-no-copy.json).
 > **2026-10-23 [Both entity paths measured dead; only code-level client patches remain]**
 > delta path: second snapshot (has_base=1) at 0x471D80 shows base pointer [ebp+0x14] (edi) still 0, copy skipped - unusable without a real base entity.
 > field path: snapshot-e1-f50.bin + ClearStreamError still crashes (pid 0) - truncated hard-coded field stream dies before the error check.
