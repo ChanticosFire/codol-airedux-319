@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T11:55:00+00:00",
+  "scope": "full-process scan for camera-like float triples finds 15 candidates",
+  "scan": {
+    "range": "0x400000..0x80000000",
+    "scanned_bytes": 6344704,
+    "filter": "500 < |x|,|y| < 15000, -2000 < z < 2000, not both integers",
+    "candidates": [
+      {
+        "addr": "0x0E3A510",
+        "value": [
+          921.58,
+          925.52,
+          3.52
+        ]
+      },
+      {
+        "addr": "0x0E3A57C",
+        "value": [
+          921.58,
+          925.52,
+          225.45
+        ]
+      },
+      {
+        "addr": "0x0E4419C",
+        "value": [
+          913.72,
+          14556.85,
+          0.0
+        ]
+      },
+      {
+        "addr": "0x1215F84",
+        "value": [
+          -7522.32,
+          -4096.98,
+          0.0
+        ]
+      },
+      {
+        "addr": "0x0E9D71DC",
+        "value": [
+          5605.51,
+          -13131.45,
+          -0.0
+        ]
+      },
+      {
+        "addr": "0x0ED757E8",
+        "value": [
+          3284.08,
+          829.05,
+          0.0
+        ]
+      }
+    ]
+  },
+  "reading": [
+    "these are the only map-space float triples in readable memory; none is obviously a camera (z is 0 for most, which is typical for ground/level data)",
+    "0x0E9D71DC (5605.51, -13131.45, 0) is the most camera-like single hit but z=0 suggests a level point rather than an eye position",
+    "a camera would normally be near an entity origin; with no entity loaded, a null camera remains plausible"
+  ],
+  "next": [
+    "inspect the context around 0x0E9D71DC to see which structure owns it",
+    "or accept that no camera exists while no entity/world is loaded"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r95-gs.jsonl"
+  }
+}
