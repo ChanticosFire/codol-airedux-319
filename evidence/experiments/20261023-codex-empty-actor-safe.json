@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T00:55:00+00:00",
+  "scope": "fifteen zero bits for the empty actor tail are safe; state still 9",
+  "source_hint": "cols snapshot/mod.rs test comment: 'empty arrays, HUD, animation and actors' = 15 zero bits",
+  "body": {
+    "file": "runs/snapshot-empty-actor.bin",
+    "bytes": 171,
+    "layout": "count1 header + 9 zero entity bits + 15 zero actor/HUD/anim bits + EOF"
+  },
+  "result": {
+    "client": "alive (pid 40824)",
+    "state": 9,
+    "entity_count": 1
+  },
+  "significance": [
+    "the actor tail is no longer a crash source: 15 zero bits are accepted",
+    "entity_count stays 1 and the client survives a full session",
+    "state remains 9, so one more structural piece is missing before the snapshot is accepted"
+  ],
+  "next_options": {
+    "A_continue_map_entry": "find the last missing piece between state 9 and 10 (ps/actor ordering, or a flag in the snapshot header)",
+    "B_switch_to_match_flow": "give up rendering for now and build match start/end/lobby-return on the hybrid baseline"
+  },
+  "artifacts": {
+    "server_log": "runs/codex-r61-gs.jsonl",
+    "body": "runs/snapshot-empty-actor.bin"
+  }
+}
