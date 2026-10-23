@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T23:05:00+00:00",
+  "scope": "injecting the renderer entity array (cg+0x3B98) writes the data but produces no visible change",
+  "experiment": {
+    "cg_pointer": "0x1303A194 (captured from edi at 0x5142E0)",
+    "target": "0x1303DD2C (cg+0x3B98)",
+    "written": {
+      "eType": 1,
+      "origin": [
+        5830.0,
+        -4369.0,
+        -95.0
+      ]
+    },
+    "readback": "after_head = 01000000 ... (eType=1 present)",
+    "result": {
+      "state": 10,
+      "ui": 5,
+      "entity_count": 0,
+      "screenshot": "black (unique 5, mean 0)"
+    }
+  },
+  "reading": [
+    "the write itself succeeded, but nothing changed on screen and entity_count stays 0",
+    "two likely reasons: (a) the entity struct layout at cg+0x3B98 differs from our guess (eType may not be at +0); (b) the renderer also needs a valid camera (refdef vieworg) and scene flags, which are still absent",
+    "the black frame is now most plausibly a camera/refdef problem, not only an entity one"
+  ],
+  "next": [
+    "locate the refdef/camera the renderer uses (vieworg/viewangles) and check whether it is zero",
+    "or disassemble the consumer of cg+0x3B98 to learn the real entity struct layout before injecting again"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r89-gs.jsonl",
+    "screenshot": "runs/codex-r89-screenshot.png"
+  }
+}

@@ -2835,7 +2835,21 @@ def main(argv=None) -> int:
                 self.record({"snap_trace": snapshot})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"snap_trace_error": f"{label}: {error}"})
-        if label.startswith("CallSite"):
+        if label.startswith("InjectEntity"):
+            try:
+                registers = row.get("registers", {})
+                cg = int(registers["edi"], 0)
+                base = cg + 0x3B98
+                before = self.process.read(base, 0x34)
+                self.process.write(base + 0x00, struct.pack("<I", 1))            # eType
+                self.process.write(base + 0x18, struct.pack("<3f", 5830.0, -4369.0, -95.0))
+                after = self.process.read(base, 0x34)
+                self.record({"inject_entity": {"cg": hex(cg), "base": hex(base),
+                                               "before_head": before[:0x20].hex(),
+                                               "after_head": after[:0x20].hex()}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"inject_entity_error": f"{label}: {error}"})
+        if label == "CallSite":
             try:
                 esp = int(row.get("registers", {})["esp"], 0)
                 raw = self.process.read(esp, 6 * 4)
