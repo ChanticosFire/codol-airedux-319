@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【8 位字段流崩溃；恢复自己截图流程】** ✅`snapshot-f8.bin` → 客户端退出：0x671700 每字段至少 2 bit，8 bit 只覆盖 4 字段；0x471D80 字段循环无计数、只由 stream error 终止，故吃掉 actor 块越界。→ count=1 时难以兼顾字段与尾部块。✅恢复自截图：hybrid → state 10 → 截图确认黑屏+右下加载图标（runs/codex-r33b-screenshot.png，unique=5）；与用户观察对齐：state 9=加载屏“等待玩家数据”、state 10=黑屏。下一轮并行：协议侧解决字段终止，或接受快照后直接向 cl.snap 写 view origin 做诊断。证据：[JSON](evidence/experiments/20261023-codex-f8-crash-and-pivot.json)。
+
 > **2026-10-23【字段循环入口：bit1329 索引、bit1330 取值】** ✅SnapTrace：0x471E05 命中 cursor=167/bit=1329，0x671700 命中 cursor=167/bit=1330，length=167，客户端存活、state 9。→ count=1 时解析器正确消费实体表/count/id 后在**体末尾**进入字段循环，当前仅剩约 7 bit，字段必须主动延长体提供。下一轮保留 byte0..164，从 bit1329 起重写尾部（最短字段编码 + actor/sub4/glass/EOF），验收 state 10 + cl.snap 非零。证据：[JSON](evidence/experiments/20261023-codex-field-start-bits.json)。
 
 > **2026-10-23【实体 id 窗口摸清；count=1 稳定不崩】** ✅byte163=0xD8→id 2078、0x18→id 2072，差 6 对应 bit1310/1311 → id 窗口起于 bit1309；id 与 byte164(count) 重叠，无法同时 count=1 且 id=0，但 2072 在实体数组容量 32768 内被接受。两次会话 entity_count 均为 1、客户端存活、state 9。下一轮补字段 delta 流（需恰好吃到 ps/actor 起点），验收 entity_count=1 + cl.snap 非零 + state 10。证据：[JSON](evidence/experiments/20261023-codex-entity-id-window.json)。
