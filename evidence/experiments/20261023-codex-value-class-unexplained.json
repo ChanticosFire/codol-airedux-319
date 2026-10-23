@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T09:00:00+00:00",
+  "scope": "value 6 costs 97 bits but 255 costs 55, so neither magnitude nor the low bits alone explain the jump - and the 97-bit runs are exactly the ones where the ps parse FAILED",
+  "points": [
+    {
+      "value": 255,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 6,
+      "ps_bits": 97,
+      "ps_error": 1
+    },
+    {
+      "value": 256,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 512,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 1024,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 2048,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 4096,
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "value": 5830,
+      "ps_bits": 97,
+      "ps_error": 1
+    }
+  ],
+  "the_pattern": [
+    "the two expensive runs (6 and 5830) are exactly the two runs where the ps parse ERRORED",
+    "in every erroring run the actors entry lands at 1405 = 1308 + 97",
+    "in every clean run it lands at 1363 = 1308 + 55",
+    "so 1405 is not a value-dependent length: it is simply where the decoder stopped after a failure"
+  ],
+  "why_magnitude_and_bit_patterns_both_fail": [
+    "6 has bits 1,2 set and is SMALLER than 255, yet 255 parses fine and 6 does not",
+    "255 has bits 0..7 set, which includes bits 1 and 2, so 'low bits set' is not the trigger either",
+    "the only consistent statement is: some VALUE CLASS makes the decoder fail, and the class is not magnitude, bit length, parity or the low-bit pair"
+  ],
+  "the_right_next_step": [
+    "stop the value sweep: it has produced 8 points and the trigger is still unexplained",
+    "instead disassemble 0x6701D0 (the field codec) at the branch taken for table codec -97 and read the exact condition - that is deterministic knowledge rather than another guess"
+  ],
+  "artifacts": {
+    "server_log": [
+      "runs/codex-r199-gs.jsonl",
+      "runs/codex-r200-gs.jsonl"
+    ]
+  }
+}
