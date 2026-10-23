@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T10:45:00+00:00",
+  "scope": "MILESTONE: the server can end a match and send the client back to the lobby via an OOB disconnect",
+  "server_change": "gameserver supports --oob-command TEXT --oob-delay S; send_due_oob() is wired into both serve-loop branches",
+  "experiment": {
+    "oob": "disconnect (\\\\xff\\\\xff\\\\xff\\\\xff + text)",
+    "oob_delay": 25,
+    "oob_sent_at": 1792779300.41,
+    "samples": {
+      "t=15s": {
+        "state": 8,
+        "note": "initial load still finishing"
+      },
+      "t=30s": {
+        "state": 10,
+        "adr_type": 2
+      },
+      "t=45s": {
+        "state": 0,
+        "connection": "0x13D6D9D0",
+        "adr_type": 0
+      },
+      "t=60s": {
+        "state": 0,
+        "adr_type": 0
+      }
+    },
+    "client": "alive (pid 13316)"
+  },
+  "significance": [
+    "this completes the 'return to lobby' half of the goal: the server now has a protocol-level way to take the client from state 10 back to state 0 (lobby/main menu) with the connection torn down",
+    "combined with the earlier cbuf test it confirms the client's leave-match path and gives us the server-side trigger",
+    "the OOB disconnect is reliable: state 0 remained stable at the +15s and +30s follow-up samples"
+  ],
+  "next": [
+    "package it as the end-of-match flow: send the OOB disconnect after a configured match duration",
+    "optionally precede it with an intermission signal (PS field 83) if a visible 'match over' screen is wanted"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r77-gs.jsonl"
+  }
+}

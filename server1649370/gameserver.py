@@ -99,7 +99,8 @@ class GameServer:
                  command_repeat: int = 1, command_interval: float = 5.0,
                  gamestate_repeat: int = 0, gamestate_interval: float = 20.0,
                  gamestate_map: str | None = None,
-                 gamestate_gametype: str | None = None):
+                 gamestate_gametype: str | None = None,
+                 oob_command: str | None = None, oob_delay: float = 30.0):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -117,6 +118,8 @@ class GameServer:
                                for part in (gamestate_map or "mp_cross_fire").split(",")]
         self.gamestate_map = self.gamestate_maps[0]
         self.gamestate_gametype = (gamestate_gametype or "mp").encode("ascii")
+        self.oob_command = oob_command
+        self.oob_delay = float(oob_delay or 0.0)
         self.registration_checksum = registration_checksum
         self.snapshot_path = Path(snapshot_path) if snapshot_path else None
         self.snapshot_files = ([Path(part.strip()) for part in snapshot_path.split(",") if part.strip()]
@@ -283,9 +286,22 @@ class GameServer:
             if self.command_path:
                 peer["command_due"] = time.monotonic() + self.command_delay
                 peer["command_count"] = 0
+            if self.oob_command:
+                peer["oob_due"] = time.monotonic() + self.oob_delay
             if self.gamestate_repeat and peer["gamestate_count"] < self.gamestate_repeat:
                 peer["gamestate_sent"] = False
                 peer["gamestate_due"] = time.monotonic() + self.gamestate_interval
+
+    def send_due_oob(self) -> None:
+        """Send the configured OOB command once per peer after the delay."""
+        if not self.oob_command:
+            return
+        for addr, peer in self.state.peers.items():
+            due = peer.get("oob_due")
+            if due is None or time.monotonic() < due:
+                continue
+            self.send_oob(addr, self.oob_command)
+            peer["oob_due"] = None
 
     def send_due_commands(self) -> None:
         """Send the captured server-command stream once per configured repeat."""
@@ -469,6 +485,7 @@ class GameServer:
                 self.send_due_gamestates()
                 self.send_due_commands()
                 self.send_due_snapshots()
+                self.send_due_oob()
                 continue
             except OSError:
                 break
@@ -477,6 +494,7 @@ class GameServer:
             self.send_due_gamestates()
             self.send_due_commands()
             self.send_due_snapshots()
+            self.send_due_oob()
         self.log({"dir": "meta", "kind": "stop", "counters": self.state.counters})
 
 
@@ -493,6 +511,8 @@ def main() -> int:
     parser.add_argument("--gamestate-interval", type=float, default=20.0)
     parser.add_argument("--gamestate-map", default=None)
     parser.add_argument("--gamestate-gametype", default=None)
+    parser.add_argument("--oob-command", default=None)
+    parser.add_argument("--oob-delay", type=float, default=30.0)
     parser.add_argument("--registration-checksum", type=lambda value: int(value, 0),
                         default=0xFFB56D7E)
     parser.add_argument("--snapshot-file", default=None,
@@ -539,7 +559,7 @@ def main() -> int:
                         args.command_file, args.command_delay, args.command_seq,
                         args.configstring_file, args.command_repeat, args.command_interval,
                         args.gamestate_repeat, args.gamestate_interval, args.gamestate_map,
-                        args.gamestate_gametype)
+                        args.gamestate_gametype, args.oob_command, args.oob_delay)
     try:
         server.serve()
     except KeyboardInterrupt:
