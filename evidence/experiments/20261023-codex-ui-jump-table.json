@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T03:55:00+00:00",
+  "scope": "the six-entry UI jump table decoded; ui_state 5 (the loading screen) maps to screen kind 3",
+  "table_0x7F25DC": {
+    "0": "0x007F25DB -> returns 4",
+    "1": "0x007F25D0 -> returns 1",
+    "2": "0x007F25D0 -> returns 1",
+    "3": "0x007F25D0 -> returns 1",
+    "4": "0x007F25D0 -> returns 1",
+    "5": "0x007F25D6 -> returns 3"
+  },
+  "reading": [
+    "ui_state 1..4 all collapse to screen kind 1 (menu family)",
+    "ui_state 5 maps to screen kind 3 - this is the loading screen the user sees",
+    "ui_state 0 maps to the default 4",
+    "so none of the 0..5 states is an 'in game' state: the loading screen (5) is the last UI state before the game view, and the transition out of it is what still fails"
+  ],
+  "next": [
+    "find who calls the writer 0x7F258D with a value other than 5 (i.e. the intended post-loading state)",
+    "or trace what the loading screen waits for (the 'waiting for player data' condition) and satisfy it"
+  ],
+  "artifacts": {
+    "previous": "evidence/experiments/20261023-codex-ui-state-functions.json"
+  }
+}
