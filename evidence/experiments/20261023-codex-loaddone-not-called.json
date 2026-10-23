@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T07:55:00+00:00",
+  "scope": "the load-completion callback 0x8018B0 is never called; the status query runs once and returns 0",
+  "breakpoints": {
+    "0x8018B0 (LoadDone)": {
+      "hits": 0
+    },
+    "0xB7A670 (StatusQuery)": {
+      "hits": 1,
+      "registers": {
+        "esi": "0x42436CD8",
+        "eax": "0x0"
+      },
+      "note": "esi differs from the singleton we read earlier (0x424DDBE8), and the returned value was 0"
+    }
+  },
+  "reading": [
+    "the load-completion callback 0x8018B0 is NEVER invoked, which is exactly why the UI never leaves the loading screen",
+    "the status query is called by a different object (0x42436CD8), so the singleton we inspected is not the one used on this path",
+    "resolving the loading screen therefore requires finding who is supposed to call 0x8018B0 after the map loads, and why that call never happens"
+  ],
+  "next": [
+    "search for callers of 0x8018B0 and check the condition that guards the call",
+    "or trace how the 0x42436CD8 object progresses (its [obj+0x4F4] / status) to see where the load pipeline stalls"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r93-gs.jsonl"
+  }
+}
