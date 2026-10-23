@@ -2827,6 +2827,11 @@ def main(argv=None) -> int:
                         snapshot[key] = struct.unpack("<I", self.process.read(ebp - offset, 4))[0]
                     except OSError:
                         pass
+                for key, offset in (("param_ebp8", 8), ("param_ebp10", 0x10), ("param_ebp14", 0x14)):
+                    try:
+                        snapshot[key] = struct.unpack("<I", self.process.read(ebp + offset, 4))[0]
+                    except OSError:
+                        pass
                 self.record({"snap_trace": snapshot})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"snap_trace_error": f"{label}: {error}"})

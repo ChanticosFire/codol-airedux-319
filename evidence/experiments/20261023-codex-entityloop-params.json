@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T13:00:00+00:00",
+  "scope": "the entity loop parameters are not bit widths",
+  "trace": {
+    "label": "SnapTraceEntityLoop (0x471D80)",
+    "cursor": 164,
+    "bit": 1307,
+    "param_ebp8": 1628824,
+    "param_ebp10": 0,
+    "param_ebp14": 0,
+    "interpretation": "1628824 (0x18DA98) is a pointer-sized value, not a bit width; [ebp+0x10] and [ebp+0x14] are zero in this snapshot"
+  },
+  "open_question": "0x471E0E pushes [ebp+8] into 0x66EC30 as its width argument, yet 1628824 cannot be a width - so either the register reading is off by a frame or the callee treats the argument as a pointer/table",
+  "next": [
+    "verify the frame: also record [ebp+4] (return address) and the caller's identity at 0x471D80",
+    "if [ebp+8] is a table pointer, inspect the table entry it would index"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-04bbd4d7/events.jsonl"
+  }
+}
