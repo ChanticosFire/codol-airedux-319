@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T01:25:00+00:00",
+  "scope": "the cg-supplying function 0x513F50 has two callers; disassembly around them is misaligned and needs re-alignment",
+  "findings": {
+    "function_0x513F50": "takes its argument in eax (moved to edi) - the caller supplies what our earlier trace read as the cg pointer",
+    "callers": [
+      "0x54B6F7",
+      "0x54CFE7"
+    ],
+    "misalignment": "capstone output around 0x54B6E0 and 0x54CFD0 decodes as data (ret 0x8940 / fdivr), so the true instruction boundaries start elsewhere"
+  },
+  "next": [
+    "re-align the disassembly from a known prologue before 0x54B6F7 and 0x54CFE7 to see how eax (the cg pointer) is loaded",
+    "then read the cg global once and keep it for the camera/refdef inspection"
+  ],
+  "artifacts": {
+    "previous": "evidence/experiments/20261023-codex-dumpcg-nohit.json"
+  }
+}
