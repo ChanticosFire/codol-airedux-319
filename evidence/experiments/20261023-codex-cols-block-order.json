@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T03:50:00+00:00",
+  "scope": "cols snapshot block order recovered; the ps tail is 8 gates + HUD + 4 lists before animations/actors/entity",
+  "cols_order": [
+    "playerState fields (clip, equipped, reserve, four extended bundles, objectives)",
+    "out.bits(0, 8) - fourteen gates tail (ps end)",
+    "HUD: either write_hud(...) or out.bits(0,1)",
+    "out.bits(0, 4) - four final indexed lists",
+    "helicopter::animations",
+    "animal::actors",
+    "entity: write_enemy_entity or the inline entity-0 form",
+    "clients (out.bits(0,1) at 0x46c840)",
+    "glass, EOF"
+  ],
+  "key_bits": {
+    "ps_tail_8_gates": 8,
+    "hud": 1,
+    "final_lists": 4
+  },
+  "mismatch_with_our_chain": {
+    "ours": "0x4723E2 -> entities(0x471D80) -> playerState(0x471980) -> actors(0x471010) -> 0x471560 -> glass",
+    "cols": "playerState -> gates -> HUD -> lists -> animations -> actors -> entity -> clients -> glass",
+    "note": "the block order differs between 3.3.3.3 and our reading of 1649370; either the versions order differently or our chain reading needs revisiting"
+  },
+  "next": [
+    "build an A=1 body following the cols order but starting from our entity table, then add the 13 gate bits (8+HUD1+lists4) and see whether state advances",
+    "or trace 0x471980 (playerState) and 0x471010 (actors) with the empty-actor body to see which of them fails"
+  ],
+  "artifacts": {
+    "cols": "E:/GAME/COD/codol-airedux/cols/crates/protocol/src/game/snapshot/mod.rs"
+  }
+}
