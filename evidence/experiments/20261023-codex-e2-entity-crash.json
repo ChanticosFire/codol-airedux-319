@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T17:00:00+00:00",
+  "scope": "a cols-style entity body after our 1/1/8/12 header still crashes",
+  "body": {
+    "file": "runs/snapshot-e2-entity.bin",
+    "bytes": 182,
+    "layout": "count1 header + changed(1) + codec(1) + last(6)=5 + fields 0/1/2/3/5 (eType=1 raw, 1bit+s16 positions, 2bit+LE16 yaw) + actor/sub4/glass + EOF",
+    "origin": [
+      5830,
+      -4369,
+      -95
+    ]
+  },
+  "result": "client exited (pid 0)",
+  "interpretation": [
+    "either the 6-bit last position/value is wrong for this build, or the field-gap coding differs (3-bit writer chunks vs 4-bit decoder chunks)",
+    "we still do not know where exactly it dies; the next step must be a SnapTrace at 0x671700 and at the entity-loop head with this body to see whether the field reader is entered at all"
+  ],
+  "next": [
+    "run the same body with breakpoints 0x471DE1 (loop head), 0x471E4A (field path) and 0x671700 to capture the cursor where it dies",
+    "then adjust last/gap layout accordingly"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r50-gs.jsonl",
+    "body": "runs/snapshot-e2-entity.bin"
+  }
+}
