@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T07:40:00+00:00",
+  "scope": "retest after fixing statsResponse to echo the challenge",
+  "session": {"client": "20261023-stat2, pid 460", "server": "server1649370 on 28971"},
+  "verified_facts": {
+    "stats_response_fixed": "statsResponse 1732177008 (the challenge is now echoed)",
+    "fragments_sent": "seq 3, index 0/1/2, count 3, chunk 1162/1162/1102",
+    "client_messageAck": 1,
+    "acked_our_seq": false
+  },
+  "conclusion": "the stats reply content was not the gate; the client still ignores our gamestate fragments",
+  "eliminated_by_this_round": [
+    "the hypothesis that a bare 'statsResponse 0' prevented gamestate acceptance"
+  ],
+  "cumulative_eliminated": [
+    "fragment header layout",
+    "fragment count/chunk sizes",
+    "sequence sharing and starting value",
+    "cipher key derivation (challenge proven adopted)",
+    "cipher application (byte-exact match to reference)",
+    "payload content (byte-exact reassembled gamestate)",
+    "stats reply content"
+  ],
+  "what_remains": [
+    "the netchan may need priming: perhaps the client only starts accepting server messages after it has itself sent a non-empty command stream",
+    "our server may need to send something on the same channel BEFORE the gamestate (a reliable command or a tiny message) so the client's reader is initialised",
+    "the client may require that the gamestate be the response to a specific client message we are not sending",
+    "the bridge may be delivering our fragments but the client may drop them due to a size/MTU constraint differing from the dedrun path"
+  ],
+  "next": [
+    "verify the client actually receives all three fragments intact: compare bridge delivery counters with the three sends",
+    "test sending a single small non-fragmented message first (for example seq=1 with a short svc_serverCommand text) and see whether messageAck moves",
+    "if ack still does not move, capture the client's receive path counters to see whether it even parses the ring entries"
+  ],
+  "artifacts": ["runs/stat2-gs.jsonl"]
+}
