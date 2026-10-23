@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T02:00:00+00:00",
+  "scope": "header + two delta records still decodes only ONE field - the block has more per-field structure than the delta record alone",
+  "body": "runs/snapshot-rec2.bin (prologue 8 bits + two 8-bit records + terminator, 25 bits total)",
+  "measurement": {
+    "ps_field_records": 1,
+    "ecx": "0xDA8520 (index 0)",
+    "decide_stream_error": 1,
+    "state": 9,
+    "builder_ps_bits": 25
+  },
+  "what_this_rules_out": [
+    "'prologue once + N delta records + terminator' is NOT the layout: the second record is not interpreted as another delta",
+    "only ONE 0x6701D0 call happens per snapshot no matter how many records we write, so the block does not simply loop over delta records"
+  ],
+  "what_must_be_true_instead": [
+    "between two delta decodes the block reads additional per-field state that we are not emitting",
+    "the disassembly of the ps block (0x471980) shows, after the delta call, a run of non-bit-reading history copy (0x471A8C..0x471B50) and then a 'present' bit read (0x471B9E / 0x471C5C) before looping back to the has-ps bit at 0x471CA3",
+    "so the per-field unit is likely: [delta record] + [one or more per-field flags], and our second record lands in the flag position"
+  ],
+  "honest_position": {
+    "round": 161,
+    "established": [
+      "the accepted 29-bit body decodes exactly one field (index 0, codec -97) with value 0",
+      "the prologue is 8 bits (has-ps, mode, last, present)",
+      "the delta record is continuation + V(5) + distance + landing value",
+      "stream_error at 0x4724A5 is a direct, reliable oracle"
+    ],
+    "not_established": [
+      "the per-field flags between delta records",
+      "therefore how to emit more than one field",
+      "therefore how to write origin"
+    ],
+    "why_black_box_is_exhausted": [
+      "six consecutive hypotheses about the loop shape have been falsified by measurement",
+      "each experiment needs one full client session (~5 min) plus analysis, and the remaining space is 'which extra flag bits, in what order'",
+      "a debugger breakpoint on 0x471B9E and 0x471C5C reading the per-field flags would answer it in one session instead of dozens"
+    ]
+  },
+  "recommendation": [
+    "route B (debugger) is now the cheap path, not the expensive one: the exact addresses that read the per-field flags are already known (0x471B9E, 0x471C5C)",
+    "they were previously classified as unsafe breakpoints (they corrupted the parse), which is itself evidence that they sit in the per-field flag logic"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r175-gs.jsonl",
+    "encoder": "runs/_gen_rec2.py"
+  }
+}

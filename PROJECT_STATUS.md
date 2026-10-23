@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [rec2: header + two records still decodes one field]**
+> 25-bit body (prologue + 2 records + terminator) -> ps_field count 1, stream_error 1. Rules out 'prologue + N records'.
+> Only one 0x6701D0 call per snapshot. So per-field flags we do not emit sit between delta decodes (0x471B9E / 0x471C5C read them).
+> Established: accepted body = one field (index 0, codec -97, value 0), prologue 8 bits, delta record shape, stream_error oracle. Not established: the per-field flags, hence multi-field and origin.
+> Recommendation: route B (debugger at 0x471B9E / 0x471C5C) is now the cheap path.
+> Evidence: [rec2 one field](evidence/experiments/20261023-codex-rec2-one-field.json).
 > **2026-10-23 [Model corrected: header once, then one delta record per field]**
 > loop2 with two full headers: ps_field count 1, stream_error 1. So the second header breaks it; per-iteration structure differs from the prologue.
 > Corrected: prologue 8 bits (has-ps, mode, last, present) + per field [continuation, V, distance, value] + terminator continuation 0. Accepted body = 8+20+1 = 29 exactly.
