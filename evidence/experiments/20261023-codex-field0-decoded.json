@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T00:50:00+00:00",
+  "scope": "BREAKTHROUGH: the client DOES decode a field - with V=1 it lands on field index 0 (codec -58)",
+  "measurement": {
+    "breakpoint": "0x6710BB (call to the per-field decoder 0x6701D0)",
+    "records": 1,
+    "values": {
+      "esi": 0,
+      "last": 1
+    },
+    "state": 10,
+    "ui": 5
+  },
+  "reading": [
+    "the delta decoder reaches the per-field decode call exactly once per snapshot, with the landing index esi = 0",
+    "so V=1 advances from -1 to index 0: V is (target index + 1)",
+    "field index 0 has offset 76 and codec -58 (float with a fixed scale), which is what the client decoded",
+    "the earlier 'ps_field never called' conclusion was a probe artifact (wrong argument offset on the 0x6701D0 probe)"
+  ],
+  "consequence": [
+    "the encoder works: the landing field is fully controlled by V",
+    "to place a value in a chosen field we set V = index + 1 and supply that field codec bits",
+    "the ps tail must then be placed at the measured ps end for that V"
+  ],
+  "next": [
+    "build bodies with V = index+1 for the origin candidates (index 8/13/22) and measure each ps length via the actors-entry bit",
+    "align the tail per body and confirm state 10; then check whether the frame changes"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r116-gs.jsonl"
+  }
+}

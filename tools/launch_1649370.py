@@ -2867,6 +2867,16 @@ def main(argv=None) -> int:
                 self.record({"dump_cg": {"cg": hex(cg), "size": len(data), "candidates": hits}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"dump_cg_error": f"{label}: {error}"})
+        if label.startswith("DeltaCall"):
+            try:
+                registers = row.get("registers", {})
+                ebp = int(registers["ebp"], 0)
+                esi = int(registers.get("esi", "0"), 0)
+                last = struct.unpack("<i", self.process.read(ebp - 4, 4))[0]
+                cur = struct.unpack("<i", self.process.read(ebp - 0xc, 4))[0] if True else None
+                self.record({"delta_call": {"esi": esi, "last": last}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"delta_call_error": f"{label}: {error}"})
         if label.startswith("PsLoop"):
             try:
                 registers = row.get("registers", {})

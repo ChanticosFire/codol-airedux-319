@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [BREAKTHROUGH: the client does decode a field - V=1 lands on index 0 (codec -58)]**
+> Probe at 0x6710BB (call to 0x6701D0): 1 record, esi=0, last=1, state 10. So V = target index + 1; V=1 lands on field 0 (offset 76, codec -58, float). The earlier '0x6701D0 never called' was a probe artifact.
+> Consequence: the encoder works - the landing field is fully controlled by V. Next: bodies with V=9/14/23 -> indexes 8/13/22, measure ps length per body, align the tail, confirm state 10, check the frame.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [field0 decoded](evidence/experiments/20261023-codex-field0-decoded.json).
 > **2026-10-23 [Delta decoder entered once but never reaches the per-field decoder]**
 > Probe fix: function entry args are at [esp+4]. Now records read stream=0x16D9EC. The delta decoder 0x670FF0 is called once per snapshot but 0x6701D0 is never called -> it returns early or takes the index==-1 path.
 > Correction: [stream+0x24] is not the bit cursor (the ps header writes `last` into it). Use deltas or another cursor source.
