@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T07:00:00+00:00",
+  "scope": "learn the outbound sequence stream shape from the reference capture",
+  "verified_facts": {
+    "total_inband_datagrams": 5533,
+    "distinct_sequences": 414,
+    "minimum_sequence": "0x80000003 (seq=3)",
+    "gap": "seq=4 is absent; the stream goes 3 then 5,6,7,...",
+    "message_sizes": {
+      "seq3": "3 fragments, 1162+1162+1102 = 3426 bytes (the gamestate)",
+      "seq5..seq14": "10 fragments each",
+      "later": "13-15 fragments each (snapshots growing with player count)"
+    }
+  },
+  "conclusions": {
+    "our_starting_sequence_matches": "we emit seq=3 for the gamestate, exactly like the reference, so the stream start is not the discrepancy",
+    "one_sequence_per_message": "confirmed: every message has one sequence and its fragments are indexed 0..count-1",
+    "the_gap_at_4": "seq 4 was probably another message we did not capture (or a reliable-command message), not evidence of a different rule"
+  },
+  "what_is_now_ruled_out": [
+    "fragment header layout",
+    "fragment count and chunk sizes",
+    "sequence sharing across fragments",
+    "starting sequence value",
+    "cipher key derivation and application (byte-exact match proven earlier)",
+    "payload content (byte-exact reassembled reference gamestate)"
+  ],
+  "what_is_left": [
+    "a context prerequisite: the client may need to have sent something (stats/connect ack) before it accepts server fragments",
+    "the challenge may need to be adopted at a specific handshake moment that our server skips",
+    "the client may require the netchan to be 'primed' by a small non-fragmented message first"
+  ],
+  "next": [
+    "check what the client sends BEFORE it accepts the dedrun gamestate: in the reference run the client must have sent stats/ack first; compare our server's received sequence",
+    "instrument our server to log exactly which client packets arrived before each outbound fragment",
+    "test sending a tiny non-fragmented message on seq=1 or 2 before the gamestate fragments"
+  ],
+  "artifacts": ["runs/final-in.jsonl"]
+}
