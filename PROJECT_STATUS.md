@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MAJOR: authoritative ps encoder extracted from cols; our codec assumption was wrong]**
+> Recorded verbatim (docs/SNAPSHOT-FORMAT.md section 10): prologue with 8-bit last_changed+1, gap() = 1 bit for distance 1 else 4-bit chunks of 15 + 4-bit remainder, and the full codec table (-88/-87/-75/-94/-97/-100/-101/positive N).
+> Key correction: positive N writes a gate bit, then N%8 REMAINDER bits first, then whole bytes - NOT 'zero-flag + N LSB-first bits' (our assumption rounds 69-110). That mismatch likely explains every overrun when carrying a value.
+> Next: port gap()+codec table behind the 1649370 prologue. No client interaction this round.
+> Evidence: [cols ps encoder](evidence/experiments/20261023-codex-cols-ps-encoder.json).
 > **2026-10-23 [Discovery: cols contains a complete snapshot WRITER]**
 > cols (3.3.3.3 Rust server) has a full encoder: snapshot/mod.rs (136 KB, 30 submodules), entry points incl. player_frame_with_world(server_time, command_time, origin, establish_baseline, equipment, angles, world), and one writer per block (enemy/corpse/hud/glass/props/impact/animal...).
 > It is the reference to port from: it encodes the field semantics our encoder lacks. Recorded as docs/SNAPSHOT-FORMAT.md section 9.

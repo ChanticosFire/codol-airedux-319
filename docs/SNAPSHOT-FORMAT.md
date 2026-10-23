@@ -186,3 +186,68 @@ playerstate field order**, then map those field names onto the offsets in the
 `0xDA63E8` table.
 
 Evidence: `evidence/experiments/20261023-codex-cols-has-encoder.json`.
+
+## 10. The cols playerState encoder, verbatim (authoritative reference)
+
+`cols/crates/protocol/src/game/snapshot/mod.rs`, lines 899-956 (inside
+`player_frame_with_world`). This is a **working encoder** for the 3.3.3.3
+generation and the best available description of the delta encoding:
+
+```rust
+out.bytes.push(0);                              // svc_snapshot
+out.bytes.extend(server_time.to_le_bytes());    // LE32
+out.bytes.extend([delta_or_0, 8_or_0]);         // 2 bytes: baseline -> [0, 8]
+out.bits(0, 1);                                 // no prior playerState
+out.bits(1, 1);                                 // transmit origin/velocity
+out.bits(last_changed + 1, 8);                  // 8 BITS (not 5!)
+out.bits(1, 1);                                 // field gap +1 from -1
+out.bits(1, 1);                                 // -97 codec, absolute LE32
+out.bytes.extend(command_time.to_le_bytes());   // LE32
+for (index, value, width) in fields {           // fields sorted by index
+    gap(&mut out, index - previous);
+    previous = index;
+    // codec-specific value, see the table below
+}
+```
+
+### 10.1 `gap()` - the distance coder (lines 1431-1442)
+
+```rust
+out.bits((distance == 1) as u32, 1);
+if distance == 1 { return; }
+let mut rest = distance - 1;
+while rest >= 15 { out.bits(15, 4); rest -= 15; }
+out.bits(rest, 4);
+```
+
+So: **1 bit** for "distance is 1", otherwise **4-bit chunks of 15** and a final
+4-bit remainder. This is the exact form of the Elias-gamma-like coder that we
+measured by hand in `0x670CB0`.
+
+### 10.2 Per-field codec encodings
+
+| table `codec` | encoding written by cols | note |
+|---|---|---|
+| `-88` (width 0) | raw float, LE32 (XOR against a zero baseline) | full precision |
+| `-87` (87) | `u16` LE | angle |
+| `-75` (75) | 1 byte sequence (`write_sequence`) | game events |
+| `-94` (94) | event (`write_event`) | |
+| `-97` (97) | **1 bit + LE32** | absolute scalar |
+| `-100` (100) | **1 bit + 1 bit + LE32** | float |
+| `-101` (101) | **2 bits (0) + u16 LE** | network angle |
+| positive `N` | **1 bit (1)**, then `N % 8` **remainder bits first**, then whole bytes | *not* a simple LSB-first field |
+| indices 43/52/105 with value 0 | 1 bit (0) | explicit clear |
+
+**The positive-width rule is the important correction**: it writes a `1` gate
+bit, then the **remainder (`N % 8`) bits first**, then the whole bytes of the
+remaining value - it is **not** "1 zero-flag + N LSB-first bits" as this project
+assumed in rounds 69-110. That assumption is very likely why every carry-a-value
+attempt overran.
+
+### 10.3 What still differs for 1649370
+
+The prologue in 1649370 is **not** the same: this build reads
+`has-ps(1) + mode(1) + 5-bit last` (measured), while cols writes
+`bit0 + bit1 + 8-bit last+1`. The **field/gap/codec section**, however, is
+almost certainly the same family, so the port should start from
+`gap()` + the codec table above with the 1649370 prologue in front.

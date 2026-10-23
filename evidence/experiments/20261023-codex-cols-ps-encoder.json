@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T18:05:00+00:00",
+  "scope": "extracted the authoritative playerstate encoder from cols: prologue, gap coder and the full codec table",
+  "source": "cols/crates/protocol/src/game/snapshot/mod.rs lines 899-956 and 1431-1442",
+  "prologue": [
+    "svc_snapshot byte 0",
+    "server_time LE32",
+    "2 bytes: [delta_distance, 8] when establishing a baseline",
+    "bit 0: no prior playerState",
+    "bit 1: transmit origin/velocity",
+    "8 bits: last_changed + 1",
+    "bit 1: field gap +1 from -1",
+    "bit 1: -97 codec",
+    "LE32 command_time"
+  ],
+  "gap_coder": "1 bit for distance==1; otherwise 4-bit chunks of 15 and a 4-bit remainder",
+  "codec_table": {
+    "-88": "raw float LE32",
+    "-87": "u16 LE",
+    "-75": "1 byte sequence",
+    "-94": "event payload",
+    "-97": "1 bit + LE32",
+    "-100": "1 bit + 1 bit + LE32",
+    "-101": "2 bits (0) + u16 LE",
+    "positive N": "1 gate bit, then N%8 remainder bits FIRST, then whole bytes",
+    "indices 43/52/105 with value 0": "1 bit (0)"
+  },
+  "key_correction": [
+    "the positive-width codec is NOT '1 zero-flag + N LSB-first bits' (the assumption used by this project from round 69 to round 110)",
+    "cols writes a gate bit, then the REMAINDER bits first, then whole bytes",
+    "that mismatch is a strong candidate for why every attempt to carry a real value overran"
+  ],
+  "recorded_in": "docs/SNAPSHOT-FORMAT.md section 10 (verbatim reference + codec table + what differs for 1649370)",
+  "artifacts": {
+    "cols": "E:/GAME/COD/codol-airedux/cols/crates/protocol/src/game/snapshot/mod.rs"
+  }
+}
