@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T23:30:00+00:00",
+  "scope": "SnapTrace pinpoints where the entity table and playerState blocks start",
+  "trace": {
+    "SnapTraceEntityTable_0x671650": {
+      "error": 0,
+      "cursor": 164,
+      "bit": 1307,
+      "length": 167
+    },
+    "SnapTracePlayerState_0x471980": {
+      "error": 0,
+      "cursor": 164,
+      "bit": 1308,
+      "length": 167,
+      "flags": 12
+    },
+    "SnapTraceAccepted_0x472810": {
+      "note": "esi is not the message pointer here, so its fields are meaningless"
+    }
+  },
+  "meaning": {
+    "entity_table_bit": 1307,
+    "playerstate_bit": 1308,
+    "actor_bit_from_builder": 1309,
+    "reading": "the 164-byte hybrid prefix already consumes the bit stream up to byte 164; the entity table is a single 0 bit at 1307 and the playerState block a single 0 bit at 1308, so both blocks are skipped and the world stays empty",
+    "why_count_zero": "0x671650 sees A=0 and returns without reading a count; the count global stays at its memset 0"
+  },
+  "rebuild_plan": {
+    "layout": [
+      "byte 163 bit3 = A = 1 (entity table)",
+      "bit 1308 = B = 1 (form)",
+      "bits 1309..1316 = count (8 bits)",
+      "bits 1317..1328 = entity id (12 bits)",
+      "entity field deltas",
+      "playerState block",
+      "actor block",
+      "sub4",
+      "glass",
+      "EOF"
+    ],
+    "open_question": "the exact entity field delta length for entityState; 0x471D80 reads a 2-bit field index plus a value via 0x671700 per field until the stream ends"
+  },
+  "next": [
+    "build the variant with count=1/id=0 and zero field bits, then measure entity_count and cl.snap",
+    "if the parser consumes the field loop, tune the field count until the actor block lands on bit 1309 again"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-244469ed/events.jsonl",
+    "server_log": "runs/codex-r27-gs.jsonl"
+  }
+}
