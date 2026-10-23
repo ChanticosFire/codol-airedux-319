@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T12:35:00+00:00",
+  "scope": "the index width parameter (ebx) is still not located statically",
+  "attempts": [
+    "disassembly from 0x4720C0 produced no output (not an instruction boundary)",
+    "byte search for 'mov ebx, imm32' with values 3..32 over 0x471F00..0x472400 found none",
+    "0x472130..0x472150 decodes as data; real code starts at 0x472151"
+  ],
+  "conclusion": "the width is passed in through a register the caller sets elsewhere (not an immediate in that range); static search is not converging",
+  "next": [
+    "add a small breakpoint handler that records [ebp+8] at 0x471D80 (launch already has the breakpoint plumbing)",
+    "then rebuild the delta entity with the measured width"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r44-gs.jsonl"
+  }
+}
