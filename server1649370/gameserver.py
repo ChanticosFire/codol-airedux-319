@@ -98,7 +98,8 @@ class GameServer:
                  command_seq: int = 4, configstring_file: str | None = None,
                  command_repeat: int = 1, command_interval: float = 5.0,
                  gamestate_repeat: int = 0, gamestate_interval: float = 20.0,
-                 gamestate_map: str | None = None):
+                 gamestate_map: str | None = None,
+                 gamestate_gametype: str | None = None):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -115,6 +116,7 @@ class GameServer:
         self.gamestate_maps = [(part.strip() or "mp_cross_fire").encode("ascii")
                                for part in (gamestate_map or "mp_cross_fire").split(",")]
         self.gamestate_map = self.gamestate_maps[0]
+        self.gamestate_gametype = (gamestate_gametype or "mp").encode("ascii")
         self.registration_checksum = registration_checksum
         self.snapshot_path = Path(snapshot_path) if snapshot_path else None
         self.snapshot_files = ([Path(part.strip()) for part in snapshot_path.split(",") if part.strip()]
@@ -251,7 +253,8 @@ class GameServer:
             index = min(peer.get("gamestate_count", 0), len(self.gamestate_maps) - 1)
             payload = (build_native_gamestate(self.registration_checksum,
                                               configstrings=self.configstrings,
-                                              mapname=self.gamestate_maps[index])
+                                              mapname=self.gamestate_maps[index],
+                                              gametype=self.gamestate_gametype)
                        if self.gamestate_source == "native" else GAMESTATE_PLAINTEXT)
             if not payload:
                 self.log({"dir": "meta", "kind": "gamestate_missing"})
@@ -489,6 +492,7 @@ def main() -> int:
     parser.add_argument("--gamestate-repeat", type=int, default=0)
     parser.add_argument("--gamestate-interval", type=float, default=20.0)
     parser.add_argument("--gamestate-map", default=None)
+    parser.add_argument("--gamestate-gametype", default=None)
     parser.add_argument("--registration-checksum", type=lambda value: int(value, 0),
                         default=0xFFB56D7E)
     parser.add_argument("--snapshot-file", default=None,
@@ -534,7 +538,8 @@ def main() -> int:
                         args.snapshot_repeat, args.snapshot_interval,
                         args.command_file, args.command_delay, args.command_seq,
                         args.configstring_file, args.command_repeat, args.command_interval,
-                        args.gamestate_repeat, args.gamestate_interval, args.gamestate_map)
+                        args.gamestate_repeat, args.gamestate_interval, args.gamestate_map,
+                        args.gamestate_gametype)
     try:
         server.serve()
     except KeyboardInterrupt:

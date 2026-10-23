@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T08:05:00+00:00",
+  "scope": "changing the gamestate gametype to war does not change the client state",
+  "server_change": "native_gamestate takes a gametype (default mp) and rewrites configstring 0 accordingly; gameserver exposes --gamestate-gametype",
+  "experiment": {
+    "gametype": "war",
+    "result": {
+      "client": "alive (pid 28244)",
+      "state": 10,
+      "entity_count": 0
+    },
+    "note": "loaded normally - the client accepts a war gametype just like mp"
+  },
+  "reading": [
+    "the gametype string alone is not an end-of-match lever",
+    "it also confirms the gamestate parser tolerates both mp and war, so the field is a plain string with no match-state semantics"
+  ],
+  "next": [
+    "look for match-state configstrings or svc commands instead of the gametype",
+    "or inspect the client UI code that decides when to leave the game view"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r74-gs.jsonl"
+  }
+}
