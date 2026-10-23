@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T02:30:00+00:00",
+  "scope": "locate the gamestate text inside the dedrun by memory search",
+  "session": {"client": "20261023-scan, pid 20272"},
+  "results": {
+    "client_t": "0x52A2908",
+    "g_gametype_search": "no hits anywhere in name+100000 .. name+500000",
+    "mp_cross_fire_search": "one hit at 0x52ACB22, i.e. name+41500",
+    "context": "name+41500 is well BEFORE reliableCommands (name+133324), so the map string lives in an earlier region of client_t, not in the reliable command array"
+  },
+  "interpretation": {
+    "why_g_gametype_is_absent": "the full serverinfo string '\\g_gametype\\war\\mapname\\...' is assembled at send time and does not persist in client_t; only the bare map name is stored",
+    "what_this_means_for_plan_2": "we cannot simply edit a stored command text, because the assembled gamestate text does not exist as a stable buffer",
+    "the_map_name_location_matters": "name+41500 is worth identifying - it is probably the server's configstring table entry for CS_SERVERINFO's map component or a dedicated map name field"
+  },
+  "next": [
+    "dump 256 bytes around name+41500 to identify the surrounding structure (is it a char[64] field, a configstring entry, or part of a larger info string?)",
+    "check whether that region also contains gametype or server name strings, which would confirm it is the configstring table",
+    "if it is the configstring table, our server must emit the same table in the gamestate - which matches the earlier observation that the gamestate body contains the serverinfo text"
+  ],
+  "artifacts": ["runs/scan-in.jsonl"]
+}
