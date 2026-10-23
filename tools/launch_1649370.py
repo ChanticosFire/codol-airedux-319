@@ -2848,6 +2848,16 @@ def main(argv=None) -> int:
                 self.record({"map_loading_configstrings": {"pool_cursor": cursor, "slots": rows}})
             except (OSError, ValueError, struct.error) as error:
                 self.record({"map_loading_configstrings_error": str(error)})
+        if label.startswith("Gate"):
+            try:
+                registers = row.get("registers", {})
+                edi = int(registers["edi"], 0)
+                n = getattr(self, "_gate_count", 0)
+                if n < 20:
+                    self.record({"gate": {"label": label, "edi": hex(edi), "n": n}})
+                self._gate_count = n + 1
+            except (OSError, ValueError, KeyError) as error:
+                self.record({"gate_error": f"{label}: {error}"})
         if label.startswith("DPath"):
             try:
                 n = getattr(self, "_dpath_count", 0)

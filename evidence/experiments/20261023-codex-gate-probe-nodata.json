@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T17:00:00+00:00",
+  "scope": "the gate probe run produced NO usable data because my grep matched render_gate instead of the probe record",
+  "what_happened": [
+    "armed GateConst at 0x47226D (right after `mov edi,0xC89A490`) and GateTest at 0x47239A (`test edi,edi`)",
+    "counted records with the pattern 'gate\"', which ALSO matches '\"render_gate\":' from the milestone records",
+    "so the reported count of 10 is meaningless and no edi value from either address was read"
+  ],
+  "what_is_still_known": [
+    "an earlier run measured edi = 0 at 0x4723CB and the ring branch at 0x4722C0 never fired",
+    "if 0x472268 had executed, edi would be 0xC89A490 at 0x47239A, which is not zero",
+    "so either 0x472268 does not execute on our path (the function is entered after it), or the ring branch does execute but its breakpoint did not arm"
+  ],
+  "the_clean_way_to_settle_it": [
+    "re-run with the same two breakpoints and grep for the exact record prefix '{\"gate\":' rather than a loose substring",
+    "that gives the edi value at the constant load and at the test in one run, and the comparison is unambiguous"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r205-gs.jsonl"
+  }
+}
