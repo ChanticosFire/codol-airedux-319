@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T02:10:00+00:00",
+  "scope": "read the dedrun's reliable command texts to compare framing with the captured body",
+  "session": {"client": "20261023-cmd2, pid 29468"},
+  "results": {
+    "reliable_sequence": 92,
+    "reliable_acknowledge": 0,
+    "command_texts_at_expected_offset": "indices 1,2,3,4,5,10,20,69 ALL read as empty strings",
+    "first_attempt_used_offset_plus_8": "also empty",
+    "second_attempt_used_offset_plus_0": "still empty"
+  },
+  "diagnosis": {
+    "struct_layout": "reliableCommands_t is { char command[1024]; int cmdTime; int cmdType; } so command is at stride offset +0 with stride 1032",
+    "computed_base": "OFF_RELIABLE_SEQUENCE(265420) - 128*1032 = 133324, i.e. reliableCommands starts at name+133324",
+    "why_empty": "either the base is wrong for this build, or the commands are not stored as text (the 2697 profile encoder may replace them with binary payloads), or the entries were already recycled/cleared",
+    "cross_check_available": "we proved the wire body (1168 bytes decrypted) contains the real serverinfo text, so the text must exist somewhere - either in reliableCommands at another offset or only in the transient send buffer"
+  },
+  "next": [
+    "scan client_t from name+100000 to name+300000 for the ASCII string 'g_gametype' to locate where the gamestate text actually lives",
+    "if it is only in a transient buffer, read client_t entries during send instead of after",
+    "or read client_t->reliableSequence text through the SV_WriteReliableCommand parameter by hooking that function"
+  ],
+  "artifacts": ["runs/cmd2-in.jsonl"]
+}
