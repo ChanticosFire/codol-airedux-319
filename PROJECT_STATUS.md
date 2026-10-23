@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [UI transition decoded: esi==2 enters loading (ui_state 5), otherwise ui_state 0]**
+> 0x8037D6: cmp esi,2 -> loading branch ([0x84ABA50]=5, [0xE4EA3C]=0xDE170C); else [0x84ABA50]=0, [0xE4EA3C]=0xDE16F0. Immediate UI-state writes: 1 (0x7F264F), 0 (0x8037E4), 5 (0x803804).
+> Forcing ui_state 0 already renders black, so the game view is not one of the 0..5 states - the loading screen must be dismissed by the load-completion path (0x803818 -> 0x8018B0).
+> Next: inspect 0x8018B0 to see what it waits for, or read strings at 0xDE16F0/0xDE170C.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ui transition](evidence/experiments/20261023-codex-ui-transition.json).
 > **2026-10-23 [UI scripts are not loose files]**
 > runtime/main contains only demo/images/models/screenshots/sound/video - no UI directory. The loading screen still renders, so menu/UI scripts load from a packed archive or the exe.
 > Next: list the client's archives (pk3/iwd) and inspect UI scripts, or trace UI state transitions at runtime to see what the loading screen waits for.
