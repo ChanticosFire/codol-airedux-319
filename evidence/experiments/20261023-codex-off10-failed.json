@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T01:30:00+00:00",
+  "scope": "replay the session-stable body from offset 10",
+  "session": {
+    "client": "20261023-off10, pid 36128",
+    "server": "server1649370 replaying GAMESTATE_PLAINTEXT[10:] (1158 bytes)",
+    "bridge": "forward --target 127.0.0.1:28971 --reliable-until-state 0"
+  },
+  "what_we_sent": {
+    "plain_head": "0300000000 6d705f63726f73735f6669726500 6d7000 7bf1...",
+    "plain_len": 1158,
+    "packet_len": 1162,
+    "key": "challenge ^ seq"
+  },
+  "what_the_client_did": {
+    "messageAck": 1,
+    "acked_our_seq": false,
+    "client_seq": "8 -> 9"
+  },
+  "conclusion": "dropping the ten contaminated bytes and replaying from the stable 03 header still does not get acknowledged",
+  "interpretation": {
+    "the_03_is_not_enough": "03 followed by four zeros is stable across sessions, but on its own it does not make the packet a valid server message; either the real opcode lives inside the contaminated prefix, or the 03 is not an opcode at all",
+    "what_we_know_for_certain": [
+      "delivery to ring B works (13/13 counters)",
+      "the cipher key challenge^seq is correct (map name decodes)",
+      "the map name and serverinfo text are real and byte-exact",
+      "the prefix of ten bytes varies with the session key and is therefore cipher-side, not content"
+    ]
+  },
+  "next",
+  "alternative_approaches": [
+    "stop replaying and instead instrument the dedrun to dump the plaintext buffer right before SV_Netchan_Encode is called - that removes the prefix ambiguity completely",
+    "or bypass the wrapper question by having the dedrun itself send our content: patch its reliableCommands entry text and let its own encoder frame it",
+    "or accept a longer path: finish a source-level server (needs a compiler) where the framing is known by construction"
+  ],
+  "artifacts": ["runs/off10-gs.jsonl"]
+}

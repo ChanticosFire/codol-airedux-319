@@ -247,14 +247,13 @@ class GameServer:
             # included), so this is a byte-exact replay test.
             self.server_seq = getattr(self, "server_seq", 0) + 1
             peer["last_server_seq"] = self.server_seq
-            # Replay the recovered gamestate body, but replace the leading bytes
-            # that were contaminated by the 2697 command stream with a clean
-            # header.  The map name sits at offset 15 in the recovered plaintext,
-            # so the header is exactly 15 bytes:
-            #   lastClientCommand(4)=0, svc_EOF(1)=7, 0(4), svc_gamestate(1)=1,
-            #   configDataSequence(??) -> zeroed tail so the total stays 15.
-            header = bytes.fromhex("00000000" "07" "00000000" "01" "000000")
-            plain = header + (GAMESTATE_PLAINTEXT[15:] if len(GAMESTATE_PLAINTEXT) > 15 else b"")
+            # Two captures proved that the first ten bytes are key-shift
+            # contamination and that the stable header starts at offset 10 with
+            # "03 00 00 00 00" immediately followed by mp_cross_fire.  Drop the
+            # ten contaminated bytes and replay from the stable header on; our
+            # own server keeps lastClientCommandString empty, so the key is the
+            # constant challenge ^ seq and the client can decode it.
+            plain = GAMESTATE_PLAINTEXT[10:] if len(GAMESTATE_PLAINTEXT) > 10 else GAMESTATE_PLAINTEXT
             key = (peer.get("challenge") or 0) ^ self.server_seq
             cipher = bytes(b ^ ((key >> 0) & 0xFF) for b in plain)
             packet = struct.pack("<I", self.server_seq) + cipher
