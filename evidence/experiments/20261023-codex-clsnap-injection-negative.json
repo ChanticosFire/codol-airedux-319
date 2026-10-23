@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T05:00:00+00:00",
+  "scope": "injecting angles and an origin into cl.snap does not change the black frame",
+  "session": {
+    "pid": 38212,
+    "state": 10,
+    "cl": "0x1348ADA0",
+    "cl_snap": "0x1348E91C (cl+0x3B7C)",
+    "before": "all zero over 0x40 bytes"
+  },
+  "injection": {
+    "snap_plus_0x20": "viewangles (0, 90, 0) - write ok, readback correct",
+    "snap_plus_0x30": "origin (1000, 1000, 100) - write ok, readback correct",
+    "screenshot": "runs/codex-r34-screenshot.png, unique=6 mean=0 max=53 - still black with the spinner"
+  },
+  "conclusion": [
+    "the native snapshot structure at cl+0x3B7C is not where the game camera reads angles/origin, or it needs additional fields to be considered valid",
+    "diagnostic injection alone cannot light the frame; the protocol route (a snapshot the parser fully accepts) remains the only path that also updates the game-side snapshot"
+  ],
+  "next": [
+    "stop blind cl.snap offsets; instead locate the renderer's view setup inputs",
+    "and/or solve the entity field loop so the parser itself fills cl.snap"
+  ],
+  "artifacts": {
+    "screenshot": "runs/codex-r34-screenshot.png",
+    "server_log": "runs/codex-r34-gs.jsonl"
+  }
+}
