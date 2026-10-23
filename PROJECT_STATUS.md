@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【字段读取硬编码；S 234→S 0 不变文案】** ✅`0x671700` 是硬编码字段序列（12+ 次位读、多个子函数、唯一全局为 float 常量 0xDBEC14），无 entityStateFields 表可读，字段数须完整反汇编。✅B 路线实验：`S 234`→`S 0`（servercmd-s0.bin）+ f7 体 → state 9、客户端存活，自截图确认加载屏仍为“交叉火力 + 等待玩家数据…”（unique=4125）——S 命令不驱动文案。下一轮对比 D/C/v/H 变体，或去找客户端读取的比赛状态变量。证据：[JSON](evidence/experiments/20261023-codex-field-reader-hardcoded.json)、[JSON](evidence/experiments/20261023-codex-s0-variant.json)。
+
 > **2026-10-23【count=1 + 7 位字段尾 → state 9；实体线被字段数卡住】** ✅`snapshot-f7.bin`（169B，count1 + 7 个 0 位 + 0x00 + EOF）→ state 9、entity_count=1、id=[2078]、客户端存活。结合 f8 崩溃：**count=1 必然进入字段循环、只由 stream error 终止**，故无法干净通过、到不了 state 10；count=0 的 hybrid 跳过字段循环故被接受。下一轮二选一：恢复 entityState 字段数让字段流恰好收尾，或承认空世界 hybrid 为基线转攻比赛状态/数据路径。证据：[JSON](evidence/experiments/20261023-codex-f7-state9.json)、[JSON](evidence/experiments/20261023-codex-f8-crash-and-pivot.json)。
 
 > **2026-10-23【堆扫描：state 10 无可用的地图空间相机坐标】** ✅pid 30780/state 10，扫描 0x10000000..0x40000000（命中 20 提前停止，共 188KB），候选 float 三元组 z 全接近 0、像 UI/动画值（-513/-1/0、214/-3146/0、13182/144/-1.62），无地图空间相机原点。→ 与判断一致：state 10 时没有可用 view origin，黑屏原因是相机/场景数据不存在。下一轮改进扫描约束或改代码分析定位渲染器 view 输入。证据：[JSON](evidence/experiments/20261023-codex-camera-scan-heap-negative.json)、[JSON](evidence/experiments/20261023-codex-camera-source-analysis.json)。
