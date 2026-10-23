@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T11:25:00+00:00",
+  "scope": "disambiguate netchan.remoteAddress by requiring port 29000 next to 127.0.0.1",
+  "verified_facts": {
+    "forward_bound_port": "Get-NetUDPEndpoint shows LocalPort 29000 owned by the bridge process",
+    "dedrun_bound_port": "Get-NetUDPEndpoint shows LocalPort 28970 owned by codol_dedrun",
+    "client_t_base": "0x52A2908",
+    "hits_in_base_minus_0x8000": [
+      {"addr": "0x52A267C", "context_hex": "080300007f0000010000000000000000"}
+    ],
+    "hit_interpretation": "the only 127.0.0.1 occurrence is followed by 00 00 00 00, i.e. port 0, so it cannot be the endpoint the dedrun sends to (the bridge listens on 29000)",
+    "disambiguation_result": "requiring port 29000 produced adr_address 0x0 and outgoing_sequence 0, so the scan found nothing",
+    "server": "no AdministraClient out line after the change; last known line before it was state 2 / ack 0 / gamestate -1"
+  },
+  "inference_not_verified": {
+    "statement": "the single hit is probably a different address field in client_t (port 0), and netchan.remoteAddress is either outside base-0x8000 or stores a different ip representation",
+    "basis": "only one 127.0.0.1 pattern exists in that window and its port is 0",
+    "how_to_check": "walk the client_t field layout from the source (name at +0x2B8, netchan at line 134 of server.h) and read netchan at a computed offset instead of scanning bytes"
+  },
+  "unknown": [
+    "the exact offset of netchan inside client_t for this build",
+    "whether netchan.remoteAddress holds 127.0.0.1 at all after the rewrite through NET_CompareAdr"
+  ],
+  "next": [
+    "compute client_t field sizes from server.h between netchan (line 134) and name (+0x2B8) to get netchan's offset, then read netchan+0x10 as remoteAddress and netchan+0x00 as outgoingSequence",
+    "log both values in forge_ack_packet and only trust outgoingSequence when it is a small number that increments with server packets"
+  ],
+  "artifacts": ["runs/forge-ack-log.jsonl", "runs/2697-server-test/main/qconsole.log"]
+}

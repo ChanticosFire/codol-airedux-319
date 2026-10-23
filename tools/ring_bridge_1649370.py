@@ -648,11 +648,17 @@ def forge_ack_packet(seq: int, ack_override: int | None,
         start = max(0, base - span)
         block = rdc.read(handle, start, span) or b""
         adr_address = 0
-        # netadr_t is { type(4); ip[4]; port(2); pad(2) } so the 127.0.0.1 bytes
-        # sit four bytes after the structure start; search without assuming type.
-        pos = block.find(b"\x7f\x00\x00\x01")
-        if pos >= 4:
-            adr_address = start + pos - 4
+        # netadr_t = { type(4); ip[4]; port(2); pad(2) }. Require the port that
+        # follows 127.0.0.1 to equal this bridge's own port, so we do not mistake
+        # some other structure for netchan.remoteAddress.
+        needle = b"\x7f\x00\x00\x01"
+        wanted_port = struct.pack("<H", int(qport_override or 0) & 0xFFFF)
+        pos = block.find(needle)
+        while pos >= 0:
+            if not qport_override or block[pos + 4:pos + 6] == wanted_port:
+                adr_address = start + pos - 4
+                break
+            pos = block.find(needle, pos + 1)
         outgoing_seq = 0
         if adr_address:
             raw = rdc.read(handle, adr_address - 0x10, 4)
