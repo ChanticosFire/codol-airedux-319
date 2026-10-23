@@ -2875,7 +2875,7 @@ def main(argv=None) -> int:
                 count = struct.unpack("<I", self.process.read(clc + 0x3BA0, 4))[0]
                 idx = count % 24
                 base = arr + idx * 0x58
-                self.process.write(base + 12, struct.pack("<3f", 12345.0, 23456.0, -999.0))
+                self.process.write(base + 12, struct.pack("<3f", 5830.0, -4369.0, -95.0))
                 slots = 1
                 self.record({"fill_ps": {"clc": hex(clc), "array": hex(arr), "count": count, "slots": slots}})
             except (OSError, ValueError, KeyError, struct.error) as error:

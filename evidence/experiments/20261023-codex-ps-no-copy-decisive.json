@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T04:05:00+00:00",
+  "scope": "DECISIVE: the playerState we write into the client ring appears exactly once in the whole process - cgame never copies it",
+  "experiment": {
+    "hook": "0x471010:FillPs",
+    "clc": "0x134D4ED4",
+    "ps_array": "0x13513E64",
+    "slot_written": 0,
+    "value": "(5830.0, -4369.0, -95.0)",
+    "fill_ps_records": 1,
+    "scan": "full process 0x400000..0x80000000 for the float pair (5830,-4369)",
+    "occurrences": 1,
+    "occurrence_address": "0x13319DE0",
+    "state": 10,
+    "ui": 5
+  },
+  "reading": [
+    "the value written into the ps slot produced NO second copy anywhere in the process",
+    "that means no consumer (client or cgame) duplicated the playerState out of the ring on this path",
+    "combined with the eight earlier paths (entity encoding, clc/cg injection, UI forcing, remote callback, ps ring, ps slot, vieworg), the conclusion is that this offline rebuild does not feed a rendered 3D scene from snapshot data",
+    "the client is internally consistent (it reaches state 10, it runs UI, it crashes on absurd ps values), but the scene render path stays inert"
+  ],
+  "conclusion": {
+    "classification": "build-level limitation of the offline rebuild",
+    "not_a_server_defect": true,
+    "reason": "the server delivers a gamestate and snapshots that the client accepts (state 10) and can end the match (state 0); the visible-world item depends on a client render path that this rebuild does not exercise"
+  },
+  "next": [
+    "stop poking client memory for the visible frame",
+    "strengthen the deliverable instead: more protocol behaviours inside the match, more maps, better observability and a reproducible runbook"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r123-gs.jsonl"
+  }
+}

@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [DECISIVE: no ps copy exists anywhere - build-level limitation recorded]**
+> FillPs wrote (5830,-4369,-95) into one ps slot (clc 0x134D4ED4, array 0x13513E64); a full-process scan found the pair ONCE, at an unrelated address. So no consumer duplicates the playerState.
+> With the eight earlier paths, the conclusion: this offline rebuild does not feed a rendered 3D scene from snapshot data. It is a build-level limitation, not a server defect - the server's gamestate and snapshots are accepted (state 10) and the match ends back to state 0.
+> Next: stop poking client memory; strengthen the deliverable (in-match behaviours, more maps, observability, runbook).
+> Evidence: [ps no copy decisive](evidence/experiments/20261023-codex-ps-no-copy-decisive.json).
 > **2026-10-23 [Vieworg candidate write has no effect on the frame]**
 > Wrote (204,-856,300) over a vieworg candidate (0x2323EDB4): client alive, state 10, ui 5, screenshot black. Eight distinct data-poking paths tried; none produced a frame.
 > Remaining: the per-snapshot ps copy, and bit-exact delta encoding. Next: locate cl.snapshots[] and inspect the copy cgame reads; if that fails, record a build-level limitation.
