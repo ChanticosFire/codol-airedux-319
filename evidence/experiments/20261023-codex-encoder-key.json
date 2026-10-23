@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T20:50:00+00:00",
+  "scope": "read the server-side encoder to get the real key formula",
+  "source": "runs/2697-native-src/src/sv_net_chan.c SV_Netchan_Encode",
+  "verified_facts": {
+    "encoder_key": "client->challenge ^ client->netchan.outgoingSequence",
+    "encoder_command_stream": "client->lastClientCommandString",
+    "encrypt_range": "CODOL_Xor(data + 4, cursize - 4, ...) - the first four bytes (sequence) are NOT encrypted",
+    "xor_shape": "key ^= string[index] << (i & 1); data[i+4] ^= key; index++ with NUL wrapping to 0"
+  },
+  "comparison_with_decoder": {
+    "decoder_key": "client->challenge ^ (byte)client->serverId ^ client->messageAcknowledge",
+    "decoder_command": "client->reliableCommands[client->reliableAcknowledge & 127].command",
+    "conclusion": "the two directions use DIFFERENT key formulas and DIFFERENT command sources; my earlier decrypt attempt used the decoder formula on an encoder-produced packet, which is why brute force over a constant key failed"
+  },
+  "why_constant_key_brute_force_failed": {
+    "reason_1": "wrong base key: it used challenge ^ serverId ^ messageAck instead of challenge ^ outgoingSequence",
+    "reason_2": "the true key still rolls with lastClientCommandString, which is non-empty on this client (reliableCommands[0] was empty, but that is a different field)"
+  },
+  "next": [
+    "locate lastClientCommandString inside client_t (it follows lastUsercmd and lastClientCommand after the challenge field) and read its contents",
+    "decrypt the stored capture with key = challenge ^ outgoingSequence and that command string",
+    "verify the plaintext starts with 07 00 00 00 00 01 00 00 00"
+  ],
+  "artifacts": ["runs/2697-native-src/src/sv_net_chan.c", "runs/dec-in.jsonl"]
+}
