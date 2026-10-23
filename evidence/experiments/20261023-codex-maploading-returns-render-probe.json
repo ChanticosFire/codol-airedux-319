@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:30:00+00:00",
+  "scope": "CL_MapLoading returns in 9.4 s; clear-color change does not affect the black capture",
+  "loader": {
+    "enter": 1792746797.4915,
+    "return": 1792746806.882,
+    "duration_s": 9.39,
+    "eax_on_return": 0,
+    "final_state": 10,
+    "ring_b": {
+      "read": 85,
+      "write": 85
+    }
+  },
+  "render_probe": {
+    "command": "r_clearColor 2 then screenshot",
+    "result": "unique=4 mean=0 max=10, unchanged from before the command",
+    "interpretation": "either the cvar does not affect this render path or the presented surface is not the game scene"
+  },
+  "conclusion": "the loader completes normally and the connection reaches state 10, so the remaining black screen is inside the renderer/scene setup (camera or world drawing), not in loading",
+  "next": [
+    "locate the backEnd/world camera globals and read viewOrigin/viewangles after state 10",
+    "check whether the renderer draws a scene at all (frame counters, draw-call counters)",
+    "if the camera is invalid, the snapshot must carry a valid player state / view origin"
+  ],
+  "artifacts": {
+    "loader_events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-a7cda7fb/events.jsonl",
+    "clear_shot": "runs/codex-r4c-clear.png",
+    "server_log": "runs/codex-r4c-gs.jsonl"
+  }
+}
