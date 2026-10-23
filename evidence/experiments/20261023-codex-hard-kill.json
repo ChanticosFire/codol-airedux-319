@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T02:50:00+00:00",
+  "scope": "hard disconnect: killing the gameserver stops usercmd but the client does not return to the lobby",
+  "experiment": {
+    "pre_kill": {
+      "state": 9,
+      "ring_a": 34,
+      "note": "the client had not yet reached state 10 when the kill happened"
+    },
+    "kill": "gameserver process terminated",
+    "samples": {
+      "+10s": 9,
+      "+30s": 9,
+      "+60s": 9,
+      "+90s": 9
+    },
+    "ring_a_after_kill": 34,
+    "client": "alive (pid 628)"
+  },
+  "reading": [
+    "ring_a freezes at 34 immediately after the kill, so the client does stop sending usercmd - it noticed the disconnect",
+    "yet the client state stays 9 for at least 90 s and the process never exits or returns to the lobby",
+    "the run also shows the kill happened while still at state 9, so this is not yet a clean state-10 hard-disconnect test"
+  ],
+  "next": [
+    "repeat with a longer wait so the kill lands while the client is definitely at state 10",
+    "if the client still never leaves, the lobby-return must be driven by a game-side message rather than by connection loss"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r72-gs.jsonl"
+  }
+}
