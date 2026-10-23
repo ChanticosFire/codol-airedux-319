@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T10:45:00+00:00",
+  "scope": "CORRECTION: retract the earlier claim that the client rendered the map",
+  "what_was_claimed": "that 20261023-world-rendered.png and the 20261023 demo screenshot showed the mp_cross_fire world rendering behind an error dialog",
+  "what_the_images_actually_show": "a 错误 / 服务器连接超时 modal on a dark background, with a rectangular grey patch behind the dialog that is the modal's own backdrop, not a first-person view of the map",
+  "why_the_claim_was_wrong": [
+    "no first-person camera, weapon model, HUD (ammo/health/radar), crosshair over world geometry, or bot entities are visible in any capture",
+    "the grey patch is confined to the dialog rectangle, which a real 3D view would not be",
+    "the evidence I actually collected is network/state-machine level only: client phase reached 8, the dedrun reported state 4 (CS_ACTIVE), bots moved server-side, and ring B carried bytes; none of that proves the renderer presented a world"
+  ],
+  "accurate_status": {
+    "network_layer": "the client does reach the in-match connection state and the 2697 dedrun accepts it as an active client",
+    "render_layer": "never demonstrated; every screenshot so far is an error dialog, so the player never saw the map",
+    "interaction_layer": "never demonstrated",
+    "hard_criteria_not_yet_met": ["first-person camera with a weapon viewmodel", "HUD with ammo/health", "player can move and aim", "bots are visible in the scene"]
+  },
+  "process_lesson": "do not describe a state-machine milestone as a visual milestone; a screenshot with an error dialog on top is not evidence that the world rendered",
+  "next": [
+    "finish the acknowledgement work so the timeout dialog stops covering the screen",
+    "adopt the hard criteria above as the only acceptance test for entering the map",
+    "keep phase/state logs as supporting evidence, never as a substitute for a player-view screenshot"
+  ],
+  "artifacts": ["evidence/experiments/20261023-world-rendered.png", "evidence/experiments/20261023-demo-world-timeout.png"]
+}
