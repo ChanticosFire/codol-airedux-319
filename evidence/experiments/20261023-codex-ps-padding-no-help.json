@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T11:10:00+00:00",
+  "scope": "padding inside the ps block does NOT clear the stream error - the error comes from elsewhere",
+  "bodies": [
+    "runs/snapshot-pad20.bin (ps 60 bits)",
+    "runs/snapshot-pad40.bin (ps 80 bits)"
+  ],
+  "measurement": {
+    "decide_records": 2,
+    "stream_error": 1,
+    "struct_3bd0": 72192,
+    "states": {
+      "t=25": 9,
+      "t=35": 9,
+      "t=45": 9,
+      "t=55": 9
+    }
+  },
+  "reading": [
+    "adding 20 or 40 zero bits inside the ps block before the exit bit does not help; the stream error is still raised",
+    "so the error is NOT a simple 'ps needs more room' problem",
+    "the remaining candidates are (a) the tail after the ps is misaligned whenever the ps length differs from the 29-bit case, which makes the actors/glass blocks misparse, or (b) the codec-11 value 0x100 is itself invalid",
+    "notably the ONLY accepted body (single22) has ps = 29 bits, and the 27-bit tail is only known to be valid at exactly that alignment"
+  ],
+  "next": [
+    "run the padded bodies with 0x471980 + 0x471010 traced and read the 'error' field at each entry: if the actors entry shows error 1 the tail is the problem, if it is 0 the value itself is",
+    "that single measurement splits the two remaining hypotheses"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r163-gs.jsonl",
+    "encoder": "runs/_gen_pad.py"
+  }
+}

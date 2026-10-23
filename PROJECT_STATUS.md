@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Ps padding does not clear the stream error]**
+> +20/+40 zero bits inside the ps: stream_error still 1, state 9. So it is not a "give ps room" problem.
+> Remaining: (a) the 27-bit tail is only valid at the 29-bit ps alignment and misparses otherwise; or (b) codec-11 value 0x100 is invalid.
+> Next: trace 0x471980 + 0x471010 and read the error field at each entry to split (a) from (b).
+> Evidence: [ps padding no help](evidence/experiments/20261023-codex-ps-padding-no-help.json).
 > **2026-10-23 [DECISIVE: rejection is stream_error == 1]**
 > Decide probe now records [esi]: stream_error = 1, struct_3bd0 = 72192, field_54 = 1 -> check 1 fires and rejects; checks 2/3 pass.
 > So the non-zero ps body overruns the stream during decoding; the all-zero body decodes cleanly and reaches state 10.
