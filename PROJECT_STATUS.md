@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Accepted ps is empty - frame loop consumes 55 bits without decoding a field]**
+> Accepted body + 0x6701D0 instrument: state 10 but the ps block never calls the field decoder (only the startup record 0xDA8520/index 708). So ps is valid but EMPTY - cgame gets no data, frame unchanged.
+> Next: instrument 0x471B9E / 0x471C5C / 0x670FF0 entry-exit with (bit, branch) logging to reconstruct the iteration sequence.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps accepted but empty](evidence/experiments/20261023-codex-ps-accepted-but-empty.json).
 > **2026-10-23 [MILESTONE: snapshot with a non-empty playerState field accepted - state 10]**
 > Tail-offset sweep 1335/1345/1355/1363 with one frame (V=1, value 0x1FF width 10): ps entry 1308 -> actors 1363 (55 bits), error 0, state 9->10->10 at t=25/45/65s. Screenshot still black.
 > So a real non-empty ps field is accepted end-to-end; the encoder direction is proven. Remaining gap is content (which fields to fill), not framing.

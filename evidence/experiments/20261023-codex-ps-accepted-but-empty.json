@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T22:45:00+00:00",
+  "scope": "the accepted ps is EMPTY: the 55 bits are consumed by the frame loop without ever decoding a field",
+  "experiment": {
+    "body": "runs/snapshot-ps-tail1363.bin",
+    "state": 10,
+    "ui": 5,
+    "ps_field_records": 1,
+    "note": "the single record is the startup call (entry 0xDA8520, index 708), not from the ps block"
+  },
+  "reading": [
+    "the ps block consumed bit 1308..1363 (55 bits) and exited without error, but 0x6701D0 was never called",
+    "so the delta decoder either returned early or took the 'skip' path; the ps ends up EMPTY even though our body wrote a value",
+    "that explains why the screenshot did not change: cgame receives a valid but empty playerstate"
+  ],
+  "next": [
+    "instrument the loop boundaries precisely: 0x471B9E (present), 0x471C5C (present variant), 0x670FF0 entry/exit",
+    "log (bit, taken-branch) for each to reconstruct the real iteration sequence over our 55 bits"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r112-gs.jsonl"
+  }
+}
