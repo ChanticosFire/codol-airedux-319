@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Rejection is semantic, not framing]**
+> 0x471D80 parse entry mapped (precheck 0x671650, bit read 0x447190, count 0x66EC30, loop 0x671700, terminator cmp). Rejected non-zero bodies show stream error 0, so the parser completes.
+> Therefore the snapshot is dropped AFTER parsing by a semantic check (time/state consistency), not by framing.
+> Next: instrument the consumer of the parsed snapshot (after 0x471D80 returns).
+> Evidence: [reject is semantic](evidence/experiments/20261023-codex-reject-is-semantic.json).
 > **2026-10-23 [Real commandTime rejected; only all-zero ps is accepted]**
 > cmdtime (V=1, codec -97, 1000): ps 24 bits (predicted 52), state 9. Pattern: single22 (codec 11 zero) = 29 bits -> state 10; nz1 (0x100) = 32 -> 9; cmdtime = 24 -> 9.
 > The only accepted ps body has a zero field value. The 0xDA8520 table discovery is solid but has not produced an accepted non-zero body.

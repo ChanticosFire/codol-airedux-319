@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T07:10:00+00:00",
+  "scope": "mapped the snapshot parse entry (0x471D80) to look for the discard point; the rejection is NOT in the parser",
+  "caller_structure_0x471d80": [
+    "0x471DA3 call 0x671650 -> test al,al -> je 0x471E88 (early bail on a precheck)",
+    "0x471E05 call 0x447190 (read 1 bit) -> test -> je 0x471E4A",
+    "0x471E14 call 0x66EC30 (read N bits)",
+    "0x471E51 call 0x671700 -> test eax -> jne 0x471DDA (loop back)",
+    "0x471E78 cmp [edx],0 -> je ... (terminator test)"
+  ],
+  "key_finding": [
+    "this is the ENTITY block loop, and its shape mirrors the playerState block (read bit -> read count -> loop -> terminator test)",
+    "the traces already show stream error = 0 for the rejected non-zero bodies, so the parser completes; the snapshot is dropped AFTER parsing",
+    "therefore the rejection is a semantic check on the parsed snapshot (plausibly a time or state consistency check), not a framing error"
+  ],
+  "what_this_rules_out": [
+    "framing/bit-length problems as the cause of rejection for the non-zero bodies",
+    "stream overrun as the cause (error is 0)"
+  ],
+  "next": [
+    "instrument the call that consumes the parsed snapshot (after 0x471D80 returns) to find the semantic check",
+    "candidates: a serverTime/commandTime comparison, or a 'snapshot applies to the local client' test"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x471D80 (snapshot parse entry)",
+      "0x671650 (precheck)",
+      "0x671700 (loop helper)"
+    ]
+  }
+}
