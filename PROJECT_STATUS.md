@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【四个手写变体全被拒；改就地修补 hybrid】** ✅ps-empty、ps-skip、ps-term、ps-form1 四个手写体均 state 9、accepted=0；对照 hybrid 167B 始终 accepted/state 10。→ 8 字节头无法复现 2697 前缀里解析器消费的结构。下一轮改为就地修补 hybrid：在前 164 字节定位实体表位，count 改 1 并写 12-bit 实体号 + 字段 delta，用 accepted/cl.snap 判定。证据：[JSON](evidence/experiments/20261023-codex-hand-built-rejected.json)。
+
 > **2026-10-23【has_base=1 无前置 base 被拒；只有 2697 头被接受】** ✅对照：hybrid 167B（has_base=0）→ accepted/state 10；手写 14B（has_base=0）→ state 9 ack 不推进；手写 14B（has_base=1）→ state 9、accepted=0、cl.snap 全 0；2697 切片 → 崩溃。→ has_base=1 需先前 base；8 字节手写头太薄，2697 的 164 字节前缀含解析器必需结构。下一轮逐字节对比 hybrid 前缀与手写头。证据：[JSON](evidence/experiments/20261023-codex-has-base-comparison.json)。
 
 > **2026-10-23【修正：复制执行了，复制的是空数据】** ✅调用链 `0x472808`（源 cl+0xC）→ `0x47280B call 0x472830`（复制 0x3B7C..0x3BB8）→ `0x472810` accepted=1。accepted 为 1 说明复制函数确实跑过，"复制未执行"的推测作废。cl.snap 全 0 的真因是**源字段本就为 0**：167 字节 baseline 不带实体/ps 字段且 has_base=0 选全零 baseline。下一轮必须发出真正携带 entity/playerState delta 的快照体（补齐 0x670D30 的 byte/short/float 分支）。证据：[JSON](evidence/experiments/20261023-codex-snapshot-copy-executed.json)。
