@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T22:40:00+00:00",
+  "scope": "flipping the count bit without adding an entity id and fields makes parsing fail",
+  "experiment": {
+    "body": "runs/snapshot-hybrid-count1.bin (hybrid with byte7 bit3 set)",
+    "result": "state 9, ack 1, entity_count byte stayed 0xFF (unset), ids 0xFFFF",
+    "meaning": "the parser failed, not that count became 1: with count>0 it needs a 12-bit entity id and that entity's field delta, which the body does not provide"
+  },
+  "implication": "the hybrid cannot be grown by a one-bit flip; the 12-bit id and field deltas must be inserted and the following bits shifted",
+  "next": [
+    "rebuild the body at bit level: keep has_base/table/form, set count=1, write the 12-bit id, write the entity field delta, then re-append the original tail from the entity block end",
+    "verify with entity_count and cl.snap"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r26b-gs.jsonl",
+    "body": "runs/snapshot-hybrid-count1.bin"
+  }
+}
