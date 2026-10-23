@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T19:30:00+00:00",
+  "scope": "even a last=0 entity body (no fields) crashes, and 0x671700 is never called",
+  "experiment": {
+    "body": "runs/snapshot-e2-last0.bin",
+    "bytes": 170,
+    "layout": "count1 header + changed(1) + codec(1) + last(6)=0 + actor/sub4/glass + EOF",
+    "trace": {
+      "SnapTraceEntityLoop": {
+        "cursor": 164,
+        "bit": 1307,
+        "length": 170
+      },
+      "SnapTraceFieldValue_0x671700": "never hit"
+    },
+    "result": "client exited (pid 0)"
+  },
+  "conclusion": [
+    "with last=0 there are no field values to read, yet the client still dies and never reaches 0x671700",
+    "so the crash happens in the entity-table read or the branch at 0x471E05, before any field decoding",
+    "this means the problem is not the field layout at all - something in the header/structure of our body is wrong for this build"
+  ],
+  "next": [
+    "trace 0x471E05 indirectly: compare the bit cursor right after the entity-loop hit with what the client reports on the next frame",
+    "or test an entity body with only the four header bits and no changed/codec/last at all, to see whether the header itself is the killer"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r53-gs.jsonl",
+    "body": "runs/snapshot-e2-last0.bin"
+  }
+}
