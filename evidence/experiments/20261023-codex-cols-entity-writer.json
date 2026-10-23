@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T16:50:00+00:00",
+  "scope": "cols entity writer format versus our 0x671650 observations",
+  "cols_writer": {
+    "file": "crates/protocol/src/game/snapshot/enemy.rs:72 write_enemy_entity",
+    "sequence": [
+      "bits(0,1) - entity index distance marker",
+      "bits(1,1)",
+      "bits(entity_number, 11)",
+      "bits(!alive, 1)",
+      "bits(1,1) changed",
+      "bits(1,1) absolute position/angle codec base",
+      "bits(39, 6) last changed field index",
+      "then 20 fields: entity_gap(index-previous) + codec value",
+      "eType at field 0 is raw byte 1 (codec -77)",
+      "positions at fields 1/2/5 are 1 bit + signed16",
+      "angles at fields 3/7/26 are 2 bits (0) + raw LE16"
+    ]
+  },
+  "our_observations": {
+    "entity_table_0x671650": "1 bit table-present, 1 bit form, 8-bit count at byte164, 12-bit entity ids",
+    "differences": [
+      "cols has no count byte; it writes the entity number directly",
+      "cols uses an 11-bit entity number; we measured 12 bits",
+      "cols uses a 6-bit last field index; our byte164 looked like an 8-bit bound"
+    ]
+  },
+  "conclusion": "3.3.3.3 and 1649370 differ in the entity-table header, so the cols writer cannot be copied verbatim; however the field-stream grammar (last bound + distance + codec) matches what the decoder expects and remains the best template",
+  "next": [
+    "write a Python port of the cols field-stream encoder driven by 0xDA63E8 and graft it after our own 1/1/8/12 entity-table header",
+    "start with a minimal field set (eType + 3 positions) and verify entity_count and the frame"
+  ],
+  "artifacts": {
+    "cols": "E:/GAME/COD/codol-airedux/cols/crates/protocol/src/game/snapshot/enemy.rs"
+  }
+}
