@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T12:15:00+00:00",
+  "scope": "a disconnect command over the command channel has no effect",
+  "experiment": {
+    "commands": [
+      "disconnect"
+    ],
+    "seq": [
+      2000,
+      2001
+    ],
+    "state_samples": {
+      "20s": 9,
+      "35s": 10,
+      "50s": 10,
+      "65s": 10
+    },
+    "client": "alive (pid 30868)",
+    "usercmd": "ring_a grew 35 -> 71, so the client stayed connected"
+  },
+  "conclusion": [
+    "the service-command channel does not execute a client-side console disconnect",
+    "combined with the previous round, neither stopping snapshots nor a disconnect token makes the client leave the match"
+  ],
+  "next": [
+    "hard disconnect: stop the gameserver process entirely and watch whether the client times out back to the lobby",
+    "or send a UDP-level OOB disconnect and observe the same"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r71-gs.jsonl"
+  }
+}
