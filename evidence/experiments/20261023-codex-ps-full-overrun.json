@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T01:50:00+00:00",
+  "scope": "full-field ps attempt still overruns: each field costs more bits than a single zero flag",
+  "bodies": {
+    "runs/snapshot-ps-full-nine.bin": "V=9, 9 zero flags, 171 B",
+    "runs/snapshot-ps-full-all24.bin": "V=24, 24 zero flags, 173 B"
+  },
+  "measurement_nine": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1373,
+    "ps_bits_consumed": 65,
+    "length_bits": 1368,
+    "stream_error": 1,
+    "note": "overran by 5 bits",
+    "state": 9
+  },
+  "written_vs_consumed": {
+    "written": "9 (header) + 1 (continuation) + 5 (index) + 1 (distance) + 9 (zero flags) + 1 (exit) = 26 bits",
+    "consumed": 65,
+    "delta": 39
+  },
+  "reading": [
+    "a single zero flag per field is not what the decoder reads",
+    "each field appears to cost ~4 extra bits beyond our model (39/9 ~ 4.3)",
+    "so the per-field encoding inside the delta loop has an additional component we have not modelled (possibly a per-field 'present' bit plus the codec's own zero flag, or a per-field index delta)"
+  ],
+  "next": [
+    "stop guessing field costs and get ground truth: log the bit reader used inside the ps loop by comparing a counter before/after each per-field decode call at 0x6710BB",
+    "use the byte cursor [stream+0x1C] plus the shift state instead of [stream+0x24] (which holds `last`)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r118-gs.jsonl",
+    "encoder": "runs/_gen_ps_full.py"
+  }
+}

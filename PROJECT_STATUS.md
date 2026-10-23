@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Full-field ps still overruns; ~4.3 extra bits per field]**
+> nine (V=9, 9 zero flags): ps entry 1308 -> actors 1373 = 65 bits, error 1 (overran 171 B by 5 bits), state 9. Written 26 bits vs consumed 65 -> 39-bit gap (~4.3/field).
+> So a single zero flag per field is not the per-field encoding; an extra component exists (per-field present bit or index delta).
+> Next: log [stream+0x1C] deltas around each per-field decode at 0x6710BB to derive the exact per-field cost.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps full overrun](evidence/experiments/20261023-codex-ps-full-overrun.json).
 > **2026-10-23 [ps cost scales with the landing index - all fields up to it are decoded]**
 > idx8 (V=9): ps entry 1308 -> actors 1400 (92 bits) with stream error 1, whole buffer consumed, state 9. V=1 cost ~45 bits, V=9 cost 92 ~ 9 fields x 10 bits.
 > Hypothesis: every field from index 0 up to the landing index is decoded; only fields beyond it are copy-only.
