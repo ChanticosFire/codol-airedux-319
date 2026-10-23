@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T23:50:00+00:00",
+  "scope": "an actor block placed at bit 1338 crashes, while the same body without it survives",
+  "experiment": {
+    "body": "runs/snapshot-actor1338.bin",
+    "bytes": 171,
+    "layout": "count1 header + 9 zero bits + actor(0,1,2047) + sub4(0) + glass(0) + EOF",
+    "result": "client exited (pid 0)",
+    "control": "runs/snapshot-no-actor.bin (same but no actor tail) -> alive, state 9, entity_count=1"
+  },
+  "conclusion": [
+    "the actor tail as we write it is wrong for 1649370: either its position (1338) or its internal format",
+    "this exactly brackets the remaining work: without the tail the snapshot is safe but incomplete (state 9); with our tail it crashes",
+    "so the tail block is the single remaining structural unknown for a complete entity-bearing snapshot"
+  ],
+  "next": [
+    "study the actor block format in the 2697 capture and in cols' writer (game/snapshot/character.rs / enemy.rs actor handling)",
+    "try the shortest possible actor tail (a single 0 bit meaning no actor) to see whether that reaches state 10"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r60-gs.jsonl",
+    "body": "runs/snapshot-actor1338.bin"
+  }
+}
