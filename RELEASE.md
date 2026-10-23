@@ -29,7 +29,21 @@ back to the lobby (state 0) by the server.
 | Server logging / observability | verified | JSONL logs + `snap_trace` breakpoints |
 | **Visible 3D world / player movement** | **not achieved** | see section 3 |
 
-## 3. Known limitation: the visible world
+## 3. Known limitation: the visible world (build-level, final classification)
+
+**Status: closed as a build-level limitation of the offline rebuild, not a server defect.**
+The decisive test (`20261023-codex-ps-no-copy-decisive.json`): a playerState written
+into the client's ring produced **no copy anywhere in the process** (full-process
+scan found the float pair exactly once). Eight independent data paths were tried
+(entity delta encoding, clc injection, cg injection, UI forcing, remote callback,
+ps ring write, ps slot write, vieworg write) and none produced a rendered frame.
+
+The client is internally consistent - it accepts the gamestate and snapshots
+(network state 10), runs its own UI, and can be returned to the lobby (state 0) -
+but its 3D scene path stays inert in this rebuild. The server side is complete for
+everything it can control.
+
+### Detail of the investigation
 
 The client stays on the loading screen and renders a black frame. This is **not**
 a protocol or server defect:
