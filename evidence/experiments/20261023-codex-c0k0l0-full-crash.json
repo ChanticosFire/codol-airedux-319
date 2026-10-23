@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T22:00:00+00:00",
+  "scope": "even the minimal codec=0 body crashes in a full session",
+  "experiment": {
+    "body": "runs/snapshot-v-c0k0l0.bin",
+    "layout": "count1 header + changed(0) + codec(0) + last(0) + actor/sub4/glass + EOF",
+    "session": "full length (70s forward, 40s after connect)",
+    "result": "client exited (pid 0)"
+  },
+  "conclusion": [
+    "the three codec=0 variants only survived because the short sessions never delivered the snapshot",
+    "in a full session every body with count=1 - regardless of changed/codec/last - crashes",
+    "so the problem is upstream of the entity body: the entity-table header (1/1/8/12) itself is wrong for this build, or the bytes after it are consumed differently than we assume"
+  ],
+  "strategic_note": [
+    "many rounds have now been spent on hand-built entity bodies with no success",
+    "the next productive step is to stop guessing and instead capture a REAL snapshot body from a working client/connection and diff it against our construction",
+    "alternatively, re-derive the header layout by tracing 0x671650 with a real client snapshot (the 2697 dedrun captures remain the only real bodies we have)"
+  ],
+  "next": [
+    "either obtain a real 1649370 snapshot body (capture from a client that reaches state 10 against a real server) and compare byte-for-byte",
+    "or re-trace 0x671650 with a hybrid body that has count=1 but no entity body at all, to see what it reads before the crash"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r57-gs.jsonl",
+    "body": "runs/snapshot-v-c0k0l0.bin"
+  }
+}
