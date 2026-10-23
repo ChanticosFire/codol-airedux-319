@@ -1,6 +1,12 @@
-# 阶段状态与证据
+# Phase Status and Evidence
 
-> **2026-10-23【B 路线：三次软断开均无效】** ✅按用户反馈收敛目标（局中切图非玩家需求，停止耗轮次），本轮只测对局结束→返回大厅：(1) 停发快照（3 次后停）→ state 10 保持 90s，ring_a 33→96 仍在发 usercmd；(2) disconnect 服务命令（seq 2000/2001 已送达）→ state 10 保持，ring_a 35→71。→ 客户端不把快照停止或 disconnect 令牌当断开条件，state10 下一直挂在当前世界。下一轮改测硬断开（直接停 gameserver 进程），观察客户端是否超时退出；若不退出，返回大厅需依赖游戏侧结算消息。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-stop-snapshot.json)、[JSON](evidence/experiments/20261023-codex-disconnect-test.json)。
+> **2026-10-23 [Route B: all three soft-disconnect attempts failed]**
+> Per user feedback, mid-match map switching is not a player need and was dropped; this round only tested "end of match -> return to lobby".
+> (1) Stopping the snapshot stream (3 sends then stop) -> **state stayed 10 for 90 s**, `ring_a` grew 33 -> 96 (client kept sending usercmd).
+> (2) The `disconnect` service command (seq 2000/2001, delivery confirmed) -> **state stayed 10**, `ring_a` 35 -> 71.
+> Conclusion: the client does not treat snapshot silence or a disconnect token as a disconnect condition; at state 10 it stays in the world.
+> Next: test a hard disconnect - kill the gameserver process and watch whether the client times out back to the lobby; if it does not, lobby return must rely on a game-side end-of-match message.
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [stop-snapshot](evidence/experiments/20261023-codex-stop-snapshot.json), [disconnect](evidence/experiments/20261023-codex-disconnect-test.json).
 > **2026-10-23【B 路线首个正面进展：--gamestate-map 生效，mp_afghan 加载到 state 10】** ✅native_gamestate 加 mapname（同时改写 configstring 0 的 \mapname\），gameserver 暴露 --gamestate-map；离线验证默认 89B/mp_cross_fire、替换 81B/mp_afghan，cs0 同步。✅实测 --gamestate-map mp_afghan + hybrid → 客户端存活(pid 17960)、state 10、entity_count=0。→ gamestate 的 mapname 被客户端认可，换图可行。⚠️本轮测的是开局首图即 afghan，未测局中切换。下一轮先发 cross_fire 等 state10，再发 afghan，观察 state 8→10 重载（局中切图/重开）。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-afghan-load.json)。
 > **2026-10-23【工具改进：gamestate 可周期重发；相同 gamestate 不重载】** ✅gameserver 新增 --gamestate-repeat N / --gamestate-interval S，seq 递增(3+count)，重发时重置快照/命令调度。✅实测 hybrid + repeat3/interval35：发出两次 gamestate(ts 1792756741/1792756776, 89B) → 客户端存活(pid 2056)、state 10 稳定，未回落 8。→ 相同 gamestate 被接受但不重载；需 mapname 或 checksumFeed 不同。下一轮发 mapname 不同的第二 gamestate，观察 state 8→9→10 重载路径（切图/重开）。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-gamestate-repeat.json)。
 > **2026-10-23【转 B 首轮：命令通道通、map_restart 不重载】** ✅hybrid(state10) 上用 --command-file 发 map_restart/v/u 30（seq 2000/2001）→ 客户端存活(pid 40092)、state 仍 10；服务端日志两条 command_source，命令确实送达。→ 命令通道通，但裸 map_restart 无可见重载（客户端忽略 token 或同图重开不进加载）。下一轮改用重发完整 gamestate 驱动对局流程（当初 state5→10 的路径），构造第二个 gamestate 在 state10 后发送，观察 state 8→10 并截图（验证重开/切图）。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-maprestart-test.json)。
