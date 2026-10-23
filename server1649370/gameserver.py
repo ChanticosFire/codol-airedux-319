@@ -110,6 +110,8 @@ class GameServer:
         self.gamestate_source = gamestate_source
         self.registration_checksum = registration_checksum
         self.snapshot_path = Path(snapshot_path) if snapshot_path else None
+        self.snapshot_files = ([Path(part.strip()) for part in snapshot_path.split(",") if part.strip()]
+                               if snapshot_path else [])
         self.snapshot_delay = snapshot_delay
         self.snapshot_seq = snapshot_seq
         self.snapshot_repeat = snapshot_repeat
@@ -317,20 +319,27 @@ class GameServer:
                       "stride": frag_size, "chunk": len(chunk), "length": len(packet)})
 
     def send_due_snapshots(self) -> None:
-        """Send the staged snapshot; optionally repeat it to keep the client active."""
-        if not self.snapshot_path:
+        """Send the staged snapshot files in order; optionally keep repeating the last."""
+        if not self.snapshot_files:
             return
         for addr, peer in self.state.peers.items():
             due = peer.get("snapshot_due")
             if due is None or time.monotonic() < due:
                 continue
+            index = peer.get("snapshot_index", 0)
+            if index < len(self.snapshot_files):
+                path = self.snapshot_files[index]
+            elif self.snapshot_repeat:
+                path = self.snapshot_files[-1]
+            else:
+                peer["snapshot_due"] = None
+                continue
             try:
-                data = self.snapshot_path.read_bytes()
+                data = path.read_bytes()
             except OSError as error:
                 peer["snapshot_due"] = None
                 self.log({"dir": "meta", "kind": "snapshot_missing", "error": str(error)})
                 continue
-            index = peer.get("snapshot_index", 0)
             payload = b"\x00\x00\x00\x00" + data
             if len(payload) >= 9 and payload[4] == 0:
                 server_time = 72192 + index * 500
@@ -338,14 +347,15 @@ class GameServer:
             seq = self.snapshot_seq + index
             self._send_fragments(addr, peer, payload, seq, "snapshot")
             peer["snapshot_index"] = index + 1
-            if self.snapshot_repeat and index + 1 < self.snapshot_repeat:
+            if index + 1 < len(self.snapshot_files):
+                peer["snapshot_due"] = time.monotonic() + self.snapshot_interval
+            elif self.snapshot_repeat and index + 1 < self.snapshot_repeat:
                 peer["snapshot_due"] = time.monotonic() + self.snapshot_interval
             else:
                 peer["snapshot_due"] = None
-            if index == 0:
-                self.log({"dir": "meta", "kind": "snapshot_source",
-                          "path": str(self.snapshot_path), "payload_length": len(payload),
-                          "seq": seq, "payload_head": payload[:64].hex()})
+            self.log({"dir": "meta", "kind": "snapshot_source",
+                      "path": str(path), "payload_length": len(payload),
+                      "seq": seq, "file_index": index, "payload_head": payload[:64].hex()})
 
     def on_stats(self, addr: tuple, args: list[str], peer: dict) -> None:
         self.state.counters["stats"] += 1

@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T15:50:00+00:00",
+  "scope": "two separate snapshots (base then delta) still leave entity_count at zero",
+  "server_change": "gameserver --snapshot-file now accepts a comma-separated list and sends each file in order with its own seq",
+  "experiment": {
+    "files": [
+      "runs/snapshot-hybrid-empty-actors.bin",
+      "runs/snapshot-count1-base1.bin"
+    ],
+    "seqs": [
+      1000,
+      1001,
+      1002,
+      1003
+    ],
+    "server_times": [
+      72192,
+      72692,
+      73192,
+      73692
+    ],
+    "result": {
+      "state": 10,
+      "entity_count": 0,
+      "client": "alive (pid 24112)"
+    }
+  },
+  "reading": [
+    "the first (has_base=0) snapshot is accepted as usual",
+    "the second (has_base=1) snapshot changes nothing: the delta path is not applied, so either the base pointer is still invalid or delta parsing rejects the body silently"
+  ],
+  "next": [
+    "annotate the has_base=1 branch at 0x47238C..0x4723B9 to see what the client passes as base and what it requires",
+    "check whether the base snapshot must be a full 2697-style snapshot rather than our hybrid"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r48-gs.jsonl"
+  }
+}
