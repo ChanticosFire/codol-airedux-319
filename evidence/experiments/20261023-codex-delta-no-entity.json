@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T18:45:00+00:00",
+  "scope": "delta entity path runs without a stream error but produces no entity",
+  "experiment": {
+    "sequence": "hybrid (has_base=0) then delta-base1 (has_base=1, delta bit=1, 8-bit index 0)",
+    "clear_stream_error_trace": {
+      "before": 0,
+      "after": 0
+    },
+    "measurements": {
+      "state": 10,
+      "ui": 5,
+      "entity_count": 0,
+      "screenshot": "black (unique 6, mean 0)"
+    }
+  },
+  "reading": [
+    "good news: the delta path does not set the stream error - the body layout (has_base bit + delta bit + 8-bit index) is at least structurally accepted",
+    "bad news: entity_count stays 0, so the copy did not create a visible entity",
+    "likely causes: the base slot 0 is empty in the hybrid baseline (nothing meaningful to copy), or the base pointer [ebp+0x14] is still null and the copy is skipped"
+  ],
+  "next": [
+    "trace [ebp+0x14] (base pointer) at 0x471D80 for the second snapshot to see whether has_base=1 actually populates it",
+    "if it is null, the delta path is unusable until a real base entity exists; the field path (0x671700) then remains the only way to create an entity from scratch"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r84-gs.jsonl",
+    "body": "runs/snapshot-delta-base1.bin"
+  }
+}
