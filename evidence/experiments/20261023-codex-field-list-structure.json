@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:55:00+00:00",
+  "scope": "the field list at 0x77D8218 has five nodes whose sizes sum to 415",
+  "nodes": [
+    {
+      "index": 0,
+      "node": "0x077DB518",
+      "desc": "0x02EEF5E4",
+      "size": 1
+    },
+    {
+      "index": 1,
+      "node": "0x077DB520",
+      "desc": "0x02EEF620",
+      "size": 1
+    },
+    {
+      "index": 2,
+      "node": "0x077DB528",
+      "desc": "0x02EEF6C0",
+      "size": 91
+    },
+    {
+      "index": 3,
+      "node": "0x077DB530",
+      "desc": "0x02EEF74C",
+      "size": 321
+    },
+    {
+      "index": 4,
+      "node": "0x077DB550",
+      "desc": "0x02EEF878",
+      "size": 1
+    }
+  ],
+  "sum": 415,
+  "tail_logic": "0x671A0D walks this list summing [desc+0xC] until the running sum exceeds the field bit index; 415 is therefore a plausible upper bound for the entity field space",
+  "session_note": "this session ended at state 9 instead of 10 (snapshot timing), so the numbers were read without a live accepted snapshot",
+  "next": [
+    "verify the 415 bound by reading the same list while in state 10",
+    "annotate the five descriptors (0x2EEF5E4 etc.) to learn each group's field count and width"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r42-gs.jsonl"
+  }
+}
