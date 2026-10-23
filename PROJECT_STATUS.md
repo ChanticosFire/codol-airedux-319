@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CORRECTION: the game DLL IS loaded - 7-module list was a WOW64 artifact]**
+> 32-bit client + 64-bit Python: EnumProcessModules/tasklist /m only return the WOW64 host modules. Corrected via 32-bit PEB Ldr walk: 60+ modules including a 58,228,736-byte image at 0x61D10000 = codoMP_client_shipRetailBase.dll.
+> So cgame is available; the black frame is a data/view problem (ps/entity/camera), not a missing module. The ps work (rounds 58-64) stands.
+> Next: exact module names with corrected offsets; continue the ps encoder.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [module list correction](evidence/experiments/20261023-codex-module-list-correction.json).
 > **2026-10-23 [MAJOR: offline exe never loads the 60 MB game module]**
 > Live session at state 10 has only 7 modules (exe + ntdll + 5 wow64); codoMP_client_shipRetailBase.dll (60 MB, real game code) is NOT loaded. Copying the DLL into the runtime does not change that (screenshot black -> uniform grey, modules still 7).
 > The exe has no cgame/CG_Init strings and is a rebuilt binary (bin/v1649370/README.md); the real full client still exists in E:\GAME\COD\Original Client.

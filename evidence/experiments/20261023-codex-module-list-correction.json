@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T18:20:00+00:00",
+  "scope": "CORRECTION: the game DLL IS loaded - the earlier 'only 7 modules' was a 64-bit enumeration artifact",
+  "what_went_wrong": [
+    "the client is a 32-bit (WOW64) process; our Python is 64-bit",
+    "psapi EnumProcessModules on a WOW64 target from a 64-bit process only returns the WOW64 host modules (ntdll + wow64*)",
+    "tasklist /m from 64-bit shows the same WOW64-only view, so it reproduced the mistake",
+    "conclusion 'the 60 MB game module is never loaded' was therefore WRONG"
+  ],
+  "corrected_measurement": {
+    "method": "NtQueryInformationProcess(ProcessWow64Information) -> 32-bit PEB -> Ldr->InLoadOrderModuleList walk",
+    "module_count": "60+ (not 7)",
+    "notable": "a 58,228,736-byte image is mapped at 0x61D10000, consistent with codoMP_client_shipRetailBase.dll (60,327,992 bytes on disk)",
+    "conclusion": "the game module is loaded, together with the usual system DLLs"
+  },
+  "implication": [
+    "the offline harness really does run the full game module, so cgame is available",
+    "therefore the black frame is NOT explained by a missing game module - we are back to the data/view problem (playerState / entity / camera)",
+    "the ps work from rounds 58-64 remains the correct direction"
+  ],
+  "next": [
+    "re-run the module walk with corrected LDR offsets to print exact names/bases (diagnostic hygiene)",
+    "continue the ps encoder so the client can get a real local player"
+  ],
+  "artifacts": {
+    "status_correction": "1649370-STATUS.md",
+    "previous_wrong_evidence": "evidence/experiments/20261023-codex-game-module-not-loaded.json"
+  }
+}
