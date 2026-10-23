@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T12:00:00+00:00",
+  "scope": "DECISIVE: the field decode is gated by `current == last`, where `current` comes from the client's playerState history ring - which is empty in our sessions",
+  "prologue_region_0x471a56_0x471ba0": {
+    "0x471A56": "je 0x471A5D / jmp 0x471A6C - mode branch",
+    "0x471A5D": "read 5 bits = last, stored to [edi+0x24]",
+    "0x471A6F": "esi = [edi+0x24] (last)",
+    "0x471A72": "[ebp-0xD0] = last   <-- this is the value my Slot probe called slot_d0",
+    "0x471A84": "call 0x4F82E0 (Com_Error) if cursor > max",
+    "0x471AD0": "game time += 1",
+    "0x471ADC": "[eax+0x3BA0] += 1      (eax = arg2's struct, NOT the reset one)",
+    "0x471AE8": "counter = [ebp-0xC8] + 1",
+    "0x471AF0": "cmp counter, [eax+0x3BA0] ; jl 0x471B04",
+    "0x471AF8": "else [ebp-0xC0] = 0x1869F (sentinel)",
+    "0x471B04..0x471B2C": "history ring lookup -> [ebp-0xC0] = ring value, [ebp-0xC4] = slot pointer",
+    "0x471B32": "edx = [ebp-0xC0]",
+    "0x471B38": "cmp edx, [ebp-0xD0] (last) ; jl 0x471A98  -> loop back while current < last",
+    "0x471B50": "cmp edx, esi ; jne 0x471C41   -> current != last: SKIP the field decode",
+    "0x471B9E": "only reached when current == last: read the present bit"
+  },
+  "the_gate": [
+    "the field decode at 0x471B9E is reached ONLY when [ebp-0xC0] == last",
+    "[ebp-0xC0] is either the sentinel 0x1869F (when counter >= count) or a value read from the client's playerState history ring",
+    "the reset at entry (0x4719BE) applies to the STREAM struct (ecx+0x3BA0), while the comparison at 0x471AF0 uses ARG2's struct (eax+0x3BA0) - a different object that is NOT reset",
+    "so the loop can only decode once the client's ps history (arg2) already has entries"
+  ],
+  "why_our_bodies_never_decoded_a_field": [
+    "in a fresh session that history is empty, so counter >= count immediately, [ebp-0xC0] becomes the sentinel 0x1869F, and 0x1869F != last routes to 0x471C41 - skipping the field entirely",
+    "this matches every measurement: slot never fires, loop_c8 stays 0, slot_d0 (= last) is 0, and the snapshot still parses with stream_error 0",
+    "and it explains why an EMPTY playerState is accepted: the block legitimately decodes nothing when the history is empty"
+  ],
+  "what_must_be_true_to_write_a_field": [
+    "the client's ps history (arg2) must be seeded so that the ring lookup yields a value equal to `last`",
+    "that seeding most likely happens through normal gameplay traffic (multiple valid snapshots building history) or through the gamestate",
+    "so the server must drive the client through enough valid snapshots BEFORE a field can be written - a structural requirement ignored until now"
+  ],
+  "next": [
+    "inspect what arg2 is at the call site of 0x471980 (0x472401) - specifically which client structure is passed, and where its +0x3A0/+0x3BA0 fields are initialised",
+    "then determine what a real server does to seed that history (the cols encoder may show it: the ps history is advanced per frame by the snapshot pipeline)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r183-gs.jsonl",
+    "addresses": ["0x471A5D last read", "0x471AD0-0x471AF0 loop bound", "0x471B32-0x471B59 the gate", "0x471C41 skip path"]
+  }
+}

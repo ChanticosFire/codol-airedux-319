@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [DECISIVE: field decode gated by current == last; the ps history ring is empty in our sessions]**
+> 0x471A72 sets [ebp-0xD0] = last (my slot_d0). 0x471ADC increments arg2's count; when counter >= count, [ebp-0xC0] = 0x1869F; 0x471B50 `jne 0x471C41` skips the field unless current == last.
+> With an empty history the sentinel never equals last, so no field decodes - matching Slot never firing, loop_c8 0, slot_d0 0, stream_error 0. An empty playerState is legitimately accepted.
+> Requirement: the client ps history must be seeded first, i.e. drive enough valid snapshots before a field can be written. Next: inspect arg2 at 0x472401 and how its +0x3BA0 is initialised/seeded.
+> Evidence: [field gate](evidence/experiments/20261023-codex-field-gate-current-equals-last.json).
 > **2026-10-23 [has-ps and mode bits both read; exit is between mode and present]**
 > 0x471A3E and 0x471A4D each hit once (edi = stream), snap_trace 1. So entry bit 1308 and the first two header bits are correct.
 > Slot never fires and loop_c8 stays 0 -> the exit is between 0x471A4D and 0x471B9E. Next: read 0x471A56..0x471B9E (incl. the history ring copy) where a zero `last` could skip the loop.
