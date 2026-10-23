@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T16:00:00+00:00",
+  "scope": "found the generic delta-field decoder used by the ps block, plus the field table and field count",
+  "call_site_0x471B9E": {
+    "0x471B9E": "call 0x447190 - read 1 bit (per-field skip flag)",
+    "0x471BA5": "if bit == 1 -> skip the field",
+    "0x471BB9": "push 3",
+    "0x471BBB": "push 0xDA63E8 (field table)",
+    "0x471BC0": "push 0x18 (24 = number of ps fields)",
+    "0x471BC8": "call 0x670FF0 - generic delta-field decoder"
+  },
+  "decoder_0x670FF0": {
+    "0x670FFC": "call 0x447190 - continuation bit; 0 -> return (no more fields)",
+    "0x67100B": "edi = -1 (current index)",
+    "0x67100E": "bsr eax,[ebp+0x18]; cmove [0xDB83F8]; xor 0x1F; ecx = 32 - eax -> index bit width",
+    "0x671023": "call 0x66EC30 read index bits -> new index",
+    "0x671033": "if index > count -> error/truncate path",
+    "0x671052": "if index == -1 -> 0x6710CD (special)",
+    "0x67105C": "call 0x670CB0 -> advance distance",
+    "0x67108C": "call 0x670D30 -> per-field codec decode, once per index in the gap"
+  },
+  "significance": [
+    "this is the same overall structure as the cols decoder (continuation bit, index delta, per-field codec)",
+    "the ps block reuses the SAME field table as entityState (0xDA63E8) with 24 fields",
+    "so one implementation of this decoder covers both ps and entity fields"
+  ],
+  "next": [
+    "dump the 0xDA63E8 table (24 entries of [offset, codec, hint]) for the ps field list",
+    "disassemble 0x670D30 (per-field codec switch) and 0x670CB0 (distance reader)",
+    "implement the decoder in Python and generate a ps carrying a real field"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r103-gs.jsonl"
+  }
+}

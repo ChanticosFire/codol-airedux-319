@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Found the delta-field decoder (0x670FF0), field table 0xDA63E8, count 24]**
+> ps call site 0x471B9E: per-field skip bit -> push 3; push 0xDA63E8; push 0x18; call 0x670FF0. Table 0xDA63E8 is shared with entityState.
+> Decoder: continuation bit (0x447190), index width from bsr(count), new index via 0x66EC30, distance via 0x670CB0, per-field codec via 0x670D30 - same structure as cols.
+> Next: dump the 24-entry table, disassemble 0x670D30/0x670CB0, implement in Python, generate a ps with a real field.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [delta field decoder](evidence/experiments/20261023-codex-delta-field-decoder.json).
 > **2026-10-23 [ps header decoded: has-ps(1) + mode(1) + (mode ? bit+1 : 5-bit last)]**
 > Bit-reader hooks (0x447190, 0x66EC30) recorded 0 calls inside the ps block, so the code was read instead: 0x471A3E has-ps, 0x471A45 skip if 0, 0x471A4D mode, 0x471A58 inc bit+1 / 0x471A5D 5-bit last, [ebp-0xD0]=last. 0x471A8C..0x471B50 is history-ring copying (stride 0x58), no bit reads.
 > Header is 7 bits for mode=0 but measured cost is 10 -> 3 more bits around 0x471B52..0x471CAC where field parsing lives.
