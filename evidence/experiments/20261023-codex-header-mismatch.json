@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T00:35:00+00:00",
+  "scope": "reconcile the known reliable-command format with the observed map-name offset",
+  "constraints": {
+    "reliable_command_format": "opcode(1) + sequence(4) + text(NUL-terminated)",
+    "opcode_must_be": [1, 2],
+    "sequence_should_be": "small (1..100)",
+    "map_name_offset_in_capture": 15
+  },
+  "contradiction": {
+    "if_body_starts_at_offset_0": "opcode+seq occupy offsets 0..4, so a text command would begin at offset 5 and mp_cross_fire would appear at 5, not 15",
+    "observed": "mp_cross_fire sits at 15, i.e. ten bytes later than the simple opcode+seq layout predicts",
+    "what_the_ten_bytes_could_be": [
+      "the command may carry a fixed 10-byte prefix before its text (for example a profile/delta header)",
+      "the packet may not be a plain text command at all but the binary service 2 form, where a u16 length and other fields precede the data",
+      "the first ten bytes may be genuinely key-shifted (contaminated), making the apparent 'opcode' at offset 10 meaningless"
+    ]
+  },
+  "why_we_cannot_decide_yet": "we do not have a byte-accurate frame from a CODOL-relevant source; the decrypted body is the only sample and its prefix is exactly the part the key shift obscures",
+  "next": [
+    "capture a second gamestate from a fresh session and compare the contaminated prefix: fields that stay constant across sessions (like opcode) will be identifiable",
+    "capture the 206-byte client heartbeat body too and compare - if the server ever replies with a short text command, its clean prefix will reveal the layout",
+    "as an independent probe, emit opcode(1)+seq(1)+NUL text through our server and see whether the client at least acknowledges it - an ack would prove the text command path works even if the content is not a gamestate"
+  ],
+  "artifacts": ["runs/final-in.jsonl", "runs/2697-native-src/src/sv_snapshot.c"]
+}
