@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T16:20:00+00:00",
+  "scope": "capability boundary: the offline resource set ships only the mp_cross_fire fastfiles",
+  "inventory": {
+    "resource_dir": "E:/GAME/COD/1649370/resources/v1649370/offline-resources/client_shipretail/chinese",
+    "total_ff_files": 20,
+    "maps_present": [
+      "mp_cross_fire",
+      "mp_cross_fire_const",
+      "mp_cross_fire_load"
+    ],
+    "commons_present": [
+      "common_mp",
+      "common_gametype",
+      "common_loadscreen",
+      "common_marketplace_lite",
+      "code_pre_gfx_mp",
+      "code_post_gfx_mp",
+      "localized_*",
+      "ui_mp",
+      "development_mp",
+      "mp_playlists"
+    ]
+  },
+  "conclusion": [
+    "the client can only load maps whose fastfiles exist in this resource set, and only mp_cross_fire does",
+    "that is why --gamestate-map mp_afghan disconnects early even though the map name now reaches the client correctly",
+    "the same 2.6.9.7 launcher ships afghan fastfiles, but they belong to a different build (2.6.9.7) and cannot be mixed with a 3.19 client",
+    "so multi-map support is a RESOURCE limitation, not a server limitation - the server-side override is fixed and ready"
+  ],
+  "artifacts": {
+    "release_note": "RELEASE.md (map selection row qualified)"
+  }
+}

@@ -1,5 +1,8 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Capability boundary: only mp_cross_fire fastfiles exist]**
+> Resource inventory: 20 .ff files, only mp_cross_fire (plus _const/_load) is a map; the rest are commons. So multi-map is a resource limitation, not a server one - the override is correct end-to-end but a map without fastfiles disconnects the client.
+> RELEASE.md qualified: map selection verified only where fastfiles exist. Evidence: [map resource inventory](evidence/experiments/20261023-codex-map-resource-inventory.json).
 > **2026-10-23 [Map override fixed; other maps need fastfiles]**
 > Defect: --gamestate-map changed the gamestate payload but configstring 0 / connectResponse / start log still used the default map. Fixed by rebuilding configstring 0 from map+gametype, using the configured map in connectResponse and the start log, and defaulting the gametype to war.
 > Verified: start log map=mp_afghan, configstring 0 = \g_gametype\war\mapname\mp_afghan; run_match gained --map.

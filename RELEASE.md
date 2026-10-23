@@ -22,7 +22,7 @@ back to the lobby (state 0) by the server.
 | OOB handshake (`getchallenge` / `connect` / `stats`) | verified | `runs/codex-*.jsonl` server logs |
 | Native gamestate (map, gametype, configstrings, checksum feed) | verified | `20261023-codex-gamestate-*` |
 | Snapshot delivery; client reaches network state **10** | verified | `20261023-codex-state-vs-uistate.json` |
-| Map selection (`--gamestate-map`) | verified | `20261023-codex-gametype-war.json` |
+| Map selection (`--gamestate-map`) | **only for maps whose fastfiles are present** - the offline resource set ships **mp_cross_fire only**, so other maps disconnect the client | `20261023-codex-map-override-fixed.json` |
 | Automatic end of match (OOB `disconnect` after `--match-duration`) | verified | `20261023-codex-match-flow.json` |
 | Return to lobby (client back to **state 0**) | verified | `20261023-codex-oob-disconnect-success.json` |
 | playerState block accepted (non-empty field) | verified | `20261023-codex-ps-nonempty-accepted.json` |
