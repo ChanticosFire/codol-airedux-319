@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Deliverable regression PASSED; RELEASE.md updated]**
+> run_match regression: all steps true, states 9->10->10->0 at t=20/35/50/65, frames t=20 loading (4117 unique), t=35 black (6).
+> RELEASE.md quick start now documents the one-command runner with this verified output; evidence index gained the 7 newest files.
+> Deliverable is reproducible in one command; the visible-world item stays tracked. Evidence: runs/regression-summary.json.
 > **2026-10-23 [Geometry sweep negative: EOF is not the blocker; ps content is the suspect]**
 > Totals 1363/1368/1376/1400 all rejected (state 9). ps parses 28 bits error 0; actors grammar known (terminator 0x7FF); header region has no bit reads; the good tail's first 13 bits decode as 2047.
 > So the framing should work - the remaining suspect is the ps CONTENT (we send an all-zero field payload where a coherent playerstate is expected).

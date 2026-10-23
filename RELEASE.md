@@ -83,6 +83,22 @@ Root cause chain (all measured, see the evidence index):
 
 ## 5. Quick start
 
+**One command (recommended)** - runs the whole match end to end and writes a
+JSON summary plus timed screenshots:
+
+```powershell
+python tools/run_match.py --name demo --seconds 75 --match-duration 45 --screenshot-at 20,35
+# -> runs/demo-summary.json  (steps, state samples, frame statistics)
+# -> runs/demo-t20.png / runs/demo-t35.png
+```
+
+Verified regression output (`--name regression`):
+`steps {engine_init, login, ring_a_blocked, refresh_hook, connect} all true`,
+`states t=20 -> 9, t=35 -> 10, t=50 -> 10, t=65 -> 0`,
+`frames t=20 loading screen (unique 4117), t=35 black (unique 6)`.
+
+**Manual sequence** (same thing, step by step):
+
 See `server1649370/README.md` for the full sequence. Minimal flow:
 
 ```powershell
@@ -115,6 +131,12 @@ sends the OOB `disconnect` and the client returns to **state 0**.
 | `20261023-codex-inject-cg-no-effect.json` | renderer entity array write has no visible effect |
 | `20261023-codex-ring-write-no-effect.json` | ps history ring write has no effect |
 | `20261023-codex-field0-decoded.json` | V = target field index + 1 |
+| `20261023-codex-lobby-rendered.json` | the client renders a real 1920x1080 lobby; black frame was the loading screen |
+| `20261023-codex-waiting-for-player-data.json` | loading screen text: 等待玩家数据 (waiting for player data) |
+| `20261023-codex-baseline-geometry.json` | in the working body the ps block is exactly 1 bit (has-ps=0) |
+| `20261023-codex-actors-terminator-found.json` | actors grammar and the 0x7FF terminator |
+| `20261023-codex-tail-defect-found.json` | the v3 tail was the increment form, not the terminator |
+| `20261023-codex-geom-sweep-negative.json` | EOF is not the blocker; ps content is the remaining suspect |
 
 ## 7. Protocol appendix (as reverse-engineered)
 
