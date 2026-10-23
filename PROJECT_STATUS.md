@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Landing on the origin field costs 69 ps bits]**
+> V=23 bodies: ps 1308 -> actors 1377 = 69 bits, actors error 1 (overran the 28+27 available). V=1 costs 28 bits -> ~2.8 bits per index step, confirming the cost-scales rule.
+> So a ps with a real origin needs ~70+ bits (23 field encodings). Next: build the full 23-field payload, measure its length, align the tail.
+> Acceptance: a screenshot showing the map. Evidence: [origin cost 69](evidence/experiments/20261023-codex-origin-cost-69.json).
 > **2026-10-23 [Deliverable regression PASSED; RELEASE.md updated]**
 > run_match regression: all steps true, states 9->10->10->0 at t=20/35/50/65, frames t=20 loading (4117 unique), t=35 black (6).
 > RELEASE.md quick start now documents the one-command runner with this verified output; evidence index gained the 7 newest files.

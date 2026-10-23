@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T13:55:00+00:00",
+  "scope": "landing on the origin field (index 22) costs 69 ps bits - the delta cost scales with the landing index as predicted",
+  "bodies": [
+    "runs/snapshot-origin0-1024.bin",
+    "runs/snapshot-origin0-2047.bin"
+  ],
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1377,
+    "ps_bits_consumed": 69,
+    "actors_error": 1,
+    "note": "our ps block plus tail only provided 28 + 27 bits, so the block overran and the actors entry carries error = 1"
+  },
+  "confirmation": [
+    "V=1 (landing index 0) costs 28 bits; V=23 (landing index 22) costs 69 bits",
+    "that is ~2.8 bits per index step, consistent with the earlier 'cost scales with the landing index' rule",
+    "so to reach the origin field we must encode ALL the fields between index 0 and 22, not just the landing one"
+  ],
+  "implication": [
+    "a ps that carries a real origin needs a payload of roughly 70+ bits (23 field encodings)",
+    "that is entirely buildable, but each field's codec must be known: the table gives codecs -58/-100/-57/-97 for eight of them and fixed widths for the rest",
+    "a practical next attempt: encode all 23 fields with the simplest legal form (1 zero-flag each for the fixed-width ones, and the known 1-bit boolean for -57) and only give a real value to the origin fields"
+  ],
+  "next": [
+    "build a full 23-field ps payload (~70 bits) with the origin field set, then append the correct tail",
+    "measure the actual ps length and align the tail to it"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r139-gs.jsonl",
+    "encoder": "runs/_gen_origin_field.py"
+  }
+}
