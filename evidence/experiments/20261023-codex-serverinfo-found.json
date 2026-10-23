@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T03:30:00+00:00",
+  "scope": "dump the configstring table entry for index 0 (serverinfo)",
+  "session": {"client": "20261023-cst, pid 28604"},
+  "verified_facts": {
+    "client_t": "0x52A2908",
+    "ascii_dump": "........4.......d 0 \\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2........",
+    "hex_prefix_before_entry": "34 02 01 00 01 00 00 00",
+    "serverinfo_text": "\\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2",
+    "entry_form": "'d 0 <value>' - a single 'd', a space, the index '0', a space, then the value"
+  },
+  "significance": [
+    "this is the exact serverinfo string the client needs to know which map and gametype to load",
+    "the value is byte-identical to the text we already recovered from the decrypted gamestate, confirming that the wire body carries this very table",
+    "we now hold both the table entry and the wire body, so the content side is fully solved; only the framing remains"
+  ],
+  "interpretation_of_the_entry_form": {
+    "d": "a one-character marker preceding every configstring entry; in CODOL_ClearDeferredConfigstrings / CODOL_ReassertConfigstringsAfterGamestate terminology this is most likely the 'deferred' marker",
+    "index": "the decimal configstring index, index 0 being CS_SERVERINFO",
+    "value": "the configstring text itself"
+  },
+  "next": [
+    "test whether the gamestate body should contain the entries in this exact 'd <index> <value>' text form",
+    "build an outbound body that begins with the 15-byte stable header (03 00 00 00 00) followed by 'd 0 \\g_gametype...' and see whether the client reacts differently",
+    "if that fails, try the same text without the 'd ' prefix"
+  ],
+  "artifacts": ["runs/cst-in.jsonl"]
+}
