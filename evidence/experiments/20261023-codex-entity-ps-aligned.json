@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T08:20:00+00:00",
+  "scope": "ALIGNMENT ACHIEVED: entity + ps body where the ps block lands exactly on the predicted 28 bits with no stream error",
+  "body": {
+    "file": "runs/snapshot-entity-ps-v3.bin",
+    "size_bytes": 176,
+    "layout": "v2 prefix bits 0..1344 (entity section, provably reaches ps) + 28-bit ps block at 1345 + 27-bit tail + 0x05"
+  },
+  "measurement": {
+    "ps_entry_bit": 1345,
+    "ps_entry_error": 0,
+    "actors_entry_bit": 1373,
+    "ps_bits_consumed": 28,
+    "predicted_ps_bits": 28,
+    "entity_count": 1,
+    "state": 9
+  },
+  "significance": [
+    "for the first time the ps block is placed EXACTLY where the client expects it in an entity-carrying snapshot: 28 bits consumed, predicted 28 bits, error 0",
+    "entity_count is 1, so the entity table is also live",
+    "state is still 9, so the snapshot is rejected somewhere AFTER the ps block - i.e. in the actors/glass/EOF tail",
+    "the tail we appended is the hybrid (no-entity) tail, which is very likely wrong for an A=1 body"
+  ],
+  "next": [
+    "trace the post-ps blocks: 0x471010 (actors entry) and 0x4475F0 (glass) to see where the tail diverges",
+    "then rebuild the tail for the A=1 case using the measured offsets"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r130-gs.jsonl",
+    "encoder": "runs/_gen_entity_ps4.py"
+  }
+}
