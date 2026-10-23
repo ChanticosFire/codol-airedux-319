@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MODULE LIST: monolithic client, renderer and video stack alive]**
+> 117 modules at state 10. Main module codol1649370-offline.exe 0x400000 size 0xE65C000 (~230 MB) -> monolithic, so no cgame DLL is expected. d3d9, D3DCompiler_43, nvd3dum and bink2w32 are all loaded.
+> So the black frame is missing SCENE CONTENT (entities), not a dead renderer, and the 'cgame DLL missing' theory is retracted. The encoder can already write a chosen field; the gap is entity data (eType + origin).
+> Evidence: [modules and renderer alive](evidence/experiments/20261023-codex-modules-renderer-alive.json), list at runs/codex-r203-modules.txt.
 > **2026-10-23 [CONSOLIDATION: two clean field writes exist; the codec is not the blocker]**
 > snapshot-tr15 writes landing index 0 (codec -97) in 55 clean bits; snapshot-land22-v100 writes landing index 22 (offset 16, codec 11) in 54 clean bits. So the encoder can address a chosen field with a known length.
 > The value-5/6 anomalies are extra 21-bit iterations after the field, not a failure to write it. The real blocker remains the load path (NULL history, no valid snapshot slot, no cgame scene -> black frame).

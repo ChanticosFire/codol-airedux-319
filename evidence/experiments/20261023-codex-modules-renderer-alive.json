@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T14:00:00+00:00",
+  "scope": "MODULE LIST: the client is monolithic (no cgame DLL by design) and the whole render/video stack IS loaded - so the black frame is missing CONTENT, not a dead renderer",
+  "run": {
+    "session": "standard, snapshot-single22.bin",
+    "state": 10,
+    "modules": 117,
+    "module_list": "runs/codex-r203-modules.txt"
+  },
+  "the_facts": [
+    "the main module is codol1649370-offline.exe at 0x00400000 with size 0x0E65C000 (~230 MB) - a MONOLITHIC build",
+    "there is therefore NO separate cgame DLL, and its absence is BY DESIGN, not a symptom",
+    "d3d9.dll, D3DCompiler_43.dll, nvd3dum.dll (the NVIDIA D3D9 user-mode driver) and bink2w32.dll are ALL loaded",
+    "so the D3D9 device, the shader compiler, the GPU driver path and the video player are all initialised"
+  ],
+  "what_this_rules_out": [
+    "the black frame is NOT caused by a missing or uninitialised renderer",
+    "it is NOT caused by cgame failing to load as a module - cgame is statically linked into the exe",
+    "the earlier hypothesis 'cgame never initialises because a DLL is missing' is wrong in this build"
+  ],
+  "what_remains": [
+    "the renderer is alive and the video stack is alive, so what the client lacks is SCENE CONTENT - entities and their state",
+    "that is exactly the content path: entity/field data that the server must supply",
+    "and the encoder can now address a chosen field with a known length (evidence: two clean field writes)",
+    "so the remaining gap for a visible world is ENTITY DATA (eType + origin for at least one entity in the snapshot)"
+  ],
+  "next": [
+    "construct a snapshot with ONE entity that has a non-zero eType and a plausible origin, using the verified entity block position (bit 1336 area for the hybrid tail) and the field table at 0xDA63E8",
+    "the acceptance signal is the client drawing something - a screenshot - not a network state value"
+  ],
+  "artifacts": {
+    "modules": "runs/codex-r203-modules.txt",
+    "tool": "tools/modules.py --pid <client>"
+  }
+}
