@@ -513,6 +513,8 @@ def main() -> int:
     parser.add_argument("--gamestate-gametype", default=None)
     parser.add_argument("--oob-command", default=None)
     parser.add_argument("--oob-delay", type=float, default=30.0)
+    parser.add_argument("--match-duration", type=float, default=None,
+                        help="alias for --oob-delay: seconds from connect to the automatic end-of-match disconnect")
     parser.add_argument("--registration-checksum", type=lambda value: int(value, 0),
                         default=0xFFB56D7E)
     parser.add_argument("--snapshot-file", default=None,
@@ -559,7 +561,8 @@ def main() -> int:
                         args.command_file, args.command_delay, args.command_seq,
                         args.configstring_file, args.command_repeat, args.command_interval,
                         args.gamestate_repeat, args.gamestate_interval, args.gamestate_map,
-                        args.gamestate_gametype, args.oob_command, args.oob_delay)
+                        args.gamestate_gametype, args.oob_command,
+                        args.oob_delay if args.match_duration is None else args.match_duration)
     try:
         server.serve()
     except KeyboardInterrupt:

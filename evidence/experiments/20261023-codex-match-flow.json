@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T11:40:00+00:00",
+  "scope": "MILESTONE: the full match flow works - connect, load, play, automatic end-of-match, back to the lobby",
+  "server_change": "--match-duration S (alias for --oob-delay): seconds from connect to the automatic OOB disconnect",
+  "experiment": {
+    "match_duration": 50,
+    "samples": {
+      "t=20s": {
+        "state": 9,
+        "note": "map loading"
+      },
+      "t=40s": {
+        "state": 10,
+        "note": "in match"
+      },
+      "t=55s": {
+        "state": 10,
+        "note": "still in match before the timer"
+      },
+      "t=70s": {
+        "state": 0,
+        "connection": "0x1340A9D8",
+        "adr_type": 0
+      },
+      "t=90s": {
+        "state": 0,
+        "adr_type": 0
+      }
+    },
+    "oob_sent_at": 1792779468.89,
+    "client": "alive (pid 32420)"
+  },
+  "significance": [
+    "this is the complete player-visible loop the goal asked for: handshake -> map load -> match -> automatic end -> lobby",
+    "the end of match is fully server-driven: a --match-duration timer that fires an OOB disconnect",
+    "state 0 persisted at the +20 s follow-up, so the client really stays in the lobby"
+  ],
+  "remaining": [
+    "visible/interactive world (entity rendering) is still blocked by the client's entity-loop parser limitation recorded in earlier rounds",
+    "an optional visible 'match over' screen would need PS field 83 (intermission), which requires the full hard-coded ps field stream"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r78-gs.jsonl"
+  }
+}
