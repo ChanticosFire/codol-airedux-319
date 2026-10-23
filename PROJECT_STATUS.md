@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【突破：state 10 时 cl.snap 全 0】** ✅pid 32744、state 10、ring_b 21/21；`cl=0x130A0CEC`，`cl.snap=cl+0x3B7C=0x130A4868` 的 0x60 字节全 0，而 `cl+0x3BE4`（accepted）=1。→ `0x472810` 只置标志，`0x472830`（复制 0x3B7C..0x3BB8 到 cl.snap）未生效：游戏模块拿到空快照，黑屏完全解释。accepted=1 只代表收到，不代表数据落地。下一轮断点 `0x472830` 查复制路径与门控条件。证据：[JSON](evidence/experiments/20261023-codex-clsnap-empty.json)。
+
 > **2026-10-23【CreateFile 钩子连接期间无记录】** ✅`hook_createfile.py --install` 成功（IAT 0xCA8284，patched=true），连接到 state 10（ring_b 25/25）后 `--read` 返回 count=0——该槽在连接/加载期间未被调用。✅快照路径细化：`0x472810` 仅设 `[clb+0x3BE4]=1`（snapshot accepted 标志），`0x472830` 把 `0x3B7C..0x3BB8` 复制进 cl.snap。下一轮查 CG_Init/首个游戏帧路径与世界几何注册（CM_LoadMap 等价物）。证据：[JSON](evidence/experiments/20261023-codex-createfile-hook-empty.json)。
 
 > **2026-10-23【结构合法 ps（含 viewangles）写入后仍黑】** ✅state 10（pid 7016、clc 0x134A53D8、ps_base 0x13D25F68）写入 0xDA9920 默认 ps + viewangles(0,90,0)，回读正确但截图仍 unique=5/mean=0/max=14。→ ps 只有 0x58 字节、不含 origin，相机位置须来自 entityState；渲染器还需场景。下一轮恢复 entityState 布局写一致实体，并确认视图原点来源。证据：[JSON](evidence/experiments/20261023-codex-ps-injection-negative.json)。

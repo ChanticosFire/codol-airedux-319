@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T19:30:00+00:00",
+  "scope": "cl.snap is all zero in state 10 - the accepted flag is set but the snapshot data never arrives",
+  "session": {
+    "pid": 32744,
+    "state": 10,
+    "ring_b": "21/21"
+  },
+  "measurement": {
+    "cl": "0x130A0CEC",
+    "snap_address": "cl + 0x3B7C = 0x130A4868",
+    "bytes": 96,
+    "content": "all zero",
+    "accepted_flag": "cl+0x3BE4 = 1 (read by every round's probe)"
+  },
+  "meaning": [
+    "0x472810 sets the accepted flag only; the parsed snapshot structure (0x3B7C..0x3BB8) stays empty",
+    "0x472830 is the function that copies those fields into cl.snap and it evidently never ran for our baseline",
+    "with an empty cl.snap the game module has no playerState/entities to draw - the black frame is fully explained"
+  ],
+  "next": [
+    "breakpoint 0x472830 to see whether the copy path runs at all for our snapshot",
+    "if it never runs, find which condition gates it (flags byte / has_base / delta)",
+    "if it runs but writes zeros, the parsed structure itself is empty and the snapshot body needs real fields"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r22-gs.jsonl",
+    "forward": "runs/codex-r22-forward.json"
+  }
+}
