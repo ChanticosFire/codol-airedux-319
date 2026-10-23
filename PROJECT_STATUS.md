@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [0x8037AB has no callers; stop the static UI-refresh crawl]**
+> Direct callers 0, data refs 0. Previous function ends at 0x8037A9 (pop esi; ret); 0x8037AB starts a new region but nothing calls it directly (jump table/callback/inlined).
+> After four rounds (51-54) the load-completion callback is still out of reach by static navigation. Decision: stop the crawl and return to the entity/camera side with authorised client patches.
+> Next: inject a camera/refdef (vieworg) together with ClearStreamError and screenshot.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ui refresh no caller](evidence/experiments/20261023-codex-ui-refresh-no-caller.json).
 > **2026-10-23 [0xB7A670 is a generic helper with 220 call sites]**
 > All callers enumerated: 220 (e.g. 0x4700AD, 0x7F3B6F, 0x8037BF, 0x8038EE, 0x80391E). It is a general-purpose accessor, not a load-specific query.
 > The load-completion gate at 0x8037AB (status==2 && ui_state==5) still stands but that call site never ran. Next: find 0x8037AB's own callers / what schedules it.
