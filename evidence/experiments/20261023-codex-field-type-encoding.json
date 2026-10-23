@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:55:00+00:00",
+  "scope": "0x671700 reads a typed field: a 3+2 bit type selector followed by a per-type value",
+  "type_encoding": {
+    "step1": "bit1: if 1 -> read 2 bits, type = value+1 (types 1..4)",
+    "step2": "else bit2: if 1 -> read 2 bits, type = value+5 (types 5..8)",
+    "step3": "else bit3: if 1 -> read 2 bits, type = value+9 (types 9..12), else type = value+13",
+    "jump_table": "0x671B2C, 13 entries, indexed by (type-1)"
+  },
+  "per_type_reads": {
+    "type1_0x6717A1": "0x66EC30(11) -> 11-bit integer at [esi+0x24]",
+    "type2_0x6717B5": "0x66F9E0(field table, stream) -> float at [esi+0x28]",
+    "type3_0x6717C7": "copies [esi+0x24]/[esi+0x28] into [edi+0x10]/[edi+8], then reads an entity id of [0x7859559] bits"
+  },
+  "meaning": [
+    "a field value is not a run of zero bits: it starts with a 3-bit selector and a 2-bit sub-index",
+    "the smallest field costs about 14 bits (selector + 11-bit integer) depending on the type",
+    "so the 50-zero-bit attempt could never be valid"
+  ],
+  "next": [
+    "finish the per-type table for types 1..13",
+    "then emit one field per entity iteration (type 1, value 0) and see whether the loop advances without error"
+  ],
+  "artifacts": {
+    "previous": "evidence/experiments/20261023-codex-e1-f50-crash.json"
+  }
+}
