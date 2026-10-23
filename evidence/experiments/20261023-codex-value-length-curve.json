@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T06:00:00+00:00",
+  "scope": "value-to-length curve, first four points: constant 55 bits up to 1024, then 97 at 5830",
+  "points": [
+    {
+      "value": "0x100 (256)",
+      "ps_bits": 55,
+      "actors_error": 0
+    },
+    {
+      "value": "0x200 (512)",
+      "ps_bits": 55,
+      "actors_error": 0
+    },
+    {
+      "value": 1024,
+      "ps_bits": 55,
+      "actors_error": 0
+    },
+    {
+      "value": 5830,
+      "ps_bits": 97,
+      "actors_error": 1
+    }
+  ],
+  "what_the_curve_shows": [
+    "the cost is CONSTANT at 55 bits for 256, 512 and 1024 - three different bit lengths (9, 10, 11), so the cost is not bit-length driven in that range",
+    "at 5830 it jumps by 42 bits",
+    "so there is a threshold somewhere between 1024 and 5830, and crossing it adds a large fixed amount (about 42 bits) rather than a gradual growth"
+  ],
+  "interpretation": [
+    "a 42-bit jump looks like an extra structured field being decoded (e.g. a second value, or a 32-bit payload plus a few flags), not a length prefix",
+    "and because 256/512/1024 are all equal, the encoder is treating those as 'small' values in a fixed slot"
+  ],
+  "next": [
+    "bisect the threshold: 2048 and 4096 are the natural candidates (11 and 12 bits)",
+    "then, once the threshold is known, test a value just below and just above it to confirm the jump is a step and not a slope"
+  ],
+  "artifacts": {
+    "server_log": [
+      "runs/codex-r193-gs.jsonl",
+      "runs/codex-r195-gs.jsonl",
+      "runs/codex-r196-gs.jsonl"
+    ]
+  }
+}
