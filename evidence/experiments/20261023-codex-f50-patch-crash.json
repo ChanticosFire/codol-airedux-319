@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T19:45:00+00:00",
+  "scope": "the ClearStreamError patch does not save a truncated field stream (f50 still crashes)",
+  "experiment": {
+    "body": "runs/snapshot-e1-f50.bin",
+    "patch": "ClearStreamError on 0x4724A5",
+    "result": "client exited (pid 0)"
+  },
+  "status_of_both_entity_paths": {
+    "delta_path": "base pointer [ebp+0x14] stays 0 even with has_base=1 (measured: edi=0 in the second hit), so the copy is skipped - unusable",
+    "field_path": "0x671700 reads a hard-coded field sequence; a truncated stream crashes before the error check can help"
+  },
+  "next": [
+    "with the owner's client-patching authorization, the remaining options are code-level: for example patch the field reader to skip the field set, or patch the entity loop to create one synthetic entity",
+    "both are invasive and need careful A/B testing with the screenshot as the only acceptance criterion"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r86-gs.jsonl",
+    "body": "runs/snapshot-e1-f50.bin"
+  }
+}
