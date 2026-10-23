@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【CreateFile 钩子连接期间无记录】** ✅`hook_createfile.py --install` 成功（IAT 0xCA8284，patched=true），连接到 state 10（ring_b 25/25）后 `--read` 返回 count=0——该槽在连接/加载期间未被调用。✅快照路径细化：`0x472810` 仅设 `[clb+0x3BE4]=1`（snapshot accepted 标志），`0x472830` 把 `0x3B7C..0x3BB8` 复制进 cl.snap。下一轮查 CG_Init/首个游戏帧路径与世界几何注册（CM_LoadMap 等价物）。证据：[JSON](evidence/experiments/20261023-codex-createfile-hook-empty.json)。
+
 > **2026-10-23【结构合法 ps（含 viewangles）写入后仍黑】** ✅state 10（pid 7016、clc 0x134A53D8、ps_base 0x13D25F68）写入 0xDA9920 默认 ps + viewangles(0,90,0)，回读正确但截图仍 unique=5/mean=0/max=14。→ ps 只有 0x58 字节、不含 origin，相机位置须来自 entityState；渲染器还需场景。下一轮恢复 entityState 布局写一致实体，并确认视图原点来源。证据：[JSON](evidence/experiments/20261023-codex-ps-injection-negative.json)。
 
 > **2026-10-23【恢复 playerState 默认模板 0xDA9920】** ✅0x58 字节模板，非零字段 +0x04=345、+0x08=2、+0x0C=1266、+0x10=-1、+0x14=1267、+0x18=1317、+0x28=3、+0x34=3、+0x40=1，viewangles(0x4C)=(0,0,0)——提供结构合法的 ps 底板。⚠️本轮注入未执行（客户端已退出，clc 读空，stage 0/state 0）。下一步在 state 10 存活时注入默认 ps + viewangles。证据：[JSON](evidence/experiments/20261023-codex-playerstate-template.json)。

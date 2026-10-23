@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T18:45:00+00:00",
+  "scope": "CreateFile hook records nothing during connect; snapshot-accept path identified",
+  "createfile_hook": {
+    "installed": true,
+    "iat_slot": "0xCA8284",
+    "entries_after_connect": 0,
+    "interpretation": "either the client resolves file APIs elsewhere, or the interesting reads happen before the hook and through a different slot"
+  },
+  "snapshot_path": {
+    "0x472810": "sets [ebx+0x3BE4]=1 (snapshot accepted flag) - this is the flag the run probes read",
+    "0x472830": "copies the parsed snapshot fields (0x3B7C..0x3BB8) into cl.snap"
+  },
+  "state": {
+    "final": 10,
+    "ring_b": "25/25"
+  },
+  "next": [
+    "instrument CG_Init / the first game-frame path to see whether the game module initialises after the first accepted snapshot",
+    "check whether world geometry is registered with the renderer (CM_LoadMap equivalent)",
+    "keep the 167-byte baseline as the accepted fallback"
+  ],
+  "artifacts": {
+    "createfile_ring": "runs/codex-r21-createfile.json",
+    "server_log": "runs/codex-r21-gs.jsonl"
+  }
+}
