@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T12:50:00+00:00",
+  "scope": "found a body defect: v3's tail decodes as the increment form, not the actors terminator; tail1336's tail is correct",
+  "decoded_tails": {
+    "runs/snapshot-ps-tail1336.bin": {
+      "tail_at_bit": 1336,
+      "bits": "011111111111100000010100000",
+      "decode": "absolute index 2047 (0x7FF) = terminator, 13 bits",
+      "verdict": "CORRECT"
+    },
+    "runs/snapshot-entity-ps-v3.bin": {
+      "tail_at_bit": 1373,
+      "bits": "111000000101000000010100000",
+      "decode": "first bit 1 = increment form (prev+1), NOT the terminator",
+      "verdict": "WRONG - this body took the last 27 bits of v2, which are misaligned"
+    }
+  },
+  "also": {
+    "actors_header_0x4710FC..0x471175": "only initialisation (zeroing, memset 0x118, obfuscated float globals) - NO bit reads, so there is no hidden actors header",
+    "glass_measurement_caveat": "the earlier glass entry 1382 came from a run that used the unsafe 0x4475F0 breakpoint, which we later proved stalls the client at state 8 - that measurement is unreliable"
+  },
+  "next": [
+    "re-test runs/snapshot-ps-tail1336.bin with ONLY the two safe breakpoints and read the state",
+    "if state is still 9, compute the expected geometry: ps ends 1336, actors terminator 13 bits -> 1349, glass ~14 bits -> 1363, and compare with the body length 1376 (the extra 13 bits may break the EOF check)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r137-gs.jsonl"
+  }
+}

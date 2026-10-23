@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Body defect: v3 tail = increment form, not terminator]**
+> tail1336 tail = 011111111111100000010100000 -> absolute 2047 = terminator (correct). v3 tail = 111... -> increment form (wrong; reused misaligned v2 bits).
+> Red herrings cleared: 0x4710FC..0x471175 is init only (no hidden header); the earlier glass=1382 came from the unsafe 0x4475F0 breakpoint run.
+> Next: re-test tail1336 with only safe breakpoints; if state 9, check geometry (ps 1336 + 13 terminator + 14 glass = 1363 vs body 1376).
+> Acceptance: a screenshot showing the map. Evidence: [tail defect found](evidence/experiments/20261023-codex-tail-defect-found.json).
 > **2026-10-23 [MAJOR: actors terminator is index 0x7FF; the working tail starts with it]**
 > 0x4711AF grammar: 1 bit -> prev+1; else 1 bit -> 1 = 11-bit absolute index, 0 = 9-bit delta; index 0x7FF ends the block.
 > Decoded hybrid tail bits 1309..1335 = 011111111111100000010100000 -> 0,1,11 bits=2047 -> 13 bits terminator + 14 bits glass/EOF.
