@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T15:00:00+00:00",
+  "scope": "the ENTITY BLOCK IS NEVER ENTERED: 0x471D80 records zero hits, the run ends at state 9, and entity_count holds an uninitialised sentinel",
+  "run": {
+    "body": "runs/snapshot-count1-b164.bin (167 bytes, the entity-count-1 body from the early rounds)",
+    "breakpoint": "0x471D80:Entities",
+    "breakpoint_hits": 0,
+    "state": 9,
+    "entity_count_0x7859558": "0xFFFF0001 (4294901761)"
+  },
+  "what_this_establishes": [
+    "the snapshot parser never calls the entity block for this body - not 'the entity data is wrong', but 'the entity block is not reached at all'",
+    "entity_count holds 0xFFFF0001, which is a sentinel (0xFFFF0000 + 1), not a real count - consistent with the block never having run",
+    "and the run ends at state 9 (the loading screen) rather than 10",
+    "so the very first thing the snapshot parser must do before any entity can appear is not happening"
+  ],
+  "why_this_matters": [
+    "the project has spent dozens of rounds encoding entity FIELDS while the entity block itself is never entered",
+    "that is the same class of mistake as the earlier playerState work: optimising the contents of a branch that is never taken",
+    "the correct next question is what 0x671D80 does before it calls 0x471D80, and which condition gates that call"
+  ],
+  "next": [
+    "arm a probe at 0x671D80 (the snapshot parser entry) and count hits, then read the code between its entry and the call to 0x471D80",
+    "the call sites for 0x471D80 are known (0x4723DD and the 0x671D80 body), so the gate is a short piece of code"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r204-gs.jsonl"
+  }
+}

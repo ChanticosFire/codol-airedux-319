@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The ENTITY BLOCK is never entered: 0x471D80 has zero hits]**
+> snapshot-count1-b164.bin: 0 hits at 0x471D80, state 9, entity_count = 0xFFFF0001 (sentinel). So the parser never reaches the entity block - encoding entity fields was work on a branch that is never taken.
+> Next: probe 0x671D80 and read the code between its entry and the 0x471D80 call to find the gate.
+> Evidence: [entity block never entered](evidence/experiments/20261023-codex-entity-block-never-entered.json).
 > **2026-10-23 [MODULE LIST: monolithic client, renderer and video stack alive]**
 > 117 modules at state 10. Main module codol1649370-offline.exe 0x400000 size 0xE65C000 (~230 MB) -> monolithic, so no cgame DLL is expected. d3d9, D3DCompiler_43, nvd3dum and bink2w32 are all loaded.
 > So the black frame is missing SCENE CONTENT (entities), not a dead renderer, and the 'cgame DLL missing' theory is retracted. The encoder can already write a chosen field; the gap is entity data (eType + origin).
