@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Deliverable: RELEASE.md published]**
+> RELEASE.md: verified capabilities, the visible-world limitation with its measured chain, component map, quick start, evidence index, protocol appendix (snapshot layout, ps frame loop, delta decoder, field table 0xDA63E8, codec semantics).
+> Server + match flow + observability are delivered; visible world is an open tracked item.
+> Next: locate the per-snapshot ps copy cgame consumes and test writing it.
+> Acceptance for the remaining item: a screenshot showing the map. Evidence: [ring write no effect](evidence/experiments/20261023-codex-ring-write-no-effect.json).
 > **2026-10-23 [Writing the ps history ring has no effect]**
 > Hooked 0x471010 and wrote origin+viewangles into all 24 ring slots (clc 0x131D0634, array 0x138E55C4): 24 slots written, state 10, screenshot black.
 > So cgame consumes the per-snapshot copy (cl.snap.ps), not the ring. Next: locate that copy and write it; otherwise the wire encoding is the only route.
