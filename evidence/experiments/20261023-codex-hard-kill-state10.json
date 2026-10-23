@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T03:35:00+00:00",
+  "scope": "clean state-10 hard disconnect: the client never notices and keeps sending usercmd",
+  "experiment": {
+    "pre_kill": {
+      "state": 10,
+      "ring_a": 51
+    },
+    "kill": "gameserver process terminated",
+    "samples": {
+      "+15s": {
+        "state": 10,
+        "ring_a": 66
+      },
+      "+45s": {
+        "state": 10,
+        "ring_a": 96
+      },
+      "+90s": {
+        "state": 10,
+        "ring_a": 134
+      }
+    },
+    "client": "alive (pid 12756)"
+  },
+  "reading": [
+    "after the server process is gone the client keeps state 10 AND keeps advancing ring_a (134 -> 141), so it is still sending usercmd",
+    "this client does not implement a connection-timeout that leaves the match: losing the server is invisible to it at state 10",
+    "therefore lobby return cannot be driven by dropping the connection; it needs an explicit game-side message"
+  ],
+  "next": [
+    "find the end-of-match / leave-game message: look at the client's svc opcode handlers around the match state, or a console command it executes on receipt",
+    "candidates: a server command that calls the client's own disconnect path, or a gamestate field that marks the match finished"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r73-gs.jsonl"
+  }
+}
