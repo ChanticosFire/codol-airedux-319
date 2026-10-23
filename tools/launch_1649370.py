@@ -2738,6 +2738,13 @@ def main(argv=None) -> int:
         if not database.is_file():
             raise SystemExit(f"缺少 319 私有档案 {database}；先运行 tools/prepare_1649370_profile.py")
     user = list(sys.argv[1:] if argv is None else argv)
+    reuse_runtime = None
+    if "--reuse-runtime" in user:
+        index = user.index("--reuse-runtime")
+        if index + 1 >= len(user):
+            raise SystemExit("--reuse-runtime requires an existing session name")
+        reuse_runtime = user[index + 1]
+        del user[index:index + 2]
     audit_breakpoints = "--audit-breakpoints" in user
     capture_ui_movie = "--capture-ui-movie" in user
     host_args = build_host_arguments(user)
@@ -2870,7 +2877,50 @@ def main(argv=None) -> int:
         print("[patched] map probe queued after main-menu transition:", MAP_PROBE, flush=True)
     print("[patched] host arguments:", " ".join(host_args), flush=True)
     session_mod.ProcessSession.start = patched_start
-    launch_mod.prepare = patched_prepare
+    if reuse_runtime:
+        import pefile
+        from codol_rebuild.adapters.persistence.game_settings import SettingsSession
+        root = (COMMUNITY_ROOT / "workspaces" / "offline-runs").resolve()
+        previous = (root / reuse_runtime).resolve()
+        if previous.parent != root or not previous.is_dir():
+            raise SystemExit("--reuse-runtime must name one existing offline-runs session")
+        stage = previous / "runtime"
+        exe = stage / "codol1649370-offline.exe"
+        expected = "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380"
+        if not exe.is_file() or hashlib.sha256(exe.read_bytes()).hexdigest() != expected:
+            raise SystemExit("existing runtime executable does not match the verified 1649370 patch set")
+        if not (stage / "players").is_dir() or not (stage / "dwauth.ini").is_file():
+            raise SystemExit("existing runtime lacks the prepared player or local auth files")
+
+        class ReuseSessionLog(session_mod.SessionLog):
+            def __init__(self, runs_root, name):
+                if Path(runs_root).resolve() != root:
+                    raise ValueError("unexpected runs root")
+                self.run_dir = previous / ("reuse-" + __import__("uuid").uuid4().hex[:8])
+                self.run_dir.mkdir()
+                self.stage = stage
+                self.data = {"scope": "offline client runtime reuse", "main_menu_verified": False,
+                             "modules": [], "events": [], "started_at": time.time(),
+                             "reused_runtime": str(stage)}
+                self.phase_started = time.monotonic()
+                self.stream = (self.run_dir / "events.jsonl").open("x", encoding="utf-8")
+
+        def reuse_prepare(args, run_dir, actual_stage, log, phase_done):
+            if actual_stage.resolve() != stage.resolve() or args.image.resolve() != IMAGE.resolve():
+                raise ValueError("runtime or base image changed during reuse")
+            settings = SettingsSession(OriginalSettingsStore(SETTINGS_DB), stage / "players")
+            log["input_image"] = {"path": str(IMAGE), "sha256": hashlib.sha256(IMAGE.read_bytes()).hexdigest()}
+            log["runtime_image_sha256"] = expected
+            log["arguments"] = args.argument
+            phase_done("reused-existing-runtime")
+            return {"image": IMAGE, "exe": exe, "pe": pefile.PE(str(IMAGE)),
+                    "settings": settings, "supplier": None}
+
+        launch_mod.SessionLog = ReuseSessionLog
+        launch_mod.prepare = reuse_prepare
+        print("[patched] reusing existing runtime:", stage, flush=True)
+    else:
+        launch_mod.prepare = patched_prepare
     launch_mod.AccountRepository = lambda _community_path: OriginalAccountRepository(ACCOUNT_DB)
     game_settings_mod.SettingsStore = lambda _community_path: OriginalSettingsStore(SETTINGS_DB)
     return launch_mod.main(host_args)

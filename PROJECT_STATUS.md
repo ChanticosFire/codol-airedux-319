@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【1649370 自建游戏服：状态 5→7 的协议门已打通】** ✅已验证：目标 exe 的 OOB 命令名是 `statResponse`（单数），自建服原来的 `statsResponse`（复数）无法进入对应分支；修正后，复用既有运行目录的客户端实测 state **4→7**，收到三片 `seq=3` gamestate 后发出 **`gamestateupdate 1`**，桥注入/环 B 消费均为 7/7。✅已验证：客户端随即 `Com_Error(EXE_POSSIBLECONFIGSTRINGMISMATCH)` 并回到 state 0，`stage=5`、`messageAck=1`；尚未达成地图、交互、结算或返回大厅判据。✅已验证（静态）：`connection+0x34` 在 OOB 重试路径自增，排除 incomingSequence 假设。⚠️推断：当前卡点是 2697 来源 gamestate 的配置字符串与 1649370 校验不匹配。❌未知：精确失配字段。下一步 instrument `0x4731B0` 与 `[0x77D8240]`，构造 1649370 原生配置字符串。证据：[实验 JSON](evidence/experiments/20261023-codex-statresponse-state7.json)、[详细状态](1649370-STATUS.md)。
+
 > **2026-10-23 · 接收路径静态定位** ✅已验证：1649370 exe 的 `0x5C22FC` 对非 OOB 包要求 `[0x76446B0] >= 7`，否则 `0x5C2303` 跳到返回 0，尚未到 `0x674EB0`/`0x674740`。方案 A 运行时该状态为 5，解释了为什么先补 `connection+0x34` 不推进 ACK。⚠️推断：自然状态前置是当前更强卡点。❌未知：尚需同会话断点证实实际分支及找出 5→7 的触发条件。证据：[接收门 JSON](evidence/experiments/20261023-codex-receive-state-gate.json)。
 
 > **2026-10-23 · 1649370 自建游戏服** ✅已验证：`--delay-send 8` 方案 A 让 `connection+0x34=2` 的补丁先于 3 个 `seq=3` gamestate 分片约 7.3 秒生效，分片投递和消费成立（环 B `10/10`）。✅已验证：`stage` 仍 5、`messageAck` 仍 1；排除「单靠该序号补丁即可进图」。⚠️推断：还存在可靠命令层或连接状态前置条件。❌未知：本轮未产生 getchallenge，challenge 为 0，序号门本身尚不能彻底证伪。实现与证据见 [1649370-STATUS.md](1649370-STATUS.md) 和 [实验 JSON](evidence/experiments/20261023-codex-delay-seq-a.json)。

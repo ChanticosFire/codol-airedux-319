@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "experiment": "correct statResponse spelling, reuse existing client runtime, observe receive state and gamestate failure",
+  "client_image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "reused_runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/runtime",
+  "runtime_exe_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+  "bridge_reliable_until_state": 0,
+  "static_evidence": {
+    "retry_counter_increment": "0x5c06e9 inc dword ptr [ebx+0x34] while state is 3 or 4",
+    "stat_response_literal": "0xdbff30 statResponse",
+    "stat_response_dispatch": "0x5c195d compare; 0x5c199d push 5; 0x5c19a2 call 0x5c1300; 0x5c19dc call 0x5c1240",
+    "state_writes": "0x5c12a8 writes 6; 0x5c12ef writes 7",
+    "inband_gate": "0x5c22fc requires state >= 7",
+    "config_mismatch_site": "0x4731b0 compares global 0x77d8240 with argument; 0x4731d5 calls Com_Error with EXE_POSSIBLECONFIGSTRINGMISMATCH"
+  },
+  "runtime_observations": {
+    "ui_state_before": 5,
+    "bridge_states": [4, 7, 0],
+    "bridge_stage_throughout": 5,
+    "server_response": "statResponse 0",
+    "server_fragment_sequence": 3,
+    "server_fragment_indices": [0, 1, 2],
+    "client_oob_after_fragments": "gamestateupdate 1",
+    "com_error_argument": "EXE_POSSIBLECONFIGSTRINGMISMATCH",
+    "client_message_ack_after": 1,
+    "bridge_received": 7,
+    "bridge_injected": 7,
+    "ring_b_after": {"read": 7, "write": 7}
+  },
+  "verified_conclusion": "Correcting statsResponse to statResponse allowed the official client state to reach 7 and consume the three gamestate fragments. It then raised EXE_POSSIBLECONFIGSTRINGMISMATCH and reset state to 0. Stage did not leave 5 and messageAck did not exceed 1. The prior +0x34 incomingSequence hypothesis is false for this field: the target increments it as an OOB retry counter.",
+  "next": "Replace 2697-origin gamestate configstrings with a valid 1649370 map/configstring set; instrument 0x4731b0 argument and 0x77d8240 during the failed parse to identify the precise mismatch before another live run.",
+  "artifacts": [
+    "runs/codex-stat-login.json",
+    "runs/codex-stat-connect.json",
+    "runs/codex-stat-forward.json",
+    "runs/codex-stat-gs.jsonl",
+    "runs/codex-stat-final-status.json",
+    "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-04ed3bd3/events.jsonl"
+  ]
+}

@@ -15,7 +15,7 @@ command string.  The client uses three of them during startup:
 
     getchallenge 0 "<token>"     -> challengeResponse <challenge>
     connect <uid> "\\key\\value..." -> connectResponse \\mapname\\...\\shortversion\\1.1.1.13
-    stats                        -> statsResponse 0
+    stats                        -> statResponse <challenge>
 
 In-band datagrams are ``seq(4) + body`` (the 2697 target omits qport); the body
 is XOR-ciphered with ``challenge ^ (byte)serverId ^ messageAcknowledge`` driven
@@ -216,7 +216,7 @@ class GameServer:
                   "args": args, "challenge": challenge})
         # Echo the challenge the client was given: a bare 0 does not let the
         # client confirm that it is talking to the server that issued it.
-        self.send_oob(addr, f"statsResponse {challenge}")
+        self.send_oob(addr, f"statResponse {challenge}")
 
     # ------------------------------------------------------------------ dispatch
     def handle(self, data: bytes, addr: tuple) -> None:
