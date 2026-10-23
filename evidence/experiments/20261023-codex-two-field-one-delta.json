@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T19:00:00+00:00",
+  "scope": "two-field body still decodes ONE delta and ends in a stream error, so the per-iteration bit budget is not yet pinned",
+  "body": "runs/snapshot-loop2f.bin (one full header group per field, two fields, terminator, 33 ps bits)",
+  "measurement": {
+    "delta_calls": 1,
+    "snap_trace": 1,
+    "decide": {
+      "stream_error": 1,
+      "struct_3bd0": 72192,
+      "field_54": 1
+    },
+    "state": 9
+  },
+  "the_per_iteration_flow_from_the_disassembly": [
+    "0x471A3E  has-ps (1 bit)",
+    "0x471A4D  mode (1 bit)",
+    "0x471A5D  last (5 bits when mode == 0)",
+    "0x471B59  current != last -> 0x471C41",
+    "0x471C5C  present (1 bit)",
+    "0x471C84  delta: continuation + V(5) + distance + value",
+    "0x471CA3  loop back to 0x471A3E"
+  ],
+  "why_this_matters": [
+    "one iteration therefore costs 1+1+5+1+delta bits; for a zero value with distance 1 that is 16 bits",
+    "two iterations would be 32 bits plus the terminating has-ps = 33, which is exactly what the body contains",
+    "yet the client decoded one delta and then raised a stream error, so its actual budget is LARGER than 16 bits for the second iteration",
+    "the surplus must come from a per-iteration read we have not accounted for - most plausibly extra bits inside 0x670FF0 (the distance coder reads more than one bit when the distance is not 1, and the landing field may be wider than assumed)"
+  ],
+  "the_tool_that_settles_it": [
+    "the repository already has a PsRead probe that logs the stream cursor and bit position at each read",
+    "arming it on the single-field body gives the exact bit budget of one iteration, and on the two-field body the budget of the second",
+    "that removes the remaining guesswork about 0x670FF0's cost"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r187-gs.jsonl",
+    "probe": "tools/launch_1649370.py (Delta branch at 0x471C84)"
+  }
+}
