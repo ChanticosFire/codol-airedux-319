@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T03:00:00+00:00",
+  "scope": "DECISIVE: the per-field unit is one present bit plus an optional delta record, and the table really is 0xDA63E8 with 24 entries",
+  "disassembly_0x471b9e": [
+    "0x471B9E mov edx,edi ; call 0x447190   -> read ONE bit (the per-field present flag)",
+    "0x471BA5 cmp eax,1 ; je 0x471BE7       -> present == 1: SKIP this field (no delta, no more bits)",
+    "0x471BC6..0x471BC8 push 3, push 0xDA63E8, push 0x18, ... ; call 0x670FF0  -> present == 0: decode a delta",
+    "0x471BD8 add [ebx+0x3C34],1             -> game time += 1",
+    "0x471BE1 add [eax+0x3BA0],1             -> ps history count += 1",
+    "0x471BF3..0x471C00 loop counter++, compare with [eax+0x3BA0], jl back"
+  ],
+  "what_this_establishes": [
+    "the per-field unit is [present(1 bit)] followed, only when present == 0, by one delta record",
+    "the delta decoder 0x670FF0 receives the table 0xDA63E8 and the count 0x18 = 24, so the 24-entry table at 0xDA63E8 is the correct one for this call",
+    "the loop iterates over the ps history slot count, not over delta records"
+  ],
+  "why_rec2_failed": [
+    "rec2 wrote continuation=1 immediately after the first delta, but that position is the NEXT field's PRESENT bit",
+    "present == 1 means 'field unchanged, skip', so the loop advanced and the rest of our bits were consumed as further present flags and deltas - hence one decode and then a stream error"
+  ],
+  "corrected_encoder_shape": {
+    "prologue": "has-ps(1), mode(1), last(5), present(1) = 8 bits",
+    "per_field": "present(1); if 0 then ONE delta record (continuation(1), V(5), distance, value)",
+    "terminator": "the has-ps bit at the top of the next iteration is 0",
+    "accepted_body_consistency": "8 prologue + 1 present(0) + [1 + 5 + 13 + 1] delta + 1 terminator = 29 bits - matches the accepted body exactly"
+  },
+  "next_test": [
+    "encode TWO fields as present(0)+delta for field 0 and present(0)+delta for field 1, then the terminator",
+    "predict: the PsField probe records TWO decodes (indices 0 and 1) and the body stays accepted",
+    "if that holds, the encoder is a simple loop and multi-field encoding - and therefore origin - becomes possible"
+  ],
+  "note_on_the_0xda8520_dump": [
+    "the earlier 0xDA8520 dump (offset 0 / codec -97, then 264/-75, ...) does not fit table+12*index from 0xDA63E8 (8504 is not divisible by 12)",
+    "so 0xDA8520 is some other structure; the PsField probe's ECX at 0x6701D0 entry is therefore not simply table+12*index in that call path and should not be used to identify fields until that is understood"
+  ],
+  "artifacts": {
+    "addresses": ["0x471B9E (present bit)", "0x471BC8 (delta call)", "0x6710BB (field codec call)"]
+  }
+}

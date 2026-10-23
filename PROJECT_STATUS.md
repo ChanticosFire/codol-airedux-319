@@ -1,5 +1,12 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [DECISIVE: per-field = present bit + optional delta; table is 0xDA63E8 (24)]**
+> 0x471B9E reads one present bit; present==1 skips the field; present==0 calls 0x670FF0 with table 0xDA63E8 and count 0x18. Loop iterates over history slots.
+> rec2 failed because its second record's continuation bit landed in the next field's PRESENT position.
+> Corrected: 8-bit prologue + per field [present(1) + optional delta] + has-ps=0 terminator = 29 bits for the accepted body (exact).
+> Caveat: the 0xDA8520 dump does not fit table+12*index from 0xDA63E8, so it was a different structure.
+> Next: two fields as present(0)+delta each; expect two decodes.
+> Evidence: [present bit per field](evidence/experiments/20261023-codex-present-bit-per-field.json).
 > **2026-10-23 [rec2: header + two records still decodes one field]**
 > 25-bit body (prologue + 2 records + terminator) -> ps_field count 1, stream_error 1. Rules out 'prologue + N records'.
 > Only one 0x6701D0 call per snapshot. So per-field flags we do not emit sit between delta decodes (0x471B9E / 0x471C5C read them).
