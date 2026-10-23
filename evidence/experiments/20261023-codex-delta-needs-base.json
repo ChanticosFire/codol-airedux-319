@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T14:20:00+00:00",
+  "scope": "why the delta-entity path crashes: it dereferences a null base",
+  "argument_mapping": {
+    "[ebp+8]": "cl (0x134DAC28); pushed into 0x66EC30 as the width, where x86 truncates to cl&0x1F = 8",
+    "[ebp+0xC]": "stream (0x16D9EC)",
+    "[ebp+0x10]": "0x11A00 (a buffer/field-table pointer)",
+    "[ebp+0x14]": "0 (the base snapshot pointer)",
+    "[ebp+0x18]": "&stream"
+  },
+  "crash_chain": [
+    "0x471E19 mov edx,[ebp+0x14]  -> edx = 0",
+    "0x471E1E mov eax,[edx+0x3BB4] -> read from 0x3BB4, an unmapped address",
+    "the delta-entity branch therefore cannot be used when there is no base snapshot"
+  ],
+  "conclusion": "the 8-bit index width was likely right; the delta path crashed because the base pointer is null in our has_base=0 bodies. Delta entities require a valid base snapshot (has_base=1 with a real base).",
+  "next": [
+    "revisit has_base=1: the earlier attempt was rejected, but that was before the entity table/count encoding was understood; retry with the current body",
+    "or avoid the delta path entirely and keep working on the field path with the corrected width information"
+  ],
+  "artifacts": {
+    "previous": "evidence/experiments/20261023-codex-callsite-params.json"
+  }
+}
