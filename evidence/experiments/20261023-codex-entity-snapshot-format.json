@@ -32,13 +32,18 @@
     "result": "the multi-snapshot body was not acknowledged, so the client never promoted to state 10 in this run"
   },
   "next": [
-    "extract a single 2697 snapshot instead of the concatenated 10 KB stream",
-    "or emit a minimal entity using the recovered encoding (1 entity, id 0, all fields as new values)",
-    "test fragment count sensitivity with a 2-fragment body"
+    "locate the bytes read by the main parser (serverTime/delta/flags) before 0x47238C",
+    "emit a minimal base snapshot with one entity using the recovered encoding",
+    "keep the 167-byte baseline as the fallback until the new body is accepted"
   ],
   "artifacts": {
     "real_snapshot": "runs/snapshot-2697-real.bin",
     "server_log": "runs/codex-r11-gs.jsonl",
     "forward": "runs/codex-r11-forward.json"
+  },
+  "correction_0x671D80": {
+    "finding": "0x671D80 is not a bit reader. It allocates/copies a 0x3B7C-byte baseline (test [ebp+0xC]; jne 0x671FE5 when a base pointer is supplied) and fills timing fields from QueryPerformanceCounter helpers.",
+    "meaning": "the has_base bit at 0x47238C only selects which baseline buffer is used; the bit stream for entities starts at 0x471D80",
+    "impact": "a hand-built base snapshot needs opcode 0 + serverTime(4) + delta/flags + has_base bit, then the entity number table and field deltas; no opaque pre-block bits are required"
   }
 }
