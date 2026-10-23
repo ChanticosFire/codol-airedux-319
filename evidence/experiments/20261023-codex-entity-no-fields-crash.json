@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T00:25:00+00:00",
+  "scope": "an entity without field deltas crashes the client",
+  "body": {
+    "file": "runs/snapshot-entity1-v2.bin",
+    "bytes": 170,
+    "layout": "hybrid[0:163] + byte163 with bit1307 A=1 and bit1308 B=1 + count(8)=1 + id(12)=0 + ps absent + actor/sub4/glass + EOF",
+    "bits": 1345
+  },
+  "result": {
+    "server_ack": 1,
+    "client_pid_after": 0,
+    "meaning": "the client crashed while reading the entity field deltas, which the body did not provide"
+  },
+  "lesson": "count=1 requires the entity's field delta stream; without it the field loop runs past the buffer end",
+  "next": [
+    "determine the entityState field count (0x471D80 reads a 2-bit field index plus a value through 0x671700 per field)",
+    "emit the full zero-field delta stream, then verify entity_count and cl.snap",
+    "keep the plain hybrid baseline as the safe fallback"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r28-gs.jsonl",
+    "body": "runs/snapshot-entity1-v2.bin"
+  }
+}
