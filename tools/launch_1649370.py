@@ -2784,20 +2784,115 @@ def main(argv=None) -> int:
             try:
                 index = int(row.get("registers", {})["edi"], 0)
                 kind = self.process.read(0x77D8250 + index, 1)[0]
+                neighboring_types = self.process.read(0x77D8250 + index - 32, 65).hex()
                 self.record({"configstring_index_reject": {"index": index, "type": kind,
-                                                           "type_address": hex(0x77D8250 + index)}})
+                                                           "type_address": hex(0x77D8250 + index),
+                                                           "neighbor_types_start": index - 32,
+                                                           "neighbor_types_hex": neighboring_types}})
             except (OSError, ValueError, KeyError, IndexError) as error:
                 self.record({"configstring_index_reject_error": str(error)})
+        if label == "MapLoading":
+            try:
+                cursor = struct.unpack("<I", self.process.read(0xC89A48C, 4))[0]
+                pool = self.process.read(0xC87A48C, 512)
+                rows = []
+                for index in range(16):
+                    offset = struct.unpack("<I", self.process.read(0xC86DD28 + index * 4, 4))[0]
+                    value = None
+                    if offset < len(pool):
+                        value = pool[offset:].split(b"\0", 1)[0].decode("latin-1")
+                    rows.append({"index": index, "offset": offset,
+                                 "type": self.process.read(0x77D8250 + index, 1)[0],
+                                 "value": value})
+                self.record({"map_loading_configstrings": {"pool_cursor": cursor, "slots": rows}})
+            except (OSError, ValueError, struct.error) as error:
+                self.record({"map_loading_configstrings_error": str(error)})
+        if label.startswith("SnapTrace"):
+            try:
+                registers = row.get("registers", {})
+                message = int(registers["esi"], 0)
+                ebp = int(registers["ebp"], 0)
+                error, cursor, bit, length = struct.unpack("<4I", b"".join(
+                    [self.process.read(message, 4), self.process.read(message + 0x1C, 4),
+                     self.process.read(message + 0x20, 4), self.process.read(message + 0x14, 4)]))
+                snapshot = {
+                    "label": label, "error": error, "cursor": cursor, "bit": bit,
+                    "length": length,
+                    "flags": struct.unpack("<I", self.process.read(ebp - 0x50, 4))[0],
+                    "delta_left": struct.unpack("<i", self.process.read(ebp - 0x44, 4))[0],
+                    "valid": struct.unpack("<I", self.process.read(ebp - 0x54, 4))[0],
+                }
+                for key, offset in (("ctx_3bd0", 0x3BD0), ("ctx_3bd4", 0x3BD4)):
+                    try:
+                        snapshot[key] = struct.unpack("<I", self.process.read(ebp - offset, 4))[0]
+                    except OSError:
+                        pass
+                self.record({"snap_trace": snapshot})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"snap_trace_error": f"{label}: {error}"})
+        if label == "SnapshotParse":
+            try:
+                message = int(row.get("registers", {})["ecx"], 0)
+                fields = struct.unpack("<7I", self.process.read(message + 8, 28))
+                self.record({"snapshot_parse": {
+                    "message": hex(message),
+                    "fields_08": [hex(value) for value in fields],
+                    "byte_cursor": fields[5], "bit_cursor": fields[6],
+                    "head": self.process.read(fields[0] or message + 8, 32).hex()}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"snapshot_parse_error": str(error)})
+        if label == "SnapshotAccepted":
+            self.record({"snapshot_accepted": {
+                "ebx": row.get("registers", {}).get("ebx"),
+                "clc": row.get("registers", {}).get("ebx")}})
+        if label == "ConfigstringStore":
+            try:
+                registers = row.get("registers", {})
+                index = int(registers["edi"], 0)
+                pointer = int(registers["eax"], 0)
+                message = int(registers["esi"], 0)
+                cursors = struct.unpack("<2I", self.process.read(message + 0x1C, 8))
+                self.record({"configstring_store": {
+                    "index": index, "string": self.process.cstring(pointer),
+                    "byte_cursor": cursors[0], "bit_cursor": cursors[1]}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"configstring_store_error": str(error)})
+        if label == "GameNameCheck":
+            try:
+                registers = row.get("registers", {})
+                pointer = int(registers["edx"], 0)
+                ebp = int(registers["ebp"], 0)
+                snapshot = {
+                    "edx": hex(pointer),
+                    "string": self.process.cstring(pointer),
+                    "slot2_type": self.process.read(0x77D8252, 1)[0],
+                    "slot_offsets": [struct.unpack("<I", self.process.read(0xC86DD28 + i * 4, 4))[0]
+                                     for i in range(6)],
+                    "pool_cursor": struct.unpack("<I", self.process.read(0xC89A48C, 4))[0],
+                    "return_address": hex(struct.unpack("<I", self.process.read(ebp + 4, 4))[0]),
+                }
+                self.record({"game_name_check": snapshot})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"game_name_check_error": str(error)})
         if label == "ConfigstringIndexRead":
             try:
                 registers = row.get("registers", {})
                 message = int(registers["esi"], 0)
                 previous = int(registers["ebx"], 0)
-                byte_cursor = struct.unpack("<I", self.process.read(message + 0x1C, 4))[0]
-                bit_cursor = struct.unpack("<I", self.process.read(message + 0x20, 4))[0]
+                fields = struct.unpack("<7I", self.process.read(message + 8, 28))
+                byte_cursor, bit_cursor = fields[5], fields[6]
+                samples = {}
+                for key, pointer in (("first", fields[0]), ("second", fields[1])):
+                    if pointer:
+                        try:
+                            samples[key] = self.process.read(pointer + bit_cursor // 8 - 2, 20).hex()
+                        except OSError as error:
+                            samples[key] = str(error)
                 self.record({"configstring_index_read": {"previous": previous,
                                                          "byte_cursor": byte_cursor,
-                                                         "bit_cursor": bit_cursor}})
+                                                         "bit_cursor": bit_cursor,
+                                                         "fields_08_to_20": [hex(value) for value in fields],
+                                                         "samples_around_bit_cursor": samples}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"configstring_index_read_error": str(error)})
         if label == "BeforeCbuf":

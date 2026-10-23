@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:30:00+00:00",
+  "scope": "first accepted baseline snapshot; client reaches connection state 10 and sends usercmds",
+  "runtime_reused": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/runtime",
+  "run_dir": "reuse-a9808a2f",
+  "verified": [
+    "native 89-byte gamestate with configstrings 0/1/2 (slot 2 = cod) is accepted; client state 4->7->8->9",
+    "a baseline snapshot staged from the 2697 body keeps the 0x671D80 pre-block and sub-blocks 1/2, then replaces the actor block with a valid empty block",
+    "client parses the snapshot with error=0, cursor=166, bit=1323 and executes 0x472810 (clc+0x3BE4 = 1)",
+    "client connection state advances to 10 (active) and it starts sending 69-byte clc_move/usercmd packets (seq 23..61, ack 4)"
+  ],
+  "snapshot": {
+    "file": "runs/snapshot-hybrid-empty-actors.bin",
+    "length": 167,
+    "sha256": "e0eaadc2225214da03007064bb30624333041533dbcfcb249cd29a3cf48900f8",
+    "construction": [
+      "copy the first 164 bytes of runs/snapshot-2697-only.bin (source: runs/ring-dump-43.jsonl seq 33, XOR cookie low byte 15)",
+      "keep bits 0..1308 so the 0x671D80 pre-block and sub-blocks 1/2 stay byte-identical",
+      "append an empty actor block: flag 0, explicit-11-bit index 2047",
+      "append one empty bit for sub-block 4 (0x471560) and one empty bit for the 0x4475F0 glass block",
+      "append the 1649370 EOF byte 0x05"
+    ],
+    "parser_state_after_subblocks": {
+      "error": 0,
+      "cursor": 166,
+      "bit": 1323,
+      "length": 167,
+      "flags": 12
+    },
+    "hex": "00081a0100000c960760001800c06d45b100004443000077c4000000002b0000000000000000641ce70100004099000070423c0c1ce718000400e617ffc400900145ff072003f4fff245ffff530500f0fff5fffee57dffbeffff78ff005e000000000000f83f8000c6ff010450fe0f2080f37f0001a4ff030860fd1f4000edff000278ff071040fc3f8000e6ff010450ff0f2080fb7f0001e4ff030860ff1f4000fdffc0ff0305",
+    "builder": "tools/build_1649370_snapshot.py",
+    "source_note": "runs/snapshot-2697-only.bin from ring-dump-43 seq 33 (cookie low byte 15); source file is gitignored, regenerate from the capture procedure"
+  },
+  "state_timeline": [
+    {
+      "t": 319479.602,
+      "state": 0
+    },
+    {
+      "t": 319480.626,
+      "state": 4
+    },
+    {
+      "t": 319480.734,
+      "state": 5
+    },
+    {
+      "t": 319481.152,
+      "state": 7
+    },
+    {
+      "t": 319490.683,
+      "state": 8
+    },
+    {
+      "t": 319500.114,
+      "state": 9
+    },
+    {
+      "t": 319509.142,
+      "state": 10
+    }
+  ],
+  "usercmd": {
+    "count": 39,
+    "length": 69,
+    "body_len": 60,
+    "message_ack": 4,
+    "first_seq": 23,
+    "last_seq": 61,
+    "first_body_head": "000000008605040404757065686f2a6c656824342434243424342434243404060d1e050405b0050b04c46941040473c0"
+  },
+  "evidence": {
+    "events": "runs/codex-snap16-events.jsonl",
+    "server_log": "runs/codex-snap16-gs.jsonl",
+    "forward": "runs/codex-snap16-forward.json",
+    "launch": "runs/codex-snap16-launch.out"
+  },
+  "remaining": [
+    "screen capture via PrintWindow is still black; in-world rendering is not yet visually verified",
+    "server sends only one baseline snapshot; the client needs continuous snapshots and entity/player state to stay in the world",
+    "the 0x671D80 pre-block is copied from a 2697 session; a native 1649370 encoder is still required",
+    "usercmds are received but not parsed or applied yet"
+  ],
+  "next": [
+    "parse the 69-byte usercmd body and log movement fields",
+    "send periodic snapshots (same baseline, updated server time) and watch for client timeout/desync",
+    "verify rendering with an in-game screenshot path that works for the Direct3D window"
+  ]
+}

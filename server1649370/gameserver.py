@@ -40,6 +40,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .native_gamestate import DEFAULT_CONFIGSTRINGS, build_native_gamestate
+
 PROTOCOL_GENERATION = "1.1.1.13"
 DEFAULT_MAP = "mp_cross_fire"
 DEFAULT_GAMETYPE = "war"
@@ -87,7 +89,10 @@ class GameServer:
     """Minimal, fully logged out-of-band responder."""
 
     def __init__(self, port: int, log_path: str | None = None, delay_send: float = 0.0,
-                 checksum_feed: int | None = None):
+                 checksum_feed: int | None = None, gamestate_source: str = "native",
+                 registration_checksum: int = 0xFFB56D7E,
+                 snapshot_path: str | None = None, snapshot_delay: float = 3.0,
+                 snapshot_seq: int = 4):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -98,6 +103,12 @@ class GameServer:
         self.running = True
         self.delay_send = delay_send
         self.checksum_feed = checksum_feed
+        self.gamestate_source = gamestate_source
+        self.registration_checksum = registration_checksum
+        self.snapshot_path = Path(snapshot_path) if snapshot_path else None
+        self.snapshot_delay = snapshot_delay
+        self.snapshot_seq = snapshot_seq
+        self.pending_oob: list[tuple[float, tuple, str]] = []
 
     # ------------------------------------------------------------------ logging
     def log(self, event: dict) -> None:
@@ -161,9 +172,26 @@ class GameServer:
         info = self.parse_userinfo(userinfo_text)
         peer["userinfo"] = info
         peer["build"] = info.get("shortversion") or info.get("2490")
-        # The client can retransmit connect several times in one burst.  Keep
-        # the first deadline so retransmissions cannot postpone the payload.
-        if "gamestate_due" not in peer:
+        # The client echoes the challenge it decodes fragments with.  Prefer
+        # that value over our own, so a lost getchallenge cannot desynchronise
+        # the XOR key.
+        echoed = (info.get("challenge") or "").strip()
+        if echoed:
+            try:
+                peer["challenge"] = int(echoed, 0) & 0xFFFFFFFF
+            except ValueError:
+                self.log({"dir": "meta", "kind": "connect_bad_challenge",
+                          "value": echoed[:40]})
+        # A reconnect on the same bridge port must start a fresh delivery
+        # cycle; otherwise the first (failed) attempt suppresses the gamestate.
+        if peer.get("gamestate_sent"):
+            self.log({"dir": "meta", "kind": "connect_restart", "peer": f"{addr[0]}:{addr[1]}",
+                      "previous_gamestate_sent": True})
+            peer["gamestate_sent"] = False
+            peer["snapshot_sent"] = False
+            peer["inband_seen"] = False
+            peer["gamestateupdates"] = 0
+        if "gamestate_due" not in peer or not peer.get("gamestate_sent"):
             peer["gamestate_due"] = time.monotonic() + self.delay_send
             peer["gamestate_sent"] = False
             peer["inband_seen"] = False
@@ -171,6 +199,7 @@ class GameServer:
                   "uid": uid, "userinfo_keys": sorted(info),
                   "name": info.get("name"), "xuid": info.get("xuid"),
                   "challenge_field": info.get("challenge"),
+                  "effective_challenge": peer.get("challenge"),
                   "build_field": info.get("2490")})
         response = (f"connectResponse \\mapname\\{DEFAULT_MAP}"
                     f"\\gametype\\{DEFAULT_GAMETYPE}"
@@ -187,36 +216,71 @@ class GameServer:
             if time.monotonic() < due:
                 continue
             peer["gamestate_sent"] = True
-            payload = GAMESTATE_PLAINTEXT
+            payload = (build_native_gamestate(self.registration_checksum)
+                       if self.gamestate_source == "native" else GAMESTATE_PLAINTEXT)
             if not payload:
                 self.log({"dir": "meta", "kind": "gamestate_missing"})
                 continue
-            if self.checksum_feed is not None:
+            if self.gamestate_source == "capture" and self.checksum_feed is not None:
                 original = struct.unpack_from("<I", payload, 26)[0]
                 if original != 0x36E8F17B:
                     raise ValueError(f"unexpected captured checksum at offset 26: {original:#x}")
                 payload = payload[:26] + struct.pack("<I", self.checksum_feed) + payload[30:]
                 self.log({"dir": "meta", "kind": "checksum_feed_override",
                           "before": hex(original), "after": hex(self.checksum_feed)})
+            self.log({"dir": "meta", "kind": "gamestate_source", "source": self.gamestate_source,
+                      "payload_length": len(payload), "registration_checksum": hex(self.registration_checksum),
+                      "configstrings": [[index, value.decode("latin-1")]
+                                        for index, value in DEFAULT_CONFIGSTRINGS],
+                      "payload_head": payload[:96].hex()})
             seq = 3
             peer["last_server_seq"] = seq
-            frag_size = 1162
-            count = (len(payload) + frag_size - 1) // frag_size
-            seq_word = seq | 0x80000000
-            key = ((peer.get("challenge") or 0) ^ seq) & 0xFF
-            for index in range(count):
-                chunk = payload[index * frag_size:(index + 1) * frag_size]
-                data = bytearray(chunk)
-                for i in range(4 if index == 0 else 0, len(data)):
-                    data[i] ^= key
-                header = (struct.pack("<I", seq_word) + bytes([index, count - 1])
-                          + struct.pack("<HH", frag_size, len(chunk)))
-                packet = header + data
-                self.sock.sendto(packet, addr)
-                self.state.counters["inband_sent"] += 1
-                self.log({"dir": "out", "kind": "fragment", "to": f"{addr[0]}:{addr[1]}",
-                          "seq": seq, "index": index, "count": count,
-                          "stride": frag_size, "chunk": len(chunk), "length": len(packet)})
+            self._send_fragments(addr, peer, payload, seq, "gamestate")
+            if self.snapshot_path:
+                peer["snapshot_due"] = time.monotonic() + max(self.snapshot_delay, 15.0)
+                peer["snapshot_sent"] = False
+
+    def _send_fragments(self, addr: tuple, peer: dict, payload: bytes, seq: int,
+                        kind: str, frag_size: int = 1162) -> None:
+        peer["last_server_seq"] = seq
+        count = (len(payload) + frag_size - 1) // frag_size
+        seq_word = seq | 0x80000000
+        key = ((peer.get("challenge") or 0) ^ seq) & 0xFF
+        for index in range(count):
+            chunk = payload[index * frag_size:(index + 1) * frag_size]
+            data = bytearray(chunk)
+            for i in range(4 if index == 0 else 0, len(data)):
+                data[i] ^= key
+            header = (struct.pack("<I", seq_word) + bytes([index, count - 1])
+                      + struct.pack("<HH", frag_size, len(chunk)))
+            packet = header + data
+            self.sock.sendto(packet, addr)
+            self.state.counters["inband_sent"] += 1
+            self.log({"dir": "out", "kind": "fragment", "message": kind,
+                      "to": f"{addr[0]}:{addr[1]}",
+                      "seq": seq, "index": index, "count": count,
+                      "stride": frag_size, "chunk": len(chunk), "length": len(packet)})
+
+    def send_due_snapshots(self) -> None:
+        """Send the staged snapshot once the gamestate has been acknowledged."""
+        if not self.snapshot_path:
+            return
+        for addr, peer in self.state.peers.items():
+            due = peer.get("snapshot_due")
+            if due is None or peer.get("snapshot_sent") or time.monotonic() < due:
+                continue
+            try:
+                data = self.snapshot_path.read_bytes()
+            except OSError as error:
+                peer["snapshot_sent"] = True
+                self.log({"dir": "meta", "kind": "snapshot_missing", "error": str(error)})
+                continue
+            peer["snapshot_sent"] = True
+            payload = b"\x00\x00\x00\x00" + data
+            self.log({"dir": "meta", "kind": "snapshot_source", "path": str(self.snapshot_path),
+                      "payload_length": len(payload), "seq": self.snapshot_seq,
+                      "payload_head": payload[:64].hex()})
+            self._send_fragments(addr, peer, payload, self.snapshot_seq, "snapshot")
 
     def on_stats(self, addr: tuple, args: list[str], peer: dict) -> None:
         self.state.counters["stats"] += 1
@@ -225,7 +289,23 @@ class GameServer:
                   "args": args, "challenge": challenge})
         # Echo the challenge the client was given: a bare 0 does not let the
         # client confirm that it is talking to the server that issued it.
-        self.send_oob(addr, f"statResponse {challenge}")
+        # The client only accepts statResponse in state 5, but it sends stats
+        # in the same burst as connect (state 4).  Hold the reply briefly so
+        # connectResponse is consumed first; otherwise the client drops the
+        # stats reply and reconnects forever.
+        self.pending_oob.append((time.monotonic() + 0.35, addr, f"statResponse {challenge}"))
+
+    def flush_pending_oob(self) -> None:
+        if not self.pending_oob:
+            return
+        now = time.monotonic()
+        remaining = []
+        for due, addr, text in self.pending_oob:
+            if now >= due:
+                self.send_oob(addr, text)
+            else:
+                remaining.append((due, addr, text))
+        self.pending_oob = remaining
 
     # ------------------------------------------------------------------ dispatch
     def handle(self, data: bytes, addr: tuple) -> None:
@@ -245,6 +325,14 @@ class GameServer:
                 self.on_connect(addr, args, peer)
             elif command == "stats":
                 self.on_stats(addr, args, peer)
+            elif command == "gamestateupdate":
+                # The client asks for gamestate refreshes while it loads the
+                # map; the last request is the natural moment to deliver the
+                # first snapshot (the client is in state 9 by then).
+                count = peer.get("gamestateupdates", 0) + 1
+                peer["gamestateupdates"] = count
+                self.log({"dir": "in", "kind": "gamestateupdate", "from": f"{addr[0]}:{addr[1]}",
+                          "count": count, "args": args})
             else:
                 self.state.counters["unknown"] += 1
                 self.log({"dir": "in", "kind": "unknown_oob", "command": command,
@@ -283,12 +371,16 @@ class GameServer:
             try:
                 data, addr = self.sock.recvfrom(65535)
             except socket.timeout:
+                self.flush_pending_oob()
                 self.send_due_gamestates()
+                self.send_due_snapshots()
                 continue
             except OSError:
                 break
+            self.flush_pending_oob()
             self.handle(data, addr)
             self.send_due_gamestates()
+            self.send_due_snapshots()
         self.log({"dir": "meta", "kind": "stop", "counters": self.state.counters})
 
 
@@ -300,12 +392,26 @@ def main() -> int:
                         help="seconds after connect before sending gamestate")
     parser.add_argument("--checksum-feed", type=lambda value: int(value, 0),
                         help="experimental uint32 replacement at gamestate offset 26")
+    parser.add_argument("--gamestate-source", choices=("native", "capture"), default="native")
+    parser.add_argument("--registration-checksum", type=lambda value: int(value, 0),
+                        default=0xFFB56D7E)
+    parser.add_argument("--snapshot-file", default=None,
+                        help="service message bytes (svc 0 + body + EOF) sent after gamestate")
+    parser.add_argument("--snapshot-delay", type=float, default=3.0,
+                        help="seconds after gamestate before the snapshot is sent")
+    parser.add_argument("--snapshot-seq", type=int, default=4)
     args = parser.parse_args()
     if args.delay_send < 0:
         parser.error("--delay-send must be nonnegative")
     if args.checksum_feed is not None and not 0 <= args.checksum_feed <= 0xFFFFFFFF:
         parser.error("--checksum-feed must be a uint32")
-    server = GameServer(args.port, args.log, args.delay_send, args.checksum_feed)
+    if args.snapshot_delay < 0:
+        parser.error("--snapshot-delay must be nonnegative")
+    if not 0 < args.snapshot_seq <= 0x7FFFFFFF:
+        parser.error("--snapshot-seq must be a positive 31-bit integer")
+    server = GameServer(args.port, args.log, args.delay_send, args.checksum_feed,
+                        args.gamestate_source, args.registration_checksum,
+                        args.snapshot_file, args.snapshot_delay, args.snapshot_seq)
     try:
         server.serve()
     except KeyboardInterrupt:

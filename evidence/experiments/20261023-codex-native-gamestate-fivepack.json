@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "runtime": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\20261023-codex-delay-a2\\runtime",
+  "runtime_reused": true,
+  "bridge_option": "--reliable-until-state 0",
+  "gamestate_source": "native",
+  "plaintext_length": 84,
+  "registration_checksum": "0xffb56d7e",
+  "status": "incomplete",
+  "verified": [
+    "2697 captured gamestate index 8194 is rejected by 1649370 as type 18; native type table has 12761 bytes",
+    "Native 84-byte gamestate reaches connection state 8 and elicits gamestateupdate 1 through 4",
+    "Publisher-signed 1649370 Cross Fire and gametype FFs were staged into the existing runtime",
+    "Verified loose resources were hardlinked into the existing runtime, with no additional runtime copy",
+    "Five-pack run exits connection state 8 to 0 without a Fatal error milestone; Com Error remains 186 cod with empty actual string",
+    "Five-pack client messageAck remains 1; stage remains 5"
+  ],
+  "file_error_progression": [
+    {"pack_state": "native only", "error": "WIN_DISK_ERROR", "run": "runs/codex-native-ff-staged.json"},
+    {"pack_state": "signed Cross Fire FF", "error": "WIN_FILE_NOT_FOUND:images/loadscreen_mp_crossfire.iwi", "run": "reuse-2badc7c4"},
+    {"pack_state": "Cross Fire loose", "error": "WIN_FILE_NOT_FOUND:images/dpad_ks_uav.iwi", "run": "reuse-53aeae54"},
+    {"pack_state": "gametype loose", "error": "WIN_ZONE_ERROR:[localized_common_gametype_mp.ff]", "forward": "runs/codex-native-gametype-forward.json"},
+    {"pack_state": "signed gametype FF", "error": "WIN_FILE_NOT_FOUND:images/sun_flare_icbm.iwi", "forward": "runs/codex-native-ff-forward.json"},
+    {"pack_state": "crash_tropical loose", "error": "WIN_FILE_NOT_FOUND:images/wavy_nml.iwi", "forward": "runs/codex-native-3pack-forward.json"},
+    {"pack_state": "survival loose", "error": "WIN_FILE_NOT_FOUND:images/barrel_d.iwi", "forward": "runs/codex-native-4pack-forward.json"},
+    {"pack_state": "dmz loose", "error": null, "forward": "runs/codex-native-5pack-forward.json", "client_events": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\20261023-codex-delay-a2\\reuse-f0dcdd67\\events.jsonl"}
+  ],
+  "signed_fastfile_receipts": [
+    "runs/codex-native-ff-staged.json",
+    "runs/codex-gametype-ff-staged.json"
+  ],
+  "loose_hardlink_receipts": [
+    "runs/codex-crossfire-loose-links.json",
+    "runs/codex-gametype-loose-links.json",
+    "runs/codex-crash_tropical-loose-links.json",
+    "runs/codex-survival-loose-links.json",
+    "runs/codex-dmz-loose-links.json"
+  ],
+  "com_error_186": {
+    "runtime_format": "\\u0015186 %s %s",
+    "runtime_arguments": ["cod", ""],
+    "static_caller": "0x454a1b..0x454a28",
+    "static_expected_string_address": "0xdb2efc",
+    "static_expected_string": "cod",
+    "interpretation": "0x4549f0 compares the dynamically selected string with cod, and calls Com_Error on mismatch; the source of the empty runtime string remains unknown"
+  },
+  "remaining_unknowns": [
+    "source and intended value of the string selected at 0x4549a7..0x4549eb",
+    "complete playable gamestate and snapshots",
+    "why client messageAck stays 1 after gamestateupdate"
+  ]
+}

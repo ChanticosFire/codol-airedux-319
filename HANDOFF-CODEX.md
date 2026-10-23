@@ -1,5 +1,7 @@
 # CODOL 1649370 自建服务端 — 交接文档（给 codex）
 
+> **2026-10-23 最新进度（覆盖下文旧卡点）**：✅已实现不依赖 2697 载荷的 84 字节本版原生最小 gamestate；官方客户端到连接状态 8 并发 `gamestateupdate 1–4`。✅已在既有 `20261023-codex-delay-a2/runtime` 中用硬链接/验签文件补齐 Cross Fire/gametype FF 和 Cross Fire、gametype、crash_tropical、survival、dmz 五包散文件，无新完整运行副本。五包后不再捕获文件致命错误，但客户端仍因 `Com Error(2, "\x15 186 %s %s", "cod", "")` 连接回 0；静态比较位于 `0x4549F0..0x454A28`。`stage=5`、`messageAck=1`，完成判据未满足。⚠️下一个重点是查 `0x4549A7..0x4549EB` 空字符串来源，随后扩展真正可玩 gamestate/快照。❌空串写入者及完整快照协议未知。详见 [本轮证据](evidence/experiments/20261023-codex-native-gamestate-fivepack.json)。
+
 > **2026-10-23 位游标续进度**：✅首个 14 位 configstring 索引读取前，`previous=0`、`byte_cursor=115`、`bit_cursor=234`；读后拒绝 `8194/0x2002`、类型 `18`。✅明文的 14 位小端位序扫描仅 byte 176 bit 7 出现 `0x2002`。⚠️此处是候选来源，客户端消息有分段缓冲，尚不能把相对游标与绝对 offset 直接对应。下一步抓 `esi+0x08..0x20` 缓冲指针和数据。证据：[本轮 JSON](evidence/experiments/20261023-codex-configstring-bitcursor.json)。
 
 > **2026-10-23 索引续进度**：✅已验证：在 `0x472E58` 断点抓到首个被拒索引 `edi=8194 (0x2002)`，客户端类型表字节 `[0x77D8250+edi]=18 (0x12)`；该类型不满足分支允许的 `>=0x17` 或 `==0x15`，随后抛 `XBOXLIVE_CANTJOINSESSION`。⚠️推断：可能是索引表差异或位流错位。❌未知：索引来自 payload 的哪个位偏移。下一步记录 `0x472E00` 读取状态与 `0x447190` 返回值。证据：[本轮 JSON](evidence/experiments/20261023-codex-configstring-index.json)。
