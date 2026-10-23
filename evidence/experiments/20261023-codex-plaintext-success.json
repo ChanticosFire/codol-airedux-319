@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T22:35:00+00:00",
+  "scope": "full readable plaintext of a real 2697 gamestate",
+  "input": {
+    "capture": "runs/final-in.jsonl first in-band datagram",
+    "seq": -2147483645,
+    "challenge": -1976592760,
+    "key": "challenge ^ seq & 0xFF = 139",
+    "cipher_start": "data + 4 (first four bytes are the unencrypted sequence)"
+  },
+  "plaintext_ascii": "...............mp_cross_fire.mp.{..6....\\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2..cod.1537..@0.0...0...619800.3231 -",
+  "readable_fields": {
+    "mp_cross_fire_at_offset": 15,
+    "serverinfo_string": "\\g_gametype\\war\\mapname\\mp_cross_fire\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2",
+    "trailing_strings": ["cod", "1537", "@0.0", "619800", "3231 -"]
+  },
+  "header_bytes_before_map_name": {
+    "hex": "8b 89 01 8f 01 8f 8b 8b 8b 8b 03 00 00 00 00",
+    "length": 15,
+    "observation": "the 03 00 00 00 00 sits right before the map name; the first ten bytes decode to non-ASCII, which is consistent with numeric fields (lastClientCommand, configDataSequence, clientNum, checksumFeed) rather than text"
+  },
+  "significance": [
+    "this is the first fully readable gamestate from the 2697 server, obtained entirely from our own capture plus the dedrun's client_t values",
+    "the plaintext contains the exact serverinfo configstring the 1649370 client needs to render and join mp_cross_fire",
+    "the cipher, the key formula and the cipher start offset are now all confirmed correct"
+  ],
+  "open_question": {
+    "header_layout": "the 15 bytes before the map name must be matched field by field to the source write order; candidates are lastClientCommand(4) + svc_EOF(1) + 0(4) + svc_gamestate(4) + ... versus a shorter variant where the 03 marks svc_baseline",
+    "why_it_matters": "our own server must emit exactly this header or the client will keep waiting"
+  },
+  "next": [
+    "map each of the 15 header bytes to the source fields using their expected values (lastClientCommand is small, configDataSequence is small, clientNum is 0, checksumFeed is random)",
+    "reconstruct the exact header layout, then emit it from server1649370 together with the serverinfo configstring extracted here",
+    "test with a real client and watch for the loader leaving the black screen"
+  ],
+  "artifacts": ["runs/final-in.jsonl"]
+}
