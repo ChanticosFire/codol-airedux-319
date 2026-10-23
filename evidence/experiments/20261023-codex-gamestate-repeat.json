@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T08:40:00+00:00",
+  "scope": "repeating the same gamestate does not force a reload; state stays 10",
+  "server_change": "gameserver now supports --gamestate-repeat N --gamestate-interval S (gamestate seq increments per send)",
+  "experiment": {
+    "gamestates_sent": 2,
+    "times": [
+      1792756741.24,
+      1792756776.29
+    ],
+    "interval": 35,
+    "payload_length": 89,
+    "result": {
+      "client": "alive (pid 2056)",
+      "state": 10
+    }
+  },
+  "reading": [
+    "identical gamestates are accepted but do not re-enter loading; the client keeps the active world",
+    "to force a reload the gamestate must differ - most likely the map name, or the checksumFeed"
+  ],
+  "next": [
+    "send a second gamestate with a different mapname (native_gamestate currently hard-codes mp_cross_fire)",
+    "if the client reloads (state 8 -> 9 -> 10) the map-change path is proven and can drive match flow"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r67-gs.jsonl"
+  }
+}

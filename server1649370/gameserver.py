@@ -96,7 +96,8 @@ class GameServer:
                  snapshot_interval: float = 0.5,
                  command_path: str | None = None, command_delay: float = 2.0,
                  command_seq: int = 4, configstring_file: str | None = None,
-                 command_repeat: int = 1, command_interval: float = 5.0):
+                 command_repeat: int = 1, command_interval: float = 5.0,
+                 gamestate_repeat: int = 0, gamestate_interval: float = 20.0):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -108,6 +109,8 @@ class GameServer:
         self.delay_send = delay_send
         self.checksum_feed = checksum_feed
         self.gamestate_source = gamestate_source
+        self.gamestate_repeat = int(gamestate_repeat or 0)
+        self.gamestate_interval = float(gamestate_interval or 0.0)
         self.registration_checksum = registration_checksum
         self.snapshot_path = Path(snapshot_path) if snapshot_path else None
         self.snapshot_files = ([Path(part.strip()) for part in snapshot_path.split(",") if part.strip()]
@@ -260,15 +263,20 @@ class GameServer:
                                         for index, value in self.configstrings][:8],
                       "configstring_count": len(self.configstrings),
                       "payload_head": payload[:96].hex()})
-            seq = 3
+            seq = 3 + peer.get("gamestate_count", 0)
+            peer["gamestate_count"] = peer.get("gamestate_count", 0) + 1
             peer["last_server_seq"] = seq
             self._send_fragments(addr, peer, payload, seq, "gamestate")
             if self.snapshot_path:
                 peer["snapshot_due"] = time.monotonic() + max(self.snapshot_delay, 15.0)
                 peer["snapshot_sent"] = False
+                peer["snapshot_index"] = 0
             if self.command_path:
                 peer["command_due"] = time.monotonic() + self.command_delay
                 peer["command_count"] = 0
+            if self.gamestate_repeat and peer["gamestate_count"] < self.gamestate_repeat:
+                peer["gamestate_sent"] = False
+                peer["gamestate_due"] = time.monotonic() + self.gamestate_interval
 
     def send_due_commands(self) -> None:
         """Send the captured server-command stream once per configured repeat."""
@@ -472,6 +480,8 @@ def main() -> int:
     parser.add_argument("--checksum-feed", type=lambda value: int(value, 0),
                         help="experimental uint32 replacement at gamestate offset 26")
     parser.add_argument("--gamestate-source", choices=("native", "capture"), default="native")
+    parser.add_argument("--gamestate-repeat", type=int, default=0)
+    parser.add_argument("--gamestate-interval", type=float, default=20.0)
     parser.add_argument("--registration-checksum", type=lambda value: int(value, 0),
                         default=0xFFB56D7E)
     parser.add_argument("--snapshot-file", default=None,
@@ -516,7 +526,8 @@ def main() -> int:
                         args.snapshot_file, args.snapshot_delay, args.snapshot_seq,
                         args.snapshot_repeat, args.snapshot_interval,
                         args.command_file, args.command_delay, args.command_seq,
-                        args.configstring_file, args.command_repeat, args.command_interval)
+                        args.configstring_file, args.command_repeat, args.command_interval,
+                        args.gamestate_repeat, args.gamestate_interval)
     try:
         server.serve()
     except KeyboardInterrupt:
