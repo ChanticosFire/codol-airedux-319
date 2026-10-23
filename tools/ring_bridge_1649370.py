@@ -641,19 +641,37 @@ def forge_ack_packet(seq: int, ack_override: int | None,
         cmd_offset = cmd_base + (values[1] & 0x7F) * (4 + 4 + 1024) + 8
         command = (rdc.read(handle, base + cmd_offset, 1024) or b"").split(b"\0")[0]
         # 2697 client->server body after Netchan_Process:
-        #   serverId (1 byte) + messageAcknowledge (4 bytes, & 0x7fffffff)
-        # The earlier ack(4)+0000 layout was wrong for this server build.
-        plain = bytes([server_id & 0xFF]) + struct.pack("<I", values[3] & 0x7FFFFFFF)
-        body = fca.encode(plain, challenge, server_id, values[3], command)
+        #   serverId (1 byte) + messageAcknowledge (4 bytes, & 0x7fffffff) + commands
+        # messageAcknowledge must be the sequence the client has received from the
+        # server, i.e. netchan.outgoingSequence, not the server-side field.
+        span = 0x8000
+        start = max(0, base - span)
+        block = rdc.read(handle, start, span) or b""
+        adr_address = 0
+        # netadr_t is { type(4); ip[4]; port(2); pad(2) } so the 127.0.0.1 bytes
+        # sit four bytes after the structure start; search without assuming type.
+        pos = block.find(b"\x7f\x00\x00\x01")
+        if pos >= 4:
+            adr_address = start + pos - 4
+        outgoing_seq = 0
+        if adr_address:
+            raw = rdc.read(handle, adr_address - 0x10, 4)
+            if raw and len(raw) == 4:
+                outgoing_seq = struct.unpack("<i", raw)[0]
+        message_ack = outgoing_seq & 0x7FFFFFFF
+        # append clc_nop (3 bits = 4) so the command stream is non-empty and harmless
+        plain = bytes([server_id & 0xFF]) + struct.pack("<I", message_ack) + b"\x04"
+        body = fca.encode(plain, challenge, server_id, message_ack, command)
         qport, client_port, _ = fca.find_qport(handle, base)
         if qport_override:
             qport = qport_override & 0xFFFF
         packet = struct.pack("<I", seq) + body
         return packet, {"ack": ack, "qport": qport, "client_port": client_port,
                         "challenge": challenge, "server_id": server_id,
-                        "header": "seq-only",
+                        "header": "seq-only", "adr_address": hex(adr_address),
+                        "outgoing_sequence": outgoing_seq,
                         "reliable_sequence": values[0],
-                        "reliable_ack": values[1], "message_ack": values[3],
+                        "reliable_ack": values[1], "message_ack": message_ack,
                         "plain": plain.hex(), "plain_variant": plain_variant,
                         "command_len": len(command),
                         "command_head": command[:24].hex()}
