@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T14:00:00+00:00",
+  "scope": "the real 0x471D80 arguments, and a frame-offset correction for the earlier parameter read",
+  "call_site": {
+    "address": "0x4723DD",
+    "stack_args": {
+      "[esp]": "0x134DAC28 (cl)",
+      "[esp+4]": "0x16D9EC (stream)",
+      "[esp+8]": "0x11A00",
+      "[esp+0xC]": "0x0",
+      "[esp+0x10]": "0x169E08 (&stream)"
+    }
+  },
+  "correction": {
+    "earlier_read": "SnapTrace at 0x471D80 reported [ebp+8]=0x18DA98, which I treated as the loop's width parameter",
+    "why_wrong": "the breakpoint fires before 'push ebp; mov ebp,esp', so ebp still belongs to the caller; [ebp+8] there is the caller's first argument, not 0x471D80's",
+    "actual_first_arg": "0x134DAC28 (cl)"
+  },
+  "implication": [
+    "0x471E0E pushes the client object pointer as the bit width, which cannot be literal",
+    "either the width is taken from the low 5 bits of that pointer by the shift instruction (cl & 0x1F = 8), or I have mis-identified which pushed value 0x66EC30 consumes",
+    "this needs one more disassembly pass around 0x471E0E..0x471E19, checking the exact register each push uses"
+  ],
+  "next": [
+    "re-read 0x471E05..0x471E2D byte by byte to confirm the argument mapping",
+    "if the width is really derived from the client pointer, look for a fixed-width read that matches the observed cursor movement"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-0bf29e7c/events.jsonl"
+  }
+}

@@ -2835,6 +2835,15 @@ def main(argv=None) -> int:
                 self.record({"snap_trace": snapshot})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"snap_trace_error": f"{label}: {error}"})
+        if label.startswith("CallSite"):
+            try:
+                esp = int(row.get("registers", {})["esp"], 0)
+                raw = self.process.read(esp, 6 * 4)
+                args = struct.unpack("<6I", raw)
+                self.record({"call_site": {"label": label, "esp": hex(esp),
+                                           "args": [hex(value) for value in args]}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"call_site_error": f"{label}: {error}"})
         if label == "SnapshotParse":
             try:
                 message = int(row.get("registers", {})["ecx"], 0)
