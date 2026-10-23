@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CONSOLIDATION: two clean field writes exist; the codec is not the blocker]**
+> snapshot-tr15 writes landing index 0 (codec -97) in 55 clean bits; snapshot-land22-v100 writes landing index 22 (offset 16, codec 11) in 54 clean bits. So the encoder can address a chosen field with a known length.
+> The value-5/6 anomalies are extra 21-bit iterations after the field, not a failure to write it. The real blocker remains the load path (NULL history, no valid snapshot slot, no cgame scene -> black frame).
+> Focus returns to visibility rather than further field tuning.
+> Evidence: [field writes work](evidence/experiments/20261023-codex-field-writes-work.json).
 > **2026-10-23 [Landing on index 22: clean parse but 54 bits vs predicted 40]**
 > land22-v100 (V=23, distance=23, codec 11, 0x100): built 40, measured ps 1308 -> 1362 = 54, actors error 0, delta 1, state 9.
 > Two exact fits: (a) distance 23 costs 27 bits, or (b) codec-11 value costs 25 bits.

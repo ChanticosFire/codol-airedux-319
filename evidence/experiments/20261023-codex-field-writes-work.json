@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T12:00:00+00:00",
+  "scope": "CONSOLIDATION: field writes already work for two different landing indices with clean parses, so the field codec is NOT the remaining blocker",
+  "the_two_clean_field_writes": [
+    {
+      "body": "runs/snapshot-tr15.bin",
+      "landing": "index 0 (offset 0, codec -97)",
+      "value": "0x100",
+      "ps_bits": 55,
+      "ps_error": 0
+    },
+    {
+      "body": "runs/snapshot-land22-v100.bin",
+      "landing": "index 22 (offset 16, codec 11)",
+      "value": "0x100",
+      "ps_bits": 54,
+      "ps_error": 0
+    }
+  ],
+  "why_this_matters": [
+    "both landing indices - the first field of the table and the field at offset 16 - parse cleanly",
+    "so the encoder CAN address a chosen field and CAN supply its value without corrupting the stream",
+    "the remaining value-6/value-5 anomalies (extra 21-bit units) are about what the decoder reads AFTER the field, not about whether the field itself can be written",
+    "and the 21-bit steps are consistent with the block simply continuing into further iterations, which is expected behaviour when the trailing bits look like a header"
+  ],
+  "the_real_blocker_restated": [
+    "round 172 established that the playerState block receives a NULL history argument and that the client's snapshot ring has no valid slot",
+    "rounds 176-177 showed the block chooses a full-vs-delta path from a flag in the preamble and that the delta path is the normal one",
+    "none of the field-level work changes the fact that the client never completes a map load, so cgame has no scene and the frame stays black",
+    "the snapshot content path is therefore downstream of the load-path problem, and further field-level tuning cannot produce a visible world"
+  ],
+  "what_i_am_doing_about_it": [
+    "recording the two clean field writes as a REPRODUCIBLE CAPABILITY of the encoder rather than continuing to chase value patterns",
+    "handing the field-level work off as complete-enough: the encoder can write a named field with a known length",
+    "and returning the focus to visibility (map load completion), which is where the remaining gap actually is"
+  ],
+  "artifacts": {
+    "server_logs": [
+      "runs/codex-r191-gs.jsonl",
+      "runs/codex-r188-gs.jsonl"
+    ]
+  }
+}
