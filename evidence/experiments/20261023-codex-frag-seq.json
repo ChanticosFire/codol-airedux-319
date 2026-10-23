@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T05:00:00+00:00",
+  "scope": "first real fragment-structure send; find the seq handling bug",
+  "session": {
+    "client": "20261023-frag2, pid 40404",
+    "server": "server1649370 emitting the 3426-byte gamestate as three fragments"
+  },
+  "what_we_sent": [
+    {"seq": 3, "index": 0, "count": 3, "stride": 1162, "chunk": 1162, "length": 1172},
+    {"seq": 4, "index": 1, "count": 3, "stride": 1162, "chunk": 1162, "length": 1172},
+    {"seq": 5, "index": 2, "count": 3, "stride": 1162, "chunk": 1102, "length": 1112}
+  ],
+  "observed_reference": "in the original capture all three fragments share seq=3 (0x80000003); only the index differs",
+  "bug_found": "our server incremented the sequence per fragment (3, 4, 5) instead of keeping one sequence for the whole fragmented message",
+  "consequence": "the client's fragment assembler keys fragments by (sequence,index) and expects stride/count for one sequence; three different sequences look like three unrelated one-fragment messages, each incomplete",
+  "client_result": "messageAck stayed 1, no acknowledgement",
+  "next": [
+    "keep a single sequence for all fragments of one message (e.g. seq=3, index 0..2)",
+    "increment the sequence only after the last fragment",
+    "retest and watch messageAck / loader state"
+  ],
+  "artifacts": ["runs/frag2-gs.jsonl"]
+}
