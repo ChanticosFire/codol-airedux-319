@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T09:10:00+00:00",
+  "scope": "patch the client's peer address to loopback and retest",
+  "session": {"client": "20261023-adr2, pid 32776", "server": "server1649370 on 28971"},
+  "verified_facts": {
+    "game_connection_pointer": "0x1399342c (from ring_bridge status, the correct object this time)",
+    "connection_adr_offset": "connection + 0x14, struct {int32 type=2; 4 bytes ip; u16 port; ...}",
+    "patch_before": "02 00 00 00 | 00 00 00 00 | 00 00",
+    "patch_after": "02 00 00 00 | 7f 00 00 01 | 48 71 (=29000)",
+    "patch_write_ok": true,
+    "status_re_read_after_send": "connection_adr reverted to type 2, ip 0.0.0.0, port 0",
+    "ring_b_after": {"read": 10, "write": 10},
+    "stage_after": 5,
+    "messageAck_after": 1
+  },
+  "conclusions": {
+    "the_patch_was_overwritten": "our write succeeded (verified byte-identical immediately after), yet a later status read shows 0.0.0.0:0 again, so the client re-derives or rewrites that field",
+    "delivery_still_perfect": "ring_b read == write == 10, so ten datagrams were consumed",
+    "acceptance_still_absent": "stage stayed 5 and messageAck stayed 1"
+  },
+  "what_this_means": {
+    "address_filter_hypothesis": "we could not keep the address patched long enough to test it; the client restores it, likely from the netchan state it built at connect time",
+    "more_important_signal": "since delivery is complete and consumption is complete in every run, the blocker is inside the client's datagram-to-message path, not in transport or addressing"
+  },
+  "next": [
+    "find who writes connection_adr and whether the client compares the datagram source against it at receive time",
+    "or set the address BEFORE the connect handshake completes so the client derives it consistently",
+    "or instrument the client's receive function to log whether it runs on each of our datagrams"
+  ],
+  "artifacts": ["runs/adr2-status.json", "runs/adr2-status2.json", "runs/adr2-gs.jsonl"]
+}
