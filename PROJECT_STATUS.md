@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [TWO CURSORS: the entity count comes from a BYTE cursor, not the bit stream]**
+> 0x66ED70 returns one whole byte and advances a byte cursor at [stream+0x1C]; the bit reader advances a different cursor. So the snapshot carries two cursors, and the entity count is byte-addressed.
+> That means bits inserted before the entity block change which byte is read as the count - explaining the erratic shifts seen across bodies. The recipe: bit1=1, bit2=1, then a 0x01 byte for the count, then 12 id bits.
+> Next: find where [stream+0x1C] is initialised.
+> Evidence: [two cursors](evidence/experiments/20261023-codex-two-cursors.json).
 > **2026-10-23 [ENTITY LIST LAYOUT READ: bit, bit, count (byte at 0x7859558), then 12 bits per id]**
 > 0x471DA3 calls 0x671650 and skips the block if it returns 0. 0x671650: memset lists, READ BIT1 (0 -> 0x6716F0), READ BIT2 (0 -> 0x6716ED), call 0x66ED70 -> count stored as a BYTE at 0x7859558, then 12 bits per entity id, looping count times.
 > entity_count read 0xFFFF0000 because it is a byte 0x00 with 0xFF neighbours from the memset - the count really is zero.

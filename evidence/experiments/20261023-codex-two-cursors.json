@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T21:00:00+00:00",
+  "scope": "THE SNAPSHOT HAS TWO CURSORS: the bit reader and a separate BYTE reader - and the entity count comes from the BYTE one",
+  "the_count_reader_0x66ed70": {
+    "0x66ED70": "eax = [edx+0x18]; ecx = [edx+0x1C]; esi = [edx+0x14]",
+    "0x66ED7A": "eax += esi  -> the upper bound",
+    "0x66ED7C": "cmp ecx,eax ; jge 0x66EDB5  -> overrun: set the error flag at [edx] and return -1",
+    "0x66ED80": "cmp ecx,esi ; jl 0x66ED97  -> below the window: read from the [edx+8] buffer",
+    "0x66ED84": "otherwise read from the [edx+0xC] buffer",
+    "0x66ED8D": "movzx eax, byte [eax+ecx]  -> RETURN ONE BYTE",
+    "0x66ED91": "inc ecx ; [edx+0x1C] = ecx -> advance the BYTE cursor"
+  },
+  "what_this_proves": [
+    "0x66ED70 is NOT a bit reader: it returns a whole byte and advances a byte cursor at [+0x1C]",
+    "the bit reader used everywhere else (0x447190 / 0x66EC30) advances a different cursor",
+    "so the snapshot stream carries TWO cursors: one in bits, one in bytes",
+    "and the entity COUNT is taken from the BYTE stream, while the two gate bits before it come from the BIT stream"
+  ],
+  "why_this_dissolves_a_lot_of_confusion": [
+    "the project has been treating the snapshot as one continuous bit stream",
+    "if the count is byte-addressed, then inserting or removing bits anywhere before it changes which BYTE it reads",
+    "that explains why tiny changes at the ps block shifted the entity interpretation in ways that looked erratic",
+    "and it means the body must be built with BOTH a bit layout and a byte layout in mind"
+  ],
+  "the_recipe_revised": [
+    "bit 1 = 1 and bit 2 = 1 (from the bit stream)",
+    "then the next BYTE read by the byte cursor must be 0x01 (count = 1)",
+    "then 12 bits give the entity id",
+    "so the payload has to be arranged so that the byte cursor lands on a 0x01 byte at that moment"
+  ],
+  "next": [
+    "find where the byte cursor [+0x1C] is initialised for a snapshot, i.e. whether it starts at the same offset as the bit cursor or at a byte-aligned position",
+    "0x66ED70 reads [edx+0x1C] directly, so a probe on the stream struct before the entity block reveals both cursors at once"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x66ED70 byte reader",
+      "0x67168F count call",
+      "0x7859558 count byte"
+    ]
+  }
+}
