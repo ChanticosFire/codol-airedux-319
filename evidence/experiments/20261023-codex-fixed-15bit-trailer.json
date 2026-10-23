@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T00:00:00+00:00",
+  "scope": "last has NO effect on the ps length: the 14-16 bit surplus is a fixed per-snapshot trailer independent of last, distance and value width",
+  "measurements": [
+    {
+      "body": "land22-v100",
+      "last": 0,
+      "distance": 23,
+      "value_bits": 12,
+      "built": 40,
+      "measured": 54,
+      "surplus": 14
+    },
+    {
+      "body": "idx0-v100",
+      "last": 0,
+      "distance": 1,
+      "value_bits": 33,
+      "built": 49,
+      "measured": 65,
+      "surplus": 16
+    },
+    {
+      "body": "last22-v100",
+      "last": 22,
+      "distance": 1,
+      "value_bits": 33,
+      "built": 49,
+      "measured": 65,
+      "surplus": 16
+    }
+  ],
+  "what_is_now_established": [
+    "the surplus does NOT depend on `last` (22 gives exactly the same 65 bits as 0)",
+    "it does NOT depend on the distance (23 and 1 both give a surplus)",
+    "it depends only weakly on the value width (12 -> 14, 33 -> 16)",
+    "so it is a FIXED per-snapshot trailer of roughly 15 bits that our bodies never write",
+    "and the cols hint2 trailer is NOT the explanation, because it is gated by last_changed and our last=22 run shows no change"
+  ],
+  "the_working_encoding_rule": {
+    "ps": "header(8) + one delta (continuation + V + distance + value) + trailer(~15) + terminator(1)",
+    "evidence": "three independent bodies agree within two bits, and all of them parse with stream_error 0 at the block level"
+  },
+  "next": [
+    "append 15 zero bits BEFORE the terminator and verify the measured ps length becomes exactly built + 15 = 64 and that the parse stays clean",
+    "if that matches, the ps layout is complete enough to write a real value into a real field"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r190-gs.jsonl",
+    "encoder": "runs/_gen_last22.py"
+  }
+}
