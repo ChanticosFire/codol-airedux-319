@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T02:20:00+00:00",
+  "scope": "the count byte encoding works: entity_count becomes 1",
+  "body": {
+    "file": "runs/snapshot-count1-b164.bin",
+    "recipe": "hybrid with byte163 |= 0x18 (A/B bits) and byte164 = 0x01 (the count byte)",
+    "bytes": 167
+  },
+  "measurements": {
+    "entity_count_0x7859558": 1,
+    "entity_ids_0x7859358": [
+      2078
+    ],
+    "client": "alive (pid 21184)",
+    "state": 9,
+    "cl_snap": "still zero"
+  },
+  "meaning": [
+    "the count really is a whole byte at byte164; writing 1 there makes the parser read exactly one entity id",
+    "the id comes from the bit stream at bit 1309 and currently reads 2078 because byte163's high bits and byte164 overlap that window",
+    "the parser then wants that entity's field delta, which is absent, so the snapshot never promotes to state 10"
+  ],
+  "next": [
+    "make the id deterministic: it occupies bits 1309..1320 which overlaps byte163 bits5-7 and byte164; find the aligned layout that yields id 0",
+    "then append the field delta stream",
+    "verify entity_count=1, id=0, and cl.snap non-zero"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r30-gs.jsonl",
+    "body": "runs/snapshot-count1-b164.bin"
+  }
+}

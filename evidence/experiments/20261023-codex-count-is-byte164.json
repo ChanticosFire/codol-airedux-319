@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T01:50:00+00:00",
+  "scope": "the byte cursor leads the bit cursor by one: the count byte is byte164, which reads 0xFF",
+  "evidence": {
+    "SnapTraceEntityLoop": {
+      "cursor": 164,
+      "bit": 1307
+    },
+    "observed_count_when_body_had_byte164": "0xFF (255) - matches a whole-byte read of byte164",
+    "bit_math": "bit 1307 sits inside byte163, but the cursor is already 164, so 0x66ED70 reads byte164"
+  },
+  "correction": {
+    "previous": "I assumed the count byte was byte163 and therefore collided with the A/B bits",
+    "actual": "the count byte is byte164; byte163 only carries A/B in bit3/bit4",
+    "consequence": "setting A/B in byte163 and writing 1 into byte164 should give table=present, form=1, count=1"
+  },
+  "next": [
+    "rebuild: byte163 bit3=1, bit4=1, byte164=1 (count), entity id follows",
+    "measure entity_count and cl.snap; expect count=1 first",
+    "then add the entity field delta stream"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-ee391eb6/events.jsonl"
+  }
+}
