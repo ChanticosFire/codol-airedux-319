@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T21:55:00+00:00",
+  "scope": "the walk model is CONFIRMED: with V=23 and a landing at index 22 the decoder takes one extra record (+14 bits)",
+  "bodies": [
+    "runs/snapshot-jump23-a.bin",
+    "runs/snapshot-jump23-b.bin"
+  ],
+  "builder_prediction": {
+    "ps_bits": 40,
+    "layout": "14 (prologue+continuation+V) + 13 (distance 23) + 12 (codec 11 field) + 1"
+  },
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1362,
+    "ps_bits_consumed": 54,
+    "actors_error": 0,
+    "states": {
+      "t=22": 9,
+      "t=35": 9,
+      "t=50": 9,
+      "t=65": 9
+    }
+  },
+  "interpretation": {
+    "delta": "54 - 40 = 14 bits",
+    "explanation": "with V=23 the target position is 23, but the single record lands on index 22 (distance 23 -> landing 22), so the loop needs ONE more record to reach the target - and one record costs about 14 bits",
+    "conclusion": "this is a direct confirmation of the walk model decoded from 0x670FF0: the decoder really does loop until the position equals V"
+  },
+  "corrected_rule": "the landing index must equal V, i.e. distance = V + 1 (because landing = distance - 1). For the origin field at index 22 use V=22 with distance 23.",
+  "next": [
+    "encode V=22 with distance 23 (landing exactly on index 22, codec 11) - the prediction is 40 ps bits with no extra record",
+    "if that lands on 40, the cost model is fully validated and the ps block becomes programmable"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r146-gs.jsonl",
+    "encoder": "runs/_gen_jump.py",
+    "module": "server1649370/ps_codec.py"
+  }
+}

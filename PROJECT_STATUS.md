@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Walk model CONFIRMED: V=23 landing on 22 costs one extra record]**
+> jump23 bodies (V=23, distance=23, 40-bit prediction): measured 54 bits, error 0. The 14-bit excess is exactly one record, because the landing index (22) is below the target (23).
+> Correction: landing index must equal V, so distance = V + 1. For index 22 use V=22 + distance 23 (predicted 40 bits).
+> This confirms the walk model decoded from 0x670FF0. Evidence: [walk model confirmed](evidence/experiments/20261023-codex-walk-model-confirmed.json).
 > **2026-10-23 [SOLVED the ps cost model: V is the target position, distance is the per-record advance]**
 > 0x670FF0: V = TARGET POSITION; copy fields 0..distance-2 (no bits); decode landing field at distance-1; LOOP until the position reaches the target.
 > 0x670CB0: distance = 1 for a single 1 bit, else 1 + sum of 3-bit chunks (max 7). cols' 4-bit gap was the wrong variant.
