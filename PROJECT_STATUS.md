@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【count=1 + 7 位字段尾 → state 9；实体线被字段数卡住】** ✅`snapshot-f7.bin`（169B，count1 + 7 个 0 位 + 0x00 + EOF）→ state 9、entity_count=1、id=[2078]、客户端存活。结合 f8 崩溃：**count=1 必然进入字段循环、只由 stream error 终止**，故无法干净通过、到不了 state 10；count=0 的 hybrid 跳过字段循环故被接受。下一轮二选一：恢复 entityState 字段数让字段流恰好收尾，或承认空世界 hybrid 为基线转攻比赛状态/数据路径。证据：[JSON](evidence/experiments/20261023-codex-f7-state9.json)、[JSON](evidence/experiments/20261023-codex-f8-crash-and-pivot.json)。
+
 > **2026-10-23【堆扫描：state 10 无可用的地图空间相机坐标】** ✅pid 30780/state 10，扫描 0x10000000..0x40000000（命中 20 提前停止，共 188KB），候选 float 三元组 z 全接近 0、像 UI/动画值（-513/-1/0、214/-3146/0、13182/144/-1.62），无地图空间相机原点。→ 与判断一致：state 10 时没有可用 view origin，黑屏原因是相机/场景数据不存在。下一轮改进扫描约束或改代码分析定位渲染器 view 输入。证据：[JSON](evidence/experiments/20261023-codex-camera-scan-heap-negative.json)、[JSON](evidence/experiments/20261023-codex-camera-source-analysis.json)。
 
 > **2026-10-23【cl.snap 注入视角/原点仍黑屏】** ✅pid 38212/state 10：cl=0x1348ADA0，cl.snap=cl+0x3B7C=0x1348E91C（注入前全 0）；向 snap+0x20 写 viewangles(0,90,0)、snap+0x30 写 origin(1000,1000,100)，回读正确，但截图仍 unique=6/mean=0/max=53 黑屏+加载图标。→ cl+0x3B7C 不是相机读取位置，内存注入走不通；协议侧（解析器填满 cl.snap）仍是唯一路径。下一轮回到字段循环终止，并定位渲染器 view 设置函数输入。证据：[JSON](evidence/experiments/20261023-codex-clsnap-injection-negative.json)。
