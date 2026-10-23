@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【相机扫描负结果：cl 前 256 KiB 无 float 三元组】** ✅state 10 时对 `cl=0x1346ABF4` 前 262144 字节按对齐 float 三元组扫描（|x|,|y|∈(1,20000)、z∈(-5000,5000)、至少一个非整数），候选数为 0——相机不在该区域或未设置。下一轮扫描完整 cl（0x12A700）与 cg 指针，或改在渲染器视图设置函数断点截获输入。证据：[JSON](evidence/experiments/20261023-codex-camera-scan-negative.json)。
+
 > **2026-10-23【修正：10.1 秒属于 CL_MapLoading；`0xE89B10` 是数字 UI 控件】** ✅`0x5157A2` 在 `call 0x453760` 返回之后，10.14 秒 = 加载器 9.39 秒 + UI 约 0.7 秒；eax=0xff7fffff 是浮点比较结果。✅`[0xE89B10]` 由 ID "1669" 创建，`+8` 是控件 kind（0 时走默认早退、传字符串 "0"），属数字显示控件，不是地图描述符。下一轮转向渲染相机 viewOrigin/viewangles。证据：[JSON](evidence/experiments/20261023-codex-ui-call-correction.json)。
 
 > **2026-10-23【加载后 UI 调用 10 秒；UI 对象字段全 0】** ✅`MapLoading` 1792747042.01 进入，`0x5157A2` 于 1792747052.15 命中（UI 调用耗时 10.14 秒，eax=0xff7fffff），随后 state 10、UI 仍 5。✅`[0xE89B10]`→0x8113F98 的 +8=0、+0xC=0、+0x10=1760288、+0x40/+0x44=0——加载屏读取的地图/状态信息为空。下一轮反汇编 `0x76EDF0` 主体查等待点并定位 +8/+0xC 写入者。证据：[JSON](evidence/experiments/20261023-codex-post-loader-ui-call-timing.json)。

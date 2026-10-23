@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T10:55:00+00:00",
+  "scope": "camera scan of the first 256 KiB of cl finds no plausible float triple",
+  "session": {
+    "pid": 39432,
+    "cl": "0x1346ABF4",
+    "state": 10,
+    "ui_state": 5
+  },
+  "scan": {
+    "range_bytes": 262144,
+    "filter": "aligned float triple, |x|,|y| in (1,20000), z in (-5000,5000), at least one non-integral value",
+    "candidates": 0
+  },
+  "reading": "the view origin/angles are not stored as a plain float triple in the first 256 KiB of cl (or the camera is not set at all). The renderer camera must live in cg or in the backend/tr structure.",
+  "next": [
+    "scan the whole cl allocation (0x12A700) and any cg pointer reachable from cl",
+    "alternative: instrument the renderer's view setup function and capture its inputs",
+    "compare a session that visibly draws something (frontend) with the in-game state to find the camera field"
+  ],
+  "artifacts": {
+    "forward": "runs/codex-r6-forward.json",
+    "server_log": "runs/codex-r6-gs.jsonl",
+    "status": "runs/codex-r6-status.json"
+  }
+}
