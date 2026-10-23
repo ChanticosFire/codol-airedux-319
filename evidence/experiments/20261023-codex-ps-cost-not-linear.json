@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T14:50:00+00:00",
+  "scope": "ps cost is not index-linear: landing at index 8 costs 68 bits, so the delta keeps decoding after the landing field",
+  "bodies": [
+    "runs/snapshot-land5.bin",
+    "runs/snapshot-land8.bin",
+    "runs/snapshot-land12.bin"
+  ],
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1376,
+    "ps_bits_consumed": 68,
+    "actors_error": 1,
+    "states": {
+      "t=22": 9,
+      "t=35": 9,
+      "t=50": 9,
+      "t=65": 9
+    }
+  },
+  "cost_table_so_far": {
+    "V=1 (index 0)": 28,
+    "V=9 (index 8)": 68,
+    "V=23 (index 22)": 69
+  },
+  "reading": [
+    "the cost is NOT linear in the landing index: index 8 and index 22 both cost about 68-69 bits while index 0 costs 28",
+    "the most likely explanation is that after decoding the landing field the delta continues reading further fields (the loop runs to the end of its index set), so the total depends on how much stream is available",
+    "combined with the earlier observation that padding does not extend the block, the ps decoder's iteration bounds are driven by a value we have not identified"
+  ],
+  "conclusion": {
+    "state": "the ps payload semantics are the remaining blocker for a visible world",
+    "what_would_unblock_it": "a captured snapshot from a real server (any map) - then the client's own bytes can be replayed and the encoding inferred by comparison instead of by trial",
+    "risk_of_blind_iteration": "high: two of the last four ps-carrying bodies ended the client process"
+  },
+  "artifacts": {
+    "server_log": "runs/codex-r141-gs.jsonl",
+    "encoder": "runs/_gen_landing.py"
+  }
+}

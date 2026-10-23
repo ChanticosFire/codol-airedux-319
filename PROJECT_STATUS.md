@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ps cost is not index-linear; ps semantics are the remaining blocker]**
+> land8: ps 1308 -> actors 1376 = 68 bits, actors error 1, states 9. Costs: index 0 = 28, index 8 = 68, index 22 = 69 - not linear, so the delta keeps decoding past the landing field with bounds we have not identified.
+> Remaining blocker: ps payload semantics. A captured real snapshot would unblock it (replay + compare). Blind iteration is risky: 2 of the last 4 ps bodies killed the client.
+> Evidence: [ps cost not linear](evidence/experiments/20261023-codex-ps-cost-not-linear.json).
 > **2026-10-23 [Padding does not extend ps; client exited during the run]**
 > ps_end 1360/1378/1400 bodies: ps 1308 -> actors 1336 (28 bits, error 0) - padding ignored; client gone by t=35.
 > So ps length is content-driven, and this is the second ps-carrying body that ends the client process - likely garbage values from codec -58.
