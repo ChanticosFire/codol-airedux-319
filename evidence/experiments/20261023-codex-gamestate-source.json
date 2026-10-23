@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T16:00:00+00:00",
+  "scope": "read the 2697 gamestate constructor to learn what our own server must emit",
+  "source": "runs/2697-native-src/src/sv_client.c:2219 SV_SendClientGameState",
+  "verified_facts": {
+    "preconditions": "the function returns early unless BOTH CODOL_NetworkSessionReady(remoteAddress) and CODOL_ClientStatsUpload(clientNum) are non-NULL, which is why the bridge needs --fake-stats before a real client ever gets a gamestate",
+    "shape": "it builds a msg_t from byte msgBuffer[MAX_MSGLEN], writes the gamestate service opcode and payload, then hands it to the netchan transmit path",
+    "guards": "it also calls PHandler_Event(PLUGINS_ONPLAYERGOTAUTHINFO), checks ban state, and handles unsent fragments before writing",
+    "CODOL_branch": "the CODOL_SERVER branch records previous state/gamestateSent/messageNum/reliableSent before building, and sets gamestateMessageNum from the outgoing sequence"
+  },
+  "why_this_matters_for_our_server": [
+    "a gamestate is not a single fixed blob: it carries the map/config strings and player state, and its size depends on the map and settings",
+    "the client will only consume it after the session/stats preconditions are satisfied on the server side, so our own server must answer stats before sending gamestate",
+    "because the 1649370 client treats in-band headers as plaintext, our outbound packets can start as plaintext seq(4)+body and be validated by observing whether the client's messageAck advances"
+  ],
+  "plan": [
+    "capture the first in-band datagram the 2697 dedrun sends to a real 1649370 client (length + first bytes) with forward --dump-in, to size the gamestate we must imitate",
+    "emit a minimal plaintext packet of that length with an svc opcode guess, and watch the client's messageAck for a reaction",
+    "if the client ignores it, mirror the 2697 outbound cipher instead of plaintext"
+  ],
+  "not_yet_done": [
+    "no outbound gamestate has been emitted by our server yet",
+    "the svc opcode for gamestate in this build has not been confirmed from a live capture"
+  ],
+  "artifacts": ["runs/2697-native-src/src/sv_client.c"]
+}
