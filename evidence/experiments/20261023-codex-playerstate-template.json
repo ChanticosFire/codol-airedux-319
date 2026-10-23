@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T17:30:00+00:00",
+  "scope": "playerState default template recovered; this session's injection did not run because the client had already exited",
+  "template": {
+    "address": "0xDA9920",
+    "bytes": 88,
+    "ints": {
+      "+0x04": 345,
+      "+0x08": 2,
+      "+0x0C": 1266,
+      "+0x10": -1,
+      "+0x14": 1267,
+      "+0x18": 1317,
+      "+0x28": 3,
+      "+0x34": 3,
+      "+0x40": 1
+    },
+    "viewangles_offset_0x4C": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "hex": "00 00 00 00 59 01 00 00 02 00 00 00 f2 04 00 00 ff ff ff ff f3 04 00 00 25 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03 00 00 00 00 00 00 00 00 00 00 00 03 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+  },
+  "session": {
+    "result": "client exited before the injection script ran (clc read returned None); status showed stage 0 / state 0 / connection 0xD362501F (decoded 0)",
+    "screenshot": "unchanged black"
+  },
+  "next": [
+    "run the default-ps + viewangles injection while the client is in state 10 with the process confirmed alive",
+    "if the frame changes, extend the ps with a valid origin/entity",
+    "keep the 167-byte baseline as the accepted fallback"
+  ],
+  "artifacts": {
+    "launch_log": "runs/codex-r19-launch.out",
+    "server_log": "runs/codex-r19-gs.jsonl"
+  }
+}

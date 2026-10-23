@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【恢复 playerState 默认模板 0xDA9920】** ✅0x58 字节模板，非零字段 +0x04=345、+0x08=2、+0x0C=1266、+0x10=-1、+0x14=1267、+0x18=1317、+0x28=3、+0x34=3、+0x40=1，viewangles(0x4C)=(0,0,0)——提供结构合法的 ps 底板。⚠️本轮注入未执行（客户端已退出，clc 读空，stage 0/state 0）。下一步在 state 10 存活时注入默认 ps + viewangles。证据：[JSON](evidence/experiments/20261023-codex-playerstate-template.json)。
+
 > **2026-10-23【渲染器证明在跑，排除 Present 失败】** ✅加载屏可见渲染、state 10 黑屏时加载图标仍在转动 → 帧循环与 Present 持续执行，渲染器未停（停了会冻结）。→ 无需 hook Present；黑屏是场景内容问题（ps/实体/比赛状态为空）。下一步回到 playerState 字段编码与比赛状态命令。证据：[JSON](evidence/experiments/20261023-codex-renderer-alive-proof.json)。
 
 > **2026-10-23【渲染接口确认 d3d9；Present 走 COM vtable[17]】** ✅模块：`d3d9.dll` 0x6C5A0000、`nvd3dum.dll` 0x623C0000、`D3DCompiler_43.dll` 0x6B660000。`Present` 不是 d3d9 导出，需扫描“vtable 在 d3d9 范围且 vtable[17] 也在 d3d9”的设备对象定位，再用一次性断点验证 state 10 是否真的 Present——命中则问题在场景内容，不命中则渲染更早停住。证据：[JSON](evidence/experiments/20261023-codex-d3d9-present-setup.json)。
