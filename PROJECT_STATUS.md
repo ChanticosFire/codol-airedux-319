@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Added docs/RUNBOOK.md]**
+> Operations guide: prerequisites, ports, one-command run (with the expected 9->10->10->0), manual six-step sequence, client state table (0/5/8/9/10 with what the frame shows), evidence locations, troubleshooting table, and safe-vs-risky changes (breakpoint hazard).
+> With RELEASE.md + SNAPSHOT-FORMAT.md + the evidence records the project is reviewable and operable without the chat history. No client interaction this round.
+> Evidence: docs/RUNBOOK.md.
 > **2026-10-23 [Capability boundary: only mp_cross_fire fastfiles exist]**
 > Resource inventory: 20 .ff files, only mp_cross_fire (plus _const/_load) is a map; the rest are commons. So multi-map is a resource limitation, not a server one - the override is correct end-to-end but a map without fastfiles disconnects the client.
 > RELEASE.md qualified: map selection verified only where fastfiles exist. Evidence: [map resource inventory](evidence/experiments/20261023-codex-map-resource-inventory.json).
