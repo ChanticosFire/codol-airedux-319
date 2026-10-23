@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T10:30:00+00:00",
+  "scope": "read the client connection object to find netchan incomingSequence",
+  "session": {"client": "20261023-seq, pid 41932", "server": "server1649370 on 28971"},
+  "result": {
+    "connection_pointer": "0x13f2d4a0 (from bridge status)",
+    "first_0x80_bytes": "all zeros",
+    "int32_scan": "every 4-byte word in 0x00..0x7c is 0",
+    "ring_b": {"read": 5, "write": 5},
+    "stage": 5,
+    "state": 0,
+    "connection_adr": "type 0 (unset)"
+  },
+  "diagnosis": {
+    "wrong_indirection": "the pointer reported by status is not the connection object itself, or it points to a structure that is only populated on the real socket path; reading it directly yields zeros",
+    "note_from_earlier": "earlier the same field produced a nonzero connection_adr at connection+0x14 (run adr2), so the object exists but is populated inconsistently between runs - here everything is zero, meaning the synthetic connection was never filled in this session"
+  },
+  "what_this_means_for_the_sequence_hypothesis": {
+    "untested": "we still have not read the client's incomingSequence, because the object we read was empty",
+    "next_time": "verify the object is non-empty (connection_adr.type != 0) before trusting any field read from it"
+  },
+  "artifacts": ["runs/seq-status.json"]
+}
