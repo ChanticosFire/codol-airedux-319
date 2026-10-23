@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T02:55:00+00:00",
+  "scope": "drive the legal phase-3 connection state machine through the loopback ring and enumerate what the client sends at each phase",
+  "session": {"name": "20261023-phase3-ring", "pid": 1672, "result": "phase 0 -> 3 -> 4 -> 5, client alive, observation_timeout"},
+  "sequence": [
+    {
+      "step": "baseline",
+      "state": 0,
+      "ring_a": [0, 0],
+      "ring_b": [0, 0]
+    },
+    {
+      "step": "start-challenge",
+      "action": "ring_bridge start-challenge: cl+0x14 = loopback netadr (type 2, ip 0, port 0, channel 0x9D), [0x76446B0]=3",
+      "state": 3,
+      "connection_adr": {"type": 2, "ip": "0.0.0.0", "port": 0, "channel": 157}
+    },
+    {
+      "step": "phase3_outbound",
+      "delay_ms": 1200,
+      "ring_a": [1, 1],
+      "payload_hex": "ffffffff6765746368616c6c656e676520302022306366376565343465303863346332382200",
+      "payload_ascii": "\\xff\\xff\\xff\\xffgetchallenge 0 \"0cf7ee44e08c4c28\"\\x00",
+      "note": "the client emits getchallenge every frame while phase 3; ring A reached 12/12 within a few seconds"
+    },
+    {
+      "step": "challengeResponse",
+      "action": "inject-oob challengeResponse 0 \"0cf7ee44e08c4c28\"",
+      "state_after": 4,
+      "ring_b": [1, 1],
+      "note": "phase advanced 3 -> 4"
+    },
+    {
+      "step": "phase4_outbound",
+      "ring_a_write": 12,
+      "packets": [
+        {"kind": "getchallenge", "count": 5},
+        {
+          "kind": "connect",
+          "len": 401,
+          "payload_hex_head": "ffffffff636f6e6e65637420306366376565343465303863346332382022",
+          "payload_ascii": "\\xff\\xff\\xff\\xffconnect 0cf7ee44e08c4c28 \"\\name\\QWRtaW5pc3RyYUNsaWVudA==\\xuid\\0cf7ee44e08c4c28\\natType\\3\\rank\\69\\clan\\0000000000000000\\2490\\-695030357\\checksum\\-694791800\\challenge\\0\\statver\\19 1248641861\\gameMomementRecording\\0\\secureProfileReady\\1\\invited\\0\\openid\\0\\csi\\0\\session\\0\\partyid\\0\\partyMembers\\0\\teamid\\0\\isroomhost\\0\\team\\0\\joinType\\0\\playerLobbyInfo\\0\\isshoutcaster\\0\\wargodchoice\\0\\onlineStats\\0\""
+        }
+      ]
+    },
+    {
+      "step": "connectResponse",
+      "action": "inject-oob connectResponse",
+      "state_after": 5,
+      "ring_b": [2, 2],
+      "note": "phase advanced 4 -> 5 (CS_PRIMED)"
+    },
+    {
+      "step": "phase5_outbound",
+      "ring_a_write": 80,
+      "packets": [
+        {"kind": "stats", "len": 1251, "payload_hex_head": "ffffffff73746174730000fd047801ed9a3d8e18540c84170435153d1d2d849f829e067109243a82d29073a4e2089c84d3700960bf3123d9929bf71245243bd1"},
+        {"kind": "stats", "len": 52, "payload_hex_head": "ffffffff73746174730001fd04c80572815c2017c80572815c2017c80572815c2017c80572815c2017c8059ec205fe0596a45b3d"}
+      ]
+    },
+    {
+      "step": "statsResponse",
+      "action": "inject-oob statsResponse (empty text)",
+      "state_after": 5,
+      "ring_a_write": 156,
+      "note": "empty statsResponse does not advance; the client keeps re-sending stats every frame"
+    }
+  ],
+  "conclusions": [
+    "the legal phase-3 path works end to end through the in-process loopback ring: 0x5C05F0 emits getchallenge, the client accepts the OOB challengeResponse and advances to phase 4, then emits a full connect request, and accepts an empty connectResponse to reach CS_PRIMED (phase 5)",
+    "the earlier conclusion that 0x5C05F0 exits before sending was an artefact of the previous setup; with a clean rebuilt cl and a loopback netadr the send path is fully functional",
+    "at phase 5 the client uploads a 1251-byte stats blob and a short 52-byte stats packet every frame; an empty statsResponse is ignored",
+    "the next gate is the stats/gamestate exchange: either a correctly formatted statsResponse or a minimal gamestate (configstrings and entity baseline) is required to reach CS_ACTIVE and the loading screen"
+  ],
+  "next": [
+    "inspect the 2.6.9.7 dedrun stats/gamestate implementation and tools/inject_client_gamestate.py for the exact statsResponse format and a minimal gamestate body",
+    "capture the 2.6.9.7 server's reply to the same 1649370 stats upload (run the dedrun against the loopback ring) to learn the wire shape rather than guessing",
+    "once CS_ACTIVE is reached, load mp_cross_fire and verify the world with a screenshot and a controllable player"
+  ],
+  "artifacts": [
+    "runs/20261023-phase3-payload.json",
+    "runs/20261023-phase4-packets.json",
+    "runs/20261023-phase5-packets.json",
+    "runs/p3-after.json",
+    "runs/p3-after3.json"
+  ]
+}
