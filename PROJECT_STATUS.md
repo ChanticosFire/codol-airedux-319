@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Route B: end-of-match flag found - PS field 83 = 6 (intermission)]**
+> cols `snapshot/mod.rs` writes **playerState field 83 = 6 (8 bits)** when `PlayerVitals.intermission` is true; the client's `0x41dba0` case 6 skips movement and weapons, i.e. the match is over.
+> Implication: this is the game-side "end of match" lever, since all connection-based attempts failed. 1649370 needs a playerState block carrying field 83 = 6; our hybrid body only sends the 1-bit "no change" path.
+> Next: learn cols' playerState (index, value, bits) serialisation, then emit a minimal ps block with only field 83 = 6 and test for intermission.
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [intermission field](evidence/experiments/20261023-codex-intermission-field.json).
 > **2026-10-23 [Route B: clean state-10 hard disconnect is invisible to the client]**
 > Killed the gameserver while the client was confirmed at state 10.
 > Result: state stayed 10 for 90 s and `ring_a` kept advancing (51 -> 66 -> 96 -> 134/141), so the client kept sending usercmd as if nothing happened.
