@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T20:10:00+00:00",
+  "scope": "isolating the crash bit: changed/codec/last variants",
+  "experiments": {
+    "last0_previous_round": {
+      "changed": 1,
+      "codec": 1,
+      "last": 0,
+      "result": "crash"
+    },
+    "c1k0l0": {
+      "changed": 1,
+      "codec": 0,
+      "last": 0,
+      "result": "alive (pid 6740)"
+    },
+    "c0k1l0": {
+      "changed": 0,
+      "codec": 1,
+      "last": 0,
+      "result": "alive (pid 26988)"
+    },
+    "c0k0l0": {
+      "changed": 0,
+      "codec": 0,
+      "last": 0,
+      "result": "alive (pid 31692)"
+    }
+  },
+  "deduction": [
+    "codec=1 alone (c0k1l0) is harmless, and changed=1 alone (c1k0l0) is harmless",
+    "but changed=1 AND codec=1 together with last=0 crashed in the previous round",
+    "the most consistent reading: changed selects the field path and codec=1 declares that field values follow; with last=0 no field can follow, so the parser runs off the buffer",
+    "so the crash needs BOTH changed=1 and codec=1, plus a truncated field payload"
+  ],
+  "next": [
+    "build changed=1 + codec=1 + last=1 + exactly one field (eType via raw byte 1) and test",
+    "if that survives, grow to the three positions"
+  ],
+  "artifacts": {
+    "bodies": [
+      "runs/snapshot-v-c1k0l0.bin",
+      "runs/snapshot-v-c0k1l0.bin",
+      "runs/snapshot-v-c0k0l0.bin"
+    ],
+    "previous_crash": "runs/snapshot-e2-last0.bin"
+  }
+}
