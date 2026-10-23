@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T19:00:00+00:00",
+  "scope": "CORRECTION of round 197: the entity block IS called (1 hit) with the accepted body - it simply decodes zero entities and leaves the count at its sentinel",
+  "run": {
+    "body": "runs/snapshot-single22.bin",
+    "breakpoint": "0x471D80:GateEntity",
+    "hits": 1,
+    "state": 10,
+    "entity_count_0x7859558": "0xFFFF0000 (4294901760)"
+  },
+  "the_correction": [
+    "round 197 concluded 'the entity block is never entered' from 0 hits at 0x471D80",
+    "that run used runs/snapshot-count1-b164.bin, which ends at state 9 and never reaches the content calls",
+    "with the accepted body (single22) the entity block IS entered, once",
+    "so the block runs; what it does not do is produce any entity"
+  ],
+  "what_the_count_means": [
+    "entity_count reads 0xFFFF0000, which is a sentinel (0 minus 1 in 32-bit), not a real count",
+    "so the entity block decodes ZERO entities and leaves the count at its initial value",
+    "and the code shows the call at 0x4723DD is UNCONDITIONAL - between 0x4723C4 and 0x4723DD there is no branch at all",
+    "which is consistent: the call always happens, and the block decides internally how many entities to read"
+  ],
+  "what_this_changes": [
+    "the earlier 'never entered' framing is withdrawn",
+    "the real problem is that the entity block reads ZERO entities from our body - i.e. its very first fields (the compressed entity list) say 'nothing changed'",
+    "so the next work item is the entity block's own bit layout, starting from its entry at 0x471D80"
+  ],
+  "next": [
+    "read 0x471D80 and find where it stores to 0x7859558, then read the bits it consumes before that store",
+    "that tells us which bit(s) must change to make it decode one entity"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r207-gs.jsonl"
+  }
+}

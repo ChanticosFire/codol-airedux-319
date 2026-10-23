@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CORRECTION: entity block IS called; it decodes zero entities]**
+> single22 + probe at 0x471D80: 1 hit, state 10, entity_count 0xFFFF0000 (sentinel). Round 197's 'never entered' came from using count1-b164, which ends at state 9 and never reaches the content calls. The call at 0x4723DD is unconditional.
+> So the real problem: the entity block reads zero entities. Next: read 0x471D80 and find the store to 0x7859558 and the bits before it.
+> Evidence: [entity block runs zero](evidence/experiments/20261023-codex-entity-block-runs-zero.json).
 > **2026-10-23 [Constant load bypassed (edi=0 at 0x47226D) and the gate at 0x47239A never reached]**
 > Exact-match re-run: GateConst (0x47226D) 1 hit with edi = 0; GateTest (0x47239A) 0 hits. So the caller is entered after 0x472268 and our snapshot's flag bit at 0x47238A reads 0, taking the full-frame path (push 0 at 0x4723AC, push edi=0 at 0x4723CB).
 > Open: 0x471D80 still never fires, so the skip of the entity call lies between 0x4723B9 and 0x4723DD. Next: read 0x4723C4..0x4723F0.
