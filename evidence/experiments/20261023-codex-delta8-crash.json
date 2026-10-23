@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T11:25:00+00:00",
+  "scope": "a delta entity with an 8-bit index also crashes the client",
+  "experiment": {
+    "body": "runs/snapshot-del8.bin",
+    "encoding": "count1 + entity loop bit 1 (delta) + 8-bit index 0",
+    "result": "client exited (pid 0)"
+  },
+  "reasoning": [
+    "the delta branch copies 0x34 bytes from ([base+0x3BB4] + index) % [clc+0xA8EC], so the index width comes from the caller's [ebp+8]",
+    "if that width is not 8, the bit stream misaligns and the copy reads a bogus source, which crashes",
+    "so the delta path also needs the exact [ebp+8] value before it can be used"
+  ],
+  "next": [
+    "read [ebp+8] at 0x471D80 by breaking there: the register row carries ebp, so the parameter value can be read from the stack",
+    "then rebuild the delta entity with the measured width",
+    "keep the hybrid baseline as the fallback"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r44-gs.jsonl",
+    "body": "runs/snapshot-del8.bin"
+  }
+}
