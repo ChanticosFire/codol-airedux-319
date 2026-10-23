@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T04:55:00+00:00",
+  "scope": "test whether the teardown routine 0x77C290 is ever called while the phase falls from 7 to 0",
+  "session": {
+    "name": "20261023-world-6",
+    "pid": 21392,
+    "launch": "launch_1649370.py --full ... --breakpoint 0x77c290:teardown_enter",
+    "patches": {"ring-a-drain": "0x674F30 -> 31c0c3", "0x66F20E": "ff d2 -> 90 90"},
+    "bridge": "forward --target 127.0.0.1:28970 --adr-type 2 --start-challenge --fake-stats --send-move --keepalive"
+  },
+  "evidence": {
+    "breakpoint_armed_at_startup": true,
+    "startup_hits": 0,
+    "hits_after_forwarding": 0,
+    "phase_final": 0,
+    "ring": {"a": [5, 5], "b": [4750, 4750]},
+    "server": "AdministraClient state 4 ack 1 gamestate 4; bots active"
+  },
+  "conclusion": "0x77C290 is never entered. Neither the teardown entry nor the store at 0x77C343 executes, yet the phase still falls to 0. The phase write comes from a path outside both functions: most likely a bulk clear of the surrounding global block, or a pointer-based store that the immediate-store scan cannot see.",
+  "significance": "this removes the last plausible named function from the candidate list. The next probe must observe the write itself, not a function.",
+  "next": [
+    "install a hardware write breakpoint (DR0 = 0x76446B0, LEN=4, RW=write) in the window thread and have the 319 wrapper record the single-step EIP; client_wait.py already models Dr0..Dr7 in its CONTEXT",
+    "simpler first check: after the phase falls to 0, take a screenshot anyway. If the world is still rendered and the server still tracks AdministraClient, the phase value may be irrelevant to gameplay and the priority shifts to input",
+    "alternatively search for a memset/memcpy whose destination range covers 0x76446B0 (e.g. lea/push of 0x76446xx followed by a call to 0xC42DE0)"
+  ],
+  "artifacts": ["runs/w6-status.json", "runs/w6-in.jsonl"]
+}
