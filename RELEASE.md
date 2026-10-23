@@ -187,3 +187,11 @@ All work is committed in the local git repository (`319/`). Recent milestones:
 - `cc27bd0` - the client does decode a field; V = target index + 1
 - `1f2a44c` - full-field ps still overruns (~4.3 bits per field)
 - `d3fc363` - ps ring write has no effect
+
+## Status (frozen)
+
+The capabilities above are **delivered and reproducible**. The visible world is
+**not delivered**: the client reaches state 10 but renders a black frame because
+cgame has no scene data. The blockers, the exact addresses, the cost model that
+is already solved, and the two routes that would unblock it are documented in
+**`docs/PHASE-SUMMARY.md`**.

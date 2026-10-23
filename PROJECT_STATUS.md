@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Phase frozen - docs/PHASE-SUMMARY.md is the handover artefact]**
+> Records delivered vs blocked, the certain protocol facts (block order, 0x4724A7 stream_error rejection, V/distance = V+1, cost model 29==29, 0x670B15 gate+LSB, real table 0xDA8520, -58 kills client), the two unblock routes (captured snapshot; debugger single-step), and the tooling hazards.
+> RELEASE.md gained a Status (frozen) section. Deliberate stop of black-box iteration: 14 rounds gave knowledge but no accepted non-zero content.
+> Evidence: docs/PHASE-SUMMARY.md.
 > **2026-10-23 [Padded body crashes the client]**
 > pad20 with 3 probes: zero traces, zero decide records, forward summary missing, 4 snapshots queued, THREE client run dirs within 3 minutes (client died and relaunched).
 > So padding inside ps crashes rather than helps. Every non-zero ps attempt is rejected or crashes; only the all-zero body works.
