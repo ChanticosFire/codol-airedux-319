@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T05:40:00+00:00",
+  "scope": "round invalidated by a design mistake: connected to the dedrun instead of our own server",
+  "what_went_wrong": {
+    "goal": "verify that the client adopted the challenge issued by server1649370",
+    "mistake": "the session was started against the 2697 dedrun (target 28970), not against server1649370 on 28971",
+    "consequence": "any challenge read from the client would be the dedrun's, not ours, so the experiment cannot answer the question"
+  },
+  "why_it_matters": "challenge adoption is the leading suspect for why our correctly fragmented gamestate is still not acknowledged: if the client keeps a different challenge than the one we signed, every cipher byte we produce is wrong and no framing fix can help",
+  "correct_design_for_next_round": [
+    "start server319.lsg on 28969 and server1649370.gameserver on 28971",
+    "start the client, log in to the lobby",
+    "ring-a-drain block, install the refresh hook, start-challenge",
+    "forward --target 127.0.0.1:28971 (OUR server)",
+    "read the server's own challenge_assigned from runs/gs*.jsonl",
+    "then read the client connection object (CLIENT_SLOT 0x82c3b58 / CLIENT_POINTERS 0x1c1d188 / XOR 0xfbb2c97a per the 1649370 layout.py) and search it for that value",
+    "if the value is present, the client adopted our challenge and the cipher is right; if absent, the cipher key source is wrong"
+  ],
+  "note": "testing this against the dedrun would only tell us that the dedrun's challenge is adopted, which we already know from the fact that its gamestate reaches phase 8",
+  "artifacts": ["E:\\\\GAME\\\\COD\\\\1649370\\\\src\\\\codol_rebuild\\\\adapters\\\\game\\\\v1649370\\\\layout.py"]
+}
