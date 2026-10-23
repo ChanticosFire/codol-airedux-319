@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [THE GATE: 0x47239A test edi,edi ; je 0x47232B - NULL history skips ALL content blocks]**
+> 0x671D80 is only the snapshot header parser: zero calls to entities/ps/actors/glass in 0x671D80..0x672580. The content blocks are called from the caller at 0x4723xx, and 0x47239A tests edi: if it is NULL, 0x47232B sets the stream error and returns, skipping entities, playerState, actors and glass.
+> That explains 0x471D80's zero hits, the sentinel entity_count and state 9.
+> Open: why edi is NULL although 0x472268 sets it to 0xC89A490. Next probe 0x472268 and 0x47239A together.
+> Evidence: [the gate is null history](evidence/experiments/20261023-codex-the-gate-is-null-history.json).
 > **2026-10-23 [The ENTITY BLOCK is never entered: 0x471D80 has zero hits]**
 > snapshot-count1-b164.bin: 0 hits at 0x471D80, state 9, entity_count = 0xFFFF0001 (sentinel). So the parser never reaches the entity block - encoding entity fields was work on a branch that is never taken.
 > Next: probe 0x671D80 and read the code between its entry and the 0x471D80 call to find the gate.

@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T16:00:00+00:00",
+  "scope": "THE GATE FOUND: 0x671D80 never calls the content blocks - the gate is `test edi,edi ; je 0x47232B` in the CALLER, so a NULL history skips entities, playerState, actors and glass entirely",
+  "the_search": {
+    "range": "0x671D80 .. 0x672580",
+    "targets": [
+      "0x471D80 ENTITIES",
+      "0x471980 PS",
+      "0x471010 ACTORS",
+      "0x4475F0 GLASS"
+    ],
+    "result": "ZERO calls to any of them"
+  },
+  "what_this_corrects": [
+    "the earlier chain '0x671D80 -> 0x471D80 (entities)' is WRONG: 0x671D80 is only the snapshot HEADER parser",
+    "the content blocks are called from the caller at 0x4723xx, not from 0x671D80",
+    "which matches the disassembly already recorded: 0x4723DD calls 0x471D80 and 0x472401 calls 0x471980, both from that caller"
+  ],
+  "the_gate": {
+    "0x47239A": "test edi,edi",
+    "0x47239C": "je 0x47232B   -> the epilogue: set the stream error and RETURN",
+    "consequence": "when edi (the snapshot ring slot / history pointer) is NULL, the caller returns WITHOUT calling entities, playerState, actors or glass"
+  },
+  "why_this_explains_every_measurement": [
+    "0x471D80 has zero hits: the call is never reached",
+    "entity_count stays at the sentinel 0xFFFF0001: the entity block never runs",
+    "the run ends at state 9: no content, so the client never leaves the loading screen",
+    "and the black frame follows from there being no entities at all"
+  ],
+  "the_remaining_question": [
+    "why edi is NULL at 0x47239A, when 0x472268 sets it to 0xC89A490 earlier in the same function",
+    "the probe measured edi = 0 exactly at 0x4723CB, so either the path enters the function AFTER 0x472268, or something between zeroes it",
+    "the ring branch at 0x4722A2..0x4722C0 was probed and never fires, so the ring substitution is not the cause"
+  ],
+  "next": [
+    "probe 0x47239A (the test) and log edi there, plus 0x472268 (the constant load) - that distinguishes 'entered after 0x472268' from 'zeroed in between' in ONE run",
+    "both addresses are once per snapshot, so this is cheap and safe"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x671D80 header parser",
+      "0x47239A the gate",
+      "0x47232B the epilogue",
+      "0x472268 constant load"
+    ]
+  }
+}
