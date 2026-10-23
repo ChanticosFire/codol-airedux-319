@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T06:00:00+00:00",
+  "scope": "attempt to locate the client connection object and verify challenge adoption",
+  "result": {
+    "server_challenge": 1731860237,
+    "CLIENT_SLOT_read": "0x5",
+    "CLIENT_POINTERS_read": "0xddafc3cb",
+    "derived_cl": "0x261d0ab1 (not a valid user-mode address)",
+    "challenge_search": "not found because the base address was invalid"
+  },
+  "diagnosis": {
+    "the_layout_constants_are_not_used_that_way": "CLIENT_SLOT holding 0x5 means it is a slot index or a state value, not a pointer; CLIENT_POINTERS XORed with 0xfbb2c97a giving a nonsense address means the decode is wrong or the table must be indexed first",
+    "consequence": "we could not read the client's stored challenge this round"
+  },
+  "what_we_did_learn": {
+    "server_issued_challenge": 1731860237,
+    "our_server_did_receive_the_connect": "the handshake completed against our own server this time (the correct design), so the challenge was issued and echoed"
+  },
+  "next": [
+    "read E:\\\\GAME\\\\COD\\\\1649370\\\\src\\\\codol_rebuild\\\\adapters\\\\game\\\\v1649370\\\\profile.py and session_bridge.py to see how CLIENT_SLOT / CLIENT_POINTERS / CLIENT_POINTER_XOR are actually consumed (index vs pointer, decode order)",
+    "or bypass the client-side lookup: search the whole client process for the 4-byte challenge value and report every hit address, then correlate with known module ranges",
+    "if the challenge appears anywhere in the client, adoption is confirmed and the cipher key source is right; if it appears nowhere, the client never stored it and our key basis is wrong"
+  ],
+  "artifacts": ["runs/chal2-gs.jsonl"]
+}
