@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:45:00+00:00",
+  "scope": "test the corrected serverId and identify what still invalidates the forged ack",
+  "session": {
+    "name": "20261023-world-19",
+    "pid": 27568,
+    "hook": "install_refresh_hook.py --install",
+    "bridge": "forward --adr-type 2 --start-challenge --fake-stats --send-move --keepalive --forge-ack --forge-interval 1.5 (server id defaults to 1)"
+  },
+  "forge_log_tail": [
+    {"seq": 5, "ack": 62, "qport": 51576, "challenge": -735722843, "server_id": 1, "reliable_ack": 0, "message_ack": 1, "command_len": 0, "plain": "3e0000000000"},
+    {"seq": 6, "ack": 64, "qport": 51576, "challenge": -735722843, "server_id": 1, "reliable_ack": 0, "message_ack": 1, "command_len": 0, "plain": "400000000000"}
+  ],
+  "server": ["out 110", "out 225", "out 343"],
+  "analysis": {
+    "server_id_not_enough": "with server_id=1 the dedrun still ignores the packet",
+    "remaining_candidate": "the forward socket's source port changes every restart. The dedrun's client->remoteAddress was learned from the first forward instance, so packets from a new port do not belong to that client_t and are discarded before decoding. qport=51576 in the log is this instance's port, not necessarily the one the dedrun stored.",
+    "fix": "ring_bridge now accepts --bind-port so all sessions can use one fixed local UDP port and the dedrun keeps a single remoteAddress"
+  },
+  "next": [
+    "start the dedrun once, then start forward with --bind-port 29000 before the client connects, so the very first packet already comes from 29000",
+    "keep the same port for the whole session and for any restart; never let the port drift",
+    "re-check whether out stops growing, then look at reliableAcknowledge"
+  ],
+  "artifacts": ["tools/ring_bridge_1649370.py", "runs/forge-ack-log.jsonl"]
+}

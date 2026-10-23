@@ -667,7 +667,8 @@ def cmd_forward(client: Client, args) -> dict:
     host, port_text = args.target.rsplit(":", 1)
     target = (host, int(port_text))
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("127.0.0.1", 0))
+    bind_port = int(getattr(args, "bind_port", 0) or 0)
+    sock.bind(("127.0.0.1", bind_port))
     dump_handle = open(args.dump_in, "w", encoding="utf-8") if getattr(args, "dump_in", None) else None
     sock.setblocking(False)
     events = []
@@ -963,6 +964,8 @@ def main() -> int:
                    help="plain body tail: 0=00 00, 1=0a 00, 2=00 01")
     p.add_argument("--forge-server-id", type=int, default=1,
                    help="client->serverId used in the netchan key (dedrun reports server 1)")
+    p.add_argument("--bind-port", type=int, default=0,
+                   help="fixed local UDP port for the forward socket; keep it stable so the dedrun keeps one remoteAddress")
     p.add_argument("--dump-in", help="write every injected server packet as JSONL (length/state/hex)")
     p.set_defaults(func=cmd_forward)
 
