@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T02:40:00+00:00",
+  "scope": "stabilise the phase-8 instrumentation window, steer the 0x66F170 callback result, and test whether the callback can trigger the outbound packet",
+  "sessions": [
+    {
+      "name": "20261023-stub-7",
+      "outcome": "crash 0xC0000005 @ 0x7A7D49E2",
+      "registers": {"eax": "cl2+0x1C", "edi": "cl2+0xC", "ecx": "0x1AF340", "esi": "0x1AF3BC", "edx": "0x7A7D49E2"},
+      "cause": "the window poll treated the decoded value 0xD362501F (encoded global still zero) as a valid cl, wrote [cl2+0x30] on an invalid object, restored 0x66F20E, and the next heartbeat on the newly rebuilt cl2 (still 0) crashed in the decoded callback"
+    },
+    {
+      "name": "20261023-stub-8",
+      "outcome": "crash",
+      "cause": "the wait condition used the decoded cl value only, so the unchanged old cl satisfied it immediately; the encoded store landed on the old cl2 and the rebuilt cl2 kept [cl2+0x30]=0"
+    },
+    {
+      "name": "20261023-stub-9",
+      "corrected_wait": "encoded global non-zero AND different from its initial value AND cl2 encoded non-zero AND phase==8, stable across two consecutive samples 8 ms apart",
+      "window": {"enc_init": "0xC0B5806B", "enc_after_rebuild": "0xC06C5977", "cl": "0x130E0968", "cl2": "0x13565580"},
+      "hit": true,
+      "stub_record": {"result_ptr": "0x1AF340", "output_struct": "0x1AF3BC", "message_2C": "all zero"},
+      "steer": "stub wrote [ecx+4] = 0x1000 (bit 12 set)",
+      "samples": [
+        {"dt": 0.00, "phase": 8, "enc": "0xC06C5977", "cl2enc": "0x7BC78447", "ring_a": [0, 0], "ring_b": [0, 0]},
+        {"dt": 0.15, "phase": 8, "enc": "0xC06C5977", "cl2enc": "0x7BC78447", "ring_a": [0, 0], "ring_b": [0, 0]},
+        {"dt": 0.30, "phase": 8, "enc": "0xC06C5977", "cl2enc": "0x7BC78447", "ring_a": [0, 0], "ring_b": [0, 0]},
+        {"dt": 0.45, "phase": 8, "enc": "0xC06C5977", "cl2enc": "0x7BC78447", "ring_a": [0, 0], "ring_b": [0, 0]}
+      ],
+      "aftermath": "phase fell back to 0 and cl was rebuilt again (enc 0xC0B5835B, cl 0x13D7D344); a loopback netadr written on that rebuilt cl survived but ring A/B stayed 0/0 and phase stayed 0",
+      "conclusion": "setting bit 12 in the callback result keeps phase 8 stable for at least half a second but still produces no outbound packet. The 0x66F170 callback is therefore a status/query helper, not the send switch."
+    }
+  ],
+  "lessons": [
+    "[0x331C0C8]==0 decodes to 0xD362501F, which looks like a valid pointer; always test the encoded dword before trusting the decoded address",
+    "the rebuilt cl2 must be identified by a changed encoded value, not by a changed decoded value",
+    "after the stub is hit, re-patch 0x66F20E to 90 90 immediately, otherwise the next rebuild runs the garbage callback again"
+  ],
+  "next": [
+    "instrument 0x5B2C10 after 0x66F170 to find the branch that leads to the send path, or call the loopback writer 0x6750A0 directly with a constructed getchallenge",
+    "return to the legal phase-3 path: write a loopback netadr, phase 3, and let the frame tick drive 0x5C05F0; the earlier blocker there was the 0x5BE700 handle check",
+    "consider calling the 0x813C20 connection driver with a prepared address string instead of forcing the phase"
+  ],
+  "artifacts": ["runs/20261023-stub-9.json", "runs/20261023-stub-9b.json"]
+}
