@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T04:45:00+00:00",
+  "scope": "prove whether 0x77C343 really clears the local phase",
+  "session": {
+    "name": "20261023-world-5",
+    "pid": 24116,
+    "launch": "launch_1649370.py --full ... --breakpoint 0x77c343:phase_clear",
+    "patches": {"ring-a-drain": "0x674F30 558bec -> 31c0c3", "0x66F20E": "ff d2 -> 90 90"},
+    "bridge": "forward --target 127.0.0.1:28970 --adr-type 2 --start-challenge --fake-stats --send-move --keepalive"
+  },
+  "evidence": {
+    "breakpoint_installed": "0x77C343 first byte reads cc in the live process",
+    "breakpoint_hits": 0,
+    "phase_reached": "the forward injection log records state 3 (challengeResponse), state 4 (connectResponse), state 4 (statsResponse) and state 7 (1172-byte 1F/21 gamestate fragments), so the client did reach 7",
+    "final_phase": 0,
+    "slot_array_probe": {
+      "base": "0x76446B0 with a 0x20 stride (eax = index << 5)",
+      "observed": "slot 0 phase 0; slot 1 value 0x8120C2B0-like pointer; slot 2 another pointer; slots 3..11 zero",
+      "interpretation": "0x76446B0 is the base of a per-client record array, but only slot 0 is the local client phase; the other slots are not phase values"
+    },
+    "ring": {"a": [4, 4], "b": [23415, 23416], "connection_adr_after": "type 0 (cleared)"}
+  },
+  "conclusion": "0x77C343 is NOT the store that clears the local phase. The breakpoint was installed and never hit, yet the phase fell from 7 to 0. The phase-clearing write must come from an indirect store, a bulk clear, or another path that the immediate-store scan does not cover.",
+  "next": [
+    "put a hardware write breakpoint (DR0, length 4, write) on 0x76446B0 in the window thread and let the launcher debug loop report the faulting EIP; client_wait.py already models the CONTEXT with Dr0..Dr7",
+    "or place a one-shot breakpoint on the 0x77C290 entry (--breakpoint 0x77c290:teardown_enter) to learn whether the teardown routine runs at all",
+    "also record [0x76446B0] every 20 ms from the bridge to timestamp the transition (3->4->5->7->0) and correlate it with the injection events"
+  ],
+  "artifacts": ["runs/w5-in.jsonl", "runs/w5-slots.json", "runs/w5-status.json"]
+}
