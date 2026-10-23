@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T04:25:00+00:00",
+  "scope": "skip the whole 0x77C290 function and see whether the phase stays",
+  "session": {
+    "name": "20261023-world-4",
+    "pid": 20032,
+    "reused_services": {"lsg": "pid 32488 on 28969", "dedrun": "pid 24892 on 28970"},
+    "patches": {
+      "ring-a-drain": "0x674F30 558bec -> 31c0c3",
+      "0x77C290": "55 -> c3, verified",
+      "0x66F20E": "ff d2 -> 90 90, verified"
+    },
+    "bridge": "forward --target 127.0.0.1:28970 --adr-type 2 --start-challenge --fake-stats --send-move --keepalive"
+  },
+  "observation": {
+    "phase": 0,
+    "ring_a": [4, 4],
+    "ring_b": [4297, 4297],
+    "flag_100260": 0,
+    "server": "AdministraClient state 4 ack 1 gamestate 4 out 356; bots active"
+  },
+  "analysis": {
+    "result": "returning immediately from 0x77C290 does not keep the phase and additionally prevents connection progress: the client stays at phase 0 with only four getchallenge packets and never processes the replies",
+    "conclusion": "0x77C290 is not a pure disconnect routine; it participates in the client connect/update flow (one caller is 0x4FD98B right after the Com Init milestone), so it must not be skipped wholesale"
+  },
+  "next": [
+    "restore 0x77C290 and instead put a one-shot launcher breakpoint at 0x77C343 (--breakpoint 0x77c343:phase_clear) while running the normal nop-0x66F20E setup; the hit record carries the registers and stack needed to identify the caller",
+    "if the breakpoint never hits, re-scan for indirect stores to [0x76446B0] or check whether the phase is reset through a pointer",
+    "keep the heartbeat and 0x5B2C10 alive in that run"
+  ],
+  "artifacts": ["runs/w4-status1.json", "runs/w4-in.jsonl", "runs/w4-patch77c290.json"]
+}
