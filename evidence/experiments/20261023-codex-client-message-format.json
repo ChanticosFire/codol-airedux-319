@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T09:55:00+00:00",
+  "scope": "read the exact client->server body format from the 2697 source",
+  "source": {
+    "sv_packet_event": "seq(4) is read first; for CODOL_Target2697ArchivesActive the qport is omitted and the client is matched by NET_CompareAdr; after Netchan_Process the server reads serverId (1 byte) and messageAcknowledge (4 bytes, & 0x7fffffff)",
+    "sv_execute_client_message": "the decrypted remainder is copied verbatim into decompressMsg (no Huffman for CODOL_SERVER); commands are read with MSG_ReadBits(3): clc_move=0, clc_moveNoDelta=1, clc_clientCommand=2, clc_EOF=3, clc_nop=4",
+    "sv_user_move": "after the 3-bit opcode: cmdCount = MSG_ReadByte(msg) (>=1), then cmdCount usercmds; for CODOL_SERVER the usercmd key is CODOL_UsercmdKey(messageAcknowledge, sv.checksumFeed, reliableCommands[reliableAck&127].command, 32)",
+    "stale_server_id_branch": "if (serverId & 0xff) != (sv_serverid & 0xff) the server logs the stale line and may resend the gamestate; otherwise it requires gamestateSent and then parses commands"
+  },
+  "implications": {
+    "body_layout": "serverId(1) + messageAcknowledge(4) + bit-packed command stream",
+    "our_current_body": "serverId(1) + messageAck(4) with no command stream, so SV_ExecuteClientMessage has zero bytes to parse and returns immediately",
+    "ack_semantics": "messageAcknowledge in the body should be the sequence the client has received from the server (the server's netchan outgoingSequence), not the server-side cl->messageAcknowledge we were echoing",
+    "why_state_fell_to_2": "the packet was accepted (out collapsed) but carried neither a later ack nor a command, so the dedrun considered the client stalled and dropped it to CS_CONNECTED"
+  },
+  "next": [
+    "read netchan.outgoingSequence from the dedrun client_t (netchan is at the start of the netchan_t, which sits before remoteAddress inside client_t) and send messageAck = that value",
+    "optionally append a clc_nop (3 bits = 4) so the command stream is non-empty and harmless",
+    "keep the pinned port 29000 and the seq base above incomingSequence"
+  ],
+  "artifacts": ["runs/2697-native-src/src/sv_client.c", "runs/2697-native-src/src/sv_main.c"]
+}
