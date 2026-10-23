@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T23:00:00+00:00",
+  "scope": "target index 12 costs 64 ps bits (not the predicted 31); the cost pattern does not fit any model derived so far",
+  "body": "runs/snapshot-idx12-v1.bin (V=12, distance=13, codec 8, value 1, 60 zero room)",
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1372,
+    "ps_bits_consumed": 64,
+    "builder_predicted_bits": 31,
+    "actors_entry_error": 0,
+    "decide_stream_error": 1,
+    "states": {"t=25": 9, "t=32": 9, "t=40": 9, "t=48": 9, "t=56": 9, "t=62": 9},
+    "client": "ALIVE"
+  },
+  "cost_pattern_measured": {
+    "target 22 (distance 23)": 32,
+    "target 12 (distance 13)": 64,
+    "target 8 (distance 9)": 68,
+    "target 0 (distance 1)": 28,
+    "target 0 + 45 zero value bits": 55
+  },
+  "why_this_matters": [
+    "the walk model predicts that distance = target + 1 lands in ONE record, so cost should grow only with the target index; instead target 22 is the CHEAPEST (32) and target 12 costs 64",
+    "so the '32 bits' measured for target 22 is almost certainly NOT the ps length - it is where OUR exit bit was consumed, after which the parse continued inside the next block",
+    "that invalidates the ps-length numbers used as evidence in several recent rounds, including the 'exactly aligned 32 == 32' claim of round 151",
+    "the only measurement that has held up is the accepted all-zero body (29 bits, state 10) and the qualitative stream_error oracle"
+  ],
+  "honest_conclusion": [
+    "black-box inference of the ps layout has reached its limit: every quantitative model derived from these measurements has been contradicted by the next measurement",
+    "the remaining routes are (A) a captured real snapshot, or (B) a debugger session that single-steps 0x471980 on a real snapshot and logs each field index/codec/width actually decoded",
+    "without one of those, further constructed bodies will keep producing numbers that cannot be interpreted"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r172-gs.jsonl",
+    "encoder": "runs/_gen_idx12.py"
+  }
+}

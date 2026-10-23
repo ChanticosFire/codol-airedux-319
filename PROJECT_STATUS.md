@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Index 12 costs 64 bits; recent ps-length numbers invalidated]**
+> idx12-v1: ps 1308 -> actors 1372 = 64 bits (predicted 31), stream_error 1, client alive. Cost table: target 0=28, 8=68, 12=64, 22=32 - contradicts the walk model.
+> So the '32 bits' for target 22 was where OUR exit bit was consumed, not the ps length; the round-151 '32 == 32 alignment' claim is retracted. Only the all-zero accepted body (29 bits, state 10) and the stream_error oracle still hold.
+> Black-box ps inference has hit its limit; needs a captured snapshot or a debugger single-step of 0x471980.
+> Evidence: [idx12 64 bits](evidence/experiments/20261023-codex-idx12-64bits.json).
 > **2026-10-23 [Value 1 crashes too: the FIELD is unsafe, not the magnitude]**
 > val1-room60: ps 32, parse OK (stream_error 0), client crashed. So any non-zero value in index 22 (offset 16) is unsafe; the bit stream is correct and the problem is in what the field means to cgame.
 > Next: move the write to index 12 (offset 44, codec 8, ps 31 bits), then index 20 (offset 12, codec 32).
