@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [SOLVED the ps cost model: V is the target position, distance is the per-record advance]**
+> 0x670FF0: V = TARGET POSITION; copy fields 0..distance-2 (no bits); decode landing field at distance-1; LOOP until the position reaches the target.
+> 0x670CB0: distance = 1 for a single 1 bit, else 1 + sum of 3-bit chunks (max 7). cols' 4-bit gap was the wrong variant.
+> So distance=1 forces one record per step - that is why V=9/V=23 cost ~68-70 bits. distance=23 lands on index 22 in ONE record: predicted ~47 bits.
+> Code: write_distance/read_distance added, self test 0 failures. Next: test V=23 + distance 23.
+> Evidence: [ps cost model solved](evidence/experiments/20261023-codex-ps-cost-model-solved.json).
 > **2026-10-23 [Prediction falsified: V=9 costs 70 bits, not 27-31]**
 > Corrected-encoder bodies landing on the presumed index 8: ps 1308 -> actors 1378 = 70 bits, error 1. So V does not select a field index as assumed and intermediate fields are not skipped in practice.
 > Cumulative: has-ps=0 -> 1; V=1 -> 28; V=1+45 zero -> 55; V=1+30bit -> 61; V=9 -> 68; V=9 corrected -> 70; V=23 -> 69.

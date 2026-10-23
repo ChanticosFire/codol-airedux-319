@@ -164,6 +164,41 @@ def read_field(reader: BitReader, codec: int) -> int:
     raise ValueError(f"unsupported codec {codec}")
 
 
+
+# ------------------------------------------------- 1649370 distance coder (0x670CB0)
+# The 1649370 decoder uses a 3-bit chunk variant with max 7 and a 1-based result:
+#   read 1 bit -> 1 => distance 1
+#   else: edi = 1; read 3 bits; while chunk == 7: edi += 7, read 3 bits; edi += chunk
+# so distance = 1 + sum(chunks).
+DISTANCE_CHUNK_BITS = 3
+DISTANCE_CHUNK_MAX = (1 << DISTANCE_CHUNK_BITS) - 1
+
+
+def write_distance(writer: BitWriter, distance: int) -> None:
+    """Encode the 1649370 distance form (0x670CB0), not the 3.3.3.3 four-bit form."""
+    if distance < 1:
+        raise ValueError("distance must be >= 1")
+    if distance == 1:
+        writer.bit(1)
+        return
+    writer.bit(0)
+    rest = distance - 1
+    while rest > DISTANCE_CHUNK_MAX:
+        writer.bits(DISTANCE_CHUNK_MAX, DISTANCE_CHUNK_BITS)
+        rest -= DISTANCE_CHUNK_MAX
+    writer.bits(rest, DISTANCE_CHUNK_BITS)
+
+
+def read_distance(reader: BitReader) -> int:
+    if reader.bit() == 1:
+        return 1
+    total = 1
+    while True:
+        chunk = reader.bits(DISTANCE_CHUNK_BITS)
+        total += chunk
+        if chunk != DISTANCE_CHUNK_MAX:
+            return total
+
 # ------------------------------------------------------------------- self test
 def _self_test() -> int:
     """Round-trip every codec and the gap coder; return a failure count."""
@@ -182,6 +217,12 @@ def _self_test() -> int:
         raw = writer.to_bytes()
         reader = BitReader(raw)
         check(f"gap({distance})", read_gap(reader), distance)
+
+    # distances through the 1649370 form
+    for distance in (1, 2, 3, 8, 9, 23, 24, 100):
+        writer = BitWriter(256)
+        write_distance(writer, distance)
+        check(f"distance({distance})", read_distance(BitReader(writer.to_bytes())), distance)
 
     # codecs
     cases = [

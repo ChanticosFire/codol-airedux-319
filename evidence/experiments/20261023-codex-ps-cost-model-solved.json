@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T21:20:00+00:00",
+  "scope": "SOLVED the ps cost model by reading 0x670FF0 and 0x670CB0: V is the target POSITION and the decoder must walk to it record by record",
+  "decoded_0x670ff0": [
+    "read 1 bit; 0 -> return (no field encoded)",
+    "index field width = 0x20 - (bsr(field_count) xor 0x1F)  -> 5 bits for 24 fields",
+    "read that many bits = esi = TARGET POSITION; if esi > field_count -> stream error",
+    "distance = 0x670CB0(stream, 3)",
+    "copy loop: for edi in 0..distance-2 copy field edi (NO bits read, 0x670D30)",
+    "decode the landing field at index distance-1 (0x6701D0 reads bits)",
+    "edi = landing index, then LOOP back while the position has not reached the saved target"
+  ],
+  "decoded_0x670cb0": {
+    "signature": "distance(stream, bits) with bits = 3",
+    "algorithm": [
+      "read 1 bit; if 1 -> distance 1",
+      "else edi = 1; read 3 bits; while chunk == 7: edi += 7 and read 3 more; edi += chunk",
+      "return edi",
+      "so distance = 1 + sum(chunks), chunks of 3 bits with max 7"
+    ],
+    "note": "this is the 1649370 variant; the cols 3.3.3.3 code uses 4-bit chunks with max 15, which is why our write_gap was wrong here"
+  },
+  "the_model": [
+    "V is the TARGET POSITION, not a field index to jump to directly",
+    "the decoder walks from the current position toward the target one record at a time; each record advances position by `distance`",
+    "so distance = 1 forces one record PER position step: V=9 with distance 1 needs 9 records (~70 bits) - exactly what we measured",
+    "to land on index 22 in ONE record the distance must be 23 (1 + 7 + 7 + 7 + 1), and V must be 23",
+    "predicted cost for that record: 1 (continuation) + 5 (V) + 13 (distance 23) + ~12 (codec 11 field) = ~31 bits, plus the 16-bit prologue = ~47 bits, versus the 69 bits we measured with distance 1"
+  ],
+  "why_earlier_predictions_failed": [
+    "we assumed V selected the landing field directly and that the gap was a field-index delta",
+    "in reality V is the target and the gap is the per-record advance, so distance 1 forces a walk",
+    "the 4-bit gap encoder ported from cols does not even match this decoder (3-bit chunks)",
+    "both mistakes are now fixed in code: write_distance/read_distance implement the 1649370 form and the self test passes"
+  ],
+  "code": {
+    "module": "server1649370/ps_codec.py",
+    "added": [
+      "write_distance",
+      "read_distance",
+      "distance round-trip tests for 1/2/3/8/9/23/24/100"
+    ],
+    "self_test": "self-test failures: 0"
+  },
+  "next": [
+    "encode V=23 with distance 23 and land on index 22 (offset 16) with codec 11 in a SINGLE record",
+    "prediction: ps consumes ~47 bits instead of 69",
+    "if confirmed, the cost model is solved and the ps block becomes programmable"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x670FF0 (delta decoder)",
+      "0x670CB0 (distance coder)",
+      "0x670D30 (copy)",
+      "0x6701D0 (field codec)"
+    ]
+  }
+}
