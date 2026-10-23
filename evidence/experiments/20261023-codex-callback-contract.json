@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T02:26:00+00:00",
+  "scope": "redirect the decoded 0x66F170 callback to a recording stub and capture its calling contract",
+  "session": {
+    "name": "20261023-stub-5",
+    "pid": 7008,
+    "sequence": "install counters -> patch 0x66F20E to 90 90 -> write [0x76446B0]=8 -> poll for the rebuilt cl -> read cl2 -> allocate recording stub -> write [cl2+0x30] = stub ^ (cl2+0x2C) ^ [0xE60B78] -> restore 0x66F20E to ff d2 -> wait 0.9 s"
+  },
+  "retarget": {
+    "cl_before": "0x1335AF04",
+    "cl_after_rebuild": "0x13C9CCC8",
+    "cl2": "0x130000A0",
+    "callback_key_E60B78": "0xE3D14D1C",
+    "stub": "0x11780000",
+    "record": "0x117A0000",
+    "encoded_written": "0xE1A94DD0",
+    "readback": "0xE1A94DD0",
+    "formula": "stub ^ (cl2+0x2C) ^ [0xE60B78]",
+    "result": "the encoded store succeeded, 0x66F20E was restored to ff d2, and the next heartbeat call reached the stub"
+  },
+  "stub_hit": {
+    "magic": "0xDEADBEEF at record+0x50",
+    "registers": {
+      "eax": "0x130000BC (cl2+0x1C) -- argument 1",
+      "ecx": "0x1AF340 (&local buffer) -- argument 2",
+      "edi": "0x130000AC (cl2+0xC) -- callee-saved context",
+      "ebx": "0x0"
+    },
+    "argument_object": {
+      "address": "cl2+0x1C",
+      "first_0x20_bytes": "00000000 00000000 00000000 00000000 d04da9e1 00000000 00000000 00000000",
+      "note": "only +0x10 (cl2+0x2C) is non-zero: it is the encoded callback that this probe just wrote. The rest of the object is still zero, which is why the shipped decode produced garbage."
+    },
+    "out_buffer_before_call": {
+      "address": "0x1AF340",
+      "first_8_bytes": "00000000 ffffffdf",
+      "consumer": "0x66F210 mov eax,[ebp-0x14] reads buffer+4; 0x66F216 shr eax,0xC; 0x66F21C and al,1; the result selects the 0x66F231 branch"
+    }
+  },
+  "second_attempt": {
+    "change": "rewrote the same stub to also copy the caller's esi (0x66F170 output structure, 0x2C bytes) and cl2+0x3E4/0x3F8/0x3FC into the record",
+    "outcome": "record stayed all zero because phase had already fallen back to 0 and cl2 had been re-created (0x1312B3CC with cb30=0), so the heartbeat no longer calls 0x5B2C10",
+    "window": "the phase-8 window in which the callback can be instrumented lasts roughly one to two seconds after the rebuild"
+  },
+  "final_state": {
+    "alive": true,
+    "counters": {"cl_init_enter": 2, "cl_create": 2, "cl_shutdown": 2, "b2c10_enter": 2},
+    "phase": 0,
+    "cl": "0x13000CCC",
+    "cl2": "0x1312B3CC"
+  },
+  "conclusions": [
+    "the decoded callback can be redirected precisely by writing [cl2+0x30]; the formula stub ^ (cl2+0x2C) ^ [0xE60B78] is verified by readback and by an actual hit",
+    "the callback contract is fn(cl2+0x1C, &local_8byte_result), with edi = cl2+0xC preserved by the caller",
+    "the caller only consumes result+4 (bit 12 selects a branch), so a stub can steer the branch by writing that dword",
+    "the cl2+0x1C object is entirely uninitialised apart from the encoded callback slot, which is the real structural gap"
+  ],
+  "next": [
+    "in one phase-8 window: make the stub copy the caller esi (the 0x2C-byte message built by 0x66F170) and cl2+0x3E4/0x3F8/0x3FC into the record before the window closes",
+    "then have the stub write result+4 with bit 12 set (0x1000) and observe which 0x5B2C10 branch and whether ring A receives a packet",
+    "if the message is the outbound challenge, deliver it through the loopback ring writer 0x6750A0 from the stub or from a follow-up call"
+  ],
+  "artifacts": ["runs/20261023-stub-5.json", "runs/20261023-stub-5b.json"]
+}
