@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T05:05:00+00:00",
+  "scope": "screenshot after the phase falls to 0, to decide whether the phase value matters for playability",
+  "session": {
+    "name": "20261023-world-7",
+    "pid": 31360,
+    "patches": {"ring-a-drain": "0x674F30 -> 31c0c3", "0x66F20E": "ff d2 -> 90 90"},
+    "bridge": "forward --target 127.0.0.1:28970 --adr-type 2 --start-challenge --fake-stats --send-move --keepalive"
+  },
+  "evidence": {
+    "phase": 0,
+    "ui_state": 5,
+    "ring_a": [5, 5],
+    "screenshot": "evidence/experiments/20261023-world-match-ended.png",
+    "dialog": "错误 / 很遗憾，你来了晚了，游戏刚刚结束！ (with an 退出 button)",
+    "background": "the crossfire world is still rendered (grey ground, texture detail, centre reticle)"
+  },
+  "interpretation": {
+    "world_still_rendered": true,
+    "dialog_changed": "previous rounds showed 'server connection timed out'; this round shows 'you came too late, the match has just ended'",
+    "meaning": "the client is not merely loading any more: it has joined the match and the match has already reached its end. The phase falling to 0 is consistent with the client reacting to a finished match, not with a broken connect",
+    "caveat": "the dedrun instance had been running for several minutes before the client joined, so the match may genuinely have hit its score/time limit"
+  },
+  "next": [
+    "restart the dedrun to start a fresh match and let the client join within the first minute; verify whether the phase then stays at 8 and the world stays interactive",
+    "if the fresh match lets the client stay connected, test movement input through the window (send_key / click_at) and check whether the server logs pmove/clc_move for AdministraClient",
+    "then test exiting back to the lobby (退出 button or disconnect) and confirm the client returns to the front-end UI"
+  ],
+  "artifacts": ["evidence/experiments/20261023-world-match-ended.png", "runs/w7-in.jsonl"]
+}
