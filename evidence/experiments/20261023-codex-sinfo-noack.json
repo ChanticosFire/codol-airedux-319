@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T03:50:00+00:00",
+  "scope": "try the minimal serverinfo body: stable header plus the exact configstring text",
+  "session": {
+    "client": "20261023-sinfo, pid 22032",
+    "server": "server1649370 on 28971",
+    "bridge": "forward --target 127.0.0.1:28971 --reliable-until-state 0"
+  },
+  "what_we_sent": {
+    "plain_hex_head": "0300000000 64 20 30 20 5c 67 5f 67 61 6d 65 74 79 70 65 5c 77 61 72",
+    "plain_ascii": "\\x03 00 00 00 00 d 0 \\g_gametype\\war...",
+    "plain_len": 94,
+    "packet_len": 98,
+    "key": "challenge ^ seq"
+  },
+  "what_the_client_did": {
+    "messageAck": 1,
+    "acked_our_seq": false,
+    "client_seq": 9
+  },
+  "conclusion": "a body made of only the stable header plus the serverinfo configstring text is still not accepted",
+  "why_this_is_expected_in_retrospect": [
+    "a real gamestate carries many configstrings, not just index 0",
+    "it also ends with an explicit EOF marker and likely includes baselines and a config data blob",
+    "our 94-byte body is far shorter than the 1168-byte real body, so the client can tell it is incomplete"
+  ],
+  "next": [
+    "reconsider the full 1168-byte body but with the correct outer wrapper: since the raw body failed at every offset we tried, the wrapper (prefixed frame) is the missing piece",
+    "use the recovered table entry only as content validation, not as a standalone packet",
+    "a more decisive route: capture the dedrun's send buffer immediately before SV_Netchan_Encode via a breakpoint, which yields the exact pre-cipher bytes including the reliable-command wrapper"
+  ],
+  "artifacts": ["runs/sinfo-gs.jsonl"]
+}

@@ -247,13 +247,13 @@ class GameServer:
             # included), so this is a byte-exact replay test.
             self.server_seq = getattr(self, "server_seq", 0) + 1
             peer["last_server_seq"] = self.server_seq
-            # Two captures proved that the first ten bytes are key-shift
-            # contamination and that the stable header starts at offset 10 with
-            # "03 00 00 00 00" immediately followed by mp_cross_fire.  Drop the
-            # ten contaminated bytes and replay from the stable header on; our
-            # own server keeps lastClientCommandString empty, so the key is the
-            # constant challenge ^ seq and the client can decode it.
-            plain = GAMESTATE_PLAINTEXT[10:] if len(GAMESTATE_PLAINTEXT) > 10 else GAMESTATE_PLAINTEXT
+            # Two captures pinned the stable header to 03 00 00 00 00, and the
+            # dedrun's configstring table stores the serverinfo verbatim as
+            # "d 0 \g_gametype\war\mapname\mp_cross_fire\...".  Try the naive
+            # composition first: that header followed by that exact text.
+            serverinfo = (b"d 0 \\g_gametype\\war\\mapname\\mp_cross_fire"
+                          b"\\2485\\12\\2492\\CODOL 2.6.9.7 Local Server\\2482\\2\x00")
+            plain = b"\x03\x00\x00\x00\x00" + serverinfo
             key = (peer.get("challenge") or 0) ^ self.server_seq
             cipher = bytes(b ^ ((key >> 0) & 0xFF) for b in plain)
             packet = struct.pack("<I", self.server_seq) + cipher
