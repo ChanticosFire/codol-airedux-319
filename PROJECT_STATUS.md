@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Sequence hypothesis falsified; PHASE-SUMMARY rewritten with corrections]**
+> --snapshot-seq 1 gives the same NULL history and ring_idx 31 as seq 1000, so the sequence is not the cause; 31 is a mask (ring size 32).
+> docs/PHASE-SUMMARY.md now has a 'Corrections found late' section retracting four conclusions (state 10 != acceptance; every body has an EMPTY ps; PsField is a generic codec; seq is not the cause) and states the real blocker plus what is genuinely delivered.
+> Evidence audit: 1220 records, invalid JSON 0.
+> Evidence: [seq hypothesis falsified](evidence/experiments/20261023-codex-seq-hypothesis-falsified.json).
 > **2026-10-23 [Ring calc never runs; arg3 = 0; client holds ring idx 31]**
 > RingCalc (0x4722C0) never fired; RingPush fired once with edi = 0 and ring_idx = 31. So the client is in the 'no valid snapshot slot' path.
 > Hypothesis: --snapshot-seq 1000 is far outside the client's small modulo window (index 31 observed), so every snapshot lands on an invalid slot.

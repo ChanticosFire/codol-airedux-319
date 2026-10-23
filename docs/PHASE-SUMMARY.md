@@ -100,3 +100,54 @@ The **visible world** remains blocked on **content encoding**, and the honest
 assessment is that further black-box attempts have a poor return: the last
 fourteen rounds produced solid protocol knowledge but no accepted non-zero
 content.
+
+
+## 7. Corrections found late (read this before trusting the rest)
+
+Several earlier conclusions in this repository were **wrong** and are recorded here
+so nobody rebuilds on them:
+
+1. **State 10 does not mean "the snapshot was accepted."** A run with the
+   `SnapTracePlayerState` breakpoint unarmed still reached state 10, and the
+   argument probe later showed the playerState block **decodes zero fields**. State
+   10 comes from the **gamestate** (load handshake) plus an **empty-but-valid**
+   snapshot. The frame stays black because **cgame has no scene data**.
+2. **Every body this project produced carries an EMPTY playerState.** The ps
+   block is entered at bit 1308 (`snap_trace` fires), but its per-field loop runs
+   **zero** times (`loop_c8 = 0`), because the field decode is gated by
+   `current == last` and `current` comes from a history structure that is **NULL**.
+3. **`PsField` (0x6701D0) is a generic field codec**, reachable from the
+   entity/actors blocks as well - so a `PsField` hit is **not** evidence about the
+   playerState. Rounds 159 and 165 relied on that and are invalid.
+4. **The sequence number is not the cause.** `--snapshot-seq 1` and
+   `--snapshot-seq 1000` both produce the same NULL history; the constant `31` at
+   `[ebx+0xA8DC]` is a **mask** (ring size 32), not an index.
+
+## 8. The real blocker, as of round 175
+
+```
+the ps block needs  ->  a history structure (arg3 of 0x471980)
+which exists only when -> the client is fully initialised (cgame up, map loaded)
+which this project has never achieved -> the frame is black
+```
+
+**Circular by construction**: no map load -> no history -> no field decode ->
+no playerState content. So **constructing a snapshot cannot make the world
+visible**; the work must target **map-load completion** instead.
+
+Concretely, `edi` (the history pointer) is **zero** at `0x4723CB`, and the
+ring-address branch at `0x4722B0..0x4722C0` is **never executed**. The caller
+starts at `0x472268` with `mov edi, 0xC89A490` (non-zero), so some branch between
+`0x472268` and `0x4723CB` zeroes it. **Finding that branch requires single-stepping
+the caller**, which the current harness (fixed-address breakpoints only) cannot do.
+
+## 9. What is genuinely delivered
+
+- `server1649370`: handshake, gamestate, snapshot fragments, command stream,
+  match end, lobby return - all verified end to end.
+- `tools/run_match.py`: one command, with a **delivery assertion** (round 145).
+- `tools/selfcheck.py`: **8/8** checks, each mapping to a defect that once cost a
+  full session.
+- `tools/verify_encoder.py`: round-trips the one accepted body bit-exactly.
+- `docs/SNAPSHOT-FORMAT.md` + `docs/RUNBOOK.md` + this file.
+- 1200+ evidence records including every falsified hypothesis.
