@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T10:45:00+00:00",
+  "scope": "correction: the 10.1 s gap belongs to CL_MapLoading, not to the UI call; UI object is a numeric UI widget",
+  "correction": {
+    "previous": "the 10.14 s between the 0x453760 hit and the 0x5157A2 hit was read as the UI call duration",
+    "actual": "0x5157A2 is the instruction AFTER the MapLoading call returns (0x51574F call -> 0x515754). The gap therefore contains CL_MapLoading (measured 9.39 s earlier) plus ~0.7 s of UI work.",
+    "ui_call_estimate_s": 0.7
+  },
+  "ui_object": {
+    "slot": "0xE89B10",
+    "object": "0x8113F98",
+    "created_by": "0xBD9480 block: push 0x78, 1, 0xF, id \"1669\"; call 0x770940; mov [0xE89B10], eax",
+    "ids": {
+      "0xD62DDC": "1669",
+      "0xD62DD4": "3209",
+      "0xDB0000": "0"
+    },
+    "fields": {
+      "+8": 0,
+      "+0xC": 0
+    },
+    "consumer": "0x515761 uses byte[+8] as a UI widget kind and passes '0' (0xDB0000) when zero; 0x76EDF0 branches on kinds 2..0xC",
+    "reading": "this is a numeric UI widget (kind plus a number string), not the world/map descriptor; kind 0 makes the update take the default early-exit path"
+  },
+  "next": [
+    "do not pursue the UI widget further unless the HUD is the goal",
+    "find the renderer camera (viewOrigin/viewangles) and read it in state 10",
+    "if the camera is at the origin / invalid, build a snapshot with a valid player state"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-74bcf0c1/events.jsonl"
+  }
+}
