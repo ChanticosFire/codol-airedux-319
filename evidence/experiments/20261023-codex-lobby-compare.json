@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build_under_test": "1649370",
+  "reference_build": "1604220",
+  "utc": "2026-10-23T14:40:00+00:00",
+  "scope": "compare the third-party 1604220 lobby implementation with our own 1649370 LSG responder",
+  "third_party_1604220_lobby": {
+    "framing": "[u32 size][body]",
+    "handshake_step1": "[u32 22][0x00][0x81][u32 220][u64 connId][8 zero]",
+    "handshake_step2": "[u32 10][0x00][0x83][CHAL[8:16]]",
+    "client_answer": "153-byte frame whose last 8 bytes carry CHAL[0:8]",
+    "key_derivation": "A20 = SHA1(transcript); K = HMAC-SHA1(A20, session_key24); keys = HKDF(K,'BDDATA',72) -> T1|T2|aes_send|aes_recv; CHAL = HKDF(K,'CLIENTCHAL',16)",
+    "driving_model": "an action script named dw_v3_conn2: hs3[:tail], step1w, evt4, innerNN, redir[:ip:port], ka[:sec], hold[:sec]",
+    "task_services_answered": "10 storage | 12/6 title time | 80 marketplace | 102 chat | else empty reply",
+    "documented_result": "ready_byte=1, connecting=0, scene=6, 10/10 publisher files"
+  },
+  "our_1649370_lsg": {
+    "package": "server319",
+    "modules": ["lsg.py", "lsg_derived.py", "lsg_crypto.py", "lsg_client.py", "auth.py", "framing.py", "lobby_udp.py", "ticket.py", "a22_tiger.py", "manifest.py", "service.py", "profile.py"],
+    "dual_build_support": "manifest.py explicitly supports 1649370 (original target) and 1604220 (current work target)",
+    "key_method": "lsg_crypto.py says the transcript layout is the 1604220 candidate qualified by two independent 1649370 captures; lsg_derived.py replays the derivation against three target-build raw captures",
+    "known_limit": "lsg.py states LsgServer is retained only for --legacy-probe; its responses were diagnostic experiments and did not establish a usable lobby"
+  },
+  "differences_that_matter": [
+    "theirs uses an explicit action script to sequence replies; ours recomputes keys per capture and answers by service id - the script model is easier to extend and to log",
+    "theirs documents HKDF-style key expansion (BDDATA/CLIENTCHAL) while our lsg_crypto uses the calcHmacs variant qualified on 1649370 captures; both need to be checked against a 3.19.26.22 capture before trusting either",
+    "theirs answers service 12/6 with a title-time value; our lsg_derived leaves unknown requests unanswered by design"
+  ],
+  "what_we_can_adopt": [
+    "the action-script idea: make the lobby reply sequence data-driven and log every step with a timestamp so scene transitions can be correlated",
+    "the FrameReader zero-control handling from transport.py (a zero-length frame after handshake is a control, not EOF)",
+    "their service table (7/10/11/12/23/28/48/71/80/102) as a checklist of what a 3.19 client may ask for"
+  ],
+  "caveat": "1604220 (3.19.26.17) != 1649370 (3.19.26.22); payload bytes and some service answers must be revalidated against our client, and nothing here is evidence that scene=6 works for 1649370",
+  "next": [
+    "add an optional action-script mode to server319 that logs each step, without changing existing verified replies",
+    "capture a 3.19.26.22 lobby session and diff its frames against both the 1604220 script and our current answers",
+    "keep waiting for the user's version mapping before choosing which implementation becomes the baseline"
+  ],
+  "artifacts": ["runs/1604220-server/server/lib/codol_server/lobby.py", "server319/lsg_derived.py", "server319/lsg_crypto.py"]
+}
