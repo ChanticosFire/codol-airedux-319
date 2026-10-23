@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T12:15:00+00:00",
+  "scope": "prove whether forged packets are processed at all, by reading the dedrun's ack fields after sending",
+  "verified_facts": {
+    "server_side_ack_after_forge": "client_t samples while forge packets were arriving every 1.0 s: reliableSequence 67 -> 77, reliableAcknowledge 0, messageAcknowledge 0, gamestateMessageNum 4. The body claimed messageAck = 330/376, yet messageAcknowledge stayed 0.",
+    "meaning": "SV_PacketEvent sets cl->messageAcknowledge from the body; it stayed 0, so the packet never reached that code path",
+    "remote_address_of_client": {
+      "address": "0x52A2670 (netchan+0x10, i.e. client_t - 0x298 + 0x10 layout readback)",
+      "before_hex": "040000000000000071480000b00300007f000001",
+      "parsed": "type=4 (NA_IP), ip=0.0.0.0, port=0x7148 (big-endian 29000), pad=0, then upperqport/other bytes",
+      "after_write_hex": "040000007f00000171480000b00300007f000001",
+      "write_ok": true
+    },
+    "net_compare_adr": "NET_CompareAdr first calls NET_CompareBaseAdr (type+ip) and only then compares ports, so 127.0.0.1 does not match 0.0.0.0 even though the port is 29000",
+    "final": "before the ip rewrite could be exercised, the dedrun logged Player AdministraClient dropped: EXE_TIMEDOUT and moved the slot to CS_ZOMBIE, so client_t disappeared and the follow-up sample failed"
+  },
+  "inference_not_verified": {
+    "statement": "the 0.0.0.0 ip is why every forged packet is discarded: SV_PacketEvent's Target2697 branch looks up the client with NET_CompareAdr(from=127.0.0.1:29000, candidate->netchan.remoteAddress=0.0.0.0:29000), fails, sets cl=NULL and answers with an OOB disconnect",
+    "supporting": "messageAcknowledge never changed, and dedrun sends its own packets toward 0.0.0.0:29000 which Windows routes to loopback, so traffic reached the bridge while inbound lookups failed",
+    "how_to_confirm": "rewrite remoteAddress.ip to 127.0.0.1 immediately after the connect handshake (before the dedrun's timeout) and check whether messageAcknowledge starts tracking the forged body"
+  },
+  "unknown": [
+    "whether the ip is 0.0.0.0 because Netchan_Setup received a zeroed netadr, or because something clears it later",
+    "whether an early rewrite is enough or the dedrun rewrites it again on each packet"
+  ],
+  "next": [
+    "rewrite remoteAddress.ip to 127.0.0.1 as soon as the client reaches the dedrun (right after connect, before the 20 s timeout), then send forged acks and watch messageAcknowledge/reliableAcknowledge",
+    "if the dedrun resets the ip, patch NET_CompareBaseAdr or the lookup branch instead so the comparison ignores ip for loopback"
+  ],
+  "artifacts": ["runs/forge-ack-log.jsonl", "runs/2697-server-test/main/qconsole.log"]
+}
