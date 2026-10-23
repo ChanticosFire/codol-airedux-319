@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T10:00:00+00:00",
+  "scope": "READ THE CODEC: -97 is a one-bit gate followed by EITHER 32 bits OR 8 bits, and the 8-bit form is a signed offset from a baseline",
+  "dispatch": {
+    "0x67028C": "cmp ecx,-0x40 / -0x3F / -0x3E -> 0x670BDC",
+    "0x6702A7": "cmp ecx,-0x65 (-101, the radar codec) -> 0x6702B0",
+    "0x67069C": "cmp ecx,-0x61 (-97) -> je 0x670BBF",
+    "0x670BBF": "mov eax,[ebp+0xC] ; mov ecx,esi ; call 0x66F9E0 ; [ebx]=eax"
+  },
+  "the_reader_0x66f9e0": {
+    "0x66F9EA": "edi = eax = arg3  (a BASELINE value)",
+    "0x66F9EC": "call 0x447190  -> READ 1 BIT (the gate)",
+    "0x66F9F3": "jne 0x66FA0B    -> gate == 1: read the full 32 bits",
+    "0x66F9F5": "gate == 0: push 8 ; call 0x66EC30  -> READ 8 BITS",
+    "0x66FA01": "sub edi,eax     -> value = baseline - the 8-bit reading",
+    "0x66FA03": "return edi",
+    "0x66FA0B": "gate == 1: read 4 bytes and return them"
+  },
+  "the_cost": {
+    "gate_1": "1 + 32 = 33 bits",
+    "gate_0": "1 + 8 = 9 bits",
+    "note": "both forms are FIXED width - neither depends on the value's magnitude"
+  },
+  "what_this_explains": [
+    "why 256, 512, 1024, 2048, 4096 and 255 all cost exactly 55 bits: with gate=1 they all take the 33-bit form, so the total is constant",
+    "it does NOT yet explain the 97-bit runs (values 6 and 5830), because those wrote the same gate=1 + 32 bits and should also cost 33"
+  ],
+  "the_hypothesis_for_the_97_bit_runs": [
+    "those two runs are exactly the ones where the ps parse ERRORED, so the 97 is where the decoder STOPPED, not a valid field cost",
+    "so the question is what makes the decode fail for those two values - and since the field itself is fixed width, the failure is more likely downstream (the next-iteration prologue we pad with zeros)",
+    "6 (0b110) and 5830 (0b1011011000110) both have BIT 0 CLEAR, while 255, 256, 512, 1024, 2048 and 4096 all have BIT 0 SET or are single-bit",
+    "that is now a concrete, checkable distinction"
+  ],
+  "next": [
+    "test value 7 (0b111, bit 0 set, close to 6) and value 5 (0b101, bit 0 set)",
+    "if they parse cleanly while 6 does not, the bit-0 distinction is confirmed and it points at a downstream reader, not at the codec"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x67069C codec -97 dispatch",
+      "0x670BBF handler",
+      "0x66F9E0 reader",
+      "0x66EC30 N-bit reader"
+    ]
+  }
+}
