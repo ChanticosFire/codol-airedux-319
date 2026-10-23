@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T22:00:00+00:00",
+  "scope": "the cursor probe run failed before connecting (refresh-hook timeout, stage 0), so no cursor values were collected",
+  "what_happened": [
+    "added a Cursor probe at 0x471DA3 (the call to 0x671650 at the entity block entry) that reads [esi+0x14], [esi+0x18], [esi+0x1C] and [esi+0x24]",
+    "the run reported engine_ready and the login driver ran, but the refresh-hook install returned 'timeout' with stage 0 and state 0",
+    "cursor_records = 0, so nothing was measured; this is a session-level failure, not a client defect"
+  ],
+  "what_is_still_known_about_the_cursors": [
+    "0x66ED70 reads the entity count from a byte cursor at [stream+0x1C] and bounds it with [stream+0x14] and [stream+0x18]",
+    "the bit reader uses a different cursor, so the two are independent by construction",
+    "what is not yet known is whether [stream+0x1C] starts at the same offset as the bit cursor or at a byte-aligned one"
+  ],
+  "next": [
+    "re-run the same probe with a longer settle after connect, and keep the breakpoint list minimal (0x471DA3 only) so the hook has less to do",
+    "if it still times out, drop the refresh hook for this run - it is not needed for a passive probe"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r208-gs.jsonl",
+    "launch_stderr": "runs/codex-r208-launch.err"
+  }
+}

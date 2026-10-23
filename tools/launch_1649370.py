@@ -2848,6 +2848,21 @@ def main(argv=None) -> int:
                 self.record({"map_loading_configstrings": {"pool_cursor": cursor, "slots": rows}})
             except (OSError, ValueError, struct.error) as error:
                 self.record({"map_loading_configstrings_error": str(error)})
+        if label.startswith("Cursor"):
+            try:
+                registers = row.get("registers", {})
+                esi = int(registers["esi"], 0)
+                vals = []
+                for off in (0x14, 0x18, 0x1C, 0x24):
+                    raw = self.process.read(esi + off, 4)
+                    vals.append(struct.unpack("<I", raw)[0])
+                n = getattr(self, "_cursor_count", 0)
+                if n < 12:
+                    self.record({"cursor": {"esi": hex(esi), "b14": vals[0], "b18": vals[1],
+                                            "b1c": vals[2], "b24": vals[3], "n": n}})
+                self._cursor_count = n + 1
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"cursor_error": f"{label}: {error}"})
         if label.startswith("Gate"):
             try:
                 registers = row.get("registers", {})
