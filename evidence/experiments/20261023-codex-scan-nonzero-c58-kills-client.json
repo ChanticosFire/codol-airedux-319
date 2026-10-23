@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T20:20:00+00:00",
+  "scope": "amplitude scan aborted: any NON-ZERO value in codec -58 kills the client; only the zero case could be traced",
+  "bodies": "runs/snapshot-scan-v0.bin .. -v3f800000.bin (six amplitudes sent in one session, 2 s cycle)",
+  "measured": {
+    "v0": {
+      "ps_entry_bit": 1308,
+      "actors_entry_bit": 1363,
+      "ps_bits": 55,
+      "error": 0
+    },
+    "v1..v3f800000": "client process gone before the scan finished"
+  },
+  "conclusion": [
+    "writing a non-zero value into the first field (offset 76, codec -58) terminates the client, consistently with the two earlier crashes",
+    "so -58 must always be written as ZERO, and the origin cannot be carried through field 0",
+    "the way forward is to land on a LATER field: the decoder COPIES the fields strictly between the previous position and the target without reading bits (verified at 0x670D30), so the earlier fields (including -58) can stay untouched",
+    "with the corrected gap coder, a landing on index 8 should cost: 16-bit prologue + gap(distance 8) + codec-10 value (gate + 2 remainder bits + 1 byte), i.e. roughly 32 bits instead of the 68 we measured with the wrong codec model"
+  ],
+  "next": [
+    "encode a landing on index 8 with the corrected encoder and the predicted ~32-bit ps, and compare the measured ps length with the prediction",
+    "if the length matches, evaluate whether the resulting snapshot is accepted (state 10)"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r144-gs.jsonl",
+    "encoder": "runs/_gen_scan.py"
+  }
+}

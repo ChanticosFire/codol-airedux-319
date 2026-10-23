@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Non-zero -58 kills the client; land on index 8 instead]**
+> Six-amplitude scan: only v0 traced (ps 55 bits); the client died on the non-zero values. So -58 must stay zero and the origin cannot go through field 0.
+> Intermediate fields are COPIED without reading bits, so a landing on index 8 avoids -58. Prediction with the corrected encoder: ~16 + 5 + 11 = ~32 ps bits (vs 68 measured under the wrong model).
+> Evidence: [scan nonzero c58 kills client](evidence/experiments/20261023-codex-scan-nonzero-c58-kills-client.json).
 > **2026-10-23 [Codec -58 is variable-length]**
 > 45 zero value bits -> ps 1308..1363 = 55 bits (39 value bits); large value -> 61 bits (45 value bits). So -58 is magnitude-coded: length is a function of the value; padding can never fix it, but the block still ends with error 0.
 > Next: one session measuring magnitudes 0/1/0x100/0x10000/0x1000000/0x3F800000 to tabulate the bit length.
