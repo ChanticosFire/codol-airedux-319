@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T22:20:00+00:00",
+  "scope": "the accepted hybrid parses zero entities; accepted reads inconsistently between sessions",
+  "session": {
+    "pid": 39200,
+    "state": 10,
+    "ring_b": "21/21"
+  },
+  "measurements": {
+    "entity_count_byte_0x7859558": 0,
+    "entity_id_array_0x7859358": "all zero",
+    "cl_snap": "all zero",
+    "accepted_0x3BE4": 0,
+    "note": "r22 read accepted=1 with the same body; the flag appears to be cleared when a new snapshot starts parsing, so a single read can catch either state"
+  },
+  "meaning": [
+    "the hybrid prefix really does carry an entity table with count 0",
+    "so the accepted body describes an empty world: no entities, no playerState",
+    "the count sits in the 8 bits right after has_base/table/form; changing it to 1 requires inserting a 12-bit id and shifting the rest, or sending a has_base=1 delta"
+  ],
+  "next": [
+    "try has_base=1 now that a base snapshot has been accepted in this session (the base exists at least as the empty snapshot)",
+    "or rebuild the body with count=1 by inserting the 12-bit id and shifting the remaining bits",
+    "keep watching entity_count and cl.snap as the objective signals"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r26-gs.jsonl"
+  }
+}
