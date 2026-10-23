@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Route B: gametype is not an end-of-match lever]**
+> Added gametype to the gamestate (build_native_gamestate(..., gametype=b"mp"), configstring 0 rewritten) and exposed --gamestate-gametype.
+> Experiment: --gamestate-gametype war -> client alive (pid 28244), state 10, entity_count 0 - loaded normally like mp.
+> Reading: gametype is a plain configstring value with no match-state semantics.
+> Next: look for match-state configstrings or svc commands, or inspect the client UI code that decides when to leave the game view.
+> Safe baseline: hybrid body (state 10, empty world). Evidence: [gametype war](evidence/experiments/20261023-codex-gametype-war.json).
 > **2026-10-23 [Route B: playerState parser has no field table]**
 > Constant pushes in 0x471980..0x471C30: only 0xDA9920 (PS 0x58-byte default template), 0xDB465C (Com_Error string), 0xDA63E8 (entityState table, surfacing inside this range).
 > No playerState field-table pointer - ps fields are hard-coded like 0x671700; reaching field 83 would need every preceding field encoded. Impractical.
