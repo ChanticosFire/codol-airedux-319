@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T21:45:00+00:00",
+  "scope": "three hand-built variants are all rejected; only the 2697-derived prefix is accepted",
+  "variants": [
+    {
+      "file": "runs/snapshot-ps-empty.bin",
+      "bits": "entity table 1+1+8=0, ps present, 8 field bits",
+      "result": "state 9, accepted=0"
+    },
+    {
+      "file": "runs/snapshot-ps-skip.bin",
+      "bits": "ps entry skip bit = 1",
+      "result": "state 9, accepted=0"
+    },
+    {
+      "file": "runs/snapshot-ps-term.bin",
+      "bits": "entity table omitted (bit=0), ps skip + terminator",
+      "result": "state 9, accepted=0"
+    },
+    {
+      "file": "runs/snapshot-ps-form1.bin",
+      "bits": "entity table 1+1+8=0, ps skip + terminator",
+      "result": "state 9, accepted=0"
+    }
+  ],
+  "control": {
+    "file": "runs/snapshot-hybrid-empty-actors.bin",
+    "result": "accepted, state 10"
+  },
+  "conclusion": "the 8-byte header plus bit guesses is not equivalent to the 2697 prefix. The parser consumes structure inside the 164-byte prefix that a from-scratch body does not reproduce, so hand-writing the whole body is the wrong lever.",
+  "next": [
+    "patch the accepted hybrid body in place instead of rewriting it: locate the entity table bits inside the first 164 bytes",
+    "raise the count and write one 12-bit entity id plus that entity's field delta",
+    "verify by watching accepted and cl.snap, not by screenshots alone"
+  ],
+  "artifacts": {
+    "logs": [
+      "runs/codex-r25b-gs.jsonl",
+      "runs/codex-r25c-gs.jsonl"
+    ]
+  }
+}

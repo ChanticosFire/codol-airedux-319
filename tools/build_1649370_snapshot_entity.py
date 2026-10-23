@@ -55,7 +55,8 @@ def build(*, server_time: int = SERVER_TIME, entity_ids: tuple[int, ...] = (),
     writer.raw(struct.pack("<I", server_time))
     writer.raw(bytes([0, flags]))
     writer.bits(has_base & 1, 1)
-    writer.bits(1, 1)                      # entity table present
+    writer.bits(1, 1)                      # 0x671650: entity table present
+    writer.bits(1, 1)                      # form 1 -> an 8-bit count follows
     writer.bits(len(entity_ids), 8)
     for entity_id in entity_ids:
         writer.bits(entity_id, 12)
@@ -64,9 +65,8 @@ def build(*, server_time: int = SERVER_TIME, entity_ids: tuple[int, ...] = (),
         writer.bits(0, 1)                  # five-bit count form (0x471A4D)
         writer.bits(ps_entries, 5)
         for _ in range(ps_entries):
-            writer.bits(0, 1)              # field data present (0x471B9E)
-            for _ in range(8):             # 0xDA63E8 lists eight playerState fields
-                writer.bits(0, 1)
+            writer.bits(1, 1)              # 0x471B9E: 1 skips the field deltas
+        writer.bits(0, 1)                  # 0x471A3E: next bit 0 ends the ps block
     # Empty actor / sub / glass blocks, matching the verified baseline's tail.
     writer.bits(0, 1)
     writer.bits(1, 1)
