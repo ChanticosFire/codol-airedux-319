@@ -202,16 +202,17 @@ class GameServer:
                       "length": len(data), "body_len": len(body),
                       "body_head": body[:48].hex(),
                       "body_nonzero": sum(1 for b in body[:48] if b) > 0})
-            # Answer with our own in-band packet so the client has something to
-            # acknowledge.  Empty body first: the goal is only to learn whether
-            # the client reacts to a datagram from us at all.
+            # Answer with the same shape the client uses: seq(4) + serverId(1)
+            # + messageAck(4) + body.  A 4-byte seq-only packet is not a valid
+            # netchan message, so this is the minimum shape worth trying.
             self.server_seq = getattr(self, "server_seq", 0) + 1
             peer["last_server_seq"] = self.server_seq
-            reply = struct.pack("<i", self.server_seq)
+            reply = (struct.pack("<i", self.server_seq) + b"\x00"
+                     + struct.pack("<i", 0) + bytes(197))
             self.sock.sendto(reply, addr)
             self.state.counters["inband_sent"] += 1
             self.log({"dir": "out", "kind": "inband", "to": f"{addr[0]}:{addr[1]}",
-                      "seq": self.server_seq, "length": len(reply), "hex": reply.hex()})
+                      "seq": self.server_seq, "length": len(reply), "hex_head": reply[:24].hex()})
         else:
             self.log({"dir": "in", "kind": "inband_short", "from": f"{addr[0]}:{addr[1]}",
                       "length": len(data), "hex": data[:64].hex()})

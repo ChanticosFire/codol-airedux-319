@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T17:50:00+00:00",
+  "scope": "send a 206-byte frame shaped like the client's own packets and check for an ack",
+  "session": {
+    "server": "server1649370 on 28971, now emitting seq(4)+serverId(1)+messageAck(4)+197 zero bytes",
+    "bridge": "forward --target 127.0.0.1:28971 --bind-port 29000",
+    "client": "20261023-shape, pid 40212, our runtime/client-1649370"
+  },
+  "measured": {
+    "our_outbound": [
+      {"seq": 5, "length": 206, "hex_head": "0500000000000000000000000000000000000000"},
+      {"seq": 6, "length": 206, "hex_head": "0600000000000000000000000000000000000000"}
+    ],
+    "client_inbound": [
+      {"seq": 7, "serverId": 0, "messageAck": 1, "acked_our_seq": false, "length": 206, "body_nonzero": false}
+    ],
+    "client_message_ack_unchanged": true
+  },
+  "interpretation": {
+    "shape_alone_is_not_enough": "matching the 206-byte size and header layout did not make the client acknowledge us; it still reports messageAck 1",
+    "two_possible_reasons": [
+      "the body must contain a real service/gamestate message; an all-zero body is discarded before the ack is formed",
+      "or the bridge does not actually deliver our UDP replies into the client's inbound ring, so the client never sees them at all"
+    ],
+    "how_to_split_the_two": "check tools/ring_bridge_1649370.py cmd_forward: grep for the ring B write path. The constants exist (RING_B_BASE 0x786DBC0, RING_B_STRIDE 0x504, RING_B_READ 0x7872C00) but the earlier grep for inject_ring_b found no such function name, so the delivery path must be confirmed before blaming the body"
+  },
+  "next": [
+    "read cmd_forward's recvfrom branch end to end and confirm it writes server packets into ring B for the client",
+    "if the write path exists, add a counter to log how many server packets were delivered into ring B",
+    "then put a minimal service message in the body instead of zeros"
+  ],
+  "artifacts": ["runs/shape-gs.jsonl", "tools/ring_bridge_1649370.py"]
+}
