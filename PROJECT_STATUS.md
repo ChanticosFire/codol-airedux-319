@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【字段编码三连失败：8/7/4 字段 → 崩溃或 state 9】** ✅`snapshot-f4x3.bin`（4×(2-bit 索引+1-bit 值)）→ 客户端退出。系列：8 个 0 位→崩溃；7 个 0 位+尾部→state 9；4 个三元组→崩溃。→ 字段流既非连续 0 位、也非 2+1 编码；停止盲猜，改为逐指令注释 `0x471E05..0x471E81` 与 `0x671700`，先确定索引位宽、值编码、循环终止。安全基线仍为 count=0 hybrid（state 10 空世界）。证据：[JSON](evidence/experiments/20261023-codex-f4x3-crash.json)、[JSON](evidence/experiments/20261023-codex-f7-state9.json)、[JSON](evidence/experiments/20261023-codex-f8-crash-and-pivot.json)。
+
 > **2026-10-23【字段读取硬编码；S 234→S 0 不变文案】** ✅`0x671700` 是硬编码字段序列（12+ 次位读、多个子函数、唯一全局为 float 常量 0xDBEC14），无 entityStateFields 表可读，字段数须完整反汇编。✅B 路线实验：`S 234`→`S 0`（servercmd-s0.bin）+ f7 体 → state 9、客户端存活，自截图确认加载屏仍为“交叉火力 + 等待玩家数据…”（unique=4125）——S 命令不驱动文案。下一轮对比 D/C/v/H 变体，或去找客户端读取的比赛状态变量。证据：[JSON](evidence/experiments/20261023-codex-field-reader-hardcoded.json)、[JSON](evidence/experiments/20261023-codex-s0-variant.json)。
 
 > **2026-10-23【count=1 + 7 位字段尾 → state 9；实体线被字段数卡住】** ✅`snapshot-f7.bin`（169B，count1 + 7 个 0 位 + 0x00 + EOF）→ state 9、entity_count=1、id=[2078]、客户端存活。结合 f8 崩溃：**count=1 必然进入字段循环、只由 stream error 终止**，故无法干净通过、到不了 state 10；count=0 的 hybrid 跳过字段循环故被接受。下一轮二选一：恢复 entityState 字段数让字段流恰好收尾，或承认空世界 hybrid 为基线转攻比赛状态/数据路径。证据：[JSON](evidence/experiments/20261023-codex-f7-state9.json)、[JSON](evidence/experiments/20261023-codex-f8-crash-and-pivot.json)。
