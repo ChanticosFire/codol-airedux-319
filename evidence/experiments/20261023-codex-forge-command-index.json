@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T07:55:00+00:00",
+  "scope": "index reliableCommands by ack & 0xFF and run a single forward session",
+  "session": {
+    "name": "20261023-world-16",
+    "pid": 11492,
+    "code_change": "forge_ack_packet now reads reliableCommands[(ack & 0xFF)] at OFF_COMMANDS + (ack & 0xFF) * (4 + 1024) instead of the array start",
+    "hook": "install_refresh_hook.py --install",
+    "bridge": "forward --adr-type 2 --start-challenge --fake-stats --send-move --keepalive --forge-ack --forge-interval 1.5"
+  },
+  "evidence": {
+    "forge_log_lines": 22,
+    "two_forwards_detected": {
+      "pid_21868": "started 11:33:15, qport 51968 (left over from world-15, never exited)",
+      "pid_37428": "started 11:35:19, qport 63131 (this round)",
+      "impact": "the dedrun saw two different source endpoints for AdministraClient, so its endpoint bookkeeping and the ack matching were inconsistent"
+    },
+    "after_killing_the_old_forward": ["out 557", "out 673", "out 787", "out 903", "out 1018", "out 1134"],
+    "conclusion": "the duplicate forward was a real confounder but not the only cause; with one forward left the out counter still grows, so the packet body/cipher itself is still rejected"
+  },
+  "lessons": [
+    "always kill every ring_bridge forward before starting a new session; a leftover one keeps writing to the same dedrun with a different endpoint",
+    "reliableCommands indexing by ack & 0xFF did not change the outcome, so either the command bytes are still wrong or the plain/cipher layout is"
+  ],
+  "next": [
+    "verify the command bytes read for the current ack are non-empty; log them in forge_ack_packet so the next run shows whether the key stream advances",
+    "try the plain body variants u32 ack + 0x0A + 0x00 and u32 ack + 0x00 + 0x01",
+    "as a cross-check, capture one genuine client packet from ring A (the getchallenge bytes are already known) and reproduce the encoder against it"
+  ],
+  "artifacts": ["runs/forge-ack-log.jsonl", "runs/w16-forward.json"]
+}

@@ -631,8 +631,11 @@ def forge_ack_packet(seq: int, ack_override: int | None,
         if not best:
             return None, {"error": "client_t not found"}
         base, values, challenge = best
-        command = (rdc.read(handle, base + fca.OFF_COMMANDS, 64) or b"").split(b"\0")[0]
         ack = values[0] if ack_override is None else ack_override
+        # SV_Netchan_Decode uses reliableCommands[ack & 0xFF].command; each entry is
+        # { int time; char command[1024] } so the stride is 1028 bytes.
+        cmd_offset = fca.OFF_COMMANDS + (ack & 0xFF) * (4 + 1024)
+        command = (rdc.read(handle, base + cmd_offset, 1024) or b"").split(b"\0")[0]
         plain = struct.pack("<I", ack) + b"\x00" + b"\x00"
         body = fca.encode(plain, challenge, 0, values[3], command)
         qport, client_port, _ = fca.find_qport(handle, base)
