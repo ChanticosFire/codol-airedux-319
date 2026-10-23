@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T10:30:00+00:00",
+  "scope": "bring the client into the rendered map on request and capture the deepest visible state",
+  "session": {
+    "name": "20261023-demo",
+    "pid": 32240,
+    "recipe": "dedrun 28970 -> LSG 28969 -> client -> login to lobby -> ring-a-drain block -> 0x5B3160 = 31c0c3 (heartbeat disabled) -> forward --adr-type 2 --start-challenge --fake-stats --send-move --keepalive",
+    "phase_during_load": 8,
+    "phase_after_timeout": 0
+  },
+  "result": {
+    "world_rendered": true,
+    "dialog": "错误 / 服务器连接超时 (with an 退出 button)",
+    "visible_scene": "mp_cross_fire concrete ground, texture detail and the centre reticle are clearly rendered behind the dialog",
+    "ring_b_advanced": [17125, 17126],
+    "screenshot": "evidence/experiments/20261023-demo-world-timeout.png",
+    "note": "this is the same visible ceiling as 20261023-world-rendered.png: the terrain and crosshair render, but the reliable stream still times out because the client never acknowledges"
+  },
+  "honest_status": {
+    "can_enter_map": true,
+    "can_interact": false,
+    "blocker": "the dedrun never receives a valid acknowledgment stream from the 1649370 client, so it retransmits until the client times out (about 20 s after the world appears)",
+    "community_safe_wording": "the offline host boots, authenticates, joins the 2697 dedicated server and renders mp_cross_fire; full interaction is still blocked on the acknowledgement stream"
+  },
+  "artifacts": ["evidence/experiments/20261023-demo-world-timeout.png", "runs/demo-forward.json"]
+}
