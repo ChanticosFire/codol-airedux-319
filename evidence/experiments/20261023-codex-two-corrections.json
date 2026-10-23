@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T08:00:00+00:00",
+  "scope": "TWO CORRECTIONS: round 166 was an artifact of my own arming mistake, and the PsField probe is not playerState-specific",
+  "run": {
+    "breakpoints": ["0x471980:SnapTracePlayerState", "0x471BB3:Slot", "0x4724A5:Decide"],
+    "body": "runs/snapshot-single22.bin",
+    "counts": {"snap_trace": 1, "slot": 0, "decide": 2},
+    "final_state": 10
+  },
+  "correction_1_round_166_retracted": [
+    "round 166 claimed 'state 10 is reached without any snapshot parse' because snap_trace was 0",
+    "that run armed ONLY 0x471BB3, never 0x471980, so snap_trace being 0 was guaranteed by my own invocation",
+    "with both breakpoints armed the ps block DOES fire (snap_trace = 1), so the round-166 conclusion is WITHDRAWN"
+  ],
+  "correction_2_psfield_is_not_ps_specific": [
+    "0x471BB3 is where the ps delta path loads the slot and calls the delta decoder; it NEVER fires in this run",
+    "yet the earlier PsField probe on 0x6701D0 reported one hit in every run",
+    "so 0x6701D0 is called from another block as well (it is a generic field codec, also reachable from the entity/actors path)",
+    "therefore every inference that used the PsField count as evidence about the playerState is INVALID, including round 159 ('the ps block decodes exactly one field') and round 165 ('one field per snapshot')"
+  ],
+  "what_this_means_for_the_accepted_body": [
+    "the accepted body's ps block EXITS IMMEDIATELY: it enters 0x471980 (trace fires), never reaches the delta decode, and returns",
+    "so runs/snapshot-single22.bin carries an EMPTY playerState - not one field with value 0",
+    "its stream stays error-free and the snapshot is accepted, which is consistent with everything measured at 0x4724A5",
+    "and it explains why state 10 arrives regardless: it comes from the gamestate plus an empty-but-valid snapshot"
+  ],
+  "net_position": [
+    "we have never actually encoded a playerState field: every 'field write' experiment was really writing into an empty block and the extra bits were consumed by the following blocks",
+    "the reliable statements that survive: the ps block is entered at 1308 in the hybrid prefix; the delta path is at 0x471BB3 (never taken by our bodies yet); stream_error at 0x4724A5 is the accept/reject oracle; the 24-entry table at 0xDA63E8 is what 0x670FF0 receives"
+  ],
+  "next": [
+    "make the ps block actually enter the delta path: the trace proves we reach 0x471980, so the very first bits must be wrong - the has-ps bit or the header layout",
+    "the immediate experiment is to arm SnapTracePlayerState AND Slot together and vary only the FIRST bits of the ps block until Slot fires; that single condition (slot > 0) proves the header is right"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r180-gs.jsonl",
+    "probe": "tools/launch_1649370.py (Slot branch at 0x471BB3)"
+  }
+}

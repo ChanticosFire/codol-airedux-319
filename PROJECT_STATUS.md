@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [TWO CORRECTIONS: round 166 withdrawn; PsField is not ps-specific]**
+> With all three breakpoints armed: snap_trace 1, slot 0, decide 2, state 10. Round 166's run armed only 0x471BB3, so its snap_trace 0 was my own mistake - WITHDRAWN.
+> 0x471BB3 (ps delta path) never fires, yet PsField (0x6701D0) always reported 1 -> 0x6701D0 is a generic codec used by other blocks too. All PsField-based ps conclusions are invalid (rounds 159, 165).
+> So the accepted body carries an EMPTY playerState; we have never actually written a ps field. Next: vary only the first bits until slot > 0, which proves the header.
+> Evidence: [two corrections](evidence/experiments/20261023-codex-two-corrections.json).
 > **2026-10-23 [CRITICAL: state 10 happens without any snapshot parse]**
 > Slot probe run: snap_trace 0, slot 0, final state 10. So state 10 comes from the gamestate alone, not from processing a snapshot.
 > Every 'state 10 = snapshot accepted' conclusion is invalid, including the hybrid baseline. State 10 most likely means the load handshake completed with no scene data (hence the black frame).
