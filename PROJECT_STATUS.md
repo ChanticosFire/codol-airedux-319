@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Padded body crashes the client]**
+> pad20 with 3 probes: zero traces, zero decide records, forward summary missing, 4 snapshots queued, THREE client run dirs within 3 minutes (client died and relaunched).
+> So padding inside ps crashes rather than helps. Every non-zero ps attempt is rejected or crashes; only the all-zero body works.
+> Tooling note: assert delivery (forward summary + snap_trace > 0 + no new run dirs) before analysing. Two of the last three runs were wasted.
+> Honest: deliverable complete; blocked on any non-zero ps content and the per-entity payload.
+> Evidence: [padded body crashes](evidence/experiments/20261023-codex-padded-body-crashes.json).
 > **2026-10-23 [Ps padding does not clear the stream error]**
 > +20/+40 zero bits inside the ps: stream_error still 1, state 9. So it is not a "give ps room" problem.
 > Remaining: (a) the 27-bit tail is only valid at the 29-bit ps alignment and misparses otherwise; or (b) codec-11 value 0x100 is invalid.

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T12:05:00+00:00",
+  "scope": "the padded body crashes the client repeatedly (three client sessions in three minutes), so no traces were produced",
+  "evidence": {
+    "forward_summary": "missing",
+    "game_server_snapshots": 4,
+    "client_run_dirs": [
+      "reuse-a1d21d65 05:58:20",
+      "reuse-d047fba7 06:00:34",
+      "reuse-3f7799f6 06:01:24"
+    ],
+    "interpretation": "three separate client run directories within ~3 minutes means the client was (re)launched repeatedly - i.e. it died and the launcher restarted it",
+    "snap_trace_records": 0,
+    "decide_records": 0
+  },
+  "conclusion": [
+    "adding padding inside the ps block does not merely fail to help - the body now CRASHES the client",
+    "combined with rounds 131-136, the pattern for every non-zero playerState attempt is: rejected (state 9) or crash",
+    "the only body that consistently works is the all-zero one (single22), which reaches state 10 reproducibly"
+  ],
+  "tooling_note": [
+    "two of the last three experiments produced no usable data because delivery failed or the client died",
+    "every experiment must now assert: forward summary exists, snap_trace records > 0, and the client run dir count did not increase",
+    "that assertion is cheap and would have saved both sessions"
+  ],
+  "honest_position": {
+    "round": 143,
+    "delivered": "server1649370 (handshake, gamestate, state-10 snapshots, match end, lobby return), one-command runner, three documents, 115+ evidence records",
+    "blocked": "any playerState content other than all-zero, and the whole per-entity payload",
+    "assessment": "the remaining work is a fundamentally different kind of task from what the model can do reliably here: it needs either a captured snapshot or interactive debugging of the client's decoder"
+  },
+  "artifacts": {
+    "server_log": "runs/codex-r164-gs.jsonl"
+  }
+}
