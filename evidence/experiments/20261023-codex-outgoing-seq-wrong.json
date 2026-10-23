@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T11:05:00+00:00",
+  "scope": "read netchan.outgoingSequence from the dedrun client_t to fill the body's messageAcknowledge",
+  "change": "forge_ack_packet now finds the 127.0.0.1 bytes without assuming the netadr type, takes adr_address = hit - 4, and reads outgoingSequence at adr_address - 0x10",
+  "session": {
+    "name": "20261023-world-25",
+    "pid": 13084,
+    "order": "dedrun -> forward --bind-port 29000 --forge-seq-base 100000 -> client -> login -> drain block + refresh hook -> start-challenge"
+  },
+  "forge_log_tail": [
+    {"seq": 100005, "ack": 80, "adr_address": "0x52A267C", "outgoing_sequence": 100004, "message_ack": 100004, "plain": "01a486010004", "challenge": 131588163},
+    {"seq": 100006, "ack": 82, "adr_address": "0x52A267C", "outgoing_sequence": 100005, "message_ack": 100005, "plain": "01a586010004", "challenge": 131588163}
+  ],
+  "server": {
+    "stale_line": "CoDOL: AdministraClient on stale serverId 0 (server 1) state 2 ack 0 gamestate -1 out 3 sent 0",
+    "out": 3,
+    "state": 2,
+    "ack": 0,
+    "interpretation": "the dedrun drained its queue (out 3) but reset the client to CS_CONNECTED, which is what it does when the acknowledged sequence is invalid"
+  },
+  "diagnosis": {
+    "outgoing_sequence_value_is_suspicious": "100004/100005 track our own forge sequence base 100000 exactly, while a server-side outgoingSequence should be in the tens after a fresh connection",
+    "meaning": "adr_address 0x52A267C is some other structure that happens to contain 127.0.0.1, not netchan.remoteAddress; therefore adr_address - 0x10 is not netchan and its first int is not outgoingSequence",
+    "consequence": "messageAcknowledge 100004 exceeds what the dedrun has actually sent, so the ack is invalid and the client is dropped back to state 2"
+  },
+  "next": [
+    "disambiguate the netadr hit by also requiring the port that follows the 127.0.0.1 bytes to equal the forward port 29000 (0x7148 little-endian)",
+    "then read outgoingSequence at hit - 4 - 0x10 and log the value; a plausible server value should be small and grow by roughly one per server packet",
+    "alternatively read client_t.netchan through the same offset base used by read_dedrun_client (which already locates reliableSequence correctly) rather than scanning for 127.0.0.1"
+  ],
+  "artifacts": ["runs/forge-ack-log.jsonl", "runs/2697-server-test/main/qconsole.log"]
+}
