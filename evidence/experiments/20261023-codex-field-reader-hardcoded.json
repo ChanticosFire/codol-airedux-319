@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T06:45:00+00:00",
+  "scope": "the field value reader is a hard-coded sequence, not a table walk",
+  "finding": {
+    "function": "0x671700",
+    "calls": [
+      "0x66EC30 x12+ (bit reads)",
+      "0x66F9E0",
+      "0x6714D0",
+      "0x671550",
+      "0x671460",
+      "0x6715D0"
+    ],
+    "globals": [
+      "0xDBEC14 (a float constant)"
+    ],
+    "conclusion": "no entityStateFields table pointer is used; the reader hard-codes the field order, so the field count has to come from a full disassembly of the function rather than from a table"
+  },
+  "decision": "switch to route B for this round: study the match-state server commands (S/D/C/v/H/u/U) that precede waiting-for-players and waiting-for-player-data",
+  "next": [
+    "resolve what S 234 maps to (server command string table index) on the 1649370 client",
+    "test D/C/v/H/u/U variants and watch the loading-screen text and state",
+    "keep the hybrid baseline as the accepted body"
+  ],
+  "artifacts": {
+    "previous": "evidence/experiments/20261023-codex-f7-state9.json"
+  }
+}
