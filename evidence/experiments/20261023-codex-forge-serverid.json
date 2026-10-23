@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:30:00+00:00",
+  "scope": "verify the reliableCommands offset against the native source and find why the key never advances",
+  "source_findings": {
+    "client_t_layout": {
+      "reliableCommands": "client_t + 0xa50 (2640), 128 entries of {int cmdTime; int cmdType; char command[1024]}",
+      "reliableSequence": "client_t + 0x20e50 (134736)",
+      "reliableAcknowledge": "client_t + 0x20e54",
+      "stride": 1032,
+      "command_field": "+8 inside each entry"
+    },
+    "decode_function": "SV_Netchan_Decode: command = reliableCommands[reliableAcknowledge & 127].command; if 2697 archives active it is mapped through CODOL2697_ReliableKeyCommand (only 'J '/'K ' prefixes become \"!\"); CODOL_Xor(data, len, key, command, 1024) with key = challenge ^ (byte)serverId ^ messageAcknowledge",
+    "xor_function": "CODOL_Xor advances the byte key with command[j++] << (i & 1) and skips a NUL back to index 0, which matches forge_client_ack.encode"
+  },
+  "experiment": {
+    "session": "20261023-world-18",
+    "command_offset_change": "cmd_base = OFF_RELIABLE_SEQUENCE - 128*1032; cmd = cmd_base + (reliableAck & 0x7F)*1032 + 8",
+    "result": "command_len is still 0 because reliableAcknowledge is 0 and reliableCommands[0] is genuinely empty; the decoder would also use the empty command, so the key stays at its initial value in both directions",
+    "server": ["out 149", "out 263", "out 375", "out 488"]
+  },
+  "decisive_clue": {
+    "log": "CoDOL: AdministraClient on stale serverId 0 (server 1) ...",
+    "meaning": "the dedrun's client->serverId is 1 while forge_client_ack hard-coded server_id 0",
+    "impact": "key = challenge ^ (byte)serverId ^ messageAcknowledge differs by 1 in the low byte for every byte of the packet, so the dedrun's decoder produces garbage and discards the ack",
+    "fix": "ring_bridge now takes --forge-server-id (default 1) and passes it into encode()"
+  },
+  "next": [
+    "re-run one session with the default server id 1 and watch whether out stops growing / reliableAcknowledge advances",
+    "if it still fails, try server id 0 and 1 side by side and log which one the dedrun accepts",
+    "also log the dedrun's raw serverId field once the offset is known, so the value no longer depends on the log line"
+  ],
+  "artifacts": ["tools/ring_bridge_1649370.py", "runs/forge-ack-log.jsonl"]
+}
