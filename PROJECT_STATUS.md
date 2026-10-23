@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Codec -58 is variable-length]**
+> 45 zero value bits -> ps 1308..1363 = 55 bits (39 value bits); large value -> 61 bits (45 value bits). So -58 is magnitude-coded: length is a function of the value; padding can never fix it, but the block still ends with error 0.
+> Next: one session measuring magnitudes 0/1/0x100/0x10000/0x1000000/0x3F800000 to tabulate the bit length.
+> Evidence: [codec58 variable length](evidence/experiments/20261023-codex-codec58-variable-length.json).
 > **2026-10-23 [Codec -58 is a 45-bit payload]**
 > Landing on index 0 with a 30-bit value: ps 1308 -> actors 1369 = 61 bits, error 0. Prologue is 16 bits, so the value read is 45 bits - the decoder read 15 bits past our payload.
 > First field-level measurement with the corrected encoder in the loop. Next: supply exactly 45 bits, verify the ps lands on 61, then check snapshot acceptance (state 10).

@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T19:45:00+00:00",
+  "scope": "codec -58 is VARIABLE-LENGTH: an all-zero value costs 39 payload bits, a large value costs 45",
+  "bodies": [
+    "runs/snapshot-c58-v45.bin (45 zero value bits)"
+  ],
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1363,
+    "ps_bits_consumed": 55,
+    "actors_error": 0,
+    "states": {
+      "t=22": 9,
+      "t=35": 9,
+      "t=50": 9,
+      "t=65": 9
+    }
+  },
+  "derivation": {
+    "prologue_bits": 16,
+    "value_bits_read_with_zero": "55 - 16 = 39",
+    "value_bits_read_with_large_value": "61 - 16 = 45 (previous round, payload 0x3FFFFFFF-ish)",
+    "conclusion": "the -58 payload length depends on the VALUE, so it is a variable-length (magnitude-coded) float, not a fixed 32/45-bit field"
+  },
+  "reading": [
+    "this explains why an all-zero ps block was cheap (28 bits in the earliest experiments) while any large value blew the budget",
+    "it also means padding cannot fix the block: the length is a function of the value, and the decoder always reads exactly what the value implies",
+    "the block still terminates cleanly (error 0) and the actors entry is reached, so the framing is right - only the value coding model was wrong"
+  ],
+  "next": [
+    "measure the length function: encode several magnitudes (0, 1, 0x100, 0x10000, 0x1000000, 0x3F800000) in one session and record the ps length for each",
+    "that yields the bit-length table for -58, which is the last missing piece for writing a coherent playerstate origin"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r143-gs.jsonl",
+    "encoder": "runs/_gen_c58b.py",
+    "module": "server1649370/ps_codec.py"
+  }
+}
