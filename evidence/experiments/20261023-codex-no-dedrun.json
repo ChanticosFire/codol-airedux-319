@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T12:35:00+00:00",
+  "scope": "the 2697 dedrun server is not present locally, so the A/B control experiment cannot run",
+  "exploration": {
+    "cod_root_dirs": [
+      "1649370",
+      "3.19.26.13",
+      "使命召唤OL",
+      "client",
+      "codol-airedux",
+      "codol-airedux-acl-recovery",
+      "Original Client",
+      "WeGameInstaller"
+    ],
+    "dedrun_search": "no *dedrun* file found within two directory levels"
+  },
+  "implication": [
+    "we cannot compare '1649370 client + 2697 server' against '1649370 client + our server' without the dedrun build",
+    "so the final step (why the client stays on the loading screen) has to be resolved from the client side alone"
+  ],
+  "next": [
+    "with the owner's authorisation, force the load-completion callback 0x8018B0 to run from a breakpoint handler (e.g. CreateRemoteThread on the client, or a cave that calls it) and screenshot",
+    "this bypasses the unreachable UI-refresh path entirely"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r95-gs.jsonl"
+  }
+}
