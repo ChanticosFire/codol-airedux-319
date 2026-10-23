@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T08:50:00+00:00",
+  "scope": "locate the client connection address struct to test the address-filter hypothesis",
+  "result": {
+    "scanned_around": "0x4afc0928 (the conn address reported at login)",
+    "window": "0x2000 bytes",
+    "pattern_searched": "int32 type=2 + four zero ip bytes + u16 port=0",
+    "hits": 0
+  },
+  "diagnosis": {
+    "wrong_base": "0x4afc0928 is the lobby/auth connection (lsg conn from drive_login_state_machine), not the in-game netchan connection object",
+    "the_forward_status_reports_the_game_connection_separately": "cnt-forward.json status_after.connection was 0x13010380 for that session, so the right object must be taken from the bridge status, not from the login sample"
+  },
+  "what_this_means": {
+    "the_address_hypothesis_is_untested": "we did not find the struct, so we have neither confirmed nor refuted that a fake 0.0.0.0 address causes the client to drop our datagrams"
+  },
+  "next": [
+    "read status_after.connection from the live forward run and scan around THAT pointer for the adr struct",
+    "then patch ip to 127.0.0.1 and the port to the bridge socket port, and resend the fragments",
+    "watch whether stage/messageAck advance"
+  ],
+  "artifacts": ["runs/adr-forward.json", "runs/cnt-forward.json"]
+}
