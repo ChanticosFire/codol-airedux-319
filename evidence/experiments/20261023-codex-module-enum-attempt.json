@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T13:00:00+00:00",
+  "scope": "attempted to enumerate the client's modules at runtime to check whether cgame is loaded; the ad-hoc script had an argtypes bug and the run ended at state 9",
+  "what_was_attempted": [
+    "run the standard session with snapshot-tr15.bin",
+    "at ~40 s after connect, read network state and enumerate loaded modules, looking for cgame / game / ui / render / d3d / ff",
+    "the intent was to answer one question directly: does the client ever load its cgame module in our sessions?"
+  ],
+  "what_happened": [
+    "the run reached state 9, not 10 (so the state does vary between runs with different snapshot bodies)",
+    "the enumeration raised OverflowError on GetModuleBaseNameW because the argtypes were not declared - a bug in the ad-hoc script, not in the client",
+    "no module data was collected"
+  ],
+  "useful_byproducts": [
+    "the repository already contains tools/modules.py, which was written for exactly this purpose and does declare its types - it should be used instead of an inline script",
+    "state 9 vs state 10 varies with the snapshot body, which is itself a signal: tr15 (55 clean bits) ended at 9 while single22 ended at 10"
+  ],
+  "next": [
+    "run tools/modules.py against a live client during a normal session and record the module list at the loading screen and after it",
+    "if cgame is absent, that confirms the load path never reaches cgame initialisation and the work must target the load sequence",
+    "if cgame is present, the black frame is a scene/render problem instead, which is a different (and more tractable) investigation"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r202-gs.jsonl",
+    "tool": "tools/modules.py"
+  }
+}
