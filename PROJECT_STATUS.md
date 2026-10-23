@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CORRECTION: 0x471C41 is the NORMAL delta path, not a skip]**
+> 0x471C41: idiv -> slot index from the game clock; *0x58 stride into the ps ring at [ebx+0xA900]^0x3613BDA3; read present bit; [esi] = last; call 0x670FF0 (delta); then 0x471CA3 loops back to has-ps if no error.
+> Round 171 inverted this. So the ps block DOES decode fields and DOES loop; the accepted body decodes one field (commandTime=0), it is not empty; multi-field = one full header group per field, terminated by has-ps=0.
+> Next: two-field body, confirm two delta calls at 0x471C84.
+> Evidence: [471c41 is the delta path](evidence/experiments/20261023-codex-471c41-is-the-delta-path.json).
 > **2026-10-23 [One-bit full/delta flag at 0x47238A]**
 > 0x47238A reads one bit: 0 -> without-history path (push 0), 1 -> requires valid history (push edi). Our bodies take bit == 0, i.e. the FULL form, so a NULL history is expected rather than an error.
 > Open: 0x472268 sets edi = 0xC89A490 and the ring branch never fired, yet history read 0 - needs single-stepping.

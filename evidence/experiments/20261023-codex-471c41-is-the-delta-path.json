@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T18:00:00+00:00",
+  "scope": "CORRECTION of round 171: 0x471C41 is the NORMAL delta path, not a skip - so the ps block really does decode fields and really does loop",
+  "the_path_at_0x471c41": {
+    "0x471C41": "idiv [ebx+0xA8E8]                 ; slot index from the game clock",
+    "0x471C47": "esi = edx (remainder)",
+    "0x471C4F": "esi *= 0x58                       ; stride 88 = the playerState struct size",
+    "0x471C52": "edx ^= 0x3613BDA3",
+    "0x471C58": "esi += edx                        ; esi = &ps_ring[remainder]",
+    "0x471C5C": "call 0x447190                     ; READ 1 BIT (present)",
+    "0x471C64": "je 0x471CA3 when present == 1     ; skip this slot",
+    "0x471C82": "[esi] = [ebp-0xD0]                ; store `last` into the slot",
+    "0x471C84": "call 0x670FF0                     ; DECODE ONE DELTA",
+    "0x471C94": "[ebx+0x3C34] += 1                 ; game clock += 1",
+    "0x471C9D": "[eax+0x3BA0] += 1                 ; count += 1",
+    "0x471CA3": "cmp [edi],0 ; je 0x471A3E          ; no error -> LOOP BACK to the has-ps read"
+  },
+  "the_correction": [
+    "round 171 read `0x471B59 jne 0x471C41` as 'current != last, so SKIP the field' - that was backwards",
+    "0x471C41 is in fact the NORMAL path that decodes a delta into the ps ring slot",
+    "the `current == last` branch at 0x471B9E is the alternative (slot already holding `last`)",
+    "and the block DOES loop: after a field, 0x471CA3 checks the stream error and jumps back to 0x471A3E for the next has-ps bit",
+    "so the playerState block is: [has-ps][mode/last][present][delta slot][next has-ps] ... until has-ps = 0"
+  ],
+  "what_this_restores": [
+    "round 159's observation ('the accepted body decodes exactly one field') is consistent again - the block decodes one field and then exits because the next has-ps bit we supply is 0",
+    "and the multi-field encoding is: one full header group per field, each ending with a delta, terminated by has-ps = 0",
+    "which means the 'empty playerState' framing of rounds 167-172 was wrong: the accepted body decodes ONE field (index 0, commandTime = 0), it is not empty"
+  ],
+  "the_ring": [
+    "the ps ring is at [ebx+0xA900] ^ 0x3613BDA3 with a 0x58 stride, indexed by the game clock",
+    "the slot's first dword is set to `last` (0x471C82) - which is exactly the 'history' the earlier rounds were chasing"
+  ],
+  "next": [
+    "re-test a TWO-field body with one full header group per field (has-ps, mode, last, present, delta) x2 then has-ps = 0, and confirm two delta decodes by watching 0x471C84",
+    "0x471C84 is once per field but the block is entered once per snapshot, so the hit count is bounded and safe to arm"
+  ],
+  "artifacts": {
+    "addresses": ["0x471C41 delta path", "0x471C5C present bit", "0x471C84 delta call", "0x471CA3 loop back"]
+  }
+}
