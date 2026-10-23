@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T12:15:00+00:00",
+  "scope": "MAJOR: the actors block terminator is actor index 0x7FF, and the known-good tail starts with exactly that",
+  "decoded_grammar_0x4711AF": {
+    "0x4711AF": "read 1 bit; if 1 -> next actor index = previous + 1 ('increment' form)",
+    "0x4711BF": "else read 1 bit: if 1 -> read 11 bits = ABSOLUTE actor index; if 0 -> read 9 bits = index delta",
+    "0x4711E6": "edi = stream[0x24] = actor index; if stream[0] (error) -> 0x47143D; if index == 0x7FF -> 0x47143D (END)"
+  },
+  "verified_on_the_known_good_tail": {
+    "bits": "hybrid bits 1309..1335 = 011111111111100000010100000",
+    "decode": "bit0=0 -> bit1=1 -> 11 bits = 2047 = 0x7FF",
+    "consumed": 13,
+    "conclusion": "the 27-bit tail of the working body is [13-bit actors terminator][14 bits glass+EOF]"
+  },
+  "open_question": [
+    "with has-ps=1 the measured actors consumption was 46 bits starting at 1336, not 13",
+    "so the actors block must read something BEFORE the terminator loop in that case (a header), most likely in the 0x4710FC..0x4711A0 region",
+    "next step is to disassemble that region and identify the header bits"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r137-gs.jsonl"
+  }
+}

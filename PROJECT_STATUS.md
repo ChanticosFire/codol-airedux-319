@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MAJOR: actors terminator is index 0x7FF; the working tail starts with it]**
+> 0x4711AF grammar: 1 bit -> prev+1; else 1 bit -> 1 = 11-bit absolute index, 0 = 9-bit delta; index 0x7FF ends the block.
+> Decoded hybrid tail bits 1309..1335 = 011111111111100000010100000 -> 0,1,11 bits=2047 -> 13 bits terminator + 14 bits glass/EOF.
+> With has-ps=1 actors consumed 46 bits, so a header is read first (0x4710FC..0x4711A0). Next: identify it and rebuild the tail.
+> Acceptance: a screenshot showing the map. Evidence: [actors terminator found](evidence/experiments/20261023-codex-actors-terminator-found.json).
 > **2026-10-23 [Tail-length sweep NEGATIVE: padding cannot terminate the actors block]**
 > Tail lengths 40/60/80 in one session: every sample state 9. With the earlier 27/120/400 runs, actors never terminates on padding - it consumes to the end and sets the error.
 > Consequence: a has-ps=1 snapshot cannot be completed by padding; the actors payload needs its own encoding (same class as the entity loop blocker).
