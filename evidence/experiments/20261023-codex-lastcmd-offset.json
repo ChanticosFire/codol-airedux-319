@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T21:20:00+00:00",
+  "scope": "derive the offset of lastClientCommandString inside client_t",
+  "layout_from_source": {
+    "pack": "#pragma pack(1) on client_s",
+    "usercmd_t": {
+      "fields": "serverTime(4) + buttons(4) + angles[3](12) + weapon(1) + offHandIndex(1) + forwardmove(1) + rightmove(1) + meleeChargeYaw(4) + meleeChargeDist(1) + selectedLocation[2](2) + index_hi(1)",
+      "size_bytes": 32,
+      "source": "runs/2697-native-src/src/player.h:301"
+    },
+    "name_to_reliableSequence": 265420,
+    "reliable_block": 24,
+    "lastUsercmd": 32,
+    "lastClientCommand": 4,
+    "name_to_lastClientCommandString": "265420 + 24 + 32 + 4 = 265480",
+    "declaration": "server.h:193 char lastClientCommandString[MAX_STRING_CHARS]"
+  },
+  "verified_formulas": {
+    "encoder_key": "challenge ^ netchan.outgoingSequence",
+    "encoder_command": "lastClientCommandString",
+    "decoder_key": "challenge ^ (byte)serverId ^ messageAcknowledge",
+    "decoder_command": "reliableCommands[reliableAcknowledge & 127].command"
+  },
+  "ready_to_test": "read client_t + 265480 for the command string, then decrypt runs/dec-in.jsonl with key = challenge ^ outgoingSequence (the seq word from the packet) and that command string",
+  "not_done_this_round": "no live session was started; the decryption still has to be executed",
+  "next": [
+    "start one dedrun session, read client_t+265480, log the command string length and first bytes",
+    "decrypt runs/dec-in.jsonl with the encoder key and command, print the first 48 plaintext bytes",
+    "accept the layout only if the plaintext begins 07 00 00 00 00 01 00 00 00"
+  ],
+  "artifacts": ["runs/2697-native-src/src/player.h", "runs/2697-native-src/src/server.h", "runs/dec-in.jsonl"]
+}
