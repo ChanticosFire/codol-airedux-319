@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T12:55:00+00:00",
+  "scope": "entity snapshot format recovered; a 10 KB multi-snapshot body was not acknowledged",
+  "snapshot_chain": {
+    "main": "0x4722A0..0x4724A5",
+    "has_base_bit": "0x47238C reads one bit; the base pointer is passed to the first sub-block, or 0 when the bit is clear",
+    "sub_blocks": [
+      "0x4723B9 -> 0x671D80 pre-block",
+      "0x4723DD -> 0x471D80 entities",
+      "0x472401 -> 0x471980 sub2",
+      "0x472424 -> 0x471010 actors",
+      "0x472445 -> 0x471560 sub4",
+      "0x4724A0 -> 0x4475F0 glass"
+    ]
+  },
+  "entity_encoding": {
+    "entity_number_table": "0x671650: read 1 bit (table present); if 1 read 1 bit again; if 1 call 0x66ED70 for an 8-bit entity count, then 12 bits per entity number (0x66EC30 with width 0xC)",
+    "field_reader": "0x671700: read 1 bit (changed); if 1 read 2 bits and add 1 to choose the value form; otherwise read another bit for the reduced form",
+    "bit_reader": "0x447190 reads one bit and advances the bit cursor",
+    "width_reader": "0x66EC30 reads N bits (generic MSG_ReadBits)"
+  },
+  "experiment": {
+    "source": "runs/snapshot-2697-seq5.bin first snapshot body extracted after the 27 commands -> runs/snapshot-2697-real.bin",
+    "body_bytes": 10200,
+    "payload_bytes": 10204,
+    "seq": 1000,
+    "fragments": 9,
+    "client_ack": 1,
+    "state": 9,
+    "result": "the multi-snapshot body was not acknowledged, so the client never promoted to state 10 in this run"
+  },
+  "next": [
+    "extract a single 2697 snapshot instead of the concatenated 10 KB stream",
+    "or emit a minimal entity using the recovered encoding (1 entity, id 0, all fields as new values)",
+    "test fragment count sensitivity with a 2-fragment body"
+  ],
+  "artifacts": {
+    "real_snapshot": "runs/snapshot-2697-real.bin",
+    "server_log": "runs/codex-r11-gs.jsonl",
+    "forward": "runs/codex-r11-forward.json"
+  }
+}

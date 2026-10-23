@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【实体快照格式恢复；10KB 拼接快照未被确认】** ✅主解析链 `0x4722A0..0x4724A5`（`0x47238C` 读 has_base 位；`0x671D80`→`0x471D80`→`0x471980`→`0x471010`→`0x471560`→`0x4475F0`）。✅实体编码：`0x671650` 实体号表（1+1 bit、8-bit 数量、每实体 12 bits）、`0x671700` 字段 delta、`0x447190` 读位、`0x66EC30` 读 N 位。✅从 seq5 服务流提取 2697 真实快照体 10200 字节，以 9 片 seq 1000 发送 → 未确认、state 9。下一轮改发单个快照或手写单实体。证据：[JSON](evidence/experiments/20261023-codex-entity-snapshot-format.json)。
+
 > **2026-10-23【2697 抓包无 snapshot；客户端实体数组全 0】** ✅599 条消息全是 opcode 1（server command），唯一命令 99 条；补发 31 条含 `d 0 <serverinfo>`/`D 0`/`C 0`/`v` 后仍 state 10 全黑。✅实体数组 `[clc+0xA904]^0xDF5B8C38`、stride 0x34，抽查 32 项全 0——客户端未解析到实体。下一步必须让 base 快照携带玩家实体（`0x471D80`+`0x447190`+`0x671700`）。证据：[JSON](evidence/experiments/20261023-codex-full-commands-and-empty-entities.json)。
 
 > **2026-10-23【seq 顺序陷阱与 state 9/10 画面差异】** ✅命令重发用 4000+ 序号会把后续快照顶掉（ack 停在 1、state 9、无 usercmd）；改为命令 seq 严格递增 + 快照从 1000 起后恢复 **state 10、usercmd 17、ack 1053**。✅state 9 时加载屏正常渲染（unique=3438/mean=52），state 10 时全黑（unique=5/max=21）——黑屏只发生在游戏视图。当前是**协议层服务器替身**，非内存强制、也非真正建房；黑屏根因是快照无本地玩家实体。证据：[JSON](evidence/experiments/20261023-codex-command-repeat-seq-order.json)。
