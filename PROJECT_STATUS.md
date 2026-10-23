@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【动态读到实体循环参数：ebp+8=1628824，非位宽】** ✅给 SnapTrace 加 param_ebp8/10/14 后实测：ebp+8=1628824(0x18DA98)、ebp+0x10=0、ebp+0x14=0，cursor=164/bit=1307。→ 1628824 是指针量级，不可能是位宽；但 0x471E0E 把它当宽度 push 给 0x66EC30，说明调用帧或语义需复核。工具改进已落地（launch 的 SnapTrace 记录含 param_ebp8/10/14）。下一轮记录 [ebp+4] 返回地址确认帧并检查 0x66EC30 对大参数分支，在 0x4723DD 断点比对真实传入值。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-entityloop-params.json)、[JSON](evidence/experiments/20261023-codex-ebx-not-found.json)。
+
 > **2026-10-23【delta 实体（8 位索引）崩溃；索引位宽未知】** ✅`snapshot-del8.bin`（count1 + bit=1 + 8 位索引 0 + 尾部）→ 客户端退出。✅反汇编 0x4721F0..0x4722A2 只看到快照头解析，`ebx`（push 给 0x471D80 的位宽参数）赋值在更早处，本轮未定位。→ delta 路径同受“索引位宽未知”阻塞：位宽错→位流错位→复制源非法→崩溃。下一轮在函数入口前找 ebx 赋值或用断点读 [ebp+8]，拿到位宽后再构造。安全基线仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-delta8-crash.json)。
 
 > **2026-10-23【重大修正：0x77D8218 是 ncs_ani 资源表，非实体字段表】** ✅state 10 复核 5 个描述符：ncs_ani_code_post_gfx_default_mp(1)、ncs_ani_code_post_gfx_mp(1)、ncs_ani_common_marketplace_lite(91)、ncs_ani_common_mp(321)、ncs_ani_level(1)——全是动画资源。→ 0x671A0D 遍历资源表、0x671700 读实体资源/动画字段，不是完整 entityState；415 只是资源 size 累加，不是字段数。这解释了单字段实验崩溃：eType/origin 不在该路径。新方向：0x471D80 的 bit=1 分支（读 [ebp+8] 位宽索引 + rep movsd 复制 0x34 字节完整 entityState）——发送 delta 实体指向可控槽位。安全回退仍为 hybrid。证据：[JSON](evidence/experiments/20261023-codex-field-list-is-resources.json)。
