@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T13:40:00+00:00",
+  "scope": "playerState block layout measured: 1 bit has-ps + 1 bit flag + 8 bit count; minimal (all-zero) form costs 10 bits",
+  "measurements": {
+    "ps_block_entry_bit": 1308,
+    "hybrid_baseline": {
+      "ps_entry": 1308,
+      "actors_entry": 1323,
+      "note": "has-ps=0 path in the probe body"
+    },
+    "probe_has_ps_1_mixed_bits": {
+      "ps_entry": 1308,
+      "actors_entry": 1323,
+      "consumed": 15,
+      "error_at_actors": 0
+    },
+    "probe_has_ps_1_zero_bits": {
+      "ps_entry": 1308,
+      "actors_entry": 1318,
+      "consumed": 10,
+      "error_at_actors": 0
+    }
+  },
+  "decoded_layout": {
+    "bit_1308": "has-ps (1)",
+    "bit_1309": "second flag (last-mode / no-prior-ps)",
+    "bits_1310_1317": "8-bit field count (last+1); all zeros = no changed fields",
+    "minimal_ps": "10 bits, no stream error, actors block starts immediately after"
+  },
+  "why_state_is_9": [
+    "the ps block itself parses cleanly (error=0 at the actors entry)",
+    "but inserting 9 extra bits shifts the tail (actors / sub4 / glass / EOF marker), so the snapshot is rejected later",
+    "next: rebuild the body with has-ps=1 and count=0 at bits 1308..1317, then re-append the hybrid tail from bit 1309 onwards at bit 1318 so the tail stays aligned"
+  ],
+  "artifacts": {
+    "bodies": [
+      "runs/snapshot-ps-probe.bin",
+      "runs/snapshot-ps-zero.bin"
+    ],
+    "server_log": "runs/codex-r99-gs.jsonl"
+  }
+}

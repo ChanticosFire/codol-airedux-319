@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [playerState block decoded: has-ps(1) + flag(1) + count(8); minimal 10 bits]**
+> Traced ps entry (0x471980) and actors entry (0x471010): hybrid ps_entry bit 1308 -> actors 1323; has-ps=1 mixed bits 15 bits consumed, error 0; has-ps=1 all-zero bits 10 bits consumed, error 0.
+> Layout: bit 1308 has-ps, bit 1309 second flag, bits 1310..1317 8-bit field count (last+1, zero = no fields).
+> state 9 because 9 extra bits shift the tail (actors/sub4/glass/EOF) - ps itself parses cleanly.
+> Next: rebuild with has-ps=1, count=0 and re-append the hybrid tail at bit 1318; then add commandTime.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps layout measured](evidence/experiments/20261023-codex-ps-layout-measured.json).
 > **2026-10-23 [Forcing 0x8018B0 runs but changes nothing]**
 > tools/force_call.py (remote thread + shellcode call) invoked 0x8018B0 in a live state-10 session: thread finished, client alive, state 10 / ui 5 / entity_count 0 / black - unchanged.
 > So 0x8018B0 does not perform the transition; the real switch is in the unreachable UI refresh (0x8037AB, no callers).
