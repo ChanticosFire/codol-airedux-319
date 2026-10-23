@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MAJOR: ps block is a per-field LOOP; accepted body decodes exactly 1 field]**
+> PsField probe on the accepted single22 body: exactly ONE decode, table index 0 (offset 0, codec -97), state 10. 29 bits = 14 prologue + 13 distance + 1 gate + 1 exit.
+> So: each iteration starts with has-ps (0 ends); one iteration = one field; fields decode IN ORDER from index 0; V = how many fields to reach. Every 'index 22' body actually wrote field 0 (commandTime), which explains the overruns and crashes.
+> Consequence: a coherent body needs indices 0..16 encoded in order (~17 iterations); origin-like floats are at 6/8/10/11/13/14/16.
+> Next: validate with two iterations and confirm the probe records indices 0 then 1.
+> Evidence: [ps is a loop](evidence/experiments/20261023-codex-ps-is-a-loop.json).
 > **2026-10-23 [Index 12 costs 64 bits; recent ps-length numbers invalidated]**
 > idx12-v1: ps 1308 -> actors 1372 = 64 bits (predicted 31), stream_error 1, client alive. Cost table: target 0=28, 8=68, 12=64, 22=32 - contradicts the walk model.
 > So the '32 bits' for target 22 was where OUR exit bit was consumed, not the ps length; the round-151 '32 == 32 alignment' claim is retracted. Only the all-zero accepted body (29 bits, state 10) and the stream_error oracle still hold.

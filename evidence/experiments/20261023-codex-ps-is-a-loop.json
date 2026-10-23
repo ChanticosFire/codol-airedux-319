@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T00:00:00+00:00",
+  "scope": "MAJOR: reverse-reading the ACCEPTED body shows the ps block decodes exactly ONE field (index 0), which finally explains the whole loop",
+  "method": "ran runs/snapshot-single22.bin (the only accepted body, state 10) with the PsField probe on 0x6701D0 and recorded every field decode",
+  "observed": {
+    "ps_field_records": 1,
+    "ecx": "0xDA8520",
+    "table_index": 0,
+    "entry": "offset 0, codec -97",
+    "args": ["0x16D9EC (stream)", "0x11A00", "0x166244", "0", "0"],
+    "final_state": 10
+  },
+  "the_model_now": [
+    "the playerState block is a LOOP; each iteration starts with a has-ps bit, and 0 terminates the block",
+    "one iteration decodes exactly ONE field, and the fields are decoded IN ORDER starting at index 0 - the target (V / last_changed+1) is how many fields to reach, not which field to jump to",
+    "our accepted body wrote has-ps=1, then V=22, a distance, a 1-bit zero gate, then has-ps=0; so the client decoded ONE field (index 0, codec -97) with value 0 and exited - which is exactly 29 bits: 14 prologue + 13 distance + 1 gate + 1 exit",
+    "that also explains the cost growth with V: a larger V makes the decoder want more fields, and it consumes whatever bits follow - so the number of fields it actually reads depends on when it next sees a 0",
+    "and it explains why every body that wrote a non-zero value at 'index 22' actually wrote the FIRST field (index 0 = offset 0 = commandTime), which is why those bodies either overran or crashed"
+  ],
+  "consequences": [
+    "to write a real field such as origin, all the preceding fields in the table (0xDA8520) must be encoded IN ORDER, each with its own codec",
+    "the field table order is: 0/-97, 1/-75, 2/-75, 3/-16, 4/-70, 5/16, 6/-88, 7/12, 8/-88, 9/12, 10/-88, 11/-88, 12/8, 13/-88, 14/-88, 15/-8, 16/-88, 17/6, 18/-87, 19/-87, 20/32, 21/-94, 22/-94, 23/-94",
+    "the origin-like floats cluster at indices 6, 8, 10, 11, 13, 14, 16 (codec -88, raw float)",
+    "so a coherent body needs indices 0..16 encoded, roughly 17 iterations"
+  ],
+  "next": [
+    "validate the loop model: emit TWO iterations (two has-ps=1 groups, then has-ps=0) with both fields zero, and confirm that the PsField probe records TWO decodes (indices 0 then 1)",
+    "if confirmed, the encoder becomes a straightforward loop over the table and the whole layout is solved"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r173-gs.jsonl",
+    "probe": "tools/launch_1649370.py (PsField branch, logs ECX + 5 stack args)"
+  }
+}
