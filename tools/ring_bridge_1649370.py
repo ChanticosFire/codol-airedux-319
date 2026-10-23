@@ -595,7 +595,8 @@ def build_fake_stats_packets() -> list[bytes]:
 
 def forge_ack_packet(seq: int, ack_override: int | None,
                      qport_override: int | None = None,
-                     plain_variant: int = 0) -> tuple[bytes | None, dict]:
+                     plain_variant: int = 0,
+                     server_id: int = 1) -> tuple[bytes | None, dict]:
     """Build a 2697 netchan acknowledgement so this bridge speaks as the client.
 
     The 1649370 client never acknowledges the dedrun's reliable stream, so the
@@ -633,9 +634,11 @@ def forge_ack_packet(seq: int, ack_override: int | None,
             return None, {"error": "client_t not found"}
         base, values, challenge = best
         ack = values[0] if ack_override is None else ack_override
-        # SV_Netchan_Decode uses reliableCommands[ack & 0xFF].command; each entry is
-        # { int time; char command[1024] } so the stride is 1028 bytes.
-        cmd_offset = fca.OFF_COMMANDS + (ack & 0xFF) * (4 + 1024)
+        # 2697 client_t: reliableCommands sits 128 * 1032 bytes before
+        # reliableSequence, each entry is { int cmdTime; int cmdType; char command[1024] }
+        # and SV_Netchan_Decode indexes it by reliableAcknowledge.
+        cmd_base = fca.OFF_RELIABLE_SEQUENCE - 128 * (4 + 4 + 1024)
+        cmd_offset = cmd_base + (values[1] & 0x7F) * (4 + 4 + 1024) + 8
         command = (rdc.read(handle, base + cmd_offset, 1024) or b"").split(b"\0")[0]
         plain = struct.pack("<I", ack)
         if plain_variant == 1:
@@ -644,13 +647,14 @@ def forge_ack_packet(seq: int, ack_override: int | None,
             plain += b"\x00\x01"
         else:
             plain += b"\x00\x00"
-        body = fca.encode(plain, challenge, 0, values[3], command)
+        body = fca.encode(plain, challenge, server_id, values[3], command)
         qport, client_port, _ = fca.find_qport(handle, base)
         if qport_override:
             qport = qport_override & 0xFFFF
         packet = struct.pack("<IH", seq, qport) + body
         return packet, {"ack": ack, "qport": qport, "client_port": client_port,
-                        "challenge": challenge, "reliable_sequence": values[0],
+                        "challenge": challenge, "server_id": server_id,
+                        "reliable_sequence": values[0],
                         "reliable_ack": values[1], "message_ack": values[3],
                         "plain": plain.hex(), "plain_variant": plain_variant,
                         "command_len": len(command),
@@ -755,7 +759,7 @@ def cmd_forward(client: Client, args) -> dict:
             if getattr(args, "forge_ack", False) and time.monotonic() - last_forge >= args.forge_interval:
                 packet, info = forge_ack_packet(forge_seq, args.forge_ack_value,
                                                 sock.getsockname()[1] & 0xFFFF,
-                                                args.forge_plain)
+                                                args.forge_plain, args.forge_server_id)
                 if packet:
                     sock.sendto(packet, target)
                     sent += 1
@@ -957,6 +961,8 @@ def main() -> int:
                    help="acknowledgement value; default uses the dedrun's reliableSequence")
     p.add_argument("--forge-plain", type=int, choices=(0, 1, 2), default=0,
                    help="plain body tail: 0=00 00, 1=0a 00, 2=00 01")
+    p.add_argument("--forge-server-id", type=int, default=1,
+                   help="client->serverId used in the netchan key (dedrun reports server 1)")
     p.add_argument("--dump-in", help="write every injected server packet as JSONL (length/state/hex)")
     p.set_defaults(func=cmd_forward)
 
