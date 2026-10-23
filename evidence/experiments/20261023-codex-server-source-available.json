@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T12:35:00+00:00",
+  "scope": "answer whether we reuse the 2697 server binary and whether we can build our own instrumented server",
+  "current_server": {
+    "what_runs": "runs/2697-server-test/codol_dedrun.exe (a patched copy, enterworld12), started from cmd-28970.json",
+    "kind": "the real 2697 dedicated server binary, not a UI shell; it binds TCP/UDP 28970, runs mp_cross_fire with 11 bots and logs CoDOL lines",
+    "verified": true
+  },
+  "source_available": {
+    "path": "runs/2697-native-src",
+    "kind": "full 2697 server source tree (IW4OL/CoD4x fork)",
+    "size": "1415 .c/.cpp/.h files under src/",
+    "build_system": "top-level GNU makefile; also mbedtls CMakeLists and tomcrypt makefile under src/",
+    "verified": true
+  },
+  "toolchain": {
+    "gcc": "missing",
+    "g++": "missing",
+    "make": "missing",
+    "mingw32-make": "missing",
+    "cmake": "missing",
+    "cl": "missing",
+    "verified": true,
+    "consequence": "the source cannot be built on this machine as-is; a MinGW-w64/MSYS2 or MSVC toolchain must be installed first, along with the crypto dependencies the makefile expects"
+  },
+  "why_building_our_own_server_is_the_right_next_step": [
+    "we are currently blind-patching a stripped binary and guessing at client_t offsets and address comparisons",
+    "with a built server we can print exactly what SV_PacketEvent receives, what NET_CompareAdr returns, and how client_t fields change per packet",
+    "the remoteAddress=0.0.0.0 problem could be fixed directly in source instead of rewriting memory each session",
+    "we can add observation endpoints (console command or a small admin channel) that dump client state on demand"
+  ],
+  "options": [
+    {"option": "A. install MinGW-w64/MSYS2 + make, build the 2697 source with instrumentation", "cost": "toolchain setup plus dependency resolution; unknown but bounded", "benefit": "removes all guesswork"},
+    {"option": "B. continue binary patching and memory reads", "cost": "no setup", "benefit": "slower and error-prone; every hypothesis costs a full session"}
+  ],
+  "recommendation": "try A: install a toolchain, build the unmodified source first to confirm it compiles, then add logging and rebuild. Keep B as fallback while the build is being set up.",
+  "next": [
+    "check whether a MinGW-w64 or MSVC toolchain can be installed in this environment",
+    "if yes, attempt an unmodified build of runs/2697-native-src and see which dependencies fail",
+    "meanwhile continue the early remoteAddress.ip rewrite experiment (client_t was not yet present 4 s after start-challenge)"
+  ],
+  "artifacts": ["runs/2697-native-src/makefile", "runs/2697-server-test/codol_dedrun.exe"]
+}
