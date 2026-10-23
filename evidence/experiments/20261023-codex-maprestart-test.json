@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T07:15:00+00:00",
+  "scope": "map_restart over the command channel keeps the client at state 10 (no reload)",
+  "experiment": {
+    "body": "runs/snapshot-hybrid-empty-actors.bin",
+    "commands": "map_restart, v, u 30",
+    "command_seq": [
+      2000,
+      2001
+    ],
+    "result": {
+      "client": "alive (pid 40092)",
+      "state": 10,
+      "entity_count": "not measured (state 10 as before)"
+    }
+  },
+  "reading": [
+    "the command channel is delivered (two command_source entries in the server log), but map_restart does not cause a visible reload",
+    "either the client ignores the bare map_restart token, or a restart does not re-enter loading when the same map is already active"
+  ],
+  "next": [
+    "try S 234 and D 0 variants from the 2697 capture",
+    "or re-send a full gamestate (new map) and see whether the client reloads into state 8",
+    "the gamestate route looks most promising for match flow: it is the same path that took us from state 5 to 10"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r66-gs.jsonl"
+  }
+}
