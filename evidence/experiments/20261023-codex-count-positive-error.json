@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T05:30:00+00:00",
+  "scope": "decisive trace: with count=1 the entity loop consumes the body to the end and both later blocks fail",
+  "traces": {
+    "SnapTracePlayerStateBlock_0x471980": {
+      "error": 1,
+      "cursor": 171,
+      "bit": 1375,
+      "length": 171
+    },
+    "SnapTraceActorBlock_0x471010": {
+      "error": 1,
+      "cursor": 171,
+      "bit": 1375,
+      "length": 171
+    }
+  },
+  "body": "runs/snapshot-empty-actor.bin (171 bytes)",
+  "deduction": [
+    "the entity loop is entered at bit 1307 and only stops when the stream error flag is set, i.e. when it reads past length",
+    "with count=1 it consumes the remaining 24 bits as entity data and leaves the stream in the error state at bit 1375 == length*8",
+    "the playerState and actor blocks then both run on an already-errored stream (error=1), which is why state stays 9",
+    "the loop has no count-based exit: 0x471E81 returns 1 unconditionally after the error"
+  ],
+  "implication": [
+    "as long as count>0, our body cannot avoid the error state and state 10 is unreachable through this path",
+    "either the real count/table encoding differs from what we assumed (the count byte may not be an entity count at all), or this client build cannot render a non-empty entity table from the wire",
+    "the hybrid body works precisely because count=0 skips the loop"
+  ],
+  "next": [
+    "verify the assumption that byte164 is a count: try a body where the table is present but the byte after it is something other than 1",
+    "or accept the limitation and move to match-flow work on the hybrid baseline"
+  ],
+  "artifacts": {
+    "events": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-e5d35dc2/events.jsonl",
+    "server_log": "runs/codex-r64-gs.jsonl"
+  }
+}
