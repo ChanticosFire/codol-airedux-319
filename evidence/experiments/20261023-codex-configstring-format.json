@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T02:50:00+00:00",
+  "scope": "identify the structure at name+41500",
+  "session": {"client": "20261023-dump2, pid 35132"},
+  "verified_facts": {
+    "client_t": "0x52A2908",
+    "dump_ascii": "........R.......d 3911 uk_spawn_music_mp_cross_fire...........................................................................................................................................",
+    "key_observation": "the text is 'd 3911 uk_spawn_music_mp_cross_fire' - it is NOT a bare map-name field",
+    "interpretation": {
+      "d": "a single-character prefix, most likely the deferred-configstring marker used by CODOL_ClearDeferredConfigstrings / CODOL_ReassertConfigstringsAfterGamestate",
+      "3911": "the configstring index",
+      "uk_spawn_music_mp_cross_fire": "the configstring value for that index (the spawn music asset for crossfire), which happens to contain the map name as a suffix"
+    }
+  },
+  "why_this_matters": [
+    "there is no standalone 'map name' field at name+41500; the earlier hit was merely a substring of a configstring",
+    "configstrings are stored as text of the form '<marker> <index> <value>', which is exactly the form the gamestate carries",
+    "this explains why searching for 'g_gametype' failed: that key lives in a different configstring (the serverinfo one), which may not be materialised in client_t at all"
+  ],
+  "next": [
+    "search for the serverinfo configstring by its likely text: look for a configstring entry whose value starts with '\\g_gametype' or contains 'mapname\\\\mp_cross_fire'",
+    "also search for 'd 0 ' or the first few configstring indices to find the table base",
+    "if the table is present, dump the entries around the serverinfo index (usually index 0) to learn the exact text our server must emit"
+  ],
+  "artifacts": ["runs/scan-in.jsonl"]
+}
