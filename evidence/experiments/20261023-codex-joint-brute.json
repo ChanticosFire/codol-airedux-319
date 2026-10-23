@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T22:20:00+00:00",
+  "scope": "joint brute force over cipher start offset and seq byte order",
+  "input": {
+    "capture": "runs/final-in.jsonl first in-band datagram",
+    "length": 1172,
+    "head_hex": "0300008000028a048a0400000000888b",
+    "challenge_at_capture_time": -1976592760
+  },
+  "candidates_tested": [
+    {"start": 4, "endian": "little", "seq": -2147483645, "key": 139, "plain_head": "8b89018f018f8b8b8b8b03000000006d", "strict": false},
+    {"start": 4, "endian": "big", "seq": 50331776, "key": 8, "plain_head": "080a820c820c080808088083838383ee", "strict": false},
+    {"start": 0, "endian": "little", "seq": -2147483645, "key": 139, "plain_head": "888b8b0b8b89018f018f8b8b8b8b0300", "strict": false},
+    {"start": 0, "endian": "big", "seq": 50331776, "key": 8, "plain_head": "0b080888080a820c820c080808088083", "strict": false}
+  ],
+  "strict_match": [],
+  "important_observation": {
+    "where": "candidate start=4 little-endian",
+    "plain_window": "8b 89 01 8f 01 8f 8b 8b 8b 8b | 03 00 00 00 00 | 6d 70 5f 63 72 6f 73 73 5f 66 69 72 65",
+    "meaning": "the bytes 03 00 00 00 00 immediately precede the readable map name mp_cross_fire, so the configstring section really does start around offset 10-15 in the decrypted stream",
+    "implication": "the key is very likely correct (the map name decodes), but the header field widths before it are not what we assumed"
+  },
+  "hypotheses_to_test_next": [
+    "the first 4 bytes are lastClientCommand AND the 0x03 before the map name is svc_baseline rather than svc_gamestate, meaning this is not the gamestate packet we think it is",
+    "the body may begin with a 4-byte reliable-command count plus a 1-byte opcode, shifting svc_EOF further right",
+    "the command stream lastClientCommandString may be non-empty at encode time even though it is empty when we sample later, which changes the key for the first N bytes only"
+  ],
+  "next": [
+    "dump a longer plaintext window and annotate every candidate field boundary against the source write order",
+    "test whether the bytes at offset 10 look like a configstring index (short) rather than a baseline marker",
+    "if the map name offset is stable across packets, derive the header length by subtracting it from the known write order"
+  ],
+  "artifacts": ["runs/final-in.jsonl"]
+}
