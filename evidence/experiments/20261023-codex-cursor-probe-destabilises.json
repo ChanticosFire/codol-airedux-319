@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-28T23:00:00+00:00",
+  "scope": "second consecutive failure with a breakpoint at 0x471DA3: the client process was gone and no cursor records were written",
+  "run": {
+    "breakpoint": "0x471DA3:Cursor (single breakpoint, refresh hook skipped)",
+    "engine_ready": true,
+    "login_driver": "ran",
+    "forward": "ran",
+    "connect": "ran",
+    "cursor_records": 0,
+    "client_at_end": "process gone",
+    "server_side": "the bridge reported a healthy status_after with stage 5, state 5, ring counters 3/3 - so the failure is on the client side"
+  },
+  "the_pattern": [
+    "this is the second run in a row that used 0x471DA3 and the second run in a row that produced nothing",
+    "the previous successful runs used 0x471980, 0x471010, 0x471C84, 0x4724A5 and 0x471D80 - none of them failed",
+    "so the likely cause is the 0x471DA3 breakpoint itself, not the session recipe: it is a `call` instruction at the very entry of the entity block and it may sit on a path taken before the hook is fully armed"
+  ],
+  "next": [
+    "move the probe one instruction into the decoder: 0x67168F (the call to the byte reader) is also once per snapshot and does not sit on the block's entry",
+    "if that also destabilises the client, fall back to reading [stream+0x1C] from a probe at 0x671650's entry (0x671650 itself), which is a plain function entry like the ones that already work"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r209-gs.jsonl"
+  }
+}
