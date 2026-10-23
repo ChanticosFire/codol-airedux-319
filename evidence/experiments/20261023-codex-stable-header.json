@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T01:00:00+00:00",
+  "scope": "compare two gamestate captures to separate session-varying bytes from stable header bytes",
+  "captures": {
+    "capture_a": {
+      "file": "runs/final-in.jsonl",
+      "challenge": -1976592760,
+      "seq": -2147483645,
+      "key": 139,
+      "plain_head": "8b89018f018f8b8b8b8b03000000006d705f63726f73735f66697265"
+    },
+    "capture_b": {
+      "file": "runs/cmp-in.jsonl",
+      "challenge": 1286640309,
+      "seq": -2147483645,
+      "key": 182,
+      "plain_head": "b6b43cb23cb2b6b6b6b603000000006d705f63726f73735f66697265"
+    }
+  },
+  "comparison": {
+    "offset_0_to_9": "different between captures (8b89018f018f8b8b8b8b vs b6b43cb23cb2b6b6b6b6) - these bytes vary with the session key, so they are the contaminated prefix",
+    "offset_10_to_14": "IDENTICAL: 03 00 00 00 00",
+    "offset_15_onwards": "IDENTICAL: mp_cross_fire ... \\g_gametype\\war\\mapname\\...",
+    "map_name_offset": 15
+  },
+  "conclusions": [
+    "the real, session-stable header begins at offset 10 with the byte 0x03",
+    "the ten bytes before it are key-shift contamination and must be ignored when reading structure",
+    "0x03 followed by four zero bytes is stable across sessions, so it is either a service opcode or a small sequence/type field",
+    "0x03 does not match svc_configstring(2) or svc_serverCommand(4) or SV_WIRE_SERVERCOMMAND(1), so the reliable-command decomposition does not apply to these ten bytes either"
+  ],
+  "next": [
+    "capture a third time and also record client_t.reliableSequence/reliableSent at the same moment so the stable 03 00 00 00 00 can be matched against a candidate field (for example command type 3 + sequence 0)",
+    "test whether 0x03 is a message type used by the 1649370 client's netchan wrapper rather than by svc_* (grep the 2697 source for other opcode families)",
+    "if 0x03 turns out to be a wrapper type, replay with opcode 3 + zero sequence + the recovered map/configstring body"
+  ],
+  "artifacts": ["runs/final-in.jsonl", "runs/cmp-in.jsonl"]
+}
