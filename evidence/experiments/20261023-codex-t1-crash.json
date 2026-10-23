@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T08:15:00+00:00",
+  "scope": "a single type-1 field still crashes the client",
+  "experiment": {
+    "body": "runs/snapshot-e1-t1.bin",
+    "encoding": "entity bit 0 (field path) + type selector bit1=1 + 2-bit sub-index 0 (type 1) + 11-bit value 0",
+    "result": "client exited (pid 0)"
+  },
+  "reading": [
+    "the type selector recovery alone is not enough: 0x671700 also writes into a field-table entry at [edi+...] and then executes a shared tail (0x671A0D..0x671B19)",
+    "the caller in 0x471D80 passes [ebp+0x10] and [ebp+0xc], so the entry pointer and stream must be paired correctly; a bare field value is insufficient"
+  ],
+  "next": [
+    "disassemble the shared tail 0x671A0D..0x671B19 and the 13-entry jump table at 0x671B2C",
+    "list each type's exact bit consumption before any further body is sent"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r40-gs.jsonl",
+    "body": "runs/snapshot-e1-t1.bin"
+  }
+}
