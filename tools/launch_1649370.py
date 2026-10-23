@@ -2918,6 +2918,24 @@ def main(argv=None) -> int:
                                          "bit": bit}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"ps_loop_error": f"{label}: {error}"})
+        if label.startswith("Decide"):
+            try:
+                registers = row.get("registers", {})
+                ebp = int(registers["ebp"], 0)
+
+                def peek(offset: int) -> int:
+                    raw = self.process.read(ebp + offset, 4)
+                    return struct.unpack("<I", raw)[0]
+
+                self.record({"decide": {
+                    "struct_3bd0": peek(-0x3BD0),
+                    "field_54": peek(-0x54),
+                    "field_50": peek(-0x50),
+                    "field_34": peek(-0x34),
+                    "ctx_3bd4": peek(-0x3BD4),
+                }})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"decide_error": f"{label}: {error}"})
         if label.startswith("PsField"):
             try:
                 registers = row.get("registers", {})

@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Decide probe run invalid - no delivery]**
+> Decide probe at 0x4724A5 armed; run produced zero records because runs/codex-r160-forward.json was never written (the bridge did not deliver). GS queued 6 snapshots, client stayed state 9, accept/reject code never ran.
+> Not a probe problem - nothing reached the parser. Next: re-run with delivery verified (forward summary + snap_trace records) before interpreting Decide output.
+> Evidence: [decide run invalid](evidence/experiments/20261023-codex-decide-run-invalid.json).
 > **2026-10-23 [FOUND the accept/reject decision at 0x4724A7..0x4724CD]**
 > Round 138 was wrong: capstone stopped at invalid bytes. With skipdata=True the real call sites are 0x4723DD/0x472401/0x472424 -> entities/ps/actors, then 0x471560, then 0x4475F0 (glass).
 > Decision: [esi]!=0 (stream error) -> reject; [ebp-0x3BD0]==0 -> reject; [ebp-0x54]==0 -> reject; reject path is 0x47281A.

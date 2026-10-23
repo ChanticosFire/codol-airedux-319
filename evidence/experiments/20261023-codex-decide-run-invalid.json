@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T09:30:00+00:00",
+  "scope": "the Decide probe run was INVALID: the ring-bridge forward never produced its output file, so no snapshot reached the client",
+  "evidence": {
+    "decide_records": 0,
+    "forward_summary_file": "runs/codex-r160-forward.json MISSING",
+    "game_server_snapshots_sent": 6,
+    "client_state": 9,
+    "launch": "the breakpoint 0x4724A5 was accepted into the launch arguments"
+  },
+  "reading": [
+    "zero Decide records means the accept/reject code at 0x4724A5 never executed, not that the probe is wrong",
+    "the missing forward summary shows the delivery path did not run as expected this session - the snapshots were queued by the game server but not bridged to the client",
+    "so this round produced no information about which check rejects the snapshot"
+  ],
+  "next": [
+    "re-run with delivery verified (assert the forward summary exists and that snap_trace records appear) BEFORE interpreting any Decide output",
+    "keep the decide probe armed; it needs one valid delivery to answer the question"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r160-gs.jsonl",
+    "probe": "tools/launch_1649370.py (Decide branch)"
+  }
+}
