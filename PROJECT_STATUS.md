@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ps codec fully mapped: distance + positive-width default decoded]**
+> Distance 0x670CB0 (args stream, bits=3): unary when bits==1; else 1 bit (1 -> distance 1), else 3 bits accepted unless 7, then longer form - Elias-gamma style.
+> Default branch 0x670B15 for positive widths: 1 bit zero-flag (0 -> value 0), else 0x66FE30(codec) reads `codec` bits.
+> Full layout: has-ps(1) + mode(1) + 5-bit last + per-field present(1) + delta decoder(continuation, 5-bit index, distance, per-field codec).
+> Next: Python encoder; first target the three origin fields (8/13/22, codecs 10/10/11) so the camera has a position.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps codec complete](evidence/experiments/20261023-codex-ps-codec-complete.json).
 > **2026-10-23 [Full codec switch enumerated (46); the four ps codecs decoded]**
 > 0x6701D0 is a linear if-chain over 46 codec constants. ps uses -57 (1-bit bool: 0x6708E9 call 0x447190 -> setne), -58 (float with const [0xD599EC] via 0x66FE90), -100 (float delta vs prev via 0x66FEE0), -97 (0x67069C -> 0x670BBF). -73/-71 integer via 0x66EE10; -101 angle; -102 vector; codec 0 float mantissa form.
 > Positive widths 6/10/11/12/16/32 are the simple path; ps origin uses 10/11/10.
