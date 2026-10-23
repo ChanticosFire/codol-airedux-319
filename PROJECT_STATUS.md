@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Absurd origin in one ps slot crashes the client; ps array is consumed]**
+> FillPs wrote (12345,23456,-999) into slot 0 at 0x471010: record fired once then the client exited. Plausible values in all 24 slots left it alive (no frame change); absurd values in one slot killed it.
+> So the ps array feeds real client logic but not the rendered scene. Next: plausible values in one slot, and run the scan before risky writes.
+> Acceptance: a screenshot showing the map; nothing else counts. Evidence: [ps slot crash](evidence/experiments/20261023-codex-ps-slot-crash.json).
 > **2026-10-23 [Deliverable: RELEASE.md published]**
 > RELEASE.md: verified capabilities, the visible-world limitation with its measured chain, component map, quick start, evidence index, protocol appendix (snapshot layout, ps frame loop, delta decoder, field table 0xDA63E8, codec semantics).
 > Server + match flow + observability are delivered; visible world is an open tracked item.

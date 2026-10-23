@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-26T02:55:00+00:00",
+  "scope": "writing an absurd origin into a single ps slot crashes the client - the ps array IS consumed",
+  "experiment": {
+    "hook": "0x471010:FillPs",
+    "clc": "0x13080498",
+    "ps_array": "0x13136BA8",
+    "slot_written": "index 0 (count was 0)",
+    "value": "(12345.0, 23456.0, -999.0) at offset 12",
+    "records": 1,
+    "client_after": "dead (pid 0)",
+    "scan": "not completed because the process was gone"
+  },
+  "reading": [
+    "the write happened (record present) and the client then exited - so the playerState array is definitely consumed by live client code",
+    "the previous test wrote plausible values (5830,-4369,-95) into all 24 slots and the client survived but showed nothing; this test wrote absurd values into one slot and it died",
+    "that difference is informative: the array influences real logic (likely prediction or view code), but it is not what feeds the rendered scene"
+  ],
+  "next": [
+    "repeat with plausible coordinates in the single slot to confirm the client survives and check state/frame",
+    "then hunt the per-snapshot copy with a scan that runs BEFORE any risky write"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r120-gs.jsonl"
+  }
+}
