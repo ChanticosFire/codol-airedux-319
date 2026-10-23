@@ -1,5 +1,7 @@
 # 阶段状态与证据
 
+> **2026-10-23【1649370 configstring 索引读取位置收敛】** ✅客户端 `0x472E10` 断点：首个被拒索引前 `previous=0`、消息 `byte_cursor=115`、`bit_cursor=234`；14 位读取后 `index=8194`、类型 18，触发 `XBOXLIVE_CANTJOINSESSION`。✅静态代码确认 1 位标志后非增量分支读取 14 位；3426 字节明文全扫描只有一处 14 位模式 `0x2002`（byte 176 bit 7）。⚠️该处是候选来源，分段缓冲映射未证实；❌未知是否源于更早解析错位。完成判据仍未满足。证据：[实验 JSON](evidence/experiments/20261023-codex-configstring-bitcursor.json)。
+
 > **2026-10-23【1649370 首个 configstring 类型拒绝索引定位】** ✅断点 `0x472E58` 实测 `edi=8194 (0x2002)`、客户端类型表字节 `[0x77D8250+edi]=18 (0x12)`，后续错误为 `XBOXLIVE_CANTJOINSESSION`；`0x472E48..64` 静态分支要求类型 `>=0x17` 或 `==0x15` 才跳过错误。⚠️推断：可能是 2697 索引表与本版不兼容，或位流错位；❌未知：对应 payload 位偏移。`stage=5`、`messageAck=1`，完成判据未达成。证据：[实验 JSON](evidence/experiments/20261023-codex-configstring-index.json)。
 
 > **2026-10-23【1649370 gamestate 校验门越过，状态到 8】** ✅原样 gamestate offset 26=`0x36E8F17B`，客户端当前 checksum=`0xFFB56D7E`，断点实测失配对应 `EXE_POSSIBLECONFIGSTRINGMISMATCH`。✅服务端仅在发包时用 `--checksum-feed 0xffb56d7e` 覆盖该 uint32 后，断点实测相等，客户端 state **4→5→7→8→0**，发 `gamestateupdate 1`；原错误消失。✅新错误 `XBOXLIVE_CANTJOINSESSION` 来自 `0x472E48..64` 的配置字符串**索引类型检查**。⚠️推断：2697 gamestate 的配置字符串表不符合 1649370；❌首个错误索引仍未知。`stage=5`、`messageAck=1`，地图/交互目标未达成。下一步断点 `0x472E58` 记录 `edi` 与类型。证据：[实验 JSON](evidence/experiments/20261023-codex-checksum-feed-gate.json)。

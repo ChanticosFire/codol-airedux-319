@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "experiment": "read client message cursor immediately before first 14-bit configstring index",
+  "reliable_until_state": 0,
+  "reused_runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/runtime",
+  "breakpoint_before_read": "0x472e10",
+  "previous_index": 0,
+  "message_byte_cursor": 115,
+  "message_bit_cursor": 234,
+  "next_rejected_index": 8194,
+  "next_rejected_type": 18,
+  "static_read_logic": "0x447190 reads one LSB-first bit flag; if it is zero, 0x472e10 calls 0x66ec30 with 14 bits to obtain the full index",
+  "offline_bit_scan": {"source": "runs/gamestate-3426.bin", "pattern": "0x2002 as 14 LSB-first bits", "occurrences": 1, "candidate_byte_offset": 176, "candidate_bit_within_byte": 7},
+  "verified_conclusion": "The first rejected index follows the 14-bit read path from previous index zero, with the observed message cursors 115 and 234 immediately before that read.",
+  "inference": "The unique 14-bit occurrence at plaintext byte 176, bit 7 is a candidate source for 0x2002, but segmented message-buffer offsets have not been mapped to the absolute plaintext position.",
+  "unknown": "Message buffer base and split boundaries at the read; whether the index itself is invalid in the wire format or results from earlier parser misalignment.",
+  "artifacts": ["runs/codex-bit-forward.json", "runs/codex-bit-gs.jsonl", "E:/GAME/COD/1649370/workspaces/offline-runs/20261023-codex-delay-a2/reuse-8c51561f/events.jsonl"]
+}

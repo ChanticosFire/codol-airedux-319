@@ -2788,6 +2788,18 @@ def main(argv=None) -> int:
                                                            "type_address": hex(0x77D8250 + index)}})
             except (OSError, ValueError, KeyError, IndexError) as error:
                 self.record({"configstring_index_reject_error": str(error)})
+        if label == "ConfigstringIndexRead":
+            try:
+                registers = row.get("registers", {})
+                message = int(registers["esi"], 0)
+                previous = int(registers["ebx"], 0)
+                byte_cursor = struct.unpack("<I", self.process.read(message + 0x1C, 4))[0]
+                bit_cursor = struct.unpack("<I", self.process.read(message + 0x20, 4))[0]
+                self.record({"configstring_index_read": {"previous": previous,
+                                                         "byte_cursor": byte_cursor,
+                                                         "bit_cursor": bit_cursor}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"configstring_index_read_error": str(error)})
         if label == "BeforeCbuf":
             try:
                 pointer, capacity, length = struct.unpack("<3I", self.process.read(0x76595A4, 12))
