@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-23T17:00:00+00:00",
+  "scope": "confirm what our working 1649370 build is actually made of",
+  "user_statement": "we built our own 1649370 on top of the community archive/partial implementation, using my own local backup client; development should now happen on our own copy",
+  "verification": {
+    "working_client": {
+      "path": "319/runtime/client-1649370",
+      "files": 2445,
+      "stage_receipt": "runtime/client-1649370.stage-receipt.json records source=E:\\GAME\\COD\\使命召唤OL, destination=319/runtime/client-1649370, expected 2445 / verified 2445, status verified",
+      "exe_sha256": "36997674B18F2896DE5E9D755686F6922AF10708F355175714058D0A0172B537",
+      "matches_user_backup": true,
+      "verified": true
+    },
+    "community_projects_in_workspace": {
+      "codol-ember": "608 files: 余火工坊/Ember Forge research repo (specs, research, tools, PVP/PVE material, builds index). README states it ships no ready-to-play client and no commercial client assets.",
+      "他人文件参考": "218 files of third-party research, including the 1604220 server/client reproduction bundle and the native319 lobby intel",
+      "codol_rebuild": "NOT present inside 319; it lives at E:\\GAME\\COD\\1649370 and was only consulted for layout.py addresses and patch style"
+    },
+    "our_own_servers": {
+      "server319": "43 files, LSG/auth/lobby research service supporting 1649370 and 1604220",
+      "server1649370": "4 files, our own 1.1.1.13 game-server skeleton (handshake + logging + in-band echo)"
+    },
+    "client_binary_provenance": {
+      "community_copy_contains_exe": false,
+      "E_GAME_COD_1649370_has_exe": false,
+      "conclusion": "the executable we run is 100% the user's own backup, not a community binary"
+    }
+  },
+  "answer": {
+    "is_the_user_statement_correct": "mostly yes, with one precision: the client binary comes entirely from the user's backup; the community part is research material, tools and patch ideas, not a runnable base",
+    "composition_of_our_own_1649370": [
+      "client: 319/runtime/client-1649370 (= verified copy of E:\\GAME\\COD\\使命召唤OL, exe sha256 36997674...)",
+      "auth/lobby: 319/server319 (our LSG, supports 1649370 and 1604220)",
+      "game server: 319/server1649370 (ours, in progress)",
+      "references only: codol-ember, 他人文件参考, E:\\GAME\\COD\\1649370 (codol_rebuild)"
+    ],
+    "development_target_confirmed": "yes - all further work should run against 319/runtime/client-1649370, never against a community copy or the 2697 dedrun as the final environment"
+  },
+  "next": [
+    "keep the runtime copy as the only client under test, and record its exe hash in every experiment",
+    "continue server1649370 outbound in-band work against this client",
+    "if a patch from codol_rebuild is reused, port it explicitly and re-verify against this exe hash"
+  ],
+  "artifacts": ["319/runtime/client-1649370.stage-receipt.json", "319/runtime/client-1649370/codoMP_client_shipRetail.exe", "319/codol-ember/README.md"]
+}

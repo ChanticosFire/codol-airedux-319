@@ -193,11 +193,25 @@ class GameServer:
             server_id = data[4]
             message_ack = struct.unpack_from("<i", data, 5)[0]
             body = data[9:]
+            acked_ours = message_ack == peer.get("last_server_seq", 0) and message_ack > 0
+            if acked_ours:
+                self.state.counters["client_acked_ours"] = self.state.counters.get("client_acked_ours", 0) + 1
             self.log({"dir": "in", "kind": "inband", "from": f"{addr[0]}:{addr[1]}",
                       "seq": seq, "serverId": server_id, "messageAck": message_ack,
+                      "acked_our_seq": acked_ours,
                       "length": len(data), "body_len": len(body),
                       "body_head": body[:48].hex(),
                       "body_nonzero": sum(1 for b in body[:48] if b) > 0})
+            # Answer with our own in-band packet so the client has something to
+            # acknowledge.  Empty body first: the goal is only to learn whether
+            # the client reacts to a datagram from us at all.
+            self.server_seq = getattr(self, "server_seq", 0) + 1
+            peer["last_server_seq"] = self.server_seq
+            reply = struct.pack("<i", self.server_seq)
+            self.sock.sendto(reply, addr)
+            self.state.counters["inband_sent"] += 1
+            self.log({"dir": "out", "kind": "inband", "to": f"{addr[0]}:{addr[1]}",
+                      "seq": self.server_seq, "length": len(reply), "hex": reply.hex()})
         else:
             self.log({"dir": "in", "kind": "inband_short", "from": f"{addr[0]}:{addr[1]}",
                       "length": len(data), "hex": data[:64].hex()})
