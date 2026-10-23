@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-25T09:30:00+00:00",
+  "scope": "the CheckLoader breakpoint at 0x8037BF did not fire, so that call site is not the active one",
+  "experiment": {
+    "breakpoint": "0x8037BF:CheckLoader",
+    "records": 0,
+    "client": "alive, state reached 10"
+  },
+  "reading": [
+    "0x8037BF is the call site inside 0x8037AB, but it never executed this session",
+    "in an earlier session 0xB7A670 did fire once, so the status query has at least one other caller",
+    "therefore the loading-screen decision we care about may flow through a different call site than 0x8037AB"
+  ],
+  "next": [
+    "find all callers of 0xB7A670 and break on each to see which one runs in state 10",
+    "that call site will show the real object and the real guard"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r94-gs.jsonl"
+  }
+}

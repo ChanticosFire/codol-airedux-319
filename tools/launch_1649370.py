@@ -2867,6 +2867,23 @@ def main(argv=None) -> int:
                 self.record({"dump_cg": {"cg": hex(cg), "size": len(data), "candidates": hits}})
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"dump_cg_error": f"{label}: {error}"})
+        if label.startswith("CheckLoader"):
+            try:
+                registers = row.get("registers", {})
+                esi = int(registers["esi"], 0)
+                loader = struct.unpack("<I", self.process.read(esi + 0x4F4, 4))[0]
+                state_c8 = None
+                state_5e8 = None
+                if loader:
+                    try:
+                        state_c8 = struct.unpack("<I", self.process.read(loader + 0xC8, 4))[0]
+                        state_5e8 = struct.unpack("<I", self.process.read(loader + 0x5E8, 4))[0]
+                    except OSError:
+                        pass
+                self.record({"check_loader": {"obj": hex(esi), "loader": hex(loader),
+                                              "loader_c8": state_c8, "loader_5e8": state_5e8}})
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"check_loader_error": f"{label}: {error}"})
         if label == "CallSite":
             try:
                 esp = int(row.get("registers", {})["esp"], 0)
