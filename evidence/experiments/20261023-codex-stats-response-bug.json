@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T07:20:00+00:00",
+  "scope": "compare our server's client-packet ordering with the reference and inspect the stats reply",
+  "verified_facts": {
+    "our_client_packet_order": [
+      "oob getchallenge (38 bytes) -> we reply challengeResponse",
+      "oob connect (410 bytes) -> we reply connectResponse",
+      "oob stats (84 bytes) -> we replied 'statsResponse 0'",
+      "inband seq=2 serverId=0 messageAck=1 (206 bytes, empty ACK heartbeat)"
+    ],
+    "then": "we emit the three gamestate fragments",
+    "order_matches_reference": true,
+    "defect_found": "our statsResponse carried a literal 0 instead of the challenge we issued to that client"
+  },
+  "why_this_matters": {
+    "purpose_of_stats": "the client uses the stats exchange to confirm it is talking to the same server that issued its challenge; a bare 0 cannot serve that purpose",
+    "fix_applied": "on_stats now sends f'statsResponse {challenge}' using the stored per-peer challenge",
+    "expected_effect": "if the client gates gamestate acceptance on a valid stats reply, this change should let the fragments be processed"
+  },
+  "next": [
+    "rerun the session and check whether messageAck advances past 1",
+    "if it still does not, capture whether the client re-sends stats (which would indicate it rejected our reply) or stays silent"
+  ],
+  "artifacts": ["runs/frag3-gs.jsonl", "server1649370/gameserver.py"]
+}

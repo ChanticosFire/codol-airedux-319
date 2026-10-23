@@ -171,9 +171,12 @@ class GameServer:
 
     def on_stats(self, addr: tuple, args: list[str], peer: dict) -> None:
         self.state.counters["stats"] += 1
+        challenge = peer.get("challenge") or 0
         self.log({"dir": "in", "kind": "stats", "from": f"{addr[0]}:{addr[1]}",
-                  "args": args})
-        self.send_oob(addr, "statsResponse 0")
+                  "args": args, "challenge": challenge})
+        # Echo the challenge the client was given: a bare 0 does not let the
+        # client confirm that it is talking to the server that issued it.
+        self.send_oob(addr, f"statsResponse {challenge}")
 
     # ------------------------------------------------------------------ dispatch
     def handle(self, data: bytes, addr: tuple) -> None:
