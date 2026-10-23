@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-27T03:15:00+00:00",
+  "scope": "NEGATIVE: a non-zero value in the ps delta is rejected (state 9); only the all-zero ps is accepted",
+  "bodies": [
+    "runs/snapshot-val-small.bin (index 22, value 0x100)",
+    "runs/snapshot-val-float.bin (index 22, value 0x0F800000)"
+  ],
+  "measurement": {
+    "ps_entry_bit": 1308,
+    "actors_entry_bit": 1340,
+    "ps_bits_consumed": 32,
+    "builder_predicted_bits": 40,
+    "actors_error": 0,
+    "states": {
+      "t=22": 9,
+      "t=30": 9,
+      "t=38": 9,
+      "t=46": 9,
+      "t=54": 9,
+      "t=62": 9
+    }
+  },
+  "comparison": {
+    "zero_value": {
+      "ps_bits": 29,
+      "state": 10,
+      "body": "runs/snapshot-single22.bin"
+    },
+    "value_0x100": {
+      "ps_bits": 32,
+      "state": 9
+    },
+    "delta": "+3 bits, and the snapshot is rejected"
+  },
+  "conclusion": [
+    "the ps delta accepts an all-zero field set (state 10) but rejects any non-zero value - either state 9 here, or a client crash in the earlier -58 experiments",
+    "so the playerState route cannot carry a real origin: the value encoding for the wide codecs (10/11) is still unknown and guessing it produces rejected snapshots",
+    "the visible world therefore cannot come from ps CONTENT; it has to come from the per-entity payload, which remains completely unknown"
+  ],
+  "honest_position": {
+    "round": 131,
+    "what_is_solid": "the ps block framing is solved (29 bits predicted == 29 measured, state 10 reproducible with all-zero fields)",
+    "what_is_open": "the per-entity payload format (A=1) and the wide-codec value encoding",
+    "why_it_matters": "both open items are content encodings, not framing - the framing knowledge is complete and documented"
+  },
+  "artifacts": {
+    "server_log": "runs/codex-r155-gs.jsonl",
+    "encoder": "runs/_gen_val.py"
+  }
+}

@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [NEGATIVE: non-zero ps value rejected]**
+> single22 baseline with index-22 = 0x100: ps 1308 -> actors 1340 = 32 bits (zero case 29), error 0, state 9 at every sample.
+> So the ps delta accepts only all-zero field sets; non-zero values are rejected (state 9) or crash the client. The ps route cannot carry a real origin.
+> Visible world must come from the per-entity payload (unknown). Framing is solid (29 == 29, state 10); content encoding is the open problem.
+> Evidence: [nonzero ps rejected](evidence/experiments/20261023-codex-nonzero-ps-rejected.json).
 > **2026-10-23 [STABLE + EXACT: single-record ps body reaches state 10; 29 bits predicted = 29 measured]**
 > snapshot-single22.bin (hybrid prefix + 29-bit ps: V=22, distance=23, codec 11 zero, exit): ps 1308 -> actors 1337 = 29 bits (exact), error 0, state 10 at t=38/46/54/62.
 > Correction: round 127 credited trio2, but trio2 alone stays at state 9 - the accepted body was always single22.
