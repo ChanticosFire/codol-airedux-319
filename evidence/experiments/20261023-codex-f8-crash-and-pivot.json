@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-24T04:50:00+00:00",
+  "scope": "eight zero field bits crash the client; the field loop has no clean terminator",
+  "experiment": {
+    "body": "runs/snapshot-f8.bin",
+    "layout": "count1 body + 8 zero field bits at bit1329 + actor/sub4/glass/EOF",
+    "result": "client exited (pid 0)"
+  },
+  "reasoning": [
+    "0x671700 reads at least two bits per field (a flag, and a second flag), so 8 zero bits cover at most four fields",
+    "the field loop in 0x471D80 is gated only by the stream error flag, not by a field count",
+    "so the loop keeps consuming whatever follows (the actor block), runs off the buffer and sets the error flag",
+    "with count=1 the body therefore cannot both provide fields and keep the tail blocks intact unless the loop terminates by reaching length exactly - and even then the error flag is what ends it"
+  ],
+  "pivot": {
+    "idea": "stop fighting the wire format for the first camera test; write the playerState/view origin directly into cl.snap after a snapshot is accepted",
+    "why": "accepted=1 already happens; CG reads cl.snap; injecting data there isolates 'does the renderer need this data' from 'can we encode it'",
+    "caveat": "this is a diagnostic, not the final protocol solution"
+  },
+  "next": [
+    "start a session with the plain hybrid, wait for state 10, then write a view origin/angles into the cl.snap structure",
+    "observe whether the black frame changes",
+    "if it does, resume the protocol work with a known-good target layout"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r33-gs.jsonl",
+    "body": "runs/snapshot-f8.bin"
+  }
+}
