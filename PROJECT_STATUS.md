@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The id loop reads exactly 12 bits but the position advanced 20]**
+> 0x6716A1..0x6716C1 is a clean 12-bit read per entity, looping count times. 0x66EC30 reads N bits at [+0x20] and derives the byte index as [+0x20]>>3. Yet bitpos went 1309 -> 1329 across one 12-bit read.
+> Next: log [+0x20] at 0x6716A5 and 0x6716C3 to learn the exact cost of one 12-bit read; that unit is needed to locate the per-entity payload.
+> Evidence: [nbit reader mechanism](evidence/experiments/20261023-codex-nbit-reader-mechanism.json).
 > **2026-10-23 [MILESTONE 2: one entity with id 4048 is now in the client's list]**
 > Probe at 0x6716C3: bitpos 1329, count 1, ids d00f... -> first id 0x0FD0 (4048). So the entity list is non-empty in both count and content.
 > The loop consumed 20 bits (1309 -> 1329), so there is an extra 8-bit read per entity beyond the 12-bit id - most likely the per-entity delta byte. The client still exits.

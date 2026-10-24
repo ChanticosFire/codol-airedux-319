@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T12:00:00+00:00",
+  "scope": "the id loop is a clean 12-bit read per entity, yet the position advanced by 20 - so the N-bit reader 0x66EC30 advances more than N",
+  "the_loop_0x6716a1": {
+    "0x6716A1": "push 0xC ; mov eax,esi ; call 0x66EC30   -> read 12 bits",
+    "0x6716AD": "mov word [ecx*2 + 0x7859358], ax          -> store the id",
+    "0x6716BF": "cmp bl,al ; jb 0x6716A1                   -> loop exactly count times",
+    "0x6716C3": "pop ebx ; then compare al,1 and either set [0x7859559] = 0 or compute a width and return 1"
+  },
+  "the_reader_0x66ec30": {
+    "0x66EC3E": "cmp ebx,0x20 ; je 0x66ED43    - a 32-bit special case exists",
+    "0x66EC4A": "edx = [esi+0x20]               - the absolute bit position",
+    "0x66EC52": "mask = (1 << N) - 1",
+    "0x66EC6F": "ecx = [esi+0x20] >> 3          - the byte index is derived FROM the bit position",
+    "0x66EC75": "cmp ecx,edi ; jl 0x66EC8D      - bounds check against the length",
+    "conclusion": "it reads N bits starting at bit position [+0x20], using the byte index and the bit offset within it"
+  },
+  "the_measurement_that_needs_explaining": [
+    "bitpos at 0x67169D (just after the count store) was 1309",
+    "bitpos at 0x6716C3 (after the loop) was 1329",
+    "the loop reads 12 bits exactly once",
+    "so the position advanced by 20 for a 12-bit read",
+    "either the reader rounds the advance up in some way, or an extra read happens inside the loop that the disassembly of 0x6716A1..0x6716C1 does not show"
+  ],
+  "the_single_probe_that_settles_it": [
+    "log [+0x20] at 0x6716A5 (the instruction right after the id read returns) and at 0x6716C3",
+    "the difference is exactly what one 12-bit read costs in position units, which is the unit every subsequent payload calculation depends on"
+  ],
+  "why_this_matters_for_the_payload": [
+    "the per-entity payload starts right after the id, and its field table 0xDA63E8 is indexed by 0x58-byte struct offsets",
+    "knowing the exact unit the position advances in is the prerequisite for computing where the first payload field begins"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x6716A1 id loop",
+      "0x66EC30 N-bit reader",
+      "0x7859358 id array"
+    ]
+  }
+}
