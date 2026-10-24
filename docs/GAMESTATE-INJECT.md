@@ -4168,3 +4168,33 @@ python tools/ff_resign.py --source .../mp_crash_tropical_const.ff \
 1. 写 `tools/patch_exe_pubkey.py`：把 exe 的 270 字节公钥（0x698958）换成自建公钥；
 2. 用 `decode_fastfile(const-resigned.ff, 改后 exe)` 验证通过；
 3. 通过后再做"改内容"（zone 名/asset）。
+
+## 124. 2026-10-26 03:00–03:30：验证策略调整 —— 改后 exe 会让 _load_keys 指纹校验失败
+
+### 124.1 问题
+
+`_load_keys` 校验 `_sha(public_der) == SIGNING_PUBLIC_SHA256`：
+
+```python
+if _sha(public_der) != SIGNING_PUBLIC_SHA256:
+    raise FastfileError('signing_key', '找不到符合验证指纹的发布方签名公钥')
+```
+
+→ 一旦把 exe 公钥换成自建公钥，**官方 decode 工具会直接拒绝**（不是签名不匹配，而是"找不到已知公钥"）。
+
+### 124.2 两个层面要分开
+
+| 层面 | 验证者 | 说明 |
+|---|---|---|
+| 本地工具链 | `decode_fastfile`（带指纹白名单） | 换公钥后需要"白名单也换"才行 |
+| **客户端** | exe 内 RSA 验签（无白名单） | 只做标准 PKCS#1 v1.5 验签，**不校验指纹** |
+
+→ **最终判据必须是客户端实测**（启动加载重签的 ff，看是否报"磁盘读取错误"），
+而不是本地 `decode_fastfile`。
+
+### 124.3 下一步
+
+1. 写 `tools/patch_exe_pubkey.py`：把 `0x698958` 的 270 字节换成自建公钥（不校验指纹）；
+2. **客户端实测**：把重签的 `mp_crash_tropical_const.ff` 放进 overlay（备份原件），
+   启动客户端看是否报错；
+3. 若通过，再把 88 个武器定义写进 `common_gametype_mp.ff` 并重签。
