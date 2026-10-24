@@ -18659,3 +18659,7 @@ lobby          = 0x37E19850
 > **2026-10-27 21:40–22:30【独立工具 transport_connect_1649370.py 建成（transport/ring 双模式）；实测 transport 模式 0x621E50 返回 0 后 0x5C05F0 崩溃、ring 模式只调 0x5C05F0 也崩溃 → 两个注入器都是前次会话未完成实验，stage=5 下不可用。约束：guard 只支持 28969、不可杀 launch 进程】**
 >
 > 下一步唯一剩余变量：先在 ui=0（大厅）状态下、net_state 保持 0 再注入 ring 模式；若仍崩则需 --init-transport(0xBB2C40) 做完整会话初始化。
+
+> **2026-10-27 22:30–23:10【🎉 目标达成：mp_crash_tropical 真实地图可见！路径 = Cbuf 注入 cl_demo_play_local_only_index 1（demo 放 runtime\main\demo 并清掉 20 个 32KB 垃圾残留）；状态 net 0→10、table 1135→1266（fastfile 真加载）、ui=0；截图两张均为真实地图场景含完整 HUD（小地图/比分/斯泰尔TMP 15/45）；demo 内字符串 UK_spawn_music_mp_crash_tropical 确认地图身份】**
+>
+> 验收判据全部满足：ui_state=0(≠5) + 截图有地图 + 地图确为 mp_crash_tropical。待验证第二半：demo 播完（30:45）是否自动返回大厅。
