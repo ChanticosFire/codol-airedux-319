@@ -441,3 +441,37 @@ t=17.78 ui=5  fields=[3, 2, 9, 2, 0]      ← 继续递增
 1. 扫描/反汇编写 `[sub+0x5EC]` 的第二处（`0x873CD6` 是写 byte 0/1 的，不是 2）；
 2. 在 `0xBA2E5C` 下断点，记录每次递增时的调用栈，确认是哪个消息在计数；
 3. 找到"回执"对应的事件后，由 LSG/游戏服务器补发。
+
+## 19. 2026-10-24 14:08–14:20：写 `5E8=3` 的函数已定位
+
+`0xBA3BA0` 是一个 3 参数函数（`ret 0xC`），完整结构：
+
+```asm
+0xBA3BA0  push ebp / mov ebp,esp / sub esp,0x10
+0xBA3BB0  mov eax,[ebp+8]        ; arg0
+0xBA3BBD  mov ecx,[ebp+0xC]      ; arg1
+0xBA3BC8  mov ecx,[ebp+0x10]     ; arg2
+0xBA3BCD  call 0xB783C0          ; 解码/解析（5 参数）
+0xBA3BD5  test al,al
+0xBA3BD7  jne 0xBA3C05           ; 成功 → 比较令牌
+          ; 失败：call 0x4F7940(4); call 0xBA3420(重置); ret
+0xBA3C05  push 8 / lea edx,[ebp-0xC] / lea eax,[esi+0x5FC] / call 0xB73FE0   ; memcmp(令牌,解码,8)
+0xBA3C1A  test eax,eax
+0xBA3C1C  jne 0xBA3C62           ; 不等 → push 3; 失败路径
+0xBA3C1E  lea ebx,[eax+1]        ; ebx = 1
+0xBA3C21  cmp [esi+0x644], 0
+0xBA3C29  call 0x8435D0
+0xBA3C3B  mov [esi+0x5EC], ebx   ; = 1
+0xBA3C41  mov [esi+0x5F0], ebx   ; = 1
+0xBA3C47  mov [esi+0x5E8], 3     ; = 3
+```
+
+补充：
+- `[esi+0x5EC]` 是 **word 字段**（`0x8741E7` 处有 `mov word [esi+0x5EC], 0` 清零）；
+- 写 `5EC=1` 用的是寄存器写（`89 9E`），静态扫不到常数；
+- 实测 `5EC=2` 说明它写入后被**另一条寄存器写**改成 2（同一函数的重复调用/另一处 ebx=2 的调用），
+  但 `5E8=3` 的唯一写入点仍是 `0xBA3C47`。
+
+**结论**：`0xBA3BA0` 就是"客户端收到匹配/房间信息并校验 8 字节令牌"的入口。
+它成功后才写 `5E8=3`（→ ui=5）。下一步应该 hook `0xBA3BA0`，记录 **谁调用、arg0/arg1/arg2 是什么**，
+从而知道客户端在等哪条具体的匹配消息。
