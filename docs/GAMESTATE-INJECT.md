@@ -6776,3 +6776,34 @@ after3s: state[+0x14] = 4   ui = 5（没变）   load = 2
 1. 观察 `ui=4` 时 `net_state` / `state` / 武器表 的变化；
 2. 走一次完整连接（connect + gamestate），看 `ui=4` 是否保持、地图是否加载；
 3. 若 `ui=4` 是"服务器浏览器/主菜单"，则还需推进到真正进入地图的状态。
+
+## 194. 2026-10-27 14:00–14:30：**`ui=4` 稳定保持（不回 5），但连接未走完**
+
+### 194.1 实验（patch + login + forward + connect）
+
+```
+patch 0x7F2808 -> ok
+after login: ui=4  load=2  state=1  table=0
+t+4s:        ui=4  net=4   load=2  table=0
+t+9s:        ui=4  net=4   load=2  table=0
+t+13s:       ui=4  net=4   load=2  table=0
+alive=True
+```
+
+### 194.2 结论
+
+- **`ui = 4` 稳定保持**，没有回到 5 ✅（自锁被绕过）；
+- 但 `net_state` 只到 **4**（connect 已发，未进入 gamestate 阶段）；
+- `table = 0`（武器表为空，说明没有加载任何资源）。
+
+### 194.3 `ui=4` 的疑点
+
+- 可能是"主菜单 / 服务器浏览器 / 连接中"界面；
+- **不是**"游戏内"（因为 table=0，什么都没加载）；
+- 需要截图确认。
+
+### 下一步
+
+1. 确认 `ui=4` 对应哪个界面（截图或查 UI 脚本常量 `0xDE096C`）；
+2. 继续推进连接（net 4 → 5 → 7 → 8），看 `ui` 是否随 gamestate 推进而变化；
+3. 若 `ui=4` 保持在连接阶段，说明还需找到"进入游戏"的那条路径。
