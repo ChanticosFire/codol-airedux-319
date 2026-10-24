@@ -91,6 +91,7 @@ class GameServer:
     def __init__(self, port: int, log_path: str | None = None, delay_send: float = 0.0,
                  checksum_feed: int | None = None, gamestate_source: str = "native",
                  registration_checksum: int = 0xFFB56D7E,
+                 challenge_override: int | None = None,
                  snapshot_path: str | None = None, snapshot_delay: float = 3.0,
                  snapshot_seq: int = 5, snapshot_repeat: int = 0,
                  snapshot_interval: float = 0.5,
@@ -122,6 +123,7 @@ class GameServer:
         self.oob_command = oob_command
         self.oob_delay = float(oob_delay or 0.0)
         self.registration_checksum = registration_checksum
+        self.challenge_override = challenge_override
         self.snapshot_path = Path(snapshot_path) if snapshot_path else None
         self.snapshot_files = ([Path(part.strip()) for part in snapshot_path.split(",") if part.strip()]
                                if snapshot_path else [])
@@ -205,7 +207,14 @@ class GameServer:
         # that value over our own, so a lost getchallenge cannot desynchronise
         # the XOR key.
         echoed = (info.get("challenge") or "").strip()
-        if echoed:
+        if self.challenge_override is not None:
+            # The client keeps its own challenge token (seen live at
+            # connection+0x08) while the connect userinfo echoes 0; forcing the
+            # observed token keeps the netchan XOR key in sync.
+            peer["challenge"] = int(self.challenge_override) & 0xFFFFFFFF
+            self.log({"dir": "meta", "kind": "challenge_override",
+                      "value": peer["challenge"]})
+        elif echoed:
             try:
                 peer["challenge"] = int(echoed, 0) & 0xFFFFFFFF
             except ValueError:
@@ -539,6 +548,9 @@ def main() -> int:
                         help="alias for --oob-delay: seconds from connect to the automatic end-of-match disconnect")
     parser.add_argument("--registration-checksum", type=lambda value: int(value, 0),
                         default=0xFFB56D7E)
+    parser.add_argument("--challenge-override", type=lambda value: int(value, 0),
+                        default=None,
+                        help="force the netchan XOR challenge (client token at connection+0x08)")
     parser.add_argument("--snapshot-file", default=None,
                         help="service message bytes (svc 0 + body + EOF) sent after gamestate")
     parser.add_argument("--snapshot-delay", type=float, default=3.0,
@@ -589,7 +601,7 @@ def main() -> int:
     if not 0 < args.command_seq <= 0x7FFFFFFF:
         parser.error("--command-seq must be a positive 31-bit integer")
     server = GameServer(args.port, args.log, args.delay_send, args.checksum_feed,
-                        args.gamestate_source, args.registration_checksum,
+                        args.gamestate_source, args.registration_checksum, args.challenge_override,
                         args.snapshot_file, args.snapshot_delay, args.snapshot_seq,
                         args.snapshot_repeat, args.snapshot_interval,
                         args.command_file, args.command_delay, args.command_seq,

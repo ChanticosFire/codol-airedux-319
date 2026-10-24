@@ -272,3 +272,25 @@ registration checksum、以及 configstring 数量/内容。下一轮应逐字�
 1. 在客户端 state 6 时读 `connection` 对象的 seq/ack 字段（`[conn+0x30]` 等），确认它期望的 ack；
 2. 让 gs 的 `_send_fragments` 把 payload 前 4 字节的 ack 写成该值（可加 `--ack` 参数）；
 3. 若仍不通，再查 netchan 接收上下文的建立条件（`0x5C05F0` 调用前后写了哪些字段）。
+
+## 13. 2026-10-24 13:12–13:18：challenge 字段排查（假设被部分证伪）
+
+上一轮猜测 `connection+0x08` 是客户端 challenge（读到 21766）。本轮在干净连接上重测：
+
+| 步骤 | 观测 |
+|---|---|
+| 客户端经 `inject_client_gamestate` + `ring_bridge connect` | `conn=0x13CDD564` |
+| 读 `conn+0x08` | **0**（不是 21766） |
+
+→ `connection+0x08` **不是** challenge（上次的 21766 可能是别的字段/噪声）。
+客户端 connect 的 userinfo 里 `challenge` 也是 0，所以两侧 XOR key 都按 `seq & 0xFF` 计算，**本来就是一致的**——
+key 假设可以排除。
+
+已给 `gameserver.py` 加 `--challenge-override`（默认 None，不影响现有行为），但本轮未验证到它有用；
+保留作为后续如果发现真实 challenge 字段时的开关。
+
+### 仍未解释
+
+`state=6` 时 gamestate 包已注入（102 B、seq 1、长度前缀正确），但 `0x472D80` 从未被调用。
+下一步应直接观测**网络接收循环**：在 `0x4F8D70`（pump）内或 ring 消费点下断点，
+确认 state 6 时客户端是否把 ring_b 的包交给 netchan 层。
