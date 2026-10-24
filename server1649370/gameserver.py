@@ -244,8 +244,9 @@ class GameServer:
                   "challenge_field": info.get("challenge"),
                   "effective_challenge": peer.get("challenge"),
                   "build_field": info.get("2490")})
+        gametype_text = self.gamestate_gametype.decode("ascii") or DEFAULT_GAMETYPE
         response = (f"connectResponse \\mapname\\{self.map_name}"
-                    f"\\gametype\\{DEFAULT_GAMETYPE}"
+                    f"\\gametype\\{gametype_text}"
                     f"\\sv_maxclients\\{DEFAULT_MAXCLIENTS}"
                     f"\\protocol\\1\\shortversion\\{PROTOCOL_GENERATION}")
         self.send_oob(addr, response)

@@ -7421,3 +7421,37 @@ load = 0
 1. 让 `--gamestate-gametype mp` 真正生效（检查 gs 的 connectResponse 构造）；
 2. 观察 `net` 是否到 7、`table` 是否加载；
 3. 若 `ui=0` 保持，地图可能已经可见 —— 需要截图确认。
+
+## 212. 2026-10-27 23:30–00:00：**gametype 修复成功（`mp`），`ui=0` 保持；`net=6` 因缺快照**
+
+### 212.1 修复
+
+`gameserver.py` 第 247-251 行原本硬编码 `DEFAULT_GAMETYPE`（"war"），
+改为使用 `self.gamestate_gametype`：
+
+```python
+gametype_text = self.gamestate_gametype.decode("ascii") or DEFAULT_GAMETYPE
+response = (f"connectResponse \\mapname\\{self.map_name}"
+            f"\\gametype\\{gametype_text}" ...)
+```
+
+### 212.2 重跑结果
+
+```
+connectResponse: "\xff\xff\xff\xffconnectResponse \mapname\mp_cross_fire\gametype\mp\sv_maxclients\12\protocol\1\shortversion\1.1.1.13"
+  ← **gametype 已是 mp**
+state 4 → 5 → 6
+gamestate 分包：1172 × 5 + 611（全部接收）
+after: ui=0  net=6  table=0  load=0
+```
+
+### 212.3 两个结论
+
+1. **gametype 修复生效**（`mp` 已进入 connectResponse）；
+2. **`net=6` 停在 statResponse 阶段** —— 因为本次 gs 命令**漏了 `--snapshot-file`**
+   （r176 有、r178 没有），客户端没有收到快照，所以到不了 7。
+
+### 212.4 下一步
+
+加回 `--snapshot-file`（`baseline-outer17-245.bin`）+ `--snapshot-delay 20`，
+观察 `net` 是否到 7、`table` 是否加载。

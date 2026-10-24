@@ -18483,3 +18483,7 @@ lobby          = 0x37E19850
 > **2026-10-27 23:00–23:30【🎉🎉 重大突破：connect 走通（收到 connectResponse mapname=mp_cross_fire/gametype=war）、gamestate 分包 5×1172+611 全部接收、**ui=0**、net=6、table=0；forward 的 address_string="localhost"、state 4→5→6】**
 >
 > 事件序列：connect → out 400B → connectResponse 105B → statResponse → state 4/5/6 → gamestate 分包。客户端：ui=0（首次！）、net=6、table=0、load=0。→ 遗留：connectResponse 的 gametype 仍是 war（--gamestate-gametype mp 未生效于 OOB）；table=0。下一步让 gametype 生效并观察 net→7、table 加载，同时截图确认地图。
+
+> **2026-10-27 23:30–00:00【gametype 修复成功：connectResponse 变为 `gametype\mp`（原硬编码 war）；ui=0 保持；net=6 因本次漏加 --snapshot-file（r176 有、r178 无）】**
+>
+> 修复 gameserver.py 第 247-251 行：`DEFAULT_GAMETYPE` → `self.gamestate_gametype.decode()`。重跑：connectResponse 含 `gametype\mp`、state 4→5→6、gamestate 分包全收、ui=0/net=6/table=0。→ 下一步加回 `--snapshot-file baseline-outer17-245.bin --snapshot-delay 20`，看 net→7 与 table 加载。
