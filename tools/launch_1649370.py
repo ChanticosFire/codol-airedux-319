@@ -2856,11 +2856,17 @@ def main(argv=None) -> int:
                 if esi:
                     raw = self.process.read(esi + 0x20, 4)
                     bitpos = struct.unpack("<I", raw)[0]
+                ebp = int(registers.get("ebp", "0"), 0)
+                mode = -1
+                if ebp:
+                    raw_mode = self.process.read(ebp - 4, 4)
+                    mode = struct.unpack("<I", raw_mode)[0]
                 count_raw = self.process.read(0x7859558, 1)
                 ids = self.process.read(0x7859358, 12)
                 n = getattr(self, "_ent_count", 0)
                 if n < 12:
                     self.record({"ent": {"label": label, "bitpos": bitpos,
+                                         "mode": mode,
                                          "count": count_raw[0],
                                          "ids": ids.hex(), "n": n}})
                 self._ent_count = n + 1

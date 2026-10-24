@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T16:30:00+00:00",
+  "scope": "THE JUMP TABLE: 13 handlers, one per mode; mode 4 reads a single -97 value, mode 3 an 11-bit value - so the modes select WHICH entity field is encoded",
+  "the_table_at_0x671b2c": {
+    "mode 1": "0x671890",
+    "mode 2": "0x671833",
+    "mode 3": "0x6717A1",
+    "mode 4": "0x6717B5",
+    "mode 5": "0x671B21 (returns 1, no field)",
+    "mode 6": "0x671979",
+    "mode 7": "0x6719E8",
+    "mode 8": "0x6718D2",
+    "mode 9": "0x6719AA",
+    "mode 10": "0x6719B8",
+    "mode 11": "0x6717C7",
+    "mode 12": "0x6717FD",
+    "mode 13": "0x67193C"
+  },
+  "the_two_handlers_read_out": {
+    "mode 3 at 0x6717A1": "push 0xB ; call 0x66EC30 ; mov [esi+0x24], eax - reads an 11-BIT value into the scratch field at stream+0x24",
+    "mode 4 at 0x6717B5": "mov eax,[ebp+8] ; mov ecx,esi ; call 0x66F9E0 ; mov [esi+0x28], eax - reads ONE value with the -97 codec (gate + 32 or gate + 8) into stream+0x28"
+  },
+  "what_this_means_for_the_payload": [
+    "the mode does not enable a whole field list - it selects a SINGLE field and its codec",
+    "so an entity delta is: [mode selector][one field's value], repeated per changed field, and the changed bit at the start governs whether a delta is present at all",
+    "that is a completely different picture from the 'field table loop' the project assumed for entities, and it explains why entity payload experiments never lined up"
+  ],
+  "the_practical_target": [
+    "our entity currently decodes in mode 4, i.e. one -97 value, which lands in the stream scratch field at +0x28 rather than in the entity struct - so nothing visible changes yet",
+    "the interesting modes are the ones whose handlers write into the ENTITY struct (edi), not into the stream - reading 0x671890 / 0x671833 / 0x6718D2 will show which those are",
+    "one of them almost certainly writes eType, and another writes origin"
+  ],
+  "next": [
+    "read the remaining handlers 0x671890, 0x671833, 0x6718D2, 0x671979, 0x67193C and classify each by whether it writes [edi+...] (entity) or [esi+...] (stream scratch)",
+    "the handlers that write [edi+offset] are the ones that can put eType and origin into the entity"
+  ],
+  "artifacts": {
+    "table": "0x671B2C (13 dwords)",
+    "server_log": "runs/codex-r223-gs.jsonl"
+  }
+}

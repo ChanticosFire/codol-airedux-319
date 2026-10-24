@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Mode jump table read: a mode selects a SINGLE field and its codec]**
+> 0x671B2C holds 13 handlers. Mode 3 reads 11 bits into [esi+0x24]; mode 4 reads one -97 value into [esi+0x28]; mode 5 is a no-op. So an entity delta is [mode selector][one field value], not a field-table loop - which explains why entity payload experiments never lined up.
+> Next: classify the remaining handlers by whether they write [edi+off] (entity) or [esi+off] (scratch); the [edi] ones can carry eType and origin.
+> Evidence: [mode jump table](evidence/experiments/20261023-codex-mode-jump-table.json).
 > **2026-10-23 [MILESTONE 3: the entity delta decoder runs and the client survives]**
 > ent4 (bit 1329 cleared): EntDelta fired at bitpos 1330, count 1, id 4048, state 9, process alive. So the entity pipeline runs end to end for one entity; only the delta CONTENT remains.
 > Remaining: the mode selector at 1330+ reads arbitrary bits, and the state is 9 not 10. Next: probe 0x671785 to log the chosen mode, then write it explicitly with a first field from 0xDA63E8.

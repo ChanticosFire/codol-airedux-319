@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T16:00:00+00:00",
+  "scope": "the mode selector produces a mode in 1..16 and dispatches through a 13-entry jump table at 0x671B2C; our entity decodes in mode 4",
+  "the_measured_mode": {
+    "probe": "0x671785:EntMode",
+    "bitpos": 1333,
+    "mode": 4,
+    "count": 1,
+    "ids": "d00f... (4048)"
+  },
+  "the_selector_0x671722_0x671785": {
+    "0x671714": "cmp eax,3 ; je 0x671722 - mode 3 enters the selector",
+    "0x671719": "cmp eax,4 ; jne 0x671B19 - mode 4 ALSO falls through to the selector, anything else returns 0",
+    "0x671722": "read 1 bit; if 1 -> read 2 bits, mode = value + 1",
+    "0x67173F": "else read 1 bit; if 1 -> read 2 bits, mode = value + 5",
+    "0x67175B": "else read 1 bit; if 1 -> read 2 bits, mode = value + 9; if 0 -> read 2 bits, mode = value + 13",
+    "0x671782": "[ebp-4] = mode ; 0x671785 [edi+4] = mode",
+    "0x671791": "cmp eax,0xC ; ja 0x671B21 - (mode-1) > 12 returns 1 immediately",
+    "0x67179A": "jmp [eax*4 + 0x671B2C] - a 13-entry jump table, one entry per mode 1..13"
+  },
+  "what_our_body_produced": [
+    "bits 1330,1331,1332 were 1,1,1",
+    "the first bit 1 selects the value+1 branch, and the two bits 1,1 give value 3, so mode = 4",
+    "position advances to 1333, which matches the probe exactly"
+  ],
+  "why_mode_4_matters": [
+    "mode 4 is a real mode with its own handler, so the delta IS being decoded rather than rejected",
+    "the client surviving is consistent with that",
+    "so the entity now has whatever mode 4's handler writes, which is the first time a decoded delta has been applied to a real entity"
+  ],
+  "next": [
+    "read the jump table entries at 0x671B2C to identify the handler for mode 4",
+    "then read that handler's field sequence - it determines which entity fields are present and in what order, which is what an eType/origin write needs"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r223-gs.jsonl",
+    "body": "runs/snapshot-ent4.bin"
+  }
+}
