@@ -5578,3 +5578,56 @@ stop_reason = "unhandled_exception"
 1. 找到 `0xB81FD0` 所在函数的入口（向前扩大扫描）与调用者；
 2. 看它接受什么参数（`esi` = 新单例对象），以及服务端路径下是否被调用；
 3. 若确实没被调用，说明服务端路径缺"创建加载单例"的步骤 —— 这可能就是 `ui_state=5` 的真正原因。
+
+## 162. 2026-10-26 22:00–22:30：**目标地图定为 mp_crash_tropical（用户决定）+ 找到"开始加载"触发函数 0x7F38C0**
+
+### 162.1 目标地图的决定（用户）
+
+- demo 已验证 `mp_crash_tropical`（坠机之地）能正常加载与渲染；
+- 实机目标直接复用该地图，避免"换图导致加载不上"的额外风险；
+- 确认：`gamestate-network-ffb56d7e-6411.bin` 的 mapname **本来就是 `mp_crash_tropical`**，
+  gametype `war`，与 demo 完全一致。
+
+→ **从现在起，验收目标为 "mp_crash_tropical 可见可玩 + ui_state != 5"**。
+
+### 162.2 "开始加载"的触发函数（0x7F38C0）
+
+```asm
+0x7F38CB  eax = [0x84ABB08]        ; auth 源 1
+0x7F38D0  test eax,eax
+0x7F38D2  jne 0x7F38DD
+0x7F38D4  eax = [0x84ABB14]        ; auth 源 3
+0x7F38D9  test eax,eax
+0x7F38DB  je 0x7F38F7              ; 两者都 0 → eax=0
+0x7F38DD  ecx = [0x84ABB0C]        ; auth 源 2
+0x7F38E3  test ecx,ecx
+0x7F38E5  je 0x7F38EE
+0x7F38E7  call 0xB983C0
+0x7F38EC  jmp 0x7F38F9
+0x7F38EE  ecx = eax
+0x7F38F0  call 0xB9A0E0
+0x7F38F7  xor eax,eax
+0x7F38F9  push 1
+0x7F38FB  push eax
+0x7F38FC  sub esp,0x88
+0x7F3902  lea edx,[ebp-0x90]
+0x7F390B  call 0xB75340            ; 构造参数结构
+0x7F3910  ecx = esi
+0x7F3912  call 0xB82070            ; ← 开始加载
+0x7F3919  test al,al
+0x7F391B  setne cl
+0x7F391E  [0x84ABA7C] = ecx        ; 记录成功标志
+```
+
+### 162.3 与 HANDOFF 的 auth_sources 对上了
+
+HANDOFF 记录：`auth_sources: {'0x84abb08': '0x0', '0x84abb0c': '0x0', '0x84abb14': '0x2462bce0'}`
+
+→ 当时 `[0x84ABB14] != 0`，所以走 `0x7F38EE`（`call 0xB9A0E0`）分支，
+**理论上应该会继续到 `0x7F3912 call 0xB82070`**。
+
+### 下一步
+
+1. 找 `0x7F38C0` 的函数入口与调用者（谁触发"开始加载"）；
+2. 在服务端路径实测：`0x7F38C0` 是否被调用？`0x84ABA7C`（成功标志）是否被置 1？
+3. 若没被调用，说明缺"触发开始加载"的事件（可能是某个 gamestate 命令或 ui 动作）。
