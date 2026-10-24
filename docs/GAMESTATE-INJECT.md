@@ -4426,3 +4426,41 @@ peak_table = 1136
 | B2 | 让 `common_gametype_mp.ff` 进入启动加载列表（改 exe 的加载表） | 中（改代码常量） |
 
 → 优先 **B1**：不动代码，只动资源，且已具备重签能力。
+
+## 131. 2026-10-26 06:30–07:00：zone 数据头部初步解析（B1 合并路线的第一步）
+
+### 131.1 zone 数据头（前 64 字节）
+
+```
+8b 13 f9 02 0c 03 de 0c 18 98 2a 00 00 00 00 00
+00 00 00 00 00 9c cf a0 00 00 00 00 00 00 00 00
+00 20 5f ba 00 70 e7 1f 00 05 03 00 00 ff ff ff ff
+78 05 00 00 ff ff ff ff 00 00 00 00 ff ff ff ff
+```
+
+| 偏移 | 值 | 推测 |
+|---|---|---|
+| 0x00 | 49877899（0x02F9138B） | zone size（文件 49877939 − 40） |
+| 0x04 | 0x0CDE030C | external size / 校验 |
+| 0x08 | 0x002A9818 | 某指针/偏移 |
+| 0x14 | 0x00A0CF9C | 某指针/偏移 |
+| 0x18 | 0x00BA5F20 | 某指针/偏移 |
+| 0x20 | 0x001FE770 | 某指针/偏移 |
+| 0x24 | 0x00000305 | **可能依赖 zone 数（773）** |
+| 0x28 | 0xFFFFFFFF | -1 |
+| 0x2C | 0x00000578 | 1400！← **asset_count 位置可能在 0x2C** |
+
+→ `0x2C = 0x578 = 1400`，与 `decode_fastfile` 报告的 `asset_count=1400` 完全一致。
+
+### 131.2 意义
+
+- zone 头的 asset 计数位置已定位（`+0x2C`）；
+- 但 asset **目录**（entries 的 type/offset/size）的位置与格式还需确认
+  （`decode_fastfile` 内部有 `directory_offset=56` 的字段，但那是它自己的记录，不是 zone 内偏移）。
+
+### 下一步
+
+1. 读 `validate_zone` 的实现，看它如何解析 directory（能直接复用）；
+2. 解析出 1400 个 asset 条目的 `{type, offset, size, name}`；
+3. 评估"把 88 个 asset 的二进制块搬运进 `common_mp.ff` 并重建目录"的可行性
+   （需要重排所有后续 offset，工作量大但纯离线可验证）。
