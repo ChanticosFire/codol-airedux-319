@@ -256,7 +256,13 @@ class Client:
         resumed = False
         try:
             if k32.SuspendThread(thread) == 0xFFFFFFFF:
-                raise SystemExit(f"SuspendThread 失败: {C.get_last_error()}")
+                # The window thread can disappear while the client tears down or
+                # rebuilds its renderer.  Failing to suspend one call must not
+                # abort the whole bridge loop; report it and let the caller
+                # decide (the engine drains ring B on its own anyway).
+                row["status"] = "suspend_failed"
+                row["error"] = C.get_last_error()
+                return row
             suspended = True
             storage = C.create_string_buffer(CONTEXT_SIZE + 16)
             aligned = (C.addressof(storage) + 15) & ~15

@@ -10275,3 +10275,68 @@ ring_bridge_1649370.py:258  raise SystemExit(f"SuspendThread 失败: {get_last_e
 - Round 5：客户端首次发出 `getchallenge`；
 - **Round 7：`connect` + `stats` 全部到达服务端，阶段 3 完成**；
 - 距"服务端下发进图对局"只剩阶段 4-6。
+
+## 270. 2026-10-28 09:00–10:00：**`connectResponse` 已正确，但客户端在它之后必须拿到 gamestate**
+
+### 270.1 修正后的 `connectResponse`（正确）
+
+```
+{"dir":"out","kind":"oob","to":"127.0.0.1:60371",
+ "text":"connectResponse \\mapname\\mp_crash_tropical\\gametype\\war\\sv_maxclients\\12\\protocol\\1\\shortversion\\1.1.1.13"}
+```
+
+`--gamestate-map mp_crash_tropical` + `--gamestate-gametype war` 之后，
+地图名与模式名都正确了（此前是 `mp_cross_fire` / `mp`）。
+
+### 270.2 客户端在 `connectResponse` 之后一律回到 `state=0`
+
+`forward` 两次运行的事件尾部都是：
+
+```
+state=3 -> getchallenge -> challengeResponse -> state=4
+        -> connect(409B) -> state=0
+        -> connectResponse(109B) 注入 -> 状态仍为 0
+```
+
+即：**客户端接受了 challenge、发出了 connect、收到了 connectResponse，
+但随后把连接状态清零**。
+
+社区提供的信息正好解释这一点：
+> "仅回复 `connectResponse` 不足以进入地图" —— 之后还需要 `loadingnewmap`、
+> 资源注册校验、命令序号、配置字符串与模型引用、玩家槽号、校验种子，以及第一份有效快照。
+
+### 270.3 `--oob-only` 会拦住后续阶段
+
+- Round 7 用 `--oob-only`：客户端发出了 **4 个 `stats`**；
+- Round 8 不带 `--oob-only`：客户端**不发 stats**，直接 `state=0`。
+
+`--oob-only` 只注入 `FFFFFFFF` 前缀的 OOB 字符串、**丢弃 netchan 数据**，
+所以：
+- 想走完 OOB 握手（challenge/connect/stats）→ 必须用 `--oob-only`；
+- 想推进到 gamestate/snapshot → **必须让 netchan 数据也能注入**（去掉 `--oob-only`，
+  并配合 `--forge-ack` / `--forge-seq-base` / `--reliable-until-state` 等参数）。
+
+### 270.4 客户端似乎只能成功尝试一次
+
+Round 8 第二次 `forward`（同一客户端进程）只得到 `sent=1 received=1 injected=1`，
+`connect` 再没发出；而 Round 7 全新启动的客户端能完整走完 connect。
+
+→ **每次实验都要重启客户端**，不能在同一进程上反复重试。
+
+### 270.5 `forward` 的两个修复
+
+1. `invoke_sequence` 里 `SuspendThread` 失败原本 `raise SystemExit`，会直接杀掉整个桥；
+   现改为返回 `{"status": "suspend_failed"}`，由调用方决定（引擎本来就自己 drain ring B）。
+2. `statResponse` 未出现在 gs 日志：`on_stats` 里的 `challenge` 取自 `--challenge-override`
+   （之前恒 0），本轮去掉 override 后 challenge 是真值，但客户端在这一轮没有发 stats，
+   所以仍未验证 `statResponse` 是否被接受。
+
+### 270.6 下一步（收敛到一条）
+
+**用不带 `--oob-only` 的 `forward`，让 netchan 数据能通过 ring B 注入**，
+并让 gs 把 `gamestate`（`runs/demo-outer-exact/gamestate-network-ffb56d7e-6411.bin`，
+6411 字节，含 `mp_crash_tropical` + `war`）作为第一条 netchan 消息下发。
+
+需要先确认两件事：
+1. `forward` 的 netchan 注入是否已实现（`--forge-ack`、`--reliable-until-state` 的语义）；
+2. gs 侧 `snapshot`/`gamestate` 的下发是否走同一 UDP 连接（`127.0.0.1:60371` 这类源端口）。
