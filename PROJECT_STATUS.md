@@ -18183,3 +18183,7 @@ lobby          = 0x37E19850
 > **2026-10-26 09:00–09:30【body 结构确认：raw[FF_HEADER:] = 段表+数据块；重打包 7 步明确】**
 >
 > decode 源码：`_signed_payload` 解 body[0:8192] 为 header、其余为 段表(每 256 块一个 8192B table)+数据块（IV=sha256 明文）；`_inflate` 做 zlib+Adler32 → zone。重打包 7 步：zone→zlib→8192 分块→每块 sha256 作 IV→每 256 块生成 hash table→组装 header+tables+blocks→重算 hdr[0x0C:0x2C]→自建私钥签名→AES 加密 header。→ 下一步写 `ff_rebuild_body.py`。
+
+> **2026-10-26 09:30–10:00【body 重打包关键约束：hash table 的 IV 存在 header[0x150+section*32]，数据块 IV 存在 table 内；改 table 必须同时改 header 并重签】**
+>
+> `_signed_payload` 精确结构：table 块 IV 来自 `header[0x150+section*32]`（最多 16 section）、数据块 IV 来自 table 内（256×32）；`header[0x12C:0x1FD0]` 被签名覆盖。→ 重打包流程：zlib.compress → 8192 分块 → 每 256 块一组生成 table（sha256 of each）→ table 的 IV 写回 header[0x150..] → 重算摘要+签名 → 逐块 AES-CTR。下一步写 `ff_rebuild_body.py`，先做"原 zone 重打包 == 原文件"自检。

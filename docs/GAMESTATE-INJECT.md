@@ -4653,3 +4653,52 @@ _inflate(compressed) → zone（zlib + Adler32）
 - 输入：原 ff + 新 zone；
 - 输出：新 ff（body 重打包 + 重签）；
 - 先用 `validate_zone` + `decode_fastfile` 双验证（本地 exe 已是自建公钥的白名单版本）。
+
+## 137. 2026-10-26 09:30–10:00：body 重打包的关键约束（hash table IV 在 header 里）
+
+### 137.1 `_signed_payload` 的精确结构
+
+```python
+for block_index in range(1, len(body)//BLOCK):
+    if table_index == 0:                       # 这是一个 hash table 块
+        if section >= (0x1FD0-0x150)//32: raise  # 最多 16 个 section
+        entry = header[0x150 + section*32 : 0x170 + section*32]   # ← table 的 IV 来自 header！
+    else:                                       # 这是数据块
+        entry = table[(table_index-1)*32 : table_index*32]        # ← 数据块 IV 来自 table
+    plain = AES-CTR(body[block_index], key, entry)
+    assert sha256(plain) == entry
+    ...
+    if table_index == 257: section += 1; table_index = 0
+```
+
+### 137.2 结论
+
+- 每个 **hash table**（每 256 数据块一个）的 IV 存在 **header `0x150 + section*32`**；
+- 每个 **数据块** 的 IV 存在 **hash table 内**（256×32 = 8192，正好一个块）；
+- `header[0x12C:0x1FD0]` 被签名覆盖 → **改 table 必须同时改 header[0x150..] 并重签**。
+
+### 137.3 重打包完整流程（可执行）
+
+```
+new_zone = merged zone
+compressed = zlib.compress(new_zone)
+blocks = [compressed[i*8192:(i+1)*8192]]        # 补齐到 8192
+sections = 每 256 块一组
+for sec, group in enumerate(sections):
+    table = b"".join(sha256(b) for b in group)   # 256*32
+    header[0x150+sec*32 : 0x170+sec*32] = sha256(table)   # table 的 IV
+body = header + table0 + group0 + table1 + group1 + ...
+header[0x0C:0x2C] = sha256(header[0x12C:0x1FD0])
+header[0x2C:0x12C] = privkey.sign(...)
+raw[0x115:0x2115] = AES-CTR(header, key, iv)
+raw[0x2115:] = AES-CTR(body_without_header, key, ...)  # 每块单独用 IV
+```
+
+⚠️ 注意 `raw[FF_HEADER:]` 的加密方式：`_signed_payload` 里 `_ctr(body[...], key, entry)`
+是**逐块**加密，每次用不同的 IV（即 table 项 / header 项）。
+
+### 下一步
+
+写 `tools/ff_rebuild_body.py`：
+1. 先做"原 zone → 重打包 → 与原 ff 逐字节比较"自检；
+2. 自检通过后，再塞 21 个武器 asset。
