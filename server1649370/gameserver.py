@@ -454,8 +454,14 @@ class GameServer:
         # in the same burst as connect (state 4).  Re-send the reply on a few
         # offsets so one of them lands after the state transition regardless of
         # frame timing; extra copies in later states are ignored.
+        #
+        # The early offsets matter: the client retries `stats` about every
+        # 103 ms and gave up after 7 tries (0.72 s) in the Round 43/44 runs.
+        # With the first reply at 0.8 s it never arrived before the client had
+        # already exhausted its retries and crashed, so answer immediately and
+        # keep a few closely spaced copies during that first second.
         now = time.monotonic()
-        for offset in (0.8, 2.0, 4.0):
+        for offset in (0.0, 0.02, 0.05, 0.1, 0.2, 0.4, 0.8, 2.0, 4.0):
             self.pending_oob.append((now + offset, addr, f"statResponse {challenge}"))
 
     def flush_pending_oob(self) -> None:
