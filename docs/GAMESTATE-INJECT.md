@@ -5238,3 +5238,34 @@ after 6s:
 1. 把 `--flags` 改成 **0**（普通路径，`0x776F00` 直接找 `common_gametype_mp.ff`）；
 2. 再注入一次 + 观察表；
 3. 若仍不变，加 trace 看 `common_gametype_mp.ff` 是否被 CreateFile 请求。
+
+## 153. 2026-10-26 17:30–18:00：flags=0 后队列仍被消费，但 trace 里没有 gametype —— 疑似被 `[0x82CA046]` 拦住
+
+### 153.1 结果
+
+```
+inject_load_queue --name common_gametype_mp --flags 0
+hook_queue_processor --target 0x7EF0D0
+8s later: count=0（消费）, table=1135（未变）, alive=true
+trace: gametype mentions = 0
+```
+
+→ 队列被消费了，但**没有任何 gametype 文件请求**。
+
+### 153.2 关键线索
+
+`0x49F280` 的循环体里：
+
+```asm
+0x49F2B0  cmp byte ptr [0x82CA046], 0
+0x49F2B7  jne 0x49F2C1        ; ← 非 0 就跳出循环！
+```
+
+→ `[0x82CA046]` 可能是"加载已在进行/已禁用"标志。若它非 0，
+`0x49ED40` 就被**跳过**（count 仍会被清 0，因为清 0 在循环之前）。
+
+### 153.3 下一步
+
+1. 读 `[0x82CA046]` 的值（是否非 0）；
+2. 若是 1，把它改成 0 再注入队列重试；
+3. 或者绕过：直接 hook 在 `0x49F2A8` 之前，强制 `call 0x49ED40`。
