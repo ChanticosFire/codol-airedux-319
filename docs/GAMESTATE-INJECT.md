@@ -4343,3 +4343,51 @@ def validate_menu_preview_image(image: bytes) -> dict:
 2. 临时改 `IMAGE_SHA256`；
 3. 重跑路线 A（换公钥 + 全量重签 ff + 启动），观察客户端是否接受；
 4. 实验后立即恢复（exe、ff、`IMAGE_SHA256` 三处）。
+
+## 129. 2026-10-26 05:30–06:00：**🎉 信任根替换成功 —— 客户端接受自建公钥 + 自签 fastfile**
+
+### 129.1 实验步骤（A1 路线）
+
+1. 备份 `menu_preview.py`；
+2. `patch_exe_pubkey.py` 把离线壳 `0x9AC958` 的 270 字节公钥换成自建（`0d40328d…`）；
+3. 新 exe sha256 = `26362b540a3cd70698c71931118c3f39725eef1e3b8c125b360492cce5a97058`；
+4. 把 `menu_preview.py` 的 `IMAGE_SHA256` 改成该值；
+5. 批量重签 overlay 的 24 个 ff；
+6. 启动客户端。
+
+### 129.2 结果
+
+```
+resigned ok=24 fail=0
+pid=25072
+engine-init: [startup] engine-init: 5.798s
+error: （空）
+ui_state = 0
+```
+
+→ **客户端完整启动、无错误**。这是本项目第一次让客户端接受**改过的二进制 + 自签 ff**。
+
+### 129.3 意义
+
+| 能力 | 状态 |
+|---|---|
+| 自建 RSA 密钥对 | ✅ |
+| 替换 exe 信任根 | ✅（0x9AC958，含 launch 白名单同步） |
+| 重签全部 24 个 ff | ✅ |
+| 客户端接受自签 ff | ✅ **已验证** |
+| 改 ff 内容（写 88 个武器定义） | ⏭ 下一步 |
+
+### 129.4 重要提醒（回滚三处）
+
+实验状态目前是"已改"：
+1. `codol1649370-offline.exe`（公钥已换，备份 `.orig-backup`）；
+2. 24 个 ff（已重签，备份在 `runs/ff-edit/overlay-backup`）；
+3. `menu_preview.py`（`IMAGE_SHA256` 已改，备份 `.orig-backup`）。
+
+三者必须**成对**保持，否则客户端起不来。
+
+### 下一步
+
+1. 先验证**正常流程不受影响**（demo 播放 + 服务端连接）——重签的 ff 是否与原件行为一致；
+2. 再往 `common_gametype_mp.ff` 或 `common_mp.ff` 里**写入 88 个武器定义**并重签；
+3. 观察 181 是否消失。
