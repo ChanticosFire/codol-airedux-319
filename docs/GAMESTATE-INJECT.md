@@ -2344,3 +2344,39 @@ r105 的 `gamestateupdate` 有 4 次说明客户端确实收到了 gamestate，�
 1. 在 **demo 播放**路径下断 `0x59B560`，记录引用 1224 时 `eax` 是多少（若也是 1224，说明 demo 多注册了 88 个）；
 2. 对比 demo 播放与服务端路径在**同一循环**（`0x454A30`）的迭代次数与 `0x42F3E0` 返回差异；
 3. 若 demo 播放确实多创建 88 个，找出它是从哪个 configstring/资源注册的，然后把这些注册补到服务端 gamestate 的前置段。
+
+## 76. 2026-10-25 05:20–05:40：r106 断点复跑（断点未进 safe list；runtime 复用导致 events 不刷新）
+
+### 76.1 命令
+
+```powershell
+python tools/run_match.py --name r106 ^
+  --gamestate-file runs/demo-outer-exact/gamestate-network-ffb56d7e-6411.bin ^
+  --snapshot runs/demo-outer-exact/baseline-outer17-245.bin ^
+  --client-breakpoint 0x59B560:WeaponIndex ...
+```
+
+### 76.2 结果
+
+| 观测 | 值 |
+|---|---|
+| states | [0, 0, 0, 0] |
+| ui_state | 5 |
+| snapshots_queued | 26 |
+| 断点提示 | `warning: 0x59B560:WeaponIndex is not in the safe list; if the run stalls at state 8 or loses all traces, this is why` |
+| `WeaponIndex` 命中 | **0**（`runtime\events.jsonl` 仍是 10-23 13:57 的旧文件，未刷新） |
+
+### 76.3 两个环境问题
+
+1. `0x59B560` 不在断点 safe list（热路径，可能拖慢）；
+2. `--reuse-runtime` 复用 `20261023-codex-delay-a2` 时 `events.jsonl` 不重建，
+   无法看到本次断点命中。
+
+### 下一步
+
+1. 用**新 runtime**（`--runtime` 换新名、不加 `--reuse-runtime`）重跑断点实验，
+   保证 events 是本轮的；
+2. 或改用"轮询内存"代替断点：在连接后每 200 ms 读 `0x1988634` 与武器表，
+   观察 1136 何时产生、1224 是否出现过；
+3. 若断点确实不可用，则退回静态路径：`0x454A30` 循环 + `0x42F3E0` 返回值的
+   计算方式（引用编号 vs 定义索引）已经明确，重点是"demo 播放为何多 88 个定义"。
