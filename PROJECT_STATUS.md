@@ -19648,3 +19648,76 @@ ParseServerMsg=0  mapLoader=0  gate=0  ui=0  net=0  table=1135  keys=全 0
 |---|---|
 | 49 | 实验被中断 |
 | **50** | **查清 `forward` 的"找不到窗口"是客户端已崩溃的结果；主窗口 `CODO` 在 t+2s 即存在；四个补丁全部就位；但本次复用了无 gs 的旧客户端，无法验证** |
+
+## 310. 2026-10-30 02:00–03:00：**完整环境重跑 —— 四补丁全应用，但 `stats=0` 且崩溃在 connect 之后**
+
+### 310.1 本次完整执行（不再复用旧客户端）
+
+```
+1. gs（--gamestate-map mp_crash_tropical --gamestate-gametype war）
+2. lsg（--allow-auth-tls，28969）—— 已确认端口被占用（在监听）
+3. 客户端（--reuse-runtime r107flow --local-auth-lsg --loopback-tcp-guard）
+4. patch_retry_ms --ms 0     applied=true
+5. drive_login_state_machine
+6. 四个补丁，全部 match=True：
+     0x5C238A  0F 84 83 00 00 00 -> 90×6       （绕过查找失败）
+     0x5C23AA  74 67             -> 90 90        （绕过 0x674740 失败）
+     0x5C2303  0F 8C 0A 01 00 00 -> 90×6        （net_state>=7 门控）
+     0x5C23FF  8D 90 00 FE FF FF -> 31 D2 90..   （序列号窗口）
+7. 装 0x473A50 / 0x49E600 hook + fastfile 收集器
+8. 前台跑 forward --seconds 45
+```
+
+### 310.2 结果
+
+```
+gs:  in/connect 1 + in/getchallenge 2 + in/oob 3
+     out/fragment 7 + out/oob 3
+     stats = 0
+
+客户端：stop_reason = "unhandled_exception"，child_terminated
+时间：launch.out 最后写入 01:29:24，gs.jsonl 最后写入 01:29:25（几乎同时）
+```
+
+### 310.3 解读
+
+- 客户端**发出了 `connect`**（gs 收到），gs 也回了 `connectResponse` 并下发了 7 个 gamestate 分片；
+- 但客户端**从未发出 `stats`**；
+- 崩溃与 gs 最后活动几乎同时 ⇒ **崩溃发生在处理 `connectResponse` / gamestate 的阶段**。
+
+**这与 `[0xC7341DB]` 未被清直接相关**：标志为 1 时 `0x5BF3E0`
+跳过连接身份初始化 ⇒ 6 个键恒为 0 ⇒ `0x674EB0` 比较失败。
+
+**注意**：Round 49 加的"绕过比较失败"补丁（`0x5C238A`/`0x5C23AA` → nop）**已经应用**，
+但 `stats=0` 说明客户端根本没走到 `CLpacketEvent` 的 netchan 分支 —— 它在更早的阶段就崩了。
+
+### 310.4 结论：两个条件必须同时满足
+
+| 条件 | 状态 |
+|---|---|
+| 四个补丁（绕过比较失败 + net_state>=7 + 序列号窗口） | ✅ 已验证匹配并写入 |
+| `[0xC7341DB] = 0`（让连接身份初始化执行） | ❌ 本次未做 |
+
+Round 44 的 r264（`flag=0`）曾让 `stats` 出现 7 次，那次**没有**这四个补丁；
+本轮有四个补丁但 `flag≠0`。**两者从未同时成立过。**
+
+### 310.5 下一轮：把两者合到一次实验
+
+```
+1. 全套启动（gs / lsg / 客户端）
+2. patch_retry_ms + 四个补丁
+3. 装 hook + fastfile 收集器
+4. **前台启动 forward（先于 arm）**
+5. **写 [0xC7341DB] = 0 并立即 arm net_state = 3**（不留时间差）
+6. 观察 stats / ParseServerMsg / gate / keys / ff 列表
+```
+
+**关键**：`flag` 的清零必须在 `forward` 已就绪、且**紧接着** arm 完成，
+避免 Round 46 观察到的"45 秒后被改回 1"。
+
+### 310.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 50 | 查清 forward 报错真相；四补丁就位但缺 gs |
+| **51** | **完整环境重跑：四补丁全部 match=True、gs 收到 connect 并下发 gamestate×7，但 `stats=0`、崩溃在 connect 之后 ⇒ 缺 `flag=0`；两个条件从未同时成立** |
