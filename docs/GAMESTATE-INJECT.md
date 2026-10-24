@@ -827,3 +827,39 @@ OOB 分支之后：
 1. 用 `--main-call` 调用 `0x813CF0` 所在函数（先找入口），让 `net_state=7`；
 2. state 7 后再发 gamestate（小包、大 seq），验证 `0x473420` / `0x472D80` 是否终于命中；
 3. 注意 `0x813D11` 会先 CL_Shutdown/CL_Init，可能重置已注入的连接对象——需要在其后重新注入/连接。
+
+## 30. 2026-10-24 16:45–17:00：强改 state=7 会被复位；应走 CL_Init
+
+### 30.1 poke `net_state=7`
+
+在 `state=4` 时直接把 `0x76446B0` 写成 7（`poke_code.py` 回读确认 `04→07`）：
+
+| 时间点 | state | 结果 |
+|---|---|---|
+| poke 后立即 | 7 | — |
+| 1 秒后 | **0** | 状态机把它复位 |
+| 之后 10 秒（gs 已发 gamestate+snapshot） | 0 | `Dispatch=0`、`GamestateParse=0` |
+
+→ **强改状态不够**：客户端状态机在下一帧就修正/重置，包仍然被丢弃。
+
+### 30.2 正路：调用 CL_Init 路径
+
+`0x813C20`（函数入口，`0x813D34` 写 state=7 的那段就在其中）内部是
+`0x5C8A70`（CL_Shutdown）→ `0x5C83D0`（CL_Init）→ `mov state,7`，是客户端自己认可的
+"连接初始化完成"路径。
+
+尝试用 launcher 的 `--main-call 0x813C20` 调用它，但参数拼接失败：
+
+```
+launch_1649370.py: error: unrecognized arguments: -- +set 2439 0 ...
+```
+
+原因：`--cbuf-command "echo cl_init_probe"` 的空格值被 shell 拆开，`cl_init_probe` 溢出成位置参数。
+下一轮改用 `--cbuf-command=echo`（等号、无空格）或直接写一个调用脚本（复用
+`ring_bridge_1649370.Client.invoke_sequence([{"target":0x813C20,"args":[]}])`）。
+
+### 下一步
+
+1. 用 `ring_bridge` 的 `Client.invoke_sequence` 在主线程调用 `0x813C20`（不依赖 launcher 参数）；
+2. 调用后立即 inject + connect + gs + pump，验证 `net_state` 是否保持 7、`Dispatch` 是否命中；
+3. 若 CL_Init 重置了连接对象，则在 CL_Init 之后重新执行 inject/connect。
