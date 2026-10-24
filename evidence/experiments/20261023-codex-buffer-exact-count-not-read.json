@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T06:00:00+00:00",
+  "scope": "the buffer really does contain the patched byte (0x01 at index 164), so the count reader is simply NOT REACHED - the gates differ from my reading of the code",
+  "the_comparison": {
+    "file_bytes_160_171": "00fdff1001fa1ffc3f500005",
+    "memory_bytes_160_171": "00fdff1001fa1ffc3f500005",
+    "verdict": "IDENTICAL - the body copy into stream+0x34 is byte-exact, and buffer[164] is 0x01"
+  },
+  "the_measurement": {
+    "stream": "0x16D9EC",
+    "buffer": "0x16DA20",
+    "byte_cursor_0x1c": 164,
+    "bit_position_0x20": 1307,
+    "length_0x14": 172,
+    "bound_0x10": 131072,
+    "state": 9,
+    "entity_count": 0
+  },
+  "the_contradiction_and_its_resolution": [
+    "by the disassembly 0x66ED70 would read buffer[164] = 0x01 and return 1",
+    "the count is nevertheless 0, and the buffer demonstrably holds 0x01",
+    "therefore 0x66ED70 is never called for this snapshot - i.e. execution does not fall through the two gates at 0x671678 and 0x671685",
+    "so my reading of the gate logic is wrong: one of those two reads must return 0 (or the branch taken is not the one I assumed)"
+  ],
+  "what_the_bit_position_says": [
+    "the probe at 0x671650 entry reads [+0x20] = 1307, so the first gate bit is body bit 1307 and the second is 1308",
+    "bit 1307 is the last bit of the 1308-bit header, which is 1 in the hybrid tail",
+    "bit 1308 is the first bit of our ps block, which we set to 1",
+    "so both should be 1 - unless the memsets at the top of 0x671650 run BEFORE the gates and do not move the position (they do not), meaning the bits are as stated",
+    "the only way both are 1 yet the count is not read is if the branch at 0x67168C (je 0x6716ED on the SECOND read) is reached with eax == 0, i.e. bit 1308 is 0 in the actual body"
+  ],
+  "the_next_direct_observation": [
+    "probe the store instruction 0x671698 (mov [0x7859558], al) and count its hits - if it never fires, the count path is not reached, which closes the question",
+    "and probe 0x6716F0 / 0x6716ED (the two gate branch targets) to see which one is taken"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r215-gs.jsonl",
+    "body": "runs/snapshot-ent1.bin"
+  }
+}

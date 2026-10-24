@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Buffer is byte-exact (0x01 at 164) yet count is 0: the count reader is never reached]**
+> Memory at stream+0x34 bytes 160..171 equals the file exactly, so body[164]=0x01 is in place. Bit position 1307, byte cursor 164, length 172, bound 131072, state 9, count 0.
+> By the disassembly 0x66ED70 would return 1. So it is never called: one of the two gates returns 0. Next: probe the store 0x671698 and the two gate targets 0x6716ED / 0x6716F0.
+> Evidence: [buffer exact, count not read](evidence/experiments/20261023-codex-buffer-exact-count-not-read.json).
 > **2026-10-23 [+0x10] = 131072, so the bound check is not the blocker]**
 > Full cursor: b8 = 0x16DA20 (stream+0x34), b10 = 131072, b14 = 172, b1c = 164, b20 = 1307, count 0. Since 164 < 131072 and 164 < 172, buffer[164] IS allowed to be read.
 > Remaining suspects: the buffer content is not our patched byte, or the count read uses an earlier frame, or the gates are not at 1307/1308. Next: dump memory at stream+0x34+164 during the probe.

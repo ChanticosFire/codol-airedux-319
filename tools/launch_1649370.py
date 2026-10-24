@@ -2858,9 +2858,12 @@ def main(argv=None) -> int:
                     vals.append(struct.unpack("<I", raw)[0])
                 n = getattr(self, "_cursor_count", 0)
                 if n < 12:
+                    buf = vals[0]
+                    raw = self.process.read(buf + 160, 12) if buf else b""
                     self.record({"cursor": {"esi": hex(esi), "b8": hex(vals[0]), "bc": hex(vals[1]),
                                             "b10": vals[2], "b14": vals[3], "b18": vals[4],
-                                            "b1c": vals[5], "b20": vals[6], "b24": vals[7], "n": n}})
+                                            "b1c": vals[5], "b20": vals[6], "b24": vals[7],
+                                            "bytes160_171": raw.hex(), "n": n}})
                 self._cursor_count = n + 1
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"cursor_error": f"{label}: {error}"})
