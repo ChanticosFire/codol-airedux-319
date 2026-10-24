@@ -11128,3 +11128,70 @@ state: ui=0  net=0  table=1135  stage=5
 |---|---|
 | 17 | 三个 C++ 处理都不加载地图 → 指向 UI 层 `ui_mapname` |
 | **18** | **拿到 `ui_mapname` 的 dvar 地址/结构/只读特性，确认其值是 `mp_ui_viewer`，并验证"直接写 +0x0C"可绕过 ROM 限制；但需在 `net_state=5` 时做才有效** |
+
+## 281. 2026-10-28 20:00–21:00：**`ui_mapname` 的 dvar 地址跨进程固定为 `0x80FC008`**
+
+### 281.1 关键发现：地址是静态的
+
+两次完全独立的客户端启动（Round 18 的 pid 29888、本轮的 pid 28540），
+`Dvar_FindVar("ui_mapname")`（`0x76F190`）都返回 **`0x80FC008`**。
+
+直接读取该地址：
+
+```
+dvar @ 0x80FC008
+  +0x00 = 0x00DB2F98   -> "ui_mapname"
+  +0x08 = 0x00000107   （含 DVAR_ROM = 0x100）
+  +0x0C = 0x078BF5EC   -> "mp_ui_viewer"     ← 当前值
+state: ui=5  net=0  table=1135
+```
+
+**结论：这个 dvar 是静态分配的，地址可以硬编码，不必每次调用 `Dvar_FindVar`。**
+
+这让"改写 `ui_mapname`"变成一个**一个 dword 写入**的操作，不再依赖跨进程调用。
+
+### 281.2 本轮踩到的坑（记录下来避免重复）
+
+- `subprocess.run(..., capture_output=True, text=True)` 在中文 Windows 上默认用 GBK
+  解码子进程输出，`remote_call_1649370.py` 的 JSON 里含有中文路径时解析失败，
+  表现为 `remote_call output: (空)`，进而 `dvar = None`。
+  **修法**：显式 `encoding="utf-8", errors="replace"`。
+- 用"扫描 `0xDB2F98` 的 dword"来找 dvar 也失败了：分段 `ReadProcessMemory`
+  在部分页上失败，导致漏检。**直接读固定地址更可靠。**
+
+### 281.3 本轮未达成的一步：`net_state` 又掉回 0
+
+组合脚本启动时读到 `initial: ui=5 net=0 table=1135`，
+说明后台 `forward` 启动后连接已被重置，没能在 `net_state=5` 期间执行改写。
+
+原因与 Round 10 相同：只有在 `forward --start-challenge` 活动的**那几十秒**内
+`net_state` 才是 5，脚本的等待窗口与 `forward` 的启动时机没有对齐。
+
+### 281.4 下一步（把时机对齐，动作已全部就绪）
+
+现在三件事都已确定：
+
+| 项 | 值 | 来源 |
+|---|---|---|
+| 推到 `net_state=5` 的触发 | `forward --start-challenge` + `patch_retry_ms --ms 0` | Round 9/11 实证 |
+| `ui_mapname` dvar 地址 | **`0x80FC008`（固定）** | Round 18/19 |
+| 绕过 ROM 写值 | 写 `dvar+0x0C = <指向 "mp_crash_tropical" 的指针>` | Round 18 实证 |
+| 字符串落点 | `0xC7AF590`（可写缓冲） | 多次实证 |
+
+下一轮按严格顺序执行：
+
+1. 启动 → `patch_retry_ms` → 登录 → 写 `net_state=3`；
+2. **把 `"mp_crash_tropical"` 预先写进 `0xC7AF590`，并把 `[0x80FC008+0x0C]` 指过去**
+   （在连接建立前就改好，避免再抢时机）；
+3. 立刻 `forward --start-challenge`；
+4. 在多轮采样中观察 `table` 是否从 0 增长、`ui_state` 是否离开 5。
+
+**与上轮的区别**：这次是"先改 dvar、后建连接"，不再依赖"在 net=5 的窗口内写入"。
+
+### 281.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 17 | 三个 C++ 处理都不加载地图 → 指向 UI 层 `ui_mapname` |
+| 18 | 拿到 dvar 结构/只读特性，值 = `mp_ui_viewer` |
+| **19** | **dvar 地址跨进程固定 `0x80FC008` —— 改写退化为一次 dword 写入，时机问题可用"先改后连"绕开** |

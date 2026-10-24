@@ -18759,3 +18759,7 @@ lobby          = 0x37E19850
 > **2026-10-28 19:00–20:00【🎯 拿到 ui_mapname：Dvar_FindVar(0x76F190,"ui_mapname")→dvar@0x80FC008；结构 +0x00=name、+0x08=flags 0x107(含 DVAR_ROM 0x100)、+0x0C=当前值、+0x1C=默认值；实测当前值 = "mp_ui_viewer"（大厅界面）不是地图。Dvar_SetString 被 ROM 拒绝(返回 0xFFFFFA00)，但直接写 +0x0C 指针可绕过（已验证值变成 mp_crash_tropical）。但当时 net=0(连接超时)，UI 不在进图流程，所以不触发加载】**
 >
 > 下一步组合两件已验证能力：①forward --start-challenge + patch_retry_ms 推到 net_state=5 ②在 net=5 期间用 Dvar_FindVar 拿指针后写 +0x0C 指向 "mp_crash_tropical"，然后观察 table 是否从0增长、ui 是否离开5。
+
+> **2026-10-28 20:00–21:00【🎯 ui_mapname 的 dvar 地址跨进程固定 = 0x80FC008（两次独立启动 Dvar_FindVar 都返回它），结构 +0x00="ui_mapname"、+0x08=0x107(ROM)、+0x0C=当前值"mp_ui_viewer"。改写退化为一次 dword 写入，不必每次调 Dvar_FindVar。另记录两个坑：①subprocess text=True 在中文 Windows 用 GBK 解码导致 remote_call 输出为空，需 encoding="utf-8",errors="replace" ②分段扫描找 dvar 会因部分页读取失败而漏检，直接读固定地址更可靠】**
+>
+> 下轮改顺序：先把 "mp_crash_tropical" 写进 0xC7AF590 并把 [0x80FC008+0x0C] 指过去（建连接前就改好），再 forward --start-challenge，观察 table 是否从0增长、ui 是否离开5。
