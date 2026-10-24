@@ -1,10 +1,13 @@
-"""Poll the client's weapon-definition counter and log every change.
+"""Poll the client's weapon-definition counters and log every change.
 
     python tools/watch_weapon_count.py --seconds 40 --interval 0.2
 
-`0x1988634` is incremented by 0x42F432 whenever a composite weapon definition is
-created.  Watching it during a real connect shows whether the client ever reaches
-demo's expected 1224 definitions or stops at 1135 (which causes error 181).
+Two globals matter for error 181:
+  * 0x1988634 - composite weapons created during *this* connection (0x42F432)
+  * 0x827F738 - size of the pre-registered weapon string table (0x42F2F0)
+
+Watching both during a real connect shows whether the pre-registered table ever
+reaches demo's expected 1224 entries or stops at 1135.
 """
 from __future__ import annotations
 
@@ -22,6 +25,7 @@ k32.OpenProcess.restype = W.HANDLE
 k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
 
 COUNTER = 0x1988634
+TABLE_COUNT = 0x827F738
 NET_STATE = 0x76446B0
 UI_STATE = 0x84ABA50
 
@@ -55,22 +59,26 @@ def main() -> int:
     last = None
     start = time.time()
     peak = 0
+    peak_table = 0
     while time.time() - start < args.seconds:
         count = u32(COUNTER)
+        table = u32(TABLE_COUNT)
         net = u32(NET_STATE)
         ui = u32(UI_STATE)
         if count is not None:
             peak = max(peak, count)
-        key = (count, net, ui)
+        if table is not None:
+            peak_table = max(peak_table, table)
+        key = (count, table, net, ui)
         if key != last:
             last = key
             row = {"t": round(time.time() - start, 2), "weapon_count": count,
-                   "net_state": net, "ui_state": ui}
+                   "table_count": table, "net_state": net, "ui_state": ui}
             rows.append(row)
             print(json.dumps(row), flush=True)
         time.sleep(args.interval)
-    summary = {"samples": len(rows), "peak": peak, "events": rows}
-    print(json.dumps({"peak": peak, "samples": len(rows)}), flush=True)
+    summary = {"samples": len(rows), "peak": peak, "peak_table": peak_table, "events": rows}
+    print(json.dumps({"peak": peak, "peak_table": peak_table, "samples": len(rows)}), flush=True)
     if args.output:
         open(args.output, "w", encoding="utf-8").write(json.dumps(summary, indent=1) + "\n")
     return 0

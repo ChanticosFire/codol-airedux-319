@@ -2582,3 +2582,36 @@ table_count = 0   table_idx = 0   表项 1..5 全 null
 1. 在 **state 7→8 之间**（gamestate 处理前）读 `0x827F738` 与表项，确认 1135 是否已就位；
 2. 在 demo 播放路径同一时刻读相同全局，对比是否 1223；
 3. 若 demo 侧确实多 88 个，顺着 `0x42F360` 循环的 `0x431A60` 解析路径找它们从哪个资源注册。
+
+## 82. 2026-10-25 07:40–08:00：**决定性数据 —— 武器表在 gamestate 时重建，只到 1136（demo 要 1224）**
+
+`run_match` 后台 + 扩展后的 `watch_weapon_count.py`（同时采 `0x1988634` 与 `0x827F738`）：
+
+```
+t=0.00   weapon=0  table=1135  net=0  ui=5   ← 启动后预注册表已有 1135
+t=8.22   weapon=0  table=1135  net=5  ui=5
+t=9.02   weapon=0  table=1135  net=7  ui=5
+t=18.24  weapon=0  table=0     net=8  ui=5   ← gamestate 处理：表被清空
+t=19.24  weapon=0  table=676   net=8  ui=5   ← 重建中
+t=19.44  weapon=1  table=1136  net=8  ui=5   ← 重建完成 = 1136，随即 181 错误
+t=23.45  weapon=1  table=0     net=0  ui=5   ← 清空
+t=25.65  weapon=0  table=581   net=0  ui=5
+t=25.85  weapon=0  table=1135  net=0  ui=5   ← 回到 1135
+peak_table = 1136
+```
+
+### 82.1 结论
+
+1. **启动后预注册表 = 1135**（`0x827F738`）；
+2. gamestate 到达时**表被清空（0）并按 gamestate 内容重建**；
+3. 重建只到 **1136**（1135 + 本次新建 1），而 demo 要求 **1224**；
+4. 所以"缺 88 个"发生在**重建阶段**——服务端 gamestate 提供的武器来源比 demo 少 88 个。
+
+### 82.2 下一步（方向已明确）
+
+1. 在 **demo 播放**路径做同样采样：看表从多少重建到多少（预期 1224），
+   确认 demo 的 gamestate 比服务端多出 88 个来源；
+2. 对比 `gamestate-network-ffb56d7e-6411.bin` 与 demo 原始 gamestate
+   （`gamestate-stream-6407.bin`）的 configstring 差异（7184–7218 之外还有哪些）；
+3. 把缺的 configstring 补进服务端 gamestate（用 `build_native_gamestate` 或直接拼接），
+   使重建结果达到 1224。
