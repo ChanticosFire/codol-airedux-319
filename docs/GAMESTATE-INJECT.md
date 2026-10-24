@@ -7231,3 +7231,38 @@ if gametype == "spy"     -> load common_gametype_spy
 demo 的 gametype 也是 `war`，但 demo **确实加载了** `common_gametype_mp` ——
 说明 demo 路径**不靠 gametype 选包**（`CL_PlayDemo` 走另一条分支）。
 这正好解释了为什么"demo 能进、服务端不能"。
+
+## 207. 2026-10-27 21:00–21:30：`gametype=mp` 实验 —— login 成功但 connect 未走通（net 卡 4）
+
+### 207.1 结果
+
+```
+alive_after_login = True
+table_before = 1135                      ← login 正常（环境恢复）
+t+3s / t+8s / t+15s: ui=5  net=4  table=1135
+alive_final = True                       ← 未崩溃
+gs 日志：('meta','start') 1、('in','inband') 17   ← **没有 connect**
+fwd.err：空
+trace: 无 gametype 相关请求
+```
+
+### 207.2 与 r159 的差异
+
+| 项 | r159（成功到 net=7） | r173（本次） |
+|---|---|---|
+| login | 成功 table=1135 | 成功 table=1135 |
+| connect | **走通（net 4→5→7）** | **未走通（net 停 4）** |
+| gs 收到 connect | 是 | **否** |
+| 额外参数 | 无 | `--gamestate-gametype mp`、`--trace-files` |
+
+### 207.3 待排查
+
+1. `--gamestate-gametype mp` 是否影响了 connect 阶段（不太可能，它在 gamestate 之后）；
+2. `--trace-files` 是否影响时序；
+3. forward 是否真的连上了（fwd.err 空，但 gs 无 connect）；
+4. 可能是随机性（之前也有过 forward 启动失败的先例）。
+
+### 下一步
+
+去掉 `--gamestate-gametype`/`--trace-files`，用与 r159 完全相同的参数重跑一次，
+确认 connect 能走通，再逐步加 `--gamestate-gametype mp`。
