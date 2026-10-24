@@ -3348,3 +3348,39 @@ load_fastfile → returned_eip="timeout"、state=0、alive=false
 2. 若成功，表应从 1135 涨到 1223+，再让 run_match 继续 connect + gamestate，
    观察 181 是否消失；
 3. 若该窗口仍崩，改在 demo 播放路径做对照（demo 播放到 state 10 后、地图加载前调用）。
+
+## 103. 2026-10-25 16:30–17:00：**load_fastfile 在正确窗口（表=1135）仍 timeout —— 手工调用 0x49E160 不可行**
+
+### 103.1 r134（精确卡窗口）
+
+监控 `runs/r134-run.out` 的 `[run_match] blocking ring-a` 里程碑（login 完成、connect 前）：
+
+```
+milestone 'blocking ring-a' at 18:07:39
+table_now = 0x46F = 1135        ← 时机正确
+load_fastfile common_gametype_mp →
+  status=null, returned_eip="timeout", state=0, alive=false（客户端退出）
+```
+
+→ **即使表已到 1135、客户端空闲，`0x49E160` 仍 timeout**。
+
+### 103.2 结论
+
+`0x49E160`（Com_LoadFastfiles）**不能被 `invoke_sequence` 的 cave 手工调用**：
+它内部有 `[0x7886E6C]` 比较、`0xBEAA80` / `0xC04BD0` 调用，且可能要求
+"游戏主循环的合法调用栈/全局状态"，cave 环境不满足 → 挂起。
+
+**放弃"手工加载 fastfile"路线。**
+
+### 103.3 转向：补 configstring（可行方向）
+
+- 武器表 `0x1988B50` 由 `0x431810`（创建复合武器）填充；
+- `0x431810` 的输入是 **`** <idx> 0 0 <components>` 形式的字符串**；
+- 这 42 个复合字符串 + 88 个 gametype 武器名，可以作为 **configstring** 补进 gamestate；
+- `build_native_gamestate(configstrings=...)` 支持自定义 configstring 列表。
+
+### 下一步
+
+1. 从 demo 的 1266 个武器名里取出 88 个 gametype 武器名 + 42 个复合字符串；
+2. 用 `build_native_gamestate` 构造含这些 configstring 的 gamestate（索引 7184 起）；
+3. 下发后观察表是否从 1136 涨到 1224+，181 是否消失。
