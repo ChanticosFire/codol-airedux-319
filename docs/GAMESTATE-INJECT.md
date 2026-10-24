@@ -4464,3 +4464,49 @@ peak_table = 1136
 2. 解析出 1400 个 asset 条目的 `{type, offset, size, name}`；
 3. 评估"把 88 个 asset 的二进制块搬运进 `common_mp.ff` 并重建目录"的可行性
    （需要重排所有后续 offset，工作量大但纯离线可验证）。
+
+## 132. 2026-10-26 07:00–07:30：**zone 结构完整解析（validate_zone 可直接复用），B1 路线可行**
+
+### 132.1 zone 布局（`validate_zone` 源码）
+
+```
++0x00  u32  zone_size          （必须 == len(zone) - 0x28）
++0x28  u32  string_count
++0x30  u32  asset_count
++0x38  string table            （string_count 个指针；0xFFFFFFFF = 内联 NUL 串）
+        asset directory        （asset_count × 16 字节 = {type, offset, pointer, extent}）
+        asset data             （紧排，每项 extent 字节；offset + 0x28 == 期望位置）
+```
+
+### 132.2 实测（common_gametype_mp.ff 的 zone）
+
+```
+size            = 49,877,939
+@0x00           = 49,877,899  (= size - 0x28 ✅)
+@0x28 string_count = 773
+@0x30 asset_count  = 1400
+directory_offset   = 14,653
+type_counts = {2:212, 4:102, 5:180, 9:26, 11:538, 25:3, 27:15, 28:85, 30:185, 36:17, 37:16, 41:7, 44:14}
+条目格式 = {index, type, offset, size, pointer}
+```
+
+→ **修正 §131**：`@0x28=773` 是 string_count（不是"依赖数"），`@0x30=1400` 是 asset_count。
+
+### 132.3 B1 合并方案（可行）
+
+1. 从 `gametype` zone 精确取出 88 个武器 asset 的二进制块（用 `asset_entries` 的 offset/size）；
+2. 把它们**追加**到 `common_mp.ff` 的 zone 数据末尾；
+3. **重排目录**：`asset_count += 88`，新目录每项 `{type, offset+0x28, 0xFFFFFFFF, extent}`，
+   offset 按顺序累加（首个 = 目录末尾）；
+4. `@0x00` 更新为新 len - 0x28；`string_count` 不变；
+5. 用 `ff_resign.py` 重签。
+
+**风险**：asset 内部可能有 `pointer`（0xFFFFFFFF 表示无外部引用）与 zone 内部交叉引用；
+被搬运的 asset 若引用了 gametype zone 里的其他 asset，`common_mp` 里没有 → 加载时可能出问题。
+需先挑**独立**的武器 asset（不引用其它 asset 的）。
+
+### 下一步
+
+1. 写 `tools/zone_merge.py`：读两个 zone，按上面的格式合并 + 输出新 zone；
+2. 先做**空合并**（不加 asset，只重建目录）验证格式自洽（`validate_zone` 应受理）；
+3. 再做"加 1 个 asset"的最小合并，最后批量 88 个。

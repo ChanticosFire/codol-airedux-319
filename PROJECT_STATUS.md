@@ -18163,3 +18163,7 @@ lobby          = 0x37E19850
 > **2026-10-26 06:30–07:00【zone 数据头初步解析：asset_count 在 +0x2C（0x578=1400）】** 
 >
 > zone 头 64 字节：@0=zone size、@0x24=0x305、**@0x2C=0x578=1400（asset_count，与 decode 报告一致）**、@0x28/0x30=-1。→ 下一步读 `validate_zone` 复用 directory 解析，拿到 1400 个 asset 的 type/offset/size，再评估 88 个 asset 搬运进 common_mp 的可行性。
+
+> **2026-10-26 07:00–07:30【zone 结构完整解析（string_count@0x28=773、asset_count@0x30=1400、dir@0x38+strings*4）；B1 合并方案可行】**
+>
+> `validate_zone` 源码给出 zone 布局：0x00=size、0x28=string_count(773)、0x30=asset_count(1400)、0x38 起 string table、之后 asset directory（1400×16B {type,offset,pointer,extent}）、之后紧排 asset data（offset+0x28==期望）。修正 §131 的偏移。→ B1：取 88 个 asset 块 → 追加到 common_mp zone 末尾 → 重排目录（count+88、offset 累加）→ 更新 size → 重签。风险：asset 间交叉引用。下一步写 `zone_merge.py`，先做空合并验证格式。
