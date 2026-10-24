@@ -7181,3 +7181,53 @@ tail:   (5451, "\x970 0 0 1"), (5452, "\xf5+1259"), (5453, "\xfb\x05tag_player")
 对比两条路径的"加载列表构造函数"：
 - demo：`0x49E540`（构造 patch_/patch_localized_/... 四条目）
 - 服务端：需要找它构造列表的位置（可能在 `0x49E160`/`0x49F280` 附近）
+
+## 206. 2026-10-27 20:30–21:00：**🎯🎯 找到根因 —— 客户端按 gametype 选包，`war` 不在支持列表里**
+
+### 206.1 `0x49E540` 的 8 个调用点 = 8 种 gametype 的包名
+
+```
+0xDB60B4 -> "common_gametype_td"
+0xDB60C8 -> "common_gametype_mp"        ← 我们要的这个
+0xDB60DC -> "common_gametype_hostage"
+0xDB60F4 -> "common_gametype_asym"
+0xDB653C -> "common_gametype_clash"
+0xDB6554 -> "common_gametype_spy"
+```
+
+对应的 gametype 判定字符串：
+
+```
+0xDCE31C -> "hostage"
+0xDB2010 -> "clash"
+0xDC9484 -> "coop_"（前缀）
+```
+
+### 206.2 客户端逻辑（从代码结构推断）
+
+```
+if gametype == "td"      -> load common_gametype_td
+if gametype == "mp"      -> load common_gametype_mp
+if gametype == "hostage" -> load common_gametype_hostage
+if gametype == "asym"    -> load common_gametype_asym
+if gametype == "clash"   -> load common_gametype_clash
+if gametype == "spy"     -> load common_gametype_spy
+```
+
+### 206.3 🎯 根因
+
+**我们的 gametype 是 `war`** —— 不在上述 6 个里，
+所以客户端**不会加载任何 `common_gametype_*`**，
+导致武器表停在 1135（demo 是 1266），并触发 181 错误 / 后续崩溃。
+
+### 206.4 修复方案（极简）
+
+把服务端 gamestate 的 gametype 从 **`war`** 改成 **`mp`**（或 `td`/`hostage`/`asym`/`clash`/`spy`），
+客户端就会加载 `common_gametype_mp.ff`（runtime 里就有，34.7 MB），
+武器表应从 1135 → 1223+，181 消失。
+
+### 206.5 关键疑问
+
+demo 的 gametype 也是 `war`，但 demo **确实加载了** `common_gametype_mp` ——
+说明 demo 路径**不靠 gametype 选包**（`CL_PlayDemo` 走另一条分支）。
+这正好解释了为什么"demo 能进、服务端不能"。
