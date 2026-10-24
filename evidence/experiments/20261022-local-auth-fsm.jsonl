@@ -1,0 +1,2 @@
+{"body_len": 187, "body_sha256": "7fe6c678466b253402222ed4e0933d614bae38441c94e9f9bfa6598b29de790e", "connection_id": 2, "event": "auth_request", "headers": ["Host: 127.0.0.1:28969", "Accept: */*", "Content-Type: application/json", "X-TransactionID: 8989606786769114855", "Content-Length: 187", "Expect: 100-continue"], "request_line": "POST /auth/ HTTP/1.1", "requests": 1, "utc": "2026-10-22T01:53:52Z"}
+{"connection_id": 2, "event": "auth_response", "requests": 1, "response_len": 698, "status": 200, "utc": "2026-10-22T01:53:52Z"}

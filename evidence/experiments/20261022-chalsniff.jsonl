@@ -1,0 +1,25 @@
+{"body_len": 188, "body_sha256": "061809a9ba7d2508526d7259814735f66c7a9c5d30d4aaffaeeaf0518819f207", "connection_id": 2, "event": "auth_request", "headers": ["Host: 127.0.0.1:28969", "Accept: */*", "Content-Type: application/json", "X-TransactionID: 17437500062845839568", "Content-Length: 188", "Expect: 100-continue"], "request_line": "POST /auth/ HTTP/1.1", "requests": 1, "utc": "2026-10-22T06:32:05Z"}
+{"connection_id": 2, "event": "auth_response", "requests": 1, "response_len": 699, "status": 200, "utc": "2026-10-22T06:32:05Z"}
+{"body_hex": "c8000000c8000000d2000000dc00000000000800fee5804cdc44e79a", "body_len": 28, "body_sha256": "ce8878d0d9f2beda8b97923665d6f05bfda58571d498e3f7e82d3f2bbe0d366f", "connection_id": 3, "event": "plaintext_frame", "requests": 0, "utc": "2026-10-22T06:32:06Z"}
+{"connection_id": 3, "event": "gate_reply", "reply_hex": "160000000181dc0000008877665544332211f267fb6b2cc2e748", "requests": 0, "utc": "2026-10-22T06:32:06Z"}
+{"body_hex": "95000000ab820791fa0000009a7740a3f46eed7d07501f0000286fcd56abdfcd56531f000000000000406162042772bf67982b93b32b93030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008101820283038404850586068707880889098a0a8b0b8482000f06806d107baa246e324db793c", "body_len": 153, "body_sha256": "038b75a846cce535f1df681caab76bc9f8d9a8ed3c92ba63036a6e4bed8c6c4f", "connection_id": 3, "event": "plaintext_frame2", "requests": 0, "utc": "2026-10-22T06:32:06Z"}
+{"connection_id": 3, "event": "session_derived", "reason": "challenge_verified; client-memory-read=false", "requests": 0, "utc": "2026-10-22T06:32:06Z"}
+{"connection_id": 3, "event": "token_reply", "reply_hex": "0a0000000083fc0b8e79654d173d", "requests": 0, "utc": "2026-10-22T06:32:06Z"}
+{"body_hex": "7e000000ab8501000000b1b89eaf0d9a485c2afc9b5dfdc48a30d97a1c4d5fd4e9ecf9c48282f305627a28b5bf573f3d731ed9ebd67c4e2ae73811e671309d8db1a98d2d3b9c87ad5e7fffee4ac81eaf5046ba36900148fb2d87ece3bdb23219e6d26c77d586311250a60045179bd35915a6a73112b7ddae5abfe05b893755af55fa", "body_len": 130, "body_sha256": "1a7817db9e87856f1a9f311e7588b2ae791aad6570ed041e2698b2ddda4a6ea7", "connection_id": 3, "event": "client_frame", "requests": 0, "utc": "2026-10-22T06:32:06Z"}
+{"connection_id": 3, "event": "client_frame_verified", "reason": "counter=1 inner=0x86 payload_len=83", "requests": 0, "utc": "2026-10-22T06:32:06Z"}
+{"body_hex": "4703041308100000006e516c6f50306f435657523652444a531308100000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b089ecbe6011308000000001308000000001031432d38332d34312d43452d38442d454500", "connection_id": 3, "event": "task_request", "reason": "service=71 task=4 bytes=83 args=blob(16B),blob(16B),u32(31902622),blob(0B),blob(0B),str(\"1C-83-41-CE-8D-EE\")", "requests": 0, "utc": "2026-10-22T06:32:06Z"}
+{"connection_id": 3, "event": "candidate_task_reply", "reason": "svc71/task4 reference candidate; client consumption unverified", "reply_hex": "4e000000ab85010000008f63cb87e508d3871bf10e7614798c3a357b7995f004278c724c84e737b8c63826dc0d6b275fd24123909d2d39dd9b3281ff454a3de9c21ca5a95f776a40bbfdb4f094805ccc04dc", "requests": 0, "utc": "2026-10-22T06:32:06Z"}
+{"body_hex": "3e000000ab8502000000a38b36d0b1169854a11056c4d0b53ff68d6dab8baa76074c16d61eeb9ef73220a9152c4a072727c1573242a8f974fea8b04b0f97c607497d", "body_len": 66, "body_sha256": "9ee87c3039e1ee49ccf0562eca57035287126189a3eb5d9fdddd6b01e532c5d9", "connection_id": 3, "event": "client_frame", "requests": 0, "utc": "2026-10-22T06:32:23Z"}
+{"connection_id": 3, "event": "client_frame_verified", "reason": "counter=2 inner=0x86 payload_len=12", "requests": 0, "utc": "2026-10-22T06:32:23Z"}
+{"body_hex": "660305080200000003010302", "connection_id": 3, "event": "task_request", "reason": "service=102 task=5 bytes=12 args=u32(2),u8(1),u8(2)", "requests": 0, "utc": "2026-10-22T06:32:23Z"}
+{"connection_id": 3, "event": "candidate_empty_task_reply", "reason": "service=102 task=5 mode=error14; shape unverified", "requests": 0, "utc": "2026-10-22T06:32:23Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T06:32:36Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T06:32:53Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T06:33:06Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T06:33:23Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T06:33:36Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T06:33:53Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T06:34:06Z"}
+{"connection_id": 3, "event": "idle_control", "requests": 0, "utc": "2026-10-22T06:34:23Z"}
+{"connection_id": 3, "event": "zero_frame", "requests": 0, "utc": "2026-10-22T06:34:36Z"}
+{"connection_id": 3, "event": "raw_session_end", "reason": "ConnectionResetError:[WinError 10054] 远程主机强迫关闭了一个现有的连接。", "requests": 0, "utc": "2026-10-22T06:34:50Z"}
