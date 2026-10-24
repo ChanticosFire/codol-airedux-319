@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T01:00:00+00:00",
+  "scope": "patching body[164] did NOT change the entity count, because the two gate bits are read BEFORE the count and one of them fails",
+  "the_experiment": {
+    "body": "runs/snapshot-ent1.bin (single22 with byte 164 set to 0x01)",
+    "cursor_at_0x671650": {
+      "length_0x14": 172,
+      "start_0x18": 0,
+      "byte_cursor_0x1c": 164,
+      "sentinel_0x24": "0xFFFFFFFF"
+    },
+    "entity_count_byte": 0,
+    "entity_ids": "all zero",
+    "state": 9
+  },
+  "what_happened": [
+    "the byte cursor is still 164 and the length still 172, so the patched byte was in the right place for a BYTE read",
+    "but the count is still 0 - because 0x671650 reads TWO GATE BITS before it ever calls the count reader",
+    "and the state moved from 10 to 9, which proves the patched byte DOES participate in the parse - it just is not the count's source at this point"
+  ],
+  "the_conclusion": [
+    "the count cannot be reached until bit 1 (0x671678) and bit 2 (0x671685) both read as 1",
+    "our bodies fail one of those gates, so the count reader is never called",
+    "therefore the byte-164 experiment was premature: it tested a byte the decoder never asks for"
+  ],
+  "the_missing_piece": [
+    "the BIT cursor position at 0x671650 entry, which tells us exactly which two bits are the gates",
+    "the Cursor probe reads [+0x14], [+0x18], [+0x1C] and [+0x24] but none of those is the bit cursor",
+    "so the next step is to read 0x447190 (the bit reader) and find which stream field it advances"
+  ],
+  "next": [
+    "disassemble 0x447190 to identify the bit cursor field",
+    "then extend the Cursor probe to log it, which gives the exact bit indices of the two gates and, after them, of the count"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r211-gs.jsonl",
+    "body": "runs/snapshot-ent1.bin"
+  }
+}

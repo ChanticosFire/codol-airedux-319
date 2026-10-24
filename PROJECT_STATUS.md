@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Byte-164 patch did not change the count: the two gate bits come first]**
+> snapshot-ent1.bin (byte 164 = 0x01): cursor still 164, length 172, count still 0, state moved 10 -> 9. So the byte participates but is not the count source: 0x671650 reads TWO GATE BITS (0x671678, 0x671685) before calling the count reader.
+> So the gates must read 1 first. Missing piece: the BIT cursor field, which is not +0x14/+0x18/+0x1C/+0x24. Next: disassemble 0x447190 to find which field it advances.
+> Evidence: [gates before count](evidence/experiments/20261023-codex-gates-before-count.json).
 > **2026-10-23 [CURSORS MEASURED: entity count read from byte 164; byte cursor 164 vs bit cursor ~1350]**
 > Probe at 0x671650: stream 0x16D9EC, [+0x14]=172 (body length), [+0x18]=0, [+0x1C]=164 (byte cursor), [+0x24]=0xFFFFFFFF, state 10.
 > So the count comes from body[164]; the two cursors are independent. Next: patch body[164]=0x01 and read 0x7859558 - the entity list should become non-empty.
