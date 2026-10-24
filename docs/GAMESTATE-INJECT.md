@@ -5205,3 +5205,36 @@ after 6s:
    让正在跑的加载循环消费它；
 2. **改代码**：把 `0x49F280` 的调用点改成"启动时必跑一次"
    （例如在 `0x49ECB0` 的某处插 `call 0x49F280`，或用 exe patch 把某个早期调用替换）。
+
+## 152. 2026-10-26 17:00–17:30：**队列被成功消费（count 1 → 0）—— 加载机制打通，但表仍 1135**
+
+### 152.1 实验
+
+```
+1) inject_load_queue --name common_gametype_mp → count 0→1，name=0x3FD20000
+2) hook_queue_processor --target 0x7EF0D0 → patched=true（cave=0x3FD30000）
+3) 等 6 秒：
+   count = 0     ← 队列被消费！
+   table = 1135  ← 但武器表没变
+   alive = true  ← 不崩
+```
+
+### 152.2 意义
+
+- **首次让客户端主动处理我们的加载请求**（count 1 → 0，说明 `0x49F280` → `0x49ED40` 链路跑通）；
+- 客户端**没有崩溃**（`0x49F280` 无参数、内部有 count==0 早退，安全）；
+- 但目标包 `common_gametype_mp` **没有产生武器注册**（表仍 1135）。
+
+### 152.3 可能的失败点（3 个）
+
+| 环节 | 可能问题 |
+|---|---|
+| `0x49ED40(name, flags)` | flags=1 走 "patch" 路径（`0x776FA0`），而 `common_gametype_mp` 不是 patch 包 → 找不到 |
+| 文件探测 | 客户端请求的是 `patch_common_gametype_mp.ff`（不存在）→ 返回 -1 → 放弃 |
+| 加载成功但未注册 | 包被加载但 asset 未进入 `0x1988B50`（需要 gamestate 重建时机） |
+
+### 下一步
+
+1. 把 `--flags` 改成 **0**（普通路径，`0x776F00` 直接找 `common_gametype_mp.ff`）；
+2. 再注入一次 + 观察表；
+3. 若仍不变，加 trace 看 `common_gametype_mp.ff` 是否被 CreateFile 请求。
