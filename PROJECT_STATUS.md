@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [RESOURCE LAYER SETTLED: overlay is now all-true-461, and the client still stalls at ui_state 5]**
+> The .ifs concatenation idea was disproven (legal fastfile length is always 0x115 + N*0x2000; k-member concat gives (277k) mod 8192 which is 277 only for k=1). The old 41,648,405 mp_cross_fire.ff was a 2.6.9.7 ver-365 binary with one byte patched at 0x8.
+> Fixed the overlay: illegal common_gametype_mp.ff (34,783,232, mod=0) -> 34,693,397; mp_cross_fire.ff -> true-461 37,331,221. All 23 ff now mod 0x2000 == 277.
+> Run with that set: engine_ready True, net 8/9/10, count 1, but ui_state 5 and [+0x5E8] 3 unchanged. So resources are not the blocker.
+> Next: play a demo (mp_crash_tropical is a complete legal set in the overlay) to separate rendering from data.
+> Evidence: [overlay is true461 and still stalls](evidence/experiments/20261023-codex-overlay-is-true461-and-still-stalls.json), docs/IFS-MERGE-RESULT.md.
 > **2026-10-23 [HANDOFF for the next session]**
 > The goal objective now carries the whole state: established facts, the exact blocker chain (ui_state 5 <- status 2 <- [sub+0x5E8]==3, with writers and the 8-byte token check at [obj+0x5FC]), the demo/.ifs direction, and a five-step execution order. docs/NEXT-SESSION.md gives the resume phrase, the first offline task (rebuild the known-good 41,648,405-byte mp_cross_fire.ff from its .ifs packages), the two decisive demo-playback outcomes, six things not to repeat, and the single acceptance rule.
 > Goal revised to revision 7 with 512 rounds allowed; blocked on the round limit and disarmed, to be resumed by the next session.

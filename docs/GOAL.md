@@ -31,6 +31,14 @@
 
 已失败的杠杆：flags 字节 0x0C→0x08、覆盖全部 5 个内容块、推进 serverTime，均不能解除等待。
 
+## 资源层：已 settled（2026-10-24）
+
+`.ifs` 不是待拼接的碎片，而是「172 B 头 + CRLF 名单 + 16 B MD5 + 若干**完整签名 fastfile**」的容器。合法 fastfile 长度恒为 `0x115 + N*0x2000`（277 + N*8192）；k 个成员拼接后 `mod 0x2000 = (277k) mod 8192`，只有 k=1 等于 277（277 与 8192 互素），**所以拼接方案被结构排除**。`lf_*`/`lf_hi_*` 里 `IWff` 出现 0 次。
+
+原先 overlay 里的 `mp_cross_fire.ff`（41,648,405）是 **2.6.9.7 的 365 二进制**，只改了 `0x8` 一个字节（`0x6D→0xCD`）冒充 461。现已换成真 461（`37,331,221`，来自 `ff_init_mp_cross_fire_V70.ifs`，签名/哈希链/zlib 全通过，240 asset）。`common_gametype_mp.ff` 的非法版（34,783,232，`mod=0`）也已换成合法 34,693,397。
+
+**结果**：overlay 现在是**全真 461**，客户端正常启动、跑到 net 10、持有一个实体；但 `ui_state` 仍为 5、`[+0x5E8]` 仍为 3。**因此资源层不是卡点，可视为 settled**。（此前"换成 461 会崩"是启动器 30 秒超时误判。）
+
 ## 本阶段主线：用 2021-08 demo 复原对局
 
 `E:\GAME\COD\使命召唤OL\main\demo\` 有 **22 个停服当月真实对局 demo**（21 war / 1 cha），样本 `0C-2021-8-26[19-26-24]war.demo` 用地图 **mp_crash_tropical**、模式 war，含明文 configstring（如 `d 3635 UK_spawn_music_mp_crash_tropical`）、dvar、UI 事件与尾部 asset 清单，是缺失的"正确数据样本"。
@@ -43,11 +51,11 @@
 
 ## 下一步执行顺序
 
-1. 用 `ff_init_mp_cross_fire_V70.ifs` 加 lf_init/lf_hi 拼出 41,648,405 字节，与现有 `mp_cross_fire.ff` 逐字节对比，确定合并规则（纯离线，不必开游戏）。
-2. 同规则合并 crash_tropical 三个 .ifs（`ff_init_..._V73`、`lf_init_..._V21`、`lf_hi_init_..._V19`），落盘到 `offline-resources\client_shipretail\chinese\mp_crash_tropical.ff`。
-3. 启动客户端执行 `cl_demo_play <demo>`，用截图判定是否渲染出真实对局——这一步永久区分"渲染问题"与"数据问题"。
-4. 若播通，反汇编 demo 播放器取得帧格式（PlayDemo 字符串 VA 0x00DC5B98→代码文件偏移 0x0020967C、cl_demo_play VA 0x00DC5BA4→0x002096B1、PopulateLocalDemoFileInformation VA 0x00DC5BB8→0x0020977A；注意字符串位置是文件偏移而代码引用用 VA，必须经 section 表换算，否则会误判为"无引用"）。
-5. 从 demo 提取 gamestate→baseline→首帧快照的真实字节作为模板，套到 mp_cross_fire，由 server1649370 下发，用 `ui_state!=5` 加截图验收。
+1. **让客户端播 demo（最高优先，决定性）**：`mp_crash_tropical` 已是 overlay 里完整合法的真 461 三件套，22 个 demo 在 `E:\GAME\COD\使命召唤OL\main\demo\`。启动客户端（跳过 server/ring_bridge），执行 `cl_demo_play <demo>`。**出图 = 渲染与地图管线完好，缺的完全在服务端该发什么**；仍黑 = 该构建无法渲染此图，是硬限制。
+2. 若播通，抓 demo 播放期间的接收路径，或静态解析 demo 帧，取得帧格式（PlayDemo VA 0x00DC5B98→代码 0x0020967C、cl_demo_play VA 0x00DC5BA4→0x002096B1；字符串位置是文件偏移，代码引用用 VA，须经 section 表换算）。
+3. 从 demo 提取 `gamestate → baseline → 首帧快照` 的真实字节作为模板，套到 `mp_cross_fire`（或直接用 `mp_crash_tropical`），由 server1649370 下发。
+4. 用 `ui_state != 5` 加截图验收。
+5. 若 demo 路线不通，回到卡点 §5 的调用链：查 `[+0x5E8]` 如何离开 3（读 `0xBA3xxx` 那组处理，或找 `[obj+0x5FC]` 令牌比较之后的会话级消息）。
 
 ## 约束
 
