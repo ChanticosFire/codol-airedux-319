@@ -11674,3 +11674,65 @@ CL_ParseServerMessage (0x473A50)
 |---|---|
 | 26/27 | `CL_ParseGamestate` 无条件置 `net_state=8`，实测恒为 5 ⇒ 未执行 |
 | **28** | **找到 `CL_ParseServerMessage`（`0x473A50`）：`net_state==0` 直接返回；它的 `Netchan_Process`（`0x794380`）返回值决定后续是否解析** |
+
+## 289. 2026-10-29 04:00–05:00：**🎯 `CL_ParseServerMessage` 命中 0 次 —— 客户端从未解析任何服务端消息**
+
+### 289.1 实测
+
+三个 hook 全部装好（指令边界对齐：`0x473A50` 取 8、`0x473260` 取 6、`0x794380` 取 6），
+跑完整握手（`net_state` 稳定在 5、`table=0`）后读计数：
+
+```
+CL_ParseServerMessage 0x473A50 = 0     ← 从未执行
+CL_ParseGamestate     0x473260 = 0
+Netchan_Process       0x794380 = 0
+state: ui=5  net=5  table=0
+```
+
+### 289.2 这条观测把所有线索收束成一句话
+
+> **包能到客户端（Round 11 实测 `CLpacketEvent` 1808 次、`recvPump` 32451 次），
+> 但从来没有被送进 `CL_ParseServerMessage`。**
+
+于是：
+- `CL_ParseGamestate` 不会执行 → 不会把 `net_state` 置 8（实测恒为 5）✅
+- `0x5C0310` / `0x515340` 不会执行（count=0）✅
+- `0x49E600` 不会执行 → `[0x1C2B6CC]` 恒为 0 ✅
+- 地图/gametype fastfile 永不请求（ff 收集器只有 10 个）✅
+- `Com_Error` 零调用（不是出错，是根本没走到解析）✅
+
+**十几轮里所有看似独立的现象，全部由"消息没进解析器"这一条解释完了。**
+
+### 289.3 问题范围进一步收窄
+
+`0x473A50` 的调用者只有 `0x473BE8`（在它自己内部），而 `0x473A50` 自身的调用者
+还没查。链条上游还剩两层：
+
+```
+（未查）→ CL_ParseServerMessage (0x473A50) → CL_ParseGamestate (0x473260) → …
+   ↑
+CLpacketEvent (0x5C2260)   ← Round 11 实测被调用 1808 次，arg0 = 2
+   ↑
+接收泵 0x4F8D70（ring B 读出）
+```
+
+`CLpacketEvent` 明明被调用了 1808 次，却没有一次通向 `CL_ParseServerMessage`
+—— 说明它在**分派**阶段就把这些包处理掉了（或丢弃了）。
+
+### 289.4 下一步（唯一方向）
+
+1. **反汇编 `0x5C2260`（`CLpacketEvent`）**，看它对 `arg0` 的分派：
+   - 它接收的 `(type, data, len)` 里，哪种 type 会走 `CL_ParseServerMessage`；
+   - Round 11 记录的 `arg0 = 2` 对应哪个分支；
+2. **扫 `call 0x473A50`** 找到真正的调用者，确认它期望的调用条件；
+3. 若 `CLpacketEvent` 里存在"只有 OOB 才处理"的分支，则说明
+   `forward` 注入的 netchan 数据在分派层就被丢弃了 —— 那就需要
+   改成**按 netchan 包格式注入**（而不是简单地把字节写进 ring B）。
+
+### 289.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 26/27 | `CL_ParseGamestate` 未执行（`net_state` 恒为 5 而非 8） |
+| 28 | 找到 `CL_ParseServerMessage`（`net_state==0` 直接返回） |
+| **29** | **实测 `CL_ParseServerMessage` 命中 0 次 → 客户端从未解析任何服务端消息；问题定位到 `CLpacketEvent`（`0x5C2260`）的分派层** |
