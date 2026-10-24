@@ -936,3 +936,45 @@ CLConnectFail=0
    再调用 `0x813C20`；
 2. 或在 `0x813C20` 入口观察 eax/ecx 的期望值（从调用者 `0x813xxx` 反推）；
 3. 只有走到 `0x813D34` 才会写 `net_state=7`，这是后续处理 inband 包的前提。
+
+## 33. 2026-10-24 17:25–17:40：重大修正 —— `0x813C20` 是 CL_PlayDemo，不是 CL_Connect
+
+### 33.1 命名纠正
+
+`0x813C20` 的调用者（`0x814960`）在调用前用 `0x774900` 格式化字符串，格式串是：
+
+```
+0xDE72F0: 'demo/%s.demo'
+```
+
+→ `0x813C20` 是 **`CL_PlayDemo(name)`**：拼出 `demo/<name>.demo` 再走
+`CL_Shutdown(0x5C8A70) → CL_Init(0x5C83D0) → net_state=7(0x813D34)`。
+
+**所以 `net_state=7` 本来就是"demo 播放初始化"写的**，这也解释了：
+- demo 播放路径会进入 state 7（= 允许处理 inband 包）；
+- 之前 `cl_demo_play` 崩在 `g_gametype` dvar，根本没走到 `0x813D34`；
+- 我们在网络路线上怎么也进不了 7——因为那是 demo 路径。
+
+调用参数（从 0x814930 反推）：`eax=0`、`ecx=服务器/文件名字符串指针`、栈上一个 0。
+
+### 33.2 双补丁重试 demo
+
+同时 patch 两处 `g_gametype` 空指针：
+
+| 地址 | 原指令 | 补丁 |
+|---|---|---|
+| `0x432049` | `mov edx,[0x32AA908]; mov ecx,[edx+0xC]` | `EB 53 …`（跳 0x43209E 返回 true） |
+| `0x5A5AB0` | `mov eax,[0x32AA908]; mov esi,[eax+0xC]` | `EB 42`（跳 0x5A5AF4 跳过比较） |
+
+结果：`cl_demo_play` 注入后**不再立即崩**（此前 9 秒内必崩），但 10 秒后仍崩在
+`0xc0000005 @ 0x105`（`call [0]` 之类，空函数指针），`state` 仍为 1。
+
+→ 第二个 patch 跳过了 `[edi]`/`[edi+4]` 的初始化，可能让后续空指针调用；
+下一轮应改为"只把 `[0x32AA908]` 指向一个合法 dvar 替身"，而不是跳整段。
+
+### 下一步
+
+1. 构造最小 dvar 替身（name="g_gametype"、+0xC 指向 "war" 字符串），写进客户端内存并把
+   `0x32AA908` 指过去——两处解引用都会安全通过，不需要改代码；
+2. 然后再 `cl_demo_play`，验证 `net_state` 是否到 7；
+3. state=7 后立刻接 gamestate/snapshot，验证 `Dispatch/0x472D80` 是否终于命中。

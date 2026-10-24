@@ -17761,3 +17761,7 @@ lobby          = 0x37E19850
 > **2026-10-24 17:10–17:25【CL_Connect 分支未走到：eax/ecx 参数缺失】**
 >
 > 修正误读：`0x4F49E0` 是路径规范化函数（非服务器列表），`[0x76446A1]` 数组启动后已为 1。断点 `0x813C98`/`0x813D11` 在调用 `0x813C20` 后**均 0 命中** → 函数在更早处返回；原因是 `0x813C2D mov [0x826A9F0], eax` 把 eax 当 server 索引，而 `invoke_sequence(args=[])` 不设 eax/ecx。→ 下一步给 invoke_sequence 增加寄存器参数（eax=索引、ecx=上下文）后再调用。
+
+> **2026-10-24 17:25–17:40【重大修正：0x813C20 是 CL_PlayDemo，不是 CL_Connect】**
+>
+> `0x814960` 调用前用 `0x774900` 格式化，格式串 `0xDE72F0 = "demo/%s.demo"` → `0x813C20` 是 **CL_PlayDemo**（CL_Shutdown→CL_Init→`0x813D34` 写 `net_state=7`）。所以 state=7 本来就是 **demo 播放初始化**写的，这解释了之前网络路线怎么都进不了 7。双补丁（0x432049 跳 true、0x5A5AB0 跳比较）后 demo 不再立即崩，但 10 秒后崩在 `0xc0000005 @ 0x105`（空函数指针），state 仍 1。→ 下一步改为"构造最小 dvar 替身并改写 0x32AA908"，两个解引用都安全通过，再验证 demo 是否到 state=7。
