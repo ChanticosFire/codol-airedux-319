@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The real oracle is ui_state (0x84ABA50) = 5, not net_state == 10]**
+> At the capture moment: net_state 10, ui_state 5, count 1, id 4048, frame black with a spinner. ui_state 5 is the loading screen (0x8037D6 chooses it), so the world-visible condition is ui_state != 5.
+> The missing condition is therefore in the frontend's map-load completion (0x8018B0 / 0x803830 / 0x8037D6), not in the network layer or entity data.
+> Evidence: [ui state is the oracle](evidence/experiments/20261023-codex-ui-state-is-the-oracle.json).
 > **2026-10-23 [DECISIVE: state 10 + count 1 still shows a black screen with a loading spinner]**
 > Screenshot runs/codex-r231-shot.png captured at state 10 with count 1: uniformly black with a spinner bottom-right. So state 10 is a network value and does not mean cgame entered the world; the spinner is the real acceptance signal.
 > This invalidates state==10 as an oracle and redirects the work to what the spinner waits on (map load, clientNum/view entity, or a configstring).
