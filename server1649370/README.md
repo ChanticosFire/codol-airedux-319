@@ -1,10 +1,9 @@
 # server1649370
 
 A from-scratch game server for **CODOL Build 1649370** (3.19.26.22, the final
-shutdown build). It does not depend on the 2697 dedrun server: the client
-performs its own handshake, receives a native gamestate and a snapshot, loads
-`mp_cross_fire`, sits in the match, and is sent back to the lobby at the end of
-the configured match duration.
+shutdown build). It does not depend on the 2697 dedrun server. The client
+accepts its handshake, gamestate and snapshot, but a server-driven visible
+`mp_cross_fire` match has not yet been demonstrated.
 
 ## What works
 
@@ -12,28 +11,25 @@ the configured match duration.
 |---|---|
 | OOB handshake (`getchallenge` / `connect` / `stats`) | working |
 | Native gamestate (map, gametype, configstrings, checksum feed) | working |
-| Snapshot delivery, client reaches **state 10** (in match) | working |
+| Snapshot delivery, client reaches network state 10 | working |
 | Map selection (`--gamestate-map`) | working |
-| Automatic end of match (OOB `disconnect` after `--match-duration`) | working |
-| Return to lobby (client back to **state 0**) | working |
+| OOB `disconnect` after `--match-duration` | working |
+| Return to network state 0 | working |
 | Full server logging / observability | working |
-| Visible world (entities / camera) | **not possible on the wire** - see below |
+| Visible `mp_cross_fire` world driven by this server | open |
 
-## Known limitation: the visible world
+## Current acceptance criterion
 
-The client's snapshot parser has a global stream-error flag at `[cl_stream]`.
-The entity loop (`0x471D80`) has no count-based exit - it only stops when it
-reads past `length`, which sets that flag. Later blocks (`0x471980` playerState,
-`0x471010` actors, `0x471560`, `0x4475F0` glass) reset their own cursors before
-running, but the flag stays set, and `0x4724A5` (`cmp [esi], edi`) rejects the
-snapshot. That is why every body with an entity table (`A=1`) ends at **state 9**,
-while the empty body (`A=0`, 167 bytes) reaches **state 10**.
+Network state 10 only proves that the handshake finished. The target is
+`ui_state` (`0x84ABA50`) **different from 5** plus a screenshot showing
+`mp_cross_fire`. The current server path can hold an entity count of 1 while
+network state is 10, but `ui_state` remains 5 with a loading spinner.
 
-Evidence chain: `evidence/experiments/20261023-codex-error-persists.json`,
-`20261023-codex-count-positive-error.json`, `20261023-codex-a1-count0.json`.
+The 2021-08 real-match demo renders `mp_crash_tropical` in this same build.
+Its record format and snapshot bytes are being used to reconstruct the missing
+server-driven loading transition. See `docs/NEXT-SESSION.md` and
+`docs/SNAPSHOT-FORMAT-VERIFIED.md` for the verified state.
 
-A visible world would require a client-side change; it is out of reach from the
-protocol alone.
 
 ## Components
 
@@ -71,9 +67,10 @@ python tools/ring_bridge_1649370.py forward --target 127.0.0.1:28971 --bind-port
 python tools/ring_bridge_1649370.py connect --address 127.0.0.1:29000
 ```
 
-Expected sequence: `state 5` -> `state 9` (map load) -> **`state 10`** (in match)
--> after `--match-duration` seconds the server sends the OOB `disconnect` ->
-client returns to **`state 0`** (lobby).
+Observed network sequence: `state 5` -> `state 9` -> `state 10` -> after
+`--match-duration` seconds the server sends OOB `disconnect` -> `state 0`.
+This sequence alone does not establish that a visible match started or that
+the lobby UI returned; inspect `ui_state` and a screenshot for those claims.
 
 ## Diagnostics
 

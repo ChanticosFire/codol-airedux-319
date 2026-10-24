@@ -379,7 +379,7 @@ class GameServer:
             self.state.counters["inband_sent"] += 1
             self.log({"dir": "out", "kind": "single", "message": kind,
                       "to": f"{addr[0]}:{addr[1]}", "seq": seq,
-                      "length": len(data), "payload_head": payload[:32].hex()})
+                      "length": len(payload), "payload_head": payload[:32].hex()})
             return
         for index in range(count):
             chunk = payload[index * frag_size:(index + 1) * frag_size]

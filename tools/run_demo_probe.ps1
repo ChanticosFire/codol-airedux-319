@@ -55,6 +55,16 @@ Copy-Item -LiteralPath $demoSrc -Destination $demoDir -Force
 $probe.steps['demo'] = 'staged'
 
 # 4) 等 stage>=4 后注入（cbuf_command 自带等待与安全校验）
+# 离线壳不注册 g_gametype；先装入已验证的最小 dvar，避免 CL_PlayDemo 在
+# 0x43204F 解引用空的 [0x32AA908]。
+$fakeDvarOut = Join-Path $root "runs\$Name-fake-dvar.json"
+$clientDeadline = (Get-Date).AddSeconds(30)
+while ((Get-Date) -lt $clientDeadline -and -not (Get-Process -Name 'codol1649370-offline' -ErrorAction SilentlyContinue)) {
+    Start-Sleep -Milliseconds 300
+}
+python tools\fake_dvar.py --name g_gametype --value war | Set-Content $fakeDvarOut -Encoding UTF8
+$probe.steps['fake_dvar'] = (Get-Content $fakeDvarOut -Raw | ConvertFrom-Json).status
+if ($probe.steps['fake_dvar'] -ne 'ok') { throw "fake_dvar 注入失败：$fakeDvarOut" }
 $cbufOut = Join-Path $root "runs\$Name-cbuf.json"
 python tools\cbuf_command.py --command "cl_demo_play $Demo" --wait-stage --output $cbufOut 2>&1 |
     ForEach-Object { $_ } | Out-Null

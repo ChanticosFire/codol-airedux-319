@@ -17913,3 +17913,5 @@ lobby          = 0x37E19850
 > **2026-10-25 03:05–03:30【评估：服务端可打包；已产出社区报告与预览包】**
 >
 > 打包评估：`server1649370/` **零第三方依赖**（纯标准库），demo 解析四件套同样零依赖；`tools/` 其余工具与 launcher 依赖 capstone/pycryptodome/Pillow 与本地 `codol_rebuild` + 客户端，不适合分发。已产出：`docs/COMMUNITY-REPORT.md`（协议成果/数据管道/三大卡点/社区可帮忙项）、`runs/codol-1649370-server-community.zip`（195KB：游戏服 4 文件 + 4 个 demo 解析器 + 5 个真实快照模板 + 报告 + README）。包内 `gameserver --help` 与 demo 提取器均已验证可运行。
+
+> **2026-10-24 14:40–14:49【1649370 主线接手】**：按 docs/GOAL.md → NEXT-SESSION.md → DEMO-ANALYSIS.md → SNAPSHOT-FORMAT-VERIFIED.md 顺序复核，使用较新结论（IFS 不拼接、真 461 已就位）。`r88` 五包 loose + fake `g_gametype` 后真实 demo 可见 `mp_crash_tropical`、`ui_state=0`，截图 `runs/r88-shot.png`。服务端发出 gamestate/快照，但与 demo 并行，尚无“客户端采纳网络快照”的证据。demo `01` 后的 u32 已证实为递增记录序号，不是长度；快照导出器增加序号/边界并只保留 `svc_snapshot=0` 候选。修复 server 单包日志未定义变量，修正过时 README 验收表述。下轮先解 demo 真正边界与 gamestate/首帧顺序，再做 server-only 的 mp_cross_fire 图像验收。

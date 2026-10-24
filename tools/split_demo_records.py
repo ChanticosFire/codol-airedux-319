@@ -1,11 +1,10 @@
-"""Split a demo into records by locating every `01 <u32> <text-command>` header.
+"""Split a demo into records by locating every `01 <u32 seq> <text-command>` header.
 
     python tools/split_demo_records.py <demo> --output split.json --limit 8
 
-Record boundaries come from the text headers themselves (not from the len field,
-which appears to overlap the next record).  Everything between one header and the
-next is the binary payload carried with that command - for `p <n>` records this
-is the packet-entity blob of that frame.
+The u32 is a record sequence number, not a length. Record boundaries come from
+the next text header. Everything between the NUL and that header is the binary
+payload carried with the command; for `p <n>` it begins with a snapshot body.
 """
 from __future__ import annotations
 
@@ -32,24 +31,24 @@ def main() -> int:
         if data[pos] != 0x01:
             pos += 1
             continue
-        length = struct.unpack_from("<I", data, pos + 1)[0]
-        if not (0 <= length <= 0x20000):
+        sequence = struct.unpack_from("<I", data, pos + 1)[0]
+        if not (0 <= sequence <= 0x20000):
             pos += 1
             continue
         match = HEAD.match(data[pos + 5:pos + 5 + 64])
         if not match:
             pos += 1
             continue
-        headers.append((pos, length, match.group(1).decode(), match.end(), data[pos + 5:pos + 5 + match.end()]))
+        headers.append((pos, sequence, match.group(1).decode(), match.end(), data[pos + 5:pos + 5 + match.end()]))
         pos += 5 + match.end()
     blobs: list[dict] = []
     sizes: dict[str, list[int]] = collections.defaultdict(list)
-    for index, (offset, length, kind, text_len, text) in enumerate(headers):
+    for index, (offset, sequence, kind, text_len, text) in enumerate(headers):
         end = headers[index + 1][0] if index + 1 < len(headers) else len(data)
         blob = data[offset + 5 + text_len:end]
         sizes[kind].append(len(blob))
         if len(blobs) < args.limit and kind == "p":
-            blobs.append({"offset": offset, "len_field": length, "kind": kind,
+            blobs.append({"offset": offset, "sequence": sequence, "kind": kind,
                           "text": text.decode("latin-1", "replace"),
                           "blob_len": len(blob), "blob": blob[:48].hex()})
     summary = {k: {"count": len(v), "avg": round(sum(v) / len(v), 1) if v else 0,
