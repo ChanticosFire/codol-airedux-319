@@ -18171,3 +18171,7 @@ lobby          = 0x37E19850
 > **2026-10-26 07:30–08:00【zone 重建工具跑通：空重建通过 validate_zone，与原文件仅剩 11 字节 header 差异（@0x24/@0x2C 未保留）】**
 >
 > `tools/zone_merge.py`：`Zone.rebuild()` 重建 {size,string_count,asset_count,block_sizes,strings,directory,data}；空重建 `validate_zone` 通过 ✅，diff 24→11 字节（@0x24 0x001FE770→0、@0x2C 0xFFFFFFFF→0）。→ 修复：保留原 header 全部 0x38 字节，只覆盖 @0x00/@0x28/@0x30，空重建应逐字节一致；然后做加 1 个 asset 的最小合并。
+
+> **2026-10-26 08:00–08:30【🎉 zone 空重建逐字节一致（49MB 无损）+ 最小合并成功：向 common_mp 加 1 个 asset，validate_zone 通过（8557→8558）】**
+>
+> 修 header 保留（原 0x38 字节全保留，只覆盖 @0x00/@0x28/@0x30）后：空重建 `identical True`。最小合并 `--add gametype --indices 47` → `base=8557 added=1 total=8558 size=112909241`，`validate_zone` 通过，末项 `{type:5, offset:112909021, size:220, pointer:0xFFFFFFFF}`。→ 合并机制可行。下一步：定位 gametype 里 88 个武器 asset 的索引（名字匹配 + pointer==0xFFFFFFFF 优先），批量加入 common_mp，回填 ff 容器并重签。

@@ -4544,3 +4544,39 @@ validate_zone 通过（格式自洽 ✅）
    - `validate_zone` 通过；
    - 结构合法（目录/数据偏移自洽）。
 3. 最后批量加 88 个武器 asset 并重签。
+
+## 134. 2026-10-26 08:00–08:30：**🎉 zone 重建逐字节一致 + 最小合并成功（加 1 个 asset）**
+
+### 134.1 空重建（header 保留修复后）
+
+```
+base=1400 added=0 total=1400 size=49877939 strings=773
+identical True     ← 与原文件逐字节一致（49 MB 无损）
+```
+
+→ `Zone.rebuild()` 正确：保留原 header 全部 0x38 字节，只覆盖 `@0x00/@0x28/@0x30`。
+
+### 134.2 最小合并（加 1 个 asset）
+
+```
+python tools/zone_merge.py --base runs/ff-decoded/common \
+    --add runs/ff-decoded/gametype --indices 47 --out runs/ff-edit/common-plus1.zone
+
+base=8557 added=1 total=8558 size=112909241 strings=2653
+validate_zone 通过 ✅
+last entry = {index: 8557, type: 5, offset: 112909021, size: 220, pointer: 0xFFFFFFFF}
+```
+
+→ **合并机制可行**：能向 `common_mp` 追加任意 asset 并保持结构合法。
+
+### 134.3 下一步（批量 88 个）
+
+1. 在 `gametype` zone 里**定位 88 个武器 asset 的索引**（用名字字符串匹配每个 asset blob）；
+2. 批量加入 `common_mp`；
+3. 把合并后的 zone **回填进 `common_mp.ff` 容器**（替换 body、重算哈希链、重签）；
+4. 客户端实测：看武器表是否 1136 → 1224，181 是否消失。
+
+### 风险提示
+
+- 被搬运 asset 若引用 gametype zone 内其它 asset（指针非 0xFFFFFFFF），在 common_mp 里会失效；
+  需优先选 `pointer == 0xFFFFFFFF` 的独立 asset。

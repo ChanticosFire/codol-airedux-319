@@ -32,7 +32,7 @@ class Zone:
         self.count = info["asset_count"]
         self.string_count = info["string_count"]
         dir_off = info["directory_offset"]
-        self.block_sizes = blob[0x04:0x24]   # 8 * u32, kept verbatim
+        self.header = blob[:HEADER]          # kept verbatim (0x00..0x38)
         self.strings = blob[HEADER:dir_off]
         self.meta = [(e["type"], e["pointer"]) for e in info["asset_entries"]]
         self.blobs = [blob[e["offset"]:e["offset"] + e["size"]] for e in info["asset_entries"]]
@@ -47,10 +47,10 @@ class Zone:
             cursor += len(blob)
         total = cursor
         out = bytearray(total)
+        out[:HEADER] = self.header            # preserve every header field
         struct.pack_into("<I", out, 0x00, total - 0x28)
         struct.pack_into("<I", out, 0x28, self.string_count)
         struct.pack_into("<I", out, 0x30, count)
-        out[0x04:0x24] = self.block_sizes
         out[HEADER:HEADER + len(self.strings)] = self.strings
         pos = HEADER + len(self.strings)
         for index, offset in enumerate(offsets):
