@@ -7329,3 +7329,47 @@ gs 日志：仅 15 个 inband，无 connect
 ### 下一步
 
 用长时间 `forward`（`--seconds 40`）+ `connect`，且**先检查 `connection_adr` 是否被写入**。
+
+## 210. 2026-10-27 22:30–23:00：**🎯 找到 connect 卡住的真正原因 —— 缺少 `--connect-address` 参数**
+
+### 210.1 源码（`cmd_forward` 第 689-723 行）
+
+```python
+def cmd_forward(client, args):
+    sock = socket.socket(AF_INET, SOCK_DGRAM)
+    sock.bind(("127.0.0.1", bind_port))          # ← 确实监听
+    ...
+    if args.start_challenge:
+        ...
+    elif args.connect_address:                    # ← **只有传这个才写地址+触发连接**
+        client.write(ADDRESS_STRING, args.connect_address.encode("latin-1") + b"\0")
+        result = client.invoke_sequence([{"target": CONNECT_FN, "args": []}], settle=1.0)
+```
+
+### 210.2 我的命令（错误）
+
+```
+python tools\ring_bridge_1649370.py forward \
+  --target 127.0.0.1:28971 --bind-port 29000 --adr-type 2 --fake-stats --keepalive --pump \
+  --reliable-until-state 0 --seconds 40
+```
+
+**没有 `--connect-address`** → 既不写地址、也不调 `CONNECT_FN`，
+所以 `connection_adr = 0.0.0.0:0`、`net` 永远停在 4。
+
+### 210.3 正确用法
+
+```
+python tools\ring_bridge_1649370.py forward \
+  --target 127.0.0.1:28971 --bind-port 29000 --connect-address 127.0.0.1:29000 \
+  --adr-type 2 --fake-stats --keepalive --pump --reliable-until-state 0 --seconds 40
+```
+
+### 210.4 教训
+
+这是**命令构造错误**（我的失误），不是环境问题。
+过去多轮"connect 卡住"的根因就是它。
+
+### 下一步
+
+用正确命令重跑完整流程 + `--gamestate-gametype mp`，验证 table 是否从 1135 涨到 1223。
