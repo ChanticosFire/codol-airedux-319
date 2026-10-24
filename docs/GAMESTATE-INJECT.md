@@ -11867,3 +11867,73 @@ state: ui=5  net=5  table=0
 | 28 | `CL_ParseServerMessage` 命中 0 次 |
 | 29 | `CLpacketEvent` 只认 OOB；netchan 分支要求 `net_state>=7` |
 | **30** | **实测：接收泵 8763 次、包事件 450 次、分发器 0 次 → 数据确实到客户端，但在 `0x5C2303` 的 `jl` 上被整体丢弃。这是一个"要 7 才能到 7"的死锁，patch 该 `jl` 即有望解开整条链** |
+
+## 292. 2026-10-29 07:00–08:00：**死锁门控 patch 已应用；但本轮 `forward` 未生效，patch 效果尚未验证**
+
+### 292.1 patch 成功
+
+```
+0x5C2303  before: 0f 8c 0a 01 00 00   (jl 0x5C2413, 6 bytes)
+0x5C2303  after : 90 90 90 90 90 90   (nop × 6)
+patched: 1
+```
+
+注意：上一轮我以为是 `7C 0E`（短跳转），实际是 **`0F 8C` 长跳转 6 字节**，
+所以 patch 长度是 6 而不是 2。
+
+### 292.2 gs 侧确认：连接是真的建立了
+
+`runs/r251-gs.jsonl`：
+
+```
+总行数 19，入站 6
+getchallenge: 2
+connect:      1
+stats:        0        ← **客户端没有发 stats**
+```
+
+下发方向确有记录：
+
+```
+{"dir":"out","kind":"fragment","message":"gamestate","to":"127.0.0.1:57384",
+ "seq":3,"index":2,"count":6,"stride":1162,"chunk":1162}
+{"dir":"out","kind":"fragment","message":"snapshot","to":"127.0.0.1:57384",
+ "seq":1000,"index":0,"count":1,"chunk":249}
+```
+
+即：客户端确实从 `57384` 端口发了真实的 UDP（getchallenge ×2、connect ×1），
+gs 也把 6 个 gamestate 分片与 1 个 snapshot 发了出去。
+
+### 292.3 但客户端侧没有推进
+
+```
+CL dispatcher  0x5AA980 = 0
+ParseServerMsg 0x473A50 = 0
+ParseGamestate 0x473260 = 0
+gate [0x1C2B6CC]        = 0
+state: ui=5  net=0  table=1135
+forward stdout: 0 字节   forward stderr: 0 字节
+```
+
+**`forward` 的两个输出文件都是 0 字节**，说明这一轮它没有正常跑起来
+（对比 Round 30 同样命令下 `net=5` 且能读到 `CLpacketEvent=450`）。
+因此本轮 **`netchan` 分支从未有数据流过**，patch 的正确性无法判定。
+
+### 292.4 两个待解决问题（按优先级）
+
+1. **让 `forward` 可靠工作**
+   - Round 30 用同样命令时 `net=5`、`recvPump=8763`，说明命令本身可行；
+   - 本轮失败的原因需要查：是否被 `Start-Process` 的时序影响（gs 还没开始监听就启动）、
+     或与 `--seconds 55` 的到期有关。下一轮改为**先确认 gs 在跑**再启动 forward，
+     并把 forward 放到**前台**执行以便看到输出。
+2. **`stats` 为什么会是 0**
+   - Round 11 用 `--oob-only` 时 `stats` 出现过 163 次；
+   - 本轮没有 `--oob-only`，客户端在 `connect` 之后就没有再发 `stats`。
+   - 若 `stats` 是"进入 gamestate 阶段"的必要前置，则需要保留 `--oob-only`。
+
+### 292.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 30 | 根因锁定：`net_state >= 7` 死锁（`0x5C2303`） |
+| **31** | **patch 已应用（6 字节 nop）；gs 侧实证收到 getchallenge×2 / connect×1 并发下 gamestate×6 + snapshot；但本轮 `forward` 未生效（输出 0 字节、net=0），patch 效果待验** |
