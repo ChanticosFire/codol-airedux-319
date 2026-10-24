@@ -2088,3 +2088,42 @@ p 1305   blob_len 0
 1. 让 `server1649370` 读 `runs/demo-frames-big/00-62474.bin` 作为 snapshot 载荷；
 2. 在 demo 起状态（state 7+）后下发，验证客户端 `Entities=1` 且不报 stream error；
 3. 成功后再把 configstring（`d` 命令）也按同样方式从 demo 提取并下发，完成"真实数据接管"。
+
+## 70. 2026-10-25 02:35–02:50：demo 真实快照接入服务端（首次实验，客户端先崩）
+
+### 70.1 服务端发送路径已确认
+
+`server1649370/gameserver.py::send_due_snapshots`：
+
+```python
+data = path.read_bytes()                 # 读 --snapshot-file（svc 数据，从 svc_snapshot 开始）
+payload = b"\x00\x00\x00\x00" + data     # 前 4 字节 ack
+if payload[4] == 0:                      # svc_snapshot
+    payload = payload[:5] + struct.pack("<I", 72192 + index*500) + payload[9:]   # 改写 serverTime
+```
+
+→ **demo 的 `p` 帧 blob（从 `00` svc_snapshot 开始）正是这个 `--snapshot-file` 需要的格式**，
+不需要做任何转换。
+
+### 70.2 首次实验
+
+用 `runs/demo-frames-big/00-62474.bin`（62 KB baseline）作为 `--snapshot-file`，
+流程：假 dvar → `cl_demo_play` → 8 秒后 connect → gs + forward + pump。
+
+结果：
+
+| 观测 | 值 |
+|---|---|
+| 客户端存活 | **否**（实验结束时已退出） |
+| `Entities` 断点 | 0 |
+| gs 记录 | `in connect/stats/inband 1`、`meta gamestate_source`，**没有 snapshot 发送记录** |
+
+→ 客户端在 snapshot 发出前就退出了（demo 播放本身在 20 秒左右会崩），
+所以这次不能判定"真实快照是否被接受"。
+
+### 下一步
+
+1. 先解决 demo 播放的稳定性（`state 8` 后约 20 秒退出）——可能是 §71 的 dvar 补丁或
+   资源缺失导致；
+2. 再用"客户端存活时间窗内"下发 demo 快照（把 `--snapshot-delay` 提前到 1–2 秒）；
+3. 若客户端稳定，验证 `Entities=1` 与实体表是否被真实快照填充。
