@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The header format is exact from the cols writer; our flags byte is 12, not the 8 that a baseline requires]**
+> cols: byte0 svc, bytes1-4 serverTime, byte5 delta_distance, byte6 FLAGS = 8 for a baseline else 0, then bits (1+1+8 last_changed+1+1+1) and 4 bytes commandTime.
+> Our body: 00 08 1a 01 00 | 00 | 0c -> flags = 12 = 8|4. The baseline bit is set but bit 4 is extra and cols never sets it.
+> Next: change byte 6 to 0x08 and check ui_state and the loading object.
+> Evidence: [flags byte is 12 not 8](evidence/experiments/20261023-codex-flags-byte-is-12-not-8.json).
 > **2026-10-23 [THE STRUCTURAL OMISSION: no baseline snapshot was ever sent]**
 > cols documents it: a full baseline with all 14 sections present, ACKed by the client, after which deltas resolve against the cached baseline (playerState still selects no base). grep over server1649370 finds no baseline support at all.
 > So every delta we send references a base that does not exist - which is why the loader never clears and the frame stays black. Next: construct the full baseline (all 14 sections present in full, no entities/clients).

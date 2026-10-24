@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T13:00:00+00:00",
+  "scope": "THE HEADER FORMAT IS NOW EXACT (read from the cols writer), and our body already sets the baseline bit - but it also sets an extra bit 4 that cols never sets",
+  "the_snapshot_header_according_to_cols": {
+    "byte 0": "svc_snapshot (0)",
+    "bytes 1..4": "serverTime, little-endian",
+    "byte 5": "delta_distance (0 when establishing a baseline)",
+    "byte 6": "FLAGS - 8 when establishing a baseline, 0 otherwise",
+    "then bits": [
+      "1 bit: no prior playerState (0)",
+      "1 bit: transmit origin/velocity rather than local prediction (1)",
+      "8 BITS: last_changed + 1",
+      "1 bit: field gap +1 from -1",
+      "1 bit: -97 codec, absolute LE32",
+      "4 bytes: commandTime, little-endian",
+      "then the field records and the section payloads"
+    ]
+  },
+  "what_our_body_actually_has": {
+    "body": "runs/snapshot-single22.bin (and the hybrid and mode1 bodies identically)",
+    "first_12_bytes": "00 08 1a 01 00 00 0c 96 07 60 00 18",
+    "svc": 0,
+    "serverTime": 72200,
+    "delta_distance": 0,
+    "flags": 12,
+    "flags_in_binary": "0b1100 = 8 | 4",
+    "verdict": "the BASELINE bit (8) IS set, and an EXTRA bit (4) is also set that cols never sets in either mode"
+  },
+  "why_this_is_a_real_finding": [
+    "the baseline bit being present means the client should treat our snapshot as a baseline, which is what the protocol requires",
+    "but the extra bit 4 is unexplained and is not produced by the reference server in either the baseline or the delta case",
+    "a wrong flag is exactly the kind of thing that would make the client accept the snapshot's contents (which it does: count 1, id decoded) yet never finish loading",
+    "and it is a ONE-BYTE change to test: 12 -> 8"
+  ],
+  "the_experiment_to_run": [
+    "rebuild the body with byte 6 = 0x08 instead of 0x0C and re-run the normal sequence",
+    "check ui_state and the loading object: if the loader now clears, the flags byte was the blocker",
+    "if it does not, the sections themselves are still not all present, which is the next layer"
+  ],
+  "artifacts": {
+    "cols": "cols/crates/protocol/src/game/snapshot/mod.rs:899-915 (the writer)",
+    "bodies": [
+      "runs/snapshot-single22.bin",
+      "runs/snapshot-mode1.bin"
+    ]
+  }
+}
