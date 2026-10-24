@@ -18647,3 +18647,7 @@ lobby          = 0x37E19850
 > **2026-10-27 19:40–20:20【room.create 生效（出现房间/队伍标签、频道变「房间」），但 room.changemap/room.startgame/preloadmap 全部惰性；决定性诊断：LSG_T9_MODE=entry+FINDSESS_PORT=8466+gs@8466 后注入 xstartprivatematch，gs 零包、LSG 无新 task（仅登录期 9 个：71/4,28/4,102/7,102/1,3/46,3/48,80/232,9/5,102/5），815 照旧 → xstartprivatematch 不走 LSG，815 是本地 XSession 缺失】**
 >
 > 结论：纯本地命令进球不可行；LSG 补匹配端点无效（客户端不来请求）；唯一剩余主线是服务端主动推进（connect+gamestate+snapshot）。新杠杆：Cbuf 可注入 set 系列去满足 0x5BE730 前置条件。
+
+> **2026-10-27 20:20–21:00【🎯 找到 240 轮连接失败根因：StringToAdr("localhost") 把 adr+0x14 留成 0x9D（loopback 标记），连接路径从不经 0x621E50 建真实通道，于是 0x622040 查表越界返回 -7 → 包发不出去。修复机制=--transport-connect（主线程调 0x621E50 建通道 + 0x5C05F0 发 getchallenge）；同族还有 --main-call（主线程调任意函数，才是调 0x5BE730 的正确方式）】**
+>
+> 首次实测 --transport-connect 崩溃（unhandled_exception、main_menu_verified=false、gs 零包、lsg 日志 0 字节）。疑因 ①--loopback-tcp-guard 拦截 28969 与 gs 抢端口 ②注入时机 connection 未就绪 ③local-auth-lsg 与 loopback-port 组合。下一步分离变量或提取独立工具。

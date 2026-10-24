@@ -9042,3 +9042,88 @@ LSG 日志：9 个 task_request，全部在登录阶段：
 回到"让客户端发 connect"：现在有了 **Cbuf 注入** 这个新杠杆，
 可以注入 `set` 系列去满足 `0x5BE730` 的前置条件，或注入
 `net_port`/`net_ip` 之类让网络子系统重新初始化。
+
+## 253. 2026-10-27 20:20–21:00：**🎯 找到 240 轮连接失败的根本原因（`adr+0x14 == 0x9D` → `0x622040` 返回 -7）**
+
+### 253.1 来源
+
+`tools/launch_1649370.py::_transport_connect_injector` 的 docstring（前次会话已解密的结论）：
+
+> 这是 1649370 的离线连接缺口：`StringToAdr("localhost")` 把 `adr+0x14` 留成 `0x9D`
+> （进程内 loopback 标记），连接路径从不经过 `0x621E50` 建真实通道，
+> 于是 `0x622040` 查表越界返回 **-7**。这里在主线程暂停窗口直接调用通道创建器，
+> 让它回填 `adr+0x14=N`，再让连接状态机用该通道发送。
+
+### 253.2 这解释了过去所有失败
+
+| 现象 | 真正原因 |
+|---|---|
+| `0x5BE730` 条件全满足却不发包 | 包的**发送路径**在 `0x622040` 就返回 -7（无通道），根本没走到 socket |
+| `invoke_sequence(CONNECT_FN)` 无效 | 除了线程问题，即使走到 `0x7F9090`，`0x622040` 仍然 -7 |
+| 主循环不自己连 | 连接状态机拿不到有效通道 |
+| `forward` 的 `sent=7..12` | 那是 `ring_a` 注入的 keepalive，不经过 `0x622040` |
+
+### 253.3 修复机制（已实现但需正确使用）
+
+`_transport_connect_injector`（`--transport-connect`）做的是：
+
+```
+1. 等 stage>=4 且 connection = [0x331C0C8] ^ 0xD362501F 有效
+2. 主线程暂停
+3. 写 adr(connection+0x14) = {type=4, ip=127.0.0.1, port=htons(LOOPBACK_PORT), 0, 0, 0, 0x9D}
+4. 写 buf = "xx\0"
+5. 写 [0x76446B0] = 3           （net_state = 3）
+6. cave：
+     pushad
+     push 2 / push buf / push adr
+     call 0x621E50               ; 建传输通道，回填 adr+0x14 = 通道号
+     add esp,0xc
+     mov [result_slot], eax
+     mov ecx, connection
+     call 0x5C05F0               ; 发 getchallenge
+     popad / ret
+7. 恢复主线程
+```
+
+**这就是历史 `net=10` 的实现路径。**
+
+### 253.4 同族参数（此前从未使用）
+
+| 参数 | 作用 |
+|---|---|
+| `--main-call <addr>` | **在主线程暂停时调用任意无参函数**（正确的"主线程执行"机制） |
+| `--main-call-ecx connection` | 调用前把 ECX 设为解码后的 connection |
+| `--transport-connect` | 见上 |
+| `--ring-probe` | 连接设 type=2 loopback，调 `0x5C05F0` 并捕获环 A |
+| `--init-transport` | 调 `0xBB2C40` 初始化传输闸门 |
+| `--call-challenge-parser` | 主线程调 `0x5C0FD0` 解析 challengeResponse |
+| `--inject-gamestate <file>` | 把 gamestate 注入 loopback 接收环 |
+| `--connection-adr-port <p>` | 把连接的 netadr_t 写成 127.0.0.1:p |
+| `--prewrite ADDR=HEX` | 主线程暂停窗口写内存 |
+| `--remote-udp-connect` | 进程内固定源端口完成 getchallenge+connect |
+
+→ **`--main-call 0x5BE730` 才是"在主线程调用 CONNECT_FN"的正确做法**，
+`ring_bridge.invoke_sequence` 挂窗口线程的做法从根上就不适用。
+
+### 253.5 首次实测（`--transport-connect`）失败
+
+```
+命令：launch_1649370.py --transport-connect --loopback-port 28969 --local-auth-lsg --loopback-tcp-guard ...
+gs   ：--port 28969
+结果：stop_reason = "unhandled_exception"，child_terminated = true
+      main_menu_verified = false
+      gs kinds 仅 meta/start（零包）；r209-lsg.jsonl 0 字节
+```
+
+可能原因（待下轮分离验证）：
+1. `--loopback-tcp-guard` 的 `guard_mode = "loopback-tcp-udp-28969"` **拦截了 28969 的 TCP+UDP**，
+   与 gs 抢占同端口，导致握手/登录双双失败；
+2. `--transport-connect` 在 `stage>=4` 但 `connection` 对象未完全初始化时注入，调用崩溃；
+3. `--local-auth-lsg` 与 `--loopback-port 28969` 组合导致 LSG 未监听（日志 0 字节）。
+
+### 253.6 下一步
+
+1. **分离变量**：先只加 `--transport-connect`（去掉 `--loopback-tcp-guard`，gs 用 28970，`--loopback-port 28970`）；
+2. 若 `--loopback-port` 非 28969 需要"打过补丁的私有副本"，则保持 28969 但**去掉 TCP guard**；
+3. 或者把 `_transport_connect_injector` 提取成**独立工具**（像 `cbuf_1649370.py`），
+   对已登录到 `stage>=4` 的客户端单独执行，避免启动期崩溃。
