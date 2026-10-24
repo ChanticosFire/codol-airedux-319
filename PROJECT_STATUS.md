@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MILESTONE: entity count is 1 for the first time]**
+> Probe at 0x67169D on snapshot-ent2.bin: bitpos 1309, count 1, ids still zero (the 12-bit id loop starts right after the store). So the count store executed and read 0x01 from buffer[164].
+> Two fixes were needed: bit 1307 = 1 (the gate) and the count byte at buffer[164]. The entity path is open; the next work is the 12-bit id at bit 1309 and the payload after it. The client still exits afterwards.
+> Evidence: [entity count is one](evidence/experiments/20261023-codex-entity-count-is-one.json).
 > **2026-10-23 [BREAKTHROUGH: bit 1307 is the entity gate]**
 > 0x671678 reads gate bit 1 (body bit 1307) and 0x671685 reads gate bit 2 (body bit 1308). With ent1 the probe caught EntGateA (the zero branch of gate 1) and never EntStore, and every body had bit 1307 = 0 - the reason the entity list was always empty.
 > Setting bit 1307 = 1 (byte 163 |= 0x08) plus byte 164 = 0x01 makes 0x671698 (count store) fire for the first time. The client exits afterwards, so the per-entity path is the next problem.

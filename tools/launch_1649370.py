@@ -2850,11 +2850,21 @@ def main(argv=None) -> int:
                 self.record({"map_loading_configstrings_error": str(error)})
         if label.startswith("Ent"):
             try:
+                registers = row.get("registers", {})
+                esi = int(registers["esi"], 0)
+                bitpos = 0
+                if esi:
+                    raw = self.process.read(esi + 0x20, 4)
+                    bitpos = struct.unpack("<I", raw)[0]
+                count_raw = self.process.read(0x7859558, 1)
+                ids = self.process.read(0x7859358, 12)
                 n = getattr(self, "_ent_count", 0)
                 if n < 12:
-                    self.record({"ent": {"label": label, "n": n}})
+                    self.record({"ent": {"label": label, "bitpos": bitpos,
+                                         "count": count_raw[0],
+                                         "ids": ids.hex(), "n": n}})
                 self._ent_count = n + 1
-            except (OSError, ValueError) as error:
+            except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"ent_error": f"{label}: {error}"})
         if label.startswith("Cursor"):
             try:

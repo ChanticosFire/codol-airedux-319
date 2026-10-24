@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T08:00:00+00:00",
+  "scope": "MILESTONE: the client's entity count is 1 for the first time - the entity list is no longer empty",
+  "the_measurement": {
+    "body": "runs/snapshot-ent2.bin",
+    "probe": "0x67169D:EntAfterStore (immediately after `mov [0x7859558], al`)",
+    "bitpos": 1309,
+    "count": 1,
+    "ids_first_12_bytes": "000000000000000000000000",
+    "records": 1
+  },
+  "what_each_field_shows": {
+    "count = 1": "the count store executed and the byte read from buffer[164] was 0x01, exactly as built",
+    "bitpos = 1309": "the two gate bits advanced the position from 1307 to 1309, which matches the code - the gate reads are the only bit consumers before the count",
+    "ids all zero": "the 12-bit id loop has not run yet at this instruction; it starts at 0x6716A1, right after the store"
+  },
+  "why_this_is_the_milestone": [
+    "every body this project ever produced left the count at 0 and the client drew nothing",
+    "two independent fixes were required and both are now known: bit 1307 = 1 (the gate) and the count byte at buffer[164]",
+    "the entity path is therefore OPEN, and what remains is the payload that follows the count"
+  ],
+  "what_remains": [
+    "the loop at 0x6716A1 reads 12 bits per entity id from the bit stream starting at position 1309",
+    "our body's bits 1309..1320 are whatever the ps block currently holds, so the id decoded will be arbitrary",
+    "the client exited again after the run, so the next requirement is a body where the 12-bit id and the following payload are both well formed"
+  ],
+  "next": [
+    "build a body that places a chosen 12-bit entity id at bit 1309 and leaves the rest of the ps block intact, then check that the id appears at 0x7859358 and whether the client survives"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r218-gs.jsonl",
+    "body": "runs/snapshot-ent2.bin"
+  }
+}
