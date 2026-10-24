@@ -4097,3 +4097,45 @@ _inflate / validate_zone / decode_fastfile / main
 2. 对 `mp_crash_tropical_const.ff` 做"原样重签"（内容不变、只换签名与公钥）；
 3. 用 `decode_fastfile` 验证（需要 exe 公钥也换成自建）；
 4. 通过后，再谈"改内容"。
+
+## 122. 2026-10-26 02:00–02:30：**重大发现 —— 材料私钥就在 exe 里（1191 字节 DER）**
+
+### 122.1 `_load_keys` 的实现
+
+```python
+offset = MATERIAL_OFFSETS[version]
+der = exe[offset:offset + 1191]
+if _sha(der) != MATERIAL_SHA256: raise FastfileError('rsa_material', ...)
+private_key = RSA.import_key(der)          # ← 私钥！
+...
+signing_key = RSA.import_key(public_der)   # 270 字节发布者公钥（仅验证）
+```
+
+→ **exe 内置了一把 1191 字节的 RSA 私钥**（PKCS#1 RSAPrivateKey DER），
+用于**解密 ff 的 40 B 材料**（AES key + IV + zone 信息）。
+
+### 122.2 这解锁了什么
+
+| 能力 | 之前 | 现在 |
+|---|---|---|
+| 解 40 B 材料（AES key + IV） | ❌（以为要零售私钥） | ✅ **可解**（exe 内置） |
+| 解密 header | ❌ | ✅ |
+| 修改 header 后重加密 | ❌ | ✅（材料里的 key + IV） |
+| 重签 header（发布者签名） | ❌ | ❌ 仍需**替换 exe 公钥** |
+| 重算数据块哈希链 | ❌ | ✅（sha256 链已知） |
+
+### 122.3 完整重签方案（现在全部可行）
+
+1. 用 `_load_keys(exe, version, False)` 拿材料私钥 → `_decrypt_material` 解 40 B；
+2. 解出 `key = material[:24]`、`iv = material[24:40]`；
+3. 解密 header（8192 B），按需修改 zone 名/内容；
+4. 重算 `hdr[0x0C:0x2C] = sha256(hdr[0x12C:0x1FD0])`；
+5. **替换 exe 的 270 字节发布者公钥**为自建公钥（`0x698958` 或扫描 `30 82 01 0A`）；
+6. 用自建私钥签 `hdr[0x2C:0x12C]`；
+7. 用 `key/iv` 重加密 header，写回 `0x115`；
+8. 重算数据块哈希链（每块 IV = sha256(明文)），写回 hash tables。
+
+### 下一步
+
+实现 `tools/ff_resign.py` 的**原样重签**（内容不变、只换公钥与签名），
+验证 `decode_fastfile(改后 ff, 改后 exe)` 通过。这是路线 A 的第一次真正落地。
