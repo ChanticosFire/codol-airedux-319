@@ -359,8 +359,12 @@ class GameServer:
             data = bytearray(chunk)
             for i in range(4 if index == 0 else 0, len(data)):
                 data[i] ^= key
-            header = (struct.pack("<I", seq_word) + bytes([index, count - 1])
-                      + struct.pack("<HH", frag_size, len(chunk)))
+            # Real 2697 packets (runs/codex-2697-stats-packets2.bin) carry a
+            # u16 length prefix that covers the 10-byte netchan header plus the
+            # chunk, i.e. 1172 = 10 + 1162 for a full fragment.  Without it the
+            # client drops the packet before parsing.
+            header = (struct.pack("<H", 10 + len(chunk)) + struct.pack("<I", seq_word)
+                      + bytes([index, count - 1]) + struct.pack("<HH", frag_size, len(chunk)))
             packet = header + data
             self.sock.sendto(packet, addr)
             self.state.counters["inband_sent"] += 1

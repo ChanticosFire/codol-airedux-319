@@ -193,3 +193,36 @@ gamestate 是 inband（带 `svc 0x03`），客户端要用 **netchan 序号** �
 用 2697 真实服务器的抓包做对照：`runs/snapshot-2697-*.bin`、`runs/servercmd-2697-*.bin` 是抓到的真实包，
 直接比较它们的分片头字节与 gs 生成的 `01000080 0000 8a04 5a00…`，找出字段顺序/语义差异，
 再让 gs 按真实头输出。
+
+## 10. 2026-10-24 12:58–13:05：真实抓包对照 → 补上 2 字节长度前缀
+
+`runs/codex-2697-stats-packets2.bin`（5233 B）是**含分片头的真实服务器包**，逐包解析：
+
+| 包 | 字节 | 解读 |
+|---|---|---|
+| 0 | `94 04 · 01 00 00 80 · 00 · 02 · 8a 04 · 8a 04 · data` | u16 长度 1172 = **10 + 1162**，seq `0x80000001`，index 0，末片索引 2，frag_size 1162，len 1162 |
+| 1（@1174） | `94 04 · … · 01 · 02 · …` | 同前，index 1 |
+| 2（@2348） | `58 04 · … · 02 · 02 · 8a 04 · 4e 04` | 长度 1112 = 10 + 1102，末片 |
+
+→ 真实包头 = **u16 长度（10 + chunk）+ 10 字节 netchan 头 + chunk**；`count` 字段确实是"末片索引"（0/1/2 对应 3 片），
+与 gs 的 `count-1` 语义一致。**gs 唯一缺的是这个 u16 长度前缀**。
+
+已修改 `gameserver.py::_send_fragments`：`header = u16(10+len(chunk)) + u32(seq_word) + index + count-1 + u16(frag_size) + u16(len) + chunk`。
+
+### 10.1 新问题：bridge 的 fragment 检测失效
+
+加前缀后，包的前 4 字节变成 `64 00 01 00`（长度 + seq 低字节），
+`ring_bridge` 的 `fragment = (u32(data[0:4]) & 0x80000000) != 0` 判为 **false**，
+于是按"快照"丢弃（`state 6 < reliable_until_state 9`）。
+
+绕过：forward 加 `--reliable-until-state 0`，dump 从 4 条增加到 11 条（gamestate + 6 snapshots 都注入）。
+
+### 10.2 仍未接受
+
+`state=6`、`ui=0` 不变。注入的 gamestate 包：`64 00 · 01 00 00 80 · 00 · 00 · 8a 04 · 5a 00 · 00 00 00 00 00 02 01 01 01 …`
+（长度 102 = 10 + 90，seq 1，index 0，末片 0，frag 1162，len 90）。
+
+下一步对比 **payload 内容**：2697 的 `codex-2697-gamestate.bin`（3426 B）是
+`00 00 00 00 03 00 00 00 00 "mp_cross_fire\\0" "mp\\0" 7b f1 e8 36 04 …`；
+gs 的 native 是 `… "mp_cross_fire\\0" "war\\0" <checksum> 04 …`。差异点：gametype（`mp` vs `war`）、
+registration checksum、以及 configstring 数量/内容。下一轮应逐字段对齐后再发。

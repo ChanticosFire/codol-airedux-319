@@ -17669,3 +17669,7 @@ lobby          = 0x37E19850
 > **2026-10-24 12:55–12:58【gamestate seq 改 1 仍被拒；转向真实抓包对照】**
 >
 > 把 `gameserver.py` 的 gamestate seq 从 `3+count` 改为 `1+count` 并重跑：gs 输出 `fragment seq=1 chunk=90`，bridge dump 确认包已注入（`01000080 0000 8a04 5a00…`），但客户端 `state=6` 稳定 24 秒后超时复位 0。→ 不是 seq 问题；差异只可能在 fragment 头字段语义或 gamestate 负载格式。下一步用 `runs/snapshot-2697-*.bin` / `servercmd-2697-*.bin` 真实抓包对照分片头字节。
+
+> **2026-10-24 12:58–13:05【真实抓包对照：补上分片长度前缀】**
+>
+> 解析 `runs/codex-2697-stats-packets2.bin` 确认真实分片头 = **u16 长度(10+chunk) + 10 字节 netchan 头 + chunk**，`count` 字段是末片索引；gs 唯独缺 u16 长度前缀，已在 `_send_fragments` 补上。副作用：`ring_bridge` 用 `u32(data[0:4])` 检测 FRAGMENT_BIT 失效，加 `--reliable-until-state 0` 绕过（dump 4→11 条，gamestate+快照均注入）。客户端仍 `state=6`/`ui=0`；下一步逐字段对齐 gamestate payload（2697 用 `mp` gametype 与 `7b f1 e8 36` checksum，gs 用 `war` 与默认 checksum）。
