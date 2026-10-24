@@ -11048,3 +11048,83 @@ Round 12 已经确认：`loadingnewmap`（VxA `0xDBF0F0`）是 **UI 脚本层的
 | 15 | `[0x1C2B6CC]==0` |
 | 16 | 纠正：`0x484C10` 是 UI 层加载器 |
 | **17** | **梳理完 `mapname` 13 个引用；三个 C++ 处理函数都不加载地图 → 地图装载由 UI 脚本层通过 `ui_mapname` dvar 发起** |
+
+## 280. 2026-10-28 19:00–20:00：**拿到 `ui_mapname` 的地址与写法，并确认它当前值是 `mp_ui_viewer`**
+
+### 280.1 `Dvar_FindVar("ui_mapname")` 实测成功
+
+```
+写入 "ui_mapname" 到 0xC7AF590
+remote_call 0x76F190 --arg 0xC7AF590
+  → result_eax = 0x80FC008        ← dvar_t* 指针
+```
+
+`dvar_t` 结构（实测布局）：
+
+```
+dvar @ 0x80FC008
+  +0x00 = 0x00DB2F98   "ui_mapname"      ← name
+  +0x04 = 0
+  +0x08 = 0x00000107                     ← flags（含 DVAR_ROM = 0x100）
+  +0x0C = 0x078BF5EC   "mp_ui_viewer"    ← **当前值**
+  +0x10 = 0
+  +0x14 = 0
+  +0x18 = 0
+  +0x1C = 0x078BF5EC   "mp_ui_viewer"    ← 默认值
+  +0x2C = 0x0789C740                     ← 其他指针（cod4master.activision.com 附近）
+```
+
+**关键结论：`ui_mapname` 的值是 `"mp_ui_viewer"`（大厅界面），不是 `mp_crash_tropical`。**
+这就是客户端始终不去加载对局地图的直接原因之一。
+
+### 280.2 `ui_mapname` 是只读 dvar，`Dvar_SetString` 会被拒绝
+
+```
+remote_call 0x771240 --arg 0x80FC008 --arg 0xC7AF590   ; Dvar_SetString(dvar, "mp_crash_tropical")
+  → result_eax = 0xFFFFFA00      ← 负数，失败
+  → ui_mapname 仍是 "mp_ui_viewer"
+```
+
+flags `0x107` 里 `0x100` 正是 **`DVAR_ROM`**，所以标准 setter 直接拒绝。
+
+### 280.3 绕过只读：直接改 `+0x0C` 指针（已验证可行）
+
+```
+dvar+0x0C before = 0x078BF5EC  ("mp_ui_viewer")
+write +0x0C = 0xC7AF590        → True
+dvar+0x0C after  = 0x0C7AF590
+ui_mapname value = "mp_crash_tropical"     ← **改成功了**
+```
+
+### 280.4 但改完没有触发加载，因为当时连接已断
+
+```
+state: ui=0  net=0  table=1135  stage=5
+截图：错误对话框「服务器连接超时」
+```
+
+→ 客户端处于**连接超时**状态，UI 层根本不在"准备进图"的流程里，
+所以改 `ui_mapname` 不会引发任何加载。**必须先把连接恢复到 `net_state=5` 再做这一步。**
+
+### 280.5 下一步（组合两个已验证的能力）
+
+已有两个可靠部件：
+
+| 能力 | 手段 | 状态 |
+|---|---|---|
+| 把连接推进到 `net_state=5`（`table=0` 的加载态） | `forward --start-challenge` + `patch_retry_ms` | ✅ 已验证（Round 9/11） |
+| 改写 `ui_mapname` 为 `mp_crash_tropical` | `Dvar_FindVar(0x76F190)` 拿指针 + 写 `+0x0C` | ✅ 本轮验证 |
+
+所以下一轮把两者**按顺序**组合：
+
+1. 启动 → hook 必要项 → 登录 → `net_state=3`；
+2. `forward --start-challenge` 推到 `net_state=5`（`table` 变 0）；
+3. **在 `net_state=5` 期间**：`Dvar_FindVar("ui_mapname")` → 写 `+0x0C` 指向 `"mp_crash_tropical"`；
+4. 观察 `table` 是否从 0 增长、`ui_state` 是否离开 5、画面是否出现地图。
+
+### 280.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 17 | 三个 C++ 处理都不加载地图 → 指向 UI 层 `ui_mapname` |
+| **18** | **拿到 `ui_mapname` 的 dvar 地址/结构/只读特性，确认其值是 `mp_ui_viewer`，并验证"直接写 +0x0C"可绕过 ROM 限制；但需在 `net_state=5` 时做才有效** |
