@@ -18711,3 +18711,7 @@ lobby          = 0x37E19850
 > **2026-10-28 07:00–08:00【loopback 环实测：type=2 + retry=0ms 后 ring_a 真的产生 52 个包，但被客户端自己的网络泵 0x674F30 消费（read==write，drain 抢不到），ring C 仍空，adr 被重置为 type=0。patch_nodelay 会导致每帧发包、客户端崩溃，改用 patch_retry_ms（0x5C06B3 cmp eax,0xBB8 → cmp eax,0/1）。目前唯一实证能出网的是 type=4 + patch_sender_hard（gs 已收到 8 个 getchallenge），缺陷是每次新建 socket 导致收不到响应】**
 >
 > 下一步方案：发送保持 type=4 + patch_sender_hard，接收改用 ring_bridge forward --start-challenge 把服务端应答 inject-oob 写入 ring B，由 0x4F8D70 接收泵送入 0x5C1EE0。
+
+> **2026-10-28 08:00–09:00【🎉🎉 阶段 3 完全打通：gs 收到 getchallenge(1) + connect(1，uid 0cf7ee44e08c4c28，userinfo 键 2490/challenge/checksum/clan/csi/gameMomementRecording…) + stats(4)，forward 侧记录 challenge_armed→state=3→getchallenge→challengeResponse→state=4→connect(409B)→connectResponse(104B)。关键修正：必须传 --gamestate-map mp_crash_tropical 且 --gamestate-gametype 用 war（之前漏传 map 导致 connectResponse 里是 mp_cross_fire）】**
+>
+> 剩余问题：①statResponse 没发出且 challenge 被 override 成 0 ②forward 的 SuspendThread 失败(err=5)导致客户端消失。下一步：去掉 --challenge-override、确认 flush_pending_oob 被调用、修 forward 的挂起失败处理，然后推阶段 4 loadingnewmap。

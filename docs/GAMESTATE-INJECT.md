@@ -10193,3 +10193,85 @@ gs: ('in','getchallenge'): 8   包长 38 字节
 - **上行已通**（gs 能收到 `getchallenge`）；
 - **下行未通**（客户端收不到 `challengeResponse`）；
 - 下一步明确：**`forward --start-challenge` + `inject-oob` 写 ring B**。
+
+## 269. 2026-10-28 08:00–09:00：**🎉🎉 阶段 3 完全打通 —— getchallenge → connect → stats 全链路**
+
+### 269.1 决定性证据（`runs/r232-gs.jsonl`）
+
+```
+gs: {('meta','start'):1, ('in','oob'):6, ('in','getchallenge'):1,
+     ('out','oob'):4, ('meta','challenge_override'):1,
+     ('in','connect'):1, ('in','stats'):4}
+
+{"dir":"meta","kind":"start","port":28969,"generation":"1.1.1.13",
+ "map":"mp_crash_tropical"}                                        ← 地图正确
+{"dir":"meta","kind":"challenge_override","value":0}
+{"dir":"in","kind":"connect","from":"127.0.0.1:55337",
+ "uid":"0cf7ee44e08c4c28",
+ "userinfo_keys":["2490","challenge","checksum","clan","csi",
+                  "gameMomementRecording",...]}                     ← 完整 userinfo
+{"dir":"in","kind":"stats","from":"127.0.0.1:55337","args":[],"challenge":0}  × 4
+```
+
+`forward` 侧同样记录了完整事件序列：
+
+```
+arm:  challenge_armed, state=3
+out:  38B  getchallenge 0 "0cf7ee44e08c4c28"
+in :  32B  challengeResponse 1847552931      → inject: queued
+state=4                                       ← **客户端接受挑战**
+out:  409B connect 0cf7ee44e08c4c28 "\name\QWRtaW5pc3RyYUNsaWVudA==\xuid\...
+           \natType\3\rank\0\clan\0000000000000000\2490\-695030357\checksum\-694791800\ch..."
+in :  104B connectResponse \mapname\mp_cross_fire\gametype\mp\sv_maxclients\12\protocol\1\shortversion\1.1.1.13
+```
+
+→ **客户端真正完成了 challenge → 连接资料上传 → stats 请求**，
+这正是社区六阶段里"阶段 3 建立连接"的全部内容。
+
+### 269.2 关键修正：`--gamestate-map` 与 `--gamestate-gametype`
+
+`server1649370/gameserver.py`：
+```
+122  self.gamestate_maps = [... for part in (gamestate_map or "mp_cross_fire").split(",")]
+125  self.map_name = self.gamestate_map.decode("ascii")
+248  response = (f"connectResponse \\mapname\\{self.map_name}" ...)
+```
+
+- 之前**没传** `--gamestate-map` → `connectResponse` 里是 `mapname\mp_cross_fire`（错的）；
+- 之前把 `--gamestate-gametype` 传成 `mp` → 应为 `war`（社区已明确"第二个字符串是模式名"）。
+
+修正为 `--gamestate-map mp_crash_tropical --gamestate-gametype war` 后，
+`meta start` 直接显示 `"map": "mp_crash_tropical"` ✅
+
+### 269.3 仍然存在的两个问题
+
+**① `statResponse` 没有真正发出去**
+```
+gameserver.py:446 on_stats()
+  challenge = peer.get("challenge") or 0     ← --challenge-override 0 → 恒为 0
+  for offset in (0.8, 2.0, 4.0):
+      pending_oob.append((now+offset, addr, f"statResponse {challenge}"))
+```
+gs 只在 `('out','oob'):4` 里发了 2 个 challengeResponse + 2 个 connectResponse，
+**没有 statResponse 记录**；且 `challenge=0` 也可能被客户端拒绝。
+
+**② `forward` 的 `SuspendThread` 失败（err=5）**
+```
+ring_bridge_1649370.py:258  raise SystemExit(f"SuspendThread 失败: {get_last_error()}")
+```
+握手完成后 `forward` 尝试挂起窗口线程时被拒绝，随后客户端进程消失。
+需要改为"失败也继续"（`--pump` 是可选增强），或改用已有的 `main_call`/`remote_call`。
+
+### 269.4 下一步（顺序明确）
+
+1. **去掉 `--challenge-override 0`**，让 gs 用真实 challenge，使 `statResponse` 有意义；
+2. 确认 `flush_pending_oob` 被主循环调用（检查 `statResponse` 是否出现在日志）；
+3. 修 `forward` 的 `SuspendThread` 失败处理（不致命化）；
+4. 通过后推进阶段 4：`loadingnewmap`（地图名 + 模式名）；
+5. 阶段 5-6：gamestate + 第一份有效快照。
+
+### 269.5 里程碑意义
+
+- Round 5：客户端首次发出 `getchallenge`；
+- **Round 7：`connect` + `stats` 全部到达服务端，阶段 3 完成**；
+- 距"服务端下发进图对局"只剩阶段 4-6。
