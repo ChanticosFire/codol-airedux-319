@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The loading object is a C++ instance with vtable 0xD599DC]**
+> 0xD599DC (in .rdata) is a vtable of .text addresses; slot 0 (0xB82850) is the deleting destructor; 0xB824F0 writes [esi]=0xD599DC and reads [esi+0x4F4], so the instance is at least 0x4F8 bytes. My earlier 'no vtable' note is withdrawn.
+> With few rounds left, the focus shifts to consolidating the findings into the handover documents.
+> Evidence: [loading object is a class](evidence/experiments/20261023-codex-loading-object-is-a-class.json).
 > **2026-10-23 [The loading object is partially initialised (0xBAADF00D gaps)]**
 > Dump of 0x42426CD8: a repeated 16-byte record {4, float 0.75, 3, pointer} at +0x0C..+0x1B and +0x24..+0x33, with 0xBAADF00D (debug-heap uninitialised marker) at +0x1C and +0x34. So an init sequence started and did not finish - matching the loader that never proceeds.
 > Next: find the writer of +0x0C/+0x10/+0x14 to identify the subsystem.

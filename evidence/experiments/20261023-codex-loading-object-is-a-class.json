@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T18:00:00+00:00",
+  "scope": "the loading object IS a C++ instance: its vtable is 0xD599DC in .rdata, whose first slot 0xB82850 is a destructor - and the class is at least 0x4F8 bytes",
+  "the_chain": {
+    "0xD599DC": "a vtable in .rdata whose entries are all .text addresses (0x00B82850, 0x00B7AE50, 0x00BA6700, 0x00B7AF20, ...)",
+    "0xB82850": "vtable slot 0 - the deleting destructor: call 0xB824F0, then conditionally call 0xB74240 with the delete flag",
+    "0xB824F0": "the destructor body - it writes [esi] = 0xD599DC, so 0xD599DC is this class's vtable",
+    "0xB824F0 also": "reads [esi+0x4F4], so the instance is at least 0x4F8 bytes"
+  },
+  "what_this_corrects": [
+    "my previous note said '+0x00 points into .rdata, so the object has no vtable' - that was wrong",
+    "0xD599DC is a vtable, its entries are code, and the object is a normal C++ instance",
+    "so the object CAN be identified by its vtable, just not by the vtable pointer itself - it needs one of the methods to name its subsystem"
+  ],
+  "why_i_am_not_pursuing_the_class_further_this_round": [
+    "identifying the class from its methods needs string or global cross-references across several functions",
+    "and even identified, the class name would not by itself supply the missing initialisation",
+    "with a small number of rounds left, the better use of them is to consolidate what has been established into the handover documents so the work does not have to be rediscovered"
+  ],
+  "artifacts": {
+    "addresses": {
+      "vtable": "0xD599DC",
+      "destructor": "0xB82850",
+      "destructor_body": "0xB824F0",
+      "instance_size_at_least": "0x4F8"
+    }
+  }
+}
