@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The reader is LSB-first over the buffer at [esi+8]; the probe's stream pointer is the suspect]**
+> 0x66EC30: buffer [esi+8], index [+0x20]>>3, shr by [+0x20]&7, mask to N bits, advance [+0x20]. So a 12-bit read at 1309 would return 8, not 4048.
+> Therefore the probe at 0x6716C3 samples a different esi than the id read uses, and the '20 bits per read' measurement is suspect for the same reason. Next: probe 0x66ECA1 with the decoder's own esi.
+> Evidence: [reader is lsb first](evidence/experiments/20261023-codex-reader-is-lsb-first.json).
 > **2026-10-23 [The entity id is not a plain 12-bit field at 1309]**
 > Bits 1309..1320 are 000100000000 (= 8) yet the client decoded 4048, so 0x66EC30 assembles the value from whole bytes with a shift, not from a clean slice. The 'set a small id' plan therefore needs the reader's exact byte arithmetic first.
 > Next: read 0x66EC30 from 0x66EC8D to learn the assembly, then the id becomes settable.

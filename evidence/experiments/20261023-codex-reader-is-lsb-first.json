@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T00:00:00+00:00",
+  "scope": "0x66EC30 is a standard LSB-first bit reader, so id 4048 cannot come from bits 1309..1320 - which means the probe's stream pointer is not the one used for the id read",
+  "the_reader_assembly": {
+    "0x66EC8D": "cmp ecx,[esi+0x10] ; jge -> zero if the byte index is past the bound",
+    "0x66EC96": "eax = [esi+8] ; eax = byte [eax+ecx]  - the buffer is [esi+8] and the index is [+0x20] >> 3",
+    "0x66ECA3": "shr eax, cl  with cl = [+0x20] & 7       - align the byte so the requested bit becomes bit 0",
+    "0x66ECA5": "ecx = 8 - offset                            - bits available in this byte",
+    "0x66ECB1": "if N <= available: [+0x20] += N and return (byte & mask)",
+    "0x66ECCB": "else: consume the available bits, [+0x20] = (N_remaining + byte_cursor*8), and continue"
+  },
+  "conclusion_about_the_encoding": [
+    "the reader is a plain LSB-first bit reader over the byte buffer at [esi+8]",
+    "so a 12-bit read starting at bit 1309 returns exactly the 12 bits at 1309..1320",
+    "and those bits are 000100000000, i.e. 8",
+    "yet the client stored 4048 at 0x7859358"
+  ],
+  "what_that_leaves": [
+    "the read that produced 4048 did not start at bit 1309 of the same stream",
+    "the most likely reason is that the probe's `esi` at 0x6716C3 is not the stream used by 0x671650 for the id read - the probe samples whatever esi holds at the loop-exit instruction, which may already be a different register role",
+    "so the earlier '20 bits for a 12-bit read' measurement is suspect for the same reason: the two samples may come from different stream objects"
+  ],
+  "the_clean_way_to_settle_the_id_question": [
+    "probe inside 0x671650 itself (for example at 0x66ECA1, right after the byte fetch) and log [esi+8], [+0x20] and the returned value",
+    "that ties the value to the exact position and buffer, with the same esi the decoder uses"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x66EC8D assembly loop",
+      "0x66ECA3 shift",
+      "0x66ECCB multi-byte path"
+    ],
+    "server_log": "runs/codex-r226-gs.jsonl"
+  }
+}
