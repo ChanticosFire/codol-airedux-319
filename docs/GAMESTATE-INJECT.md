@@ -11605,3 +11605,72 @@ CL_ParseGamestate (0x473260)
 | 21 | 只请求 10 个 ff，地图/gametype 没有 |
 | 25 | `0x515680` 命中 0 次 |
 | **26/27** | **`CL_SystemInfoChanged`（`0x515340`）命中 0 次；找到 `CL_ParseGamestate`（`0x473260`），它无条件把 `net_state` 置 8，而实测恒为 5 ⇒ gamestate 从未进入解析** |
+
+## 288. 2026-10-29 03:00–04:00：**🎯 找到 `CL_ParseServerMessage`（`0x473A50`）—— `net_state == 0` 时直接返回，永不解析**
+
+### 288.1 调用链最顶端的入口
+
+`CL_ParseGamestate`（`0x473260`）的唯一调用者是 `0x473BE8`，
+它位于函数 **`0x473A50`** 内：
+
+```asm
+0x473A50  push ebp / mov ebp,esp
+0x473A53  mov eax, 0x20044
+0x473A58  call 0xC43280                 ; __chkstk（16 万字节栈）
+0x473A6B  cmp dword ptr [0x76446B0], 0  ; **net_state == 0 ?**
+0x473A71  jne 0x473A7B
+0x473A73  mov dword ptr [edi+0x18], 0
+0x473A76  jmp 0x473C32                  ; **net_state==0 → 直接返回，不解析任何消息**
+0x473A7B  cmp dword ptr [0x7858F3C], 0
+0x473A83  mov dword ptr [0x7858F3C], 1
+0x473A8D  memset([ebp-0x20040], 0, 0x30)
+0x473A9C  eax = [edi+0x14] - [edi+0x1C]  ; 消息长度
+0x473AD3  cmp eax, 0x20000
+0x473AD8  jbe 0x473AE9
+0x473ADA  push 0xDB0E4C                  ; 错误串 "263"
+0x473AE1  call 0x4F82E0                  ; Com_Error(2, "263")  消息过大
+0x473AE9  call 0x5C2200
+0x473AF1  esi = [edi+0x14] - [edi+0x1C]
+0x473AF9  eax = [edi+8] + [edi+0x1C]
+0x473AFB  cmp dword ptr [edi+0x2C], 0
+0x473B10  call 0x794380                  ; Netchan_Process（解压/解密 netchan 载荷）
+0x473BE8  call 0x473260                  ; ← CL_ParseGamestate
+0x473C32  （返回）
+```
+
+**这是 `CL_ParseServerMessage`：它才是把网络载荷变成 gamestate 的地方。**
+
+### 288.2 两个关键约束
+
+1. **`net_state == 0` �� `0x473A76` 直接跳到 `0x473C32` 返回** ——
+   任何消息都不会被解析。这完美解释了 Round 26 那次 `net=0` 时
+   `CL_ParseGamestate` / `0x515340` 全部 count=0；
+2. **消息长度 `> 0x20000` 会触发 `Com_Error(2, "263")`** ——
+   但实测 `Com_Error` 零调用，所以不是这条分支。
+
+### 288.3 现在整条链的最上端也接通了
+
+```
+CL_ParseServerMessage (0x473A50)
+  └─ CL_ParseGamestate (0x473260)          ← 无条件把 net_state 置 8
+        └─ 0x5C0310 (systeminfo 处理)
+              └─ 0x515340 (另一份 systeminfo)
+                    └─ 0x49E600 → [0x1C2B6CC]=1 → 加载 gametype/地图族
+                          └─ FS_LoadFastfile (0x49ED40)
+```
+
+### 288.4 两个必须查清的点（下一轮）
+
+1. **`0x473A50` 是否被调用**：hook 它，判定 "消息解析入口" 有没有被执行；
+   - 若命中而 `0x473260` 不命中 → 卡在 `0x794380`（`Netchan_Process`）之后的分支；
+   - 若完全不命中 → 连"收到消息"这一步都没进入 `CL_ParseServerMessage`；
+2. **`0x794380` 的返回**：它是 netchan 解包，如果返回失败，
+   `0x473B22`–`0x473B28` 那套 `neg/sbb/not/and` 会把长度算成 0，
+   后续解析自然什么都不做。需要记录它的返回值。
+
+### 288.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 26/27 | `CL_ParseGamestate` 无条件置 `net_state=8`，实测恒为 5 ⇒ 未执行 |
+| **28** | **找到 `CL_ParseServerMessage`（`0x473A50`）：`net_state==0` 直接返回；它的 `Netchan_Process`（`0x794380`）返回值决定后续是否解析** |
