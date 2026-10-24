@@ -3675,3 +3675,55 @@ common_gametype_clash / common_gametype_spy
 1. 反汇编 `0x49E540`，确认参数（是否只吃一个包名 + 若干缓冲区指针）；
 2. 看它是否可直接用 `call_fn` 调用（比 `0x49E160` 轻量）；
 3. 若可行，在服务端路径的 login 完成后调用 `0x49E540`，验证表是否 +88。
+
+## 111. 2026-10-25 20:30–21:00：**gametype 包加载发生在 LoadDemo（0x49E600）内部**
+
+### 111.1 函数入口列表（0x49E000–0x49E8E0）
+
+```
+0x49E070  0x49E130  0x49E160(批量加载)  0x49E410  0x49E540(列表构造)  0x49E600(LoadDemo)
+```
+
+→ 含 `0x49EC93 call 0x49E160` 的那个大函数（0x49E8E0–0x49ECAB），入口就是 **0x49E600**。
+
+### 111.2 LoadDemo 内部的完整流程
+
+```asm
+0x49E600  LoadDemo 入口
+  ...
+0x49E8E9  mov eax,6 / mov edx,0xDCE314      ; 比较 gametype 名
+0x49E8F3  call 0x7745E0                     ; strncmp
+0x49E914  mov ecx,0xDB6090                  ; zombie_champions
+...
+0x49E97D  mov ecx,0xDB60C8                  ; common_gametype_mp（默认）
+0x49E982  call 0x49E540                     ; 构造 4 项列表（patch_/localized_/patch_localized_）
+...
+0x49EAA6  call 0xC3EB40                     ; 其它检查
+0x49EAC5  call 0x774900                     ; sprintf → patch_%s
+0x49EB0A  call 0x774900                     ; sprintf → %s_const
+0x49EB59  call 0x775F50
+...
+0x49EC93  call 0x49E160                     ; ← 批量加载（含 gametype 包）
+0x49ECA8  pop ebp / ret
+```
+
+→ **LoadDemo 在加载 demo 的同时，会按 gametype 名构造并加载**
+`common_gametype_mp`（及其 patch/localized 变体）。
+
+### 111.3 这解释了全部现象
+
+| 事实 | 解释 |
+|---|---|
+| demo 播放请求 `patch_common_gametype_mp.ff` | LoadDemo 内部的 0x49E160 加载列表里有 |
+| demo 播放表 1266 | gametype 包的 88 个武器被注册 |
+| 服务端路径表 1136 | 没有 LoadDemo，从未加载 gametype 包 |
+| demo 与 gamestate 内容几乎相同 | 差异不在数据，在**加载路径** |
+
+### 下一步
+
+1. LoadDemo（0x49E600）需要 demo 文件参数，不能直接调；
+2. 但它的前段（0x49E8E0–0x49ECAB）**只依赖 gametype 名与栈缓冲**，可尝试：
+   - 用 `call_fn` 直接跳到 `0x49E8E0` 附近的"gametype 分派"起点（需要合法 ebp/栈帧，风险高）；
+   - 或写一个小 cave 脚本：手动构造列表（`0x49E540` 的格式）后直接调 `0x49E160`。
+3. 推荐后者：列表格式已知（每项 `{char* name; u32 flags=4; u32 0}`，4 项分别是
+   `patch_<name>`、`<name>`、`patch_localized_<name>`、`localized_<name>`）。
