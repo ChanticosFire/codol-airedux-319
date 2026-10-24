@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MILESTONE 2: one entity with id 4048 is now in the client's list]**
+> Probe at 0x6716C3: bitpos 1329, count 1, ids d00f... -> first id 0x0FD0 (4048). So the entity list is non-empty in both count and content.
+> The loop consumed 20 bits (1309 -> 1329), so there is an extra 8-bit read per entity beyond the 12-bit id - most likely the per-entity delta byte. The client still exits.
+> Next: log the 8 bits after the id to identify the per-entity header, then map it onto 0xDA63E8 for eType/origin.
+> Evidence: [entity id stored](evidence/experiments/20261023-codex-entity-id-stored.json).
 > **2026-10-23 [Cursors are self-consistent (byte 163, bit 3); the id/count overlap is real]**
 > [+0x1C] = 164 and [+0x20] = 1307 satisfy the reader's own rule (old_byte 163 -> 1304 + offset 3). So the overlap between the 12-bit id (bytes 163-165) and the count byte 164 is a genuine format contradiction.
 > Therefore the header must end on a byte boundary: pad it to 1312 bits so gates land at 1312/1313 and the count stays at byte 164.

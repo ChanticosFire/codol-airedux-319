@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T11:00:00+00:00",
+  "scope": "MILESTONE 2: the client now holds ONE entity with id 4048 in its entity list - the list is no longer empty in content as well as in count",
+  "the_measurement": {
+    "body": "runs/snapshot-ent2.bin",
+    "probe": "0x6716C3:EntLoopDone (after the id loop)",
+    "bitpos": 1329,
+    "count": 1,
+    "ids_first_bytes": "d00f00000000000000000000",
+    "first_id": "0x0FD0 = 4048",
+    "state_after": "client exited"
+  },
+  "what_is_confirmed": [
+    "the count is 1 (the gate at bit 1307 and the count byte at buffer[164] both work)",
+    "the id loop ran and stored a real value at 0x7859358: 4048",
+    "so the client's entity list is non-empty for the first time, in both count and content"
+  ],
+  "the_bit_arithmetic": {
+    "start": 1309,
+    "end": 1329,
+    "consumed": 20,
+    "expected_for_one_12_bit_id": 12,
+    "note": "20 bits were consumed, so the id loop costs more than the 12-bit id alone - there is an extra 8-bit read per entity, most plausibly the per-entity delta byte that precedes the field data in the entity block"
+  },
+  "what_remains": [
+    "the per-entity PAYLOAD: the field data (eType, origin, ...) that fills the entity's state struct",
+    "that is where the entity table at 0xDA63E8 and the codecs from cols finally matter",
+    "and the client still exits after the snapshot, so the payload parsing must be made consistent enough for it to survive"
+  ],
+  "why_this_is_the_second_milestone": [
+    "milestone 1 was the count becoming 1",
+    "this one is a real entity id landing in the client's list",
+    "together they mean the entity BLOCK and its LIST are both functional; the remaining work is the entity's DATA, which is the piece the project has the most tooling for"
+  ],
+  "next": [
+    "extend the probe to log the 8 bits read after the id - that identifies the per-entity header and its first field",
+    "then map that header onto the 0xDA63E8 table and start writing eType/origin"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r220-gs.jsonl",
+    "body": "runs/snapshot-ent2.bin"
+  }
+}
