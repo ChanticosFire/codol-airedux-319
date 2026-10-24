@@ -3132,3 +3132,45 @@ sample: ["defaultweapon_mp", "aa12_mp", "aa12anniversarya_mp",
    后立即 dump（gs 日志可实时读）；
 3. 若仍抓不到，改用"demo 路径 1266 个名字 vs common_mp.ff 的 1723 个 weapon 字符串"
    的离线差集（不依赖运行时快照）。
+
+## 97. 2026-10-25 13:30–14:00：**130 个缺失武器清单确定（全是连杀奖励/空中支援）**
+
+### 97.1 两份运行时快照
+
+| 路径 | 表大小 | 文件 |
+|---|---|---|
+| demo 播放 | **1266** | `runs\r126-weapon-table.json` |
+| 服务端 gamestate | **1136** | `runs\r130-weapon-table.json` |
+
+抓取方法：读 `0x827F738`（表大小），命中 `gamestate_source` 后**连续采样**；
+服务端路径在第 2 次采样（约 0.25–0.5 s）时表从 0 涨到 1136，窗口抓住。
+
+### 97.2 差集
+
+```
+demo path   1266
+server path 1136
+missing (in demo, not server) = 130
+extra   (in server, not demo) = 0
+```
+
+**缺失的 130 个全是连杀奖励 / 空中支援类武器**：
+
+```
+ac130_105mm_mp, ac130_105mm_pro_mp, ac130_25mm_mp, ac130_25mm_pro_mp,
+ac130_40mm_mp, ac130_40mm_pro_mp, ac130_mp,
+airdrop_marker_mp, airdrop_mega_marker_mp, airdrop_sam_marker_mp,
+airdrop_sentry_marker_mp, airstrike_mp, artillery_mp, auto_tow_mp,
+briefcase_bomb_defuse_mp, ...
+```
+
+清单存于 `runs\weapon-diff.json`。
+
+### 97.3 结论与下一步
+
+- **根因确认**：服务端 gamestate 未覆盖 `common_gametype_mp.ff`（或 `ui_mp.ff`）里的
+  连杀奖励武器定义，导致表少 130 个，索引 1224 处对不上 → **181 错误**；
+- **修复方向**：把这 130 个名字补进 gamestate 的 configstring（或构造 `d <idx> <name>` 命令），
+  让服务端路径的表达到 1266；
+- 下一步先验证这 130 个名字确实来自 `common_gametype_mp.ff`（解码该包搜索），
+  再决定用"补 configstring"还是"触发加载 common_gametype_mp.ff"。
