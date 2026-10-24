@@ -5089,3 +5089,51 @@ ff requests = 15
 
 1. 从 trace 的 `caller=0x776F80` 反推 `0x776F00` 的调用者（运行时栈回溯或静态找 `call 0x776F00`）；
 2. 找到后看它如何决定"patch_ + 基名"的列表，再把 gametype 加进去。
+
+## 149. 2026-10-26 15:30–16:00：**🎯 找到加载队列机制（0x49F280 → 0x49ED40）**
+
+### 149.1 FileExists 的唯一调用者
+
+```
+callers of 0x776F00: 1  →  0x49EDA3（在函数 0x49ED40 内部）
+```
+
+### 149.2 `0x49ED40` = 通用 fastfile 加载函数
+
+```asm
+0x49ED40  （入口，参数 [ebp+8] = 基名）
+0x49ED59  push ebx
+0x49ED5A  push 0xDB617C            ; "%s.ff"
+0x49ED71  call 0x774900             ; sprintf(buf, "%s.ff", name)
+0x49ED7B  call 0x77B3B0
+0x49ED80  ecx = [0xE56FE0]          ; 模式（0=普通，1=patch）
+0x49ED89  je 0x49ED9B               ; 0 → 普通
+0x49ED94  call 0x776FA0             ; 1 → patch 路径
+0x49EDA3  call 0x776F00             ; 0 → 普通路径
+0x49EDB0  cmp edi, -1 / jne 0x49EEC8 ; 找到 → 继续
+```
+
+→ **`0x49ED40(name, flags)` 就是"按名字加载一个 fastfile"**。
+
+### 149.3 `0x49F280` = 加载队列处理器（唯一调用者）
+
+```asm
+0x49F288  ebx = [0x239B11C]        ; 队列计数
+0x49F294  je 0x49F2CE               ; 空则返回
+0x49F296  [0x239B11C] = 0           ; 清计数
+0x49F29E  edi = 0x1D06440           ; 队列表基址
+0x49F2A3  eax = [edi + 0x40]        ; 每项 +0x40 = flags
+0x49F2A7  push edi                  ; 项地址（名字在 +0x00）
+0x49F2A8  call 0x49ED40             ; ← 加载
+0x49F2BA  edi += 0x44               ; 每项 0x44 字节
+0x49F2BF  cmp esi, ebx / jb 0x49F2A3
+```
+
+→ **只需把 `common_gametype_mp` 写入 `[0x1D06440]` 队列、把 `[0x239B11C]` 设为 1**，
+客户端下一次处理队列时就会自己加载它。
+
+### 149.4 下一步
+
+1. 找 `0x49F280` 的调用者（确认它每帧/每阶段被调用）；
+2. 用"注入队列"方式（写 0x44 字节项 + 计数）在 login 后触发；
+3. 或改代码：在某处插一行 `mov [0x239B11C], 1` + 写名字（更复杂）。

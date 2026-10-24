@@ -18231,3 +18231,7 @@ lobby          = 0x37E19850
 > **2026-10-26 15:00–15:30【拿到真实启动 ff 请求列表：15 个全 patch 前缀（patch_ui_mp/patch_code_pre_gfx_mp/patch_common_mp 等），caller=0x776F80（FileExists），缺失则回退】**
 >
 > r146 trace（61,411B）：15 条 `.ff` 请求，全为 `patch_` 前缀（overlay 都没有）；`patch_common_mp.ff` 的 file_missing caller=0x776F80。→ 启动加载真实入口是 `0x776F00`（FileExists）的调用者；C1 的 0x4FCC10 是死代码（§147）。下一步找 0x776F00 的调用者/列表构造点，把 gametype 加进去。
+
+> **2026-10-26 15:30–16:00【🎯 找到加载队列机制：0x49ED40(name,flags)=按名加载 fastfile；0x49F280 从 [0x1D06440] 队列逐项调它（每项 0x44B，名在 +0，flags 在 +0x40，计数 [0x239B11C]）】**
+>
+> `0x776F00` 唯一调用者 = `0x49EDA3`（在 0x49ED40 内）；0x49ED40 用 `sprintf("%s.ff", name)` + `[0xE56FE0]` 模式选 patch/普通路径。`0x49F280`（0x49ED40 唯一调用者）是队列处理器：读 `[0x239B11C]` 计数、`[0x1D06440]` 表（每项 0x44B）、逐项 `call 0x49ED40`。→ 只要写队列项 + 计数=1，客户端就自己加载 gametype。下一步找 0x49F280 的调用者并注入队列。
