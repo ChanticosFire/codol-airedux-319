@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The state field's writers: 0/1/2/3 from handlers around 0xBA3xxx]**
+> 0xBA3C47 sets [esi+0x5E8]=3 and zeroes two adjacent counters; 0xBA3DA3 sets 2; 0xBA3252 sets 1; three sites set 0; the singleton destructor resets it. So the state machine is 0..3 in the 0xBA3xxx region, and our live value is 3.
+> Unresolved: which handler advances past 3 and what it tests - a larger static read than the remaining rounds allow.
+> Evidence: [state field writers](evidence/experiments/20261023-codex-state-field-writers.json).
 > **2026-10-23 [CORRECTION: [0x5E8] == 3 PRODUCES status 2; the client waits for it to leave 3]**
 > Measured: [sub+0xC8]=2, [sub+0x644]=0, [sub+0x5E8]=3, ui 5, net 10. Re-reading 0xBA0780: sete al + inc eax gives status 2 when [0x5E8]==3 and 1 otherwise. Round 252's 'returns 1' was wrong.
 > So one field decides the screen: [sub+0x5E8], currently 3. Next: find what writes it, by static search for stores to [reg+0x5E8].

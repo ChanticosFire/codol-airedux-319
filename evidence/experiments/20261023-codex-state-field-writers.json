@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-31T02:00:00+00:00",
+  "scope": "THE STATE FIELD'S WRITERS: twelve instructions touch [reg+0x5E8]; the ones that matter set 0, 1, 2 and 3 from a small state machine around 0xBA3xxx",
+  "all_writers": [
+    {
+      "address": "0xBA3C47",
+      "value": 3,
+      "note": "sets state 3 and zeroes [+0x5EC] and [+0x5F0]; the handler also calls 0x8435D0 with [+0x640]"
+    },
+    {
+      "address": "0xBA3DA3",
+      "value": 2
+    },
+    {
+      "address": "0xBA3252",
+      "value": 1,
+      "note": "mov dword [edi+0x5E8], 1"
+    },
+    {
+      "address": "0xBA3460",
+      "value": 0
+    },
+    {
+      "address": "0xBA3661",
+      "value": 0
+    },
+    {
+      "address": "0xBA40AA",
+      "value": 0
+    },
+    {
+      "address": "0xB83920",
+      "value": "byte [esi+0x5E8], 1"
+    },
+    {
+      "address": "0xB824AC",
+      "value": "byte [esi+0x5E8], bl",
+      "note": "this is the destructor of the singleton, resetting the field"
+    },
+    {
+      "address": "0xBA2984",
+      "value": "dword [esi+0x5E8], ebx"
+    },
+    {
+      "address": "0x6E1246 / 0x6F42FB / 0x56375D",
+      "value": "unrelated (stack offset and other objects)"
+    }
+  ],
+  "what_this_gives": [
+    "the states are 0, 1, 2 and 3, written by handlers clustered at 0xBA3xxx - the same region as the status function 0xBA0780",
+    "state 3 is set together with zeroing two adjacent counters, which reads like 'entering a waiting/connecting phase'",
+    "and since our live value is 3, the client is sitting in exactly that phase"
+  ],
+  "what_remains_unresolved": [
+    "which handler moves the state from 3 onward, and what condition it tests",
+    "that requires reading the 0xBA3xxx handlers as a group, which is a larger static task than the remaining rounds allow"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0xBA3C47 state 3",
+      "0xBA3DA3 state 2",
+      "0xBA3252 state 1",
+      "0xBA3460/0xBA3661/0xBA40AA state 0",
+      "0xBA0780 status mapping"
+    ]
+  }
+}
