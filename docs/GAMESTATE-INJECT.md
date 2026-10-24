@@ -1396,3 +1396,38 @@ r58 的 trace 里精确找到（16 条 `mp_crash_tropical` 匹配中只有 2 条
 2. 顺着这个参数回溯，就能找到"地图名"的最终来源——它同时决定
    `.\client_shipRetail\chinese\patch_<map>.ff` 与后续的 `<map>.ff`；
 3. 拿到来源后改内存即可让 demo 加载 mp_cross_fire（不必改 demo 文件）。
+
+## 48. 2026-10-24 21:10–21:25：fastfile 加载链完整打通
+
+### 48.1 完整调用链（静态）
+
+```
+0x49E160(list, count, ...)            ← 通用 Com_LoadFastfiles，16 个调用者
+  └─ 0x49E3BE: 0x49DE70(list, count)  ← 填充请求表
+       └─ 0x49DEB9: strncpy(表项, list[i].name, 0x3F)   ; 表项 = 0x1D06440 + i*0x44
+            └─ 0x49F2A8: LoadFastfile(表项, 表项+0x40)   ; 0x49F280 遍历表
+                 └─ 0x49ED40: sprintf(buf, "%s.ff", name)   ; 0xDB617C = "%s.ff"
+                      └─ 0x776F00: FileExists(buf) → CreateFileA
+```
+
+关键常量：
+
+| 项 | 值 |
+|---|---|
+| 请求表基址 | `0x1D06440`，每项 **0x44** 字节，数量 `0x239B11C` |
+| 名字字段 | 表项 +0x00（strncpy 目标），flags 表项 +0x40 |
+| 路径格式 | `0xDB617C = "%s.ff"` |
+| 加载模式 | `[0xE56FE0]`：0=FileExists，1=0x776FA0，2+=0x49EDB9 |
+
+### 48.2 意义
+
+- 地图名最终来自 `0x49E160` 的 **list 参数**（每个调用者传不同数组）；
+- 只要在 `0x49E160` 下断点，看 demo 播放时是哪个调用者、list[0].name 是什么，
+  就能直接锁定"patch_mp_crash_tropical"的来源；
+- 拿到后改 list 里的字符串指针即可换成 mp_cross_fire（loader 只读名字）。
+
+### 下一步
+
+1. 在 `0x49E160` 下断点跑 demo 播放，记录命中调用者与 list 内容；
+2. 在 `0x49ED40` 下断点，直接读参数（`[ebp+8]` = 名字指针），打印字符串；
+3. 确认来源后，用"改内存"的方式把名字换成 `mp_cross_fire`，验证是否加载 cross_fire。

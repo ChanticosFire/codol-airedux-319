@@ -17821,3 +17821,7 @@ lobby          = 0x37E19850
 > **2026-10-24 20:55–21:10【patch_mp_crash_tropical.ff 的两个请求点】**
 >
 > r58 trace 精确匹配：`error=2, caller=0xc513d9`（FS_OpenFile）与 `error=2, caller=0x776f80`（**FileExists**，函数 0x776F00，`sprintf(path, 0xDDA780, name)` 后 CreateFileA）。FileExists 唯一调用者 = **0x49EDA3**（0x49EXXX 资源/地图加载区）。→ 下一步正确反汇编 0x49EDA3 上下文，回溯传给 FileExists 的名字参数，定位地图名最终来源。
+
+> **2026-10-24 21:10–21:25【fastfile 加载链完整打通】**
+>
+> 完整链：`0x49E160(list,count)`（16 调用者）→ `0x49E3BE` 调 `0x49DE70(list,count)` 填请求表（表基址 `0x1D06440`、每项 0x44、数量 `0x239B11C`、名字在表项+0x00、flags 在 +0x40）→ `0x49F2A8` 调 `0x49ED40(name)`：`sprintf(buf, "%s.ff", name)`（格式串 `0xDB617C`）→ `0x776F00` FileExists → CreateFileA。→ 地图名最终来自 `0x49E160` 的 list 参数。下一步：在 `0x49E160`/`0x49ED40` 下断点，读 demo 播放时的 list/名字，随后改内存换成 mp_cross_fire。
