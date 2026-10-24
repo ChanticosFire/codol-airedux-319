@@ -18651,3 +18651,7 @@ lobby          = 0x37E19850
 > **2026-10-27 20:20–21:00【🎯 找到 240 轮连接失败根因：StringToAdr("localhost") 把 adr+0x14 留成 0x9D（loopback 标记），连接路径从不经 0x621E50 建真实通道，于是 0x622040 查表越界返回 -7 → 包发不出去。修复机制=--transport-connect（主线程调 0x621E50 建通道 + 0x5C05F0 发 getchallenge）；同族还有 --main-call（主线程调任意函数，才是调 0x5BE730 的正确方式）】**
 >
 > 首次实测 --transport-connect 崩溃（unhandled_exception、main_menu_verified=false、gs 零包、lsg 日志 0 字节）。疑因 ①--loopback-tcp-guard 拦截 28969 与 gs 抢端口 ②注入时机 connection 未就绪 ③local-auth-lsg 与 loopback-port 组合。下一步分离变量或提取独立工具。
+
+> **2026-10-27 21:00–21:40【对照实验：r209 --transport-connect 崩溃(unhandled_exception)、r212 同配置去掉它则正常存活 → 崩溃源是 --transport-connect（启动期注入太早）；约束实测：--local-auth-lsg 强制要 --loopback-tcp-guard，guard 只能 28969；实证连接对象 decoded=0x1310077C 有效但 channel(+0x28)=0、adr(+0x14)=0 → 无通道即 0x622040 返回 -7 的根因】**
+>
+> 下一步：把 _transport_connect_injector 提取为独立工具，对已登录(stage>=4)客户端执行：写 adr{type4,127.0.0.1,28969,...,0x9D} + [0x76446B0]=3 + call 0x621E50 + call 0x5C05F0；验证 adr+0x14!=0 且 gs 收到 getchallenge。

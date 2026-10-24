@@ -9127,3 +9127,55 @@ gs   ：--port 28969
 2. 若 `--loopback-port` 非 28969 需要"打过补丁的私有副本"，则保持 28969 但**去掉 TCP guard**；
 3. 或者把 `_transport_connect_injector` 提取成**独立工具**（像 `cbuf_1649370.py`），
    对已登录到 `stage>=4` 的客户端单独执行，避免启动期崩溃。
+
+## 254. 2026-10-27 21:00–21:40：**对照实验证明 `--transport-connect` 是崩溃源；实证 `channel==0`**
+
+### 254.1 三次启动对比
+
+| 运行 | 配置 | 结果 |
+|---|---|---|
+| r209 | `--transport-connect --loopback-port 28969 --local-auth-lsg --loopback-tcp-guard` | **崩溃** `unhandled_exception`，`main_menu_verified=false`，gs 零包，lsg 日志 0 字节 |
+| r210 | 同上但去掉 `--loopback-tcp-guard` | **参数错误**：`--local-auth-lsg requires --loopback-tcp-guard` |
+| r211 | `--loopback-port 28971` | **参数错误**：`TCP loopback guard is built for port 28969` |
+| **r212** | **同上，去掉 `--transport-connect`**（对照） | **正常** pid=16420 存活，可登录到 stage=5 |
+
+→ **崩溃由 `--transport-connect` 引起**（启动期 `stage>=4` 时注入，`connection` 尚未就绪）。
+
+### 254.2 约束（本轮实测确定）
+
+1. `--local-auth-lsg` **强制要求** `--loopback-tcp-guard`；
+2. `--loopback-tcp-guard` **只能用于 28969**（`guard_mode = loopback-tcp-udp-28969`）；
+3. → LSG（TCP 28969）与 gs（UDP 28969）**必须同端口不同协议共存**；
+4. `--transport-connect` **不能在启动参数里用**（会崩）。
+
+### 254.3 实证：`channel == 0`（根因确认）
+
+对 r212 登录后的客户端读连接对象：
+
+```
+encoded_conn [0x331C0C8] = 0xC0725763
+decoded      = 0xC0725763 ^ 0xD362501F = 0x1310077C   （有效指针）
+adr(+0x14)          = 0x0
+channel(+0x28)      = 0x0        ← **无传输通道**
+state(+0x100260)    = 0
+stage=5  ui=5  net=0
+```
+
+→ 与 `_transport_connect_injector` 的注释完全吻合：
+**没有通道 → `0x622040` 查表越界返回 -7 → 任何发送都失败**。
+
+### 254.4 结论与下一步
+
+**修复路径已明确且唯一**：
+1. 正常启动客户端（不带 `--transport-connect`），登录到 `stage>=4`；
+2. **此时**再在主线程上执行：
+   ```
+   写 adr = {type:4, 127.0.0.1, htons(28969), 0,0,0, 0x9D}
+   写 [0x76446B0] = 3
+   call 0x621E50(adr, buf, 2)   ; 建通道 → 回填 adr+0x14
+   call 0x5C05F0(connection)    ; 发 getchallenge
+   ```
+
+→ **下一轮**：把 `_transport_connect_injector` 提取成独立工具
+（`tools/transport_connect_1649370.py`，参照 `cbuf_1649370.py` 的独立运行模式），
+对已登录的客户端执行，并用 `adr+0x14 != 0` + gs 收到 getchallenge 双重验证。
