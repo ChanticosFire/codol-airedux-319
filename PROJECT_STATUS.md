@@ -18075,3 +18075,7 @@ lobby          = 0x37E19850
 > **2026-10-25 19:30–20:00【三个候选调用点都是空列表 → gametype 加载不走 0x49E160】**
 >
 > 反汇编：`0x5C2C23`（空列表/第三参数 0x18）、`0x5C8448`（[ebp-0x70]=edi）、`0x5CB441/0x5CB451`（空列表/0x20）→ 全是清场/初始化，不是 gametype 列表。→ `patch_common_gametype_mp.ff` 的加载在另一个函数里。下一步改用动态栈回溯（0x776F00 入口断点读 [ebp+8] 与 [ebp] 链）定位调用者。
+
+> **2026-10-25 20:00–20:30【找到 gametype→包名分派表（0x49E8E0）与注册函数（0x49E540）；common_gametype_mp 仅 1 处引用】**
+>
+> .rdata 包名表 0xDB5F58-0xDB6578（ui_mp/common_gametype_*/common_mp…）；`common_gametype_mp`（0xDB60C8）全 exe 只有 1 处代码引用 `0x49E97D`。该处是 gametype 分派：`0x49E8E0` 用 strncmp 比较 gametype 名 → 选包名 → `call 0x49E540`（注册）。默认分支 = `common_gametype_mp`。→ 下一步反汇编 0x49E540 确认参数，尝试 call_fn 直接调用补注册。

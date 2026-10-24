@@ -3611,3 +3611,67 @@ gametype 包（`patch_common_gametype_mp.ff`）的加载在**另一个调用者*
 2. 或在 `0x776F00`（FileExists）入口断点，命中时读 `[ebp+8]`（文件名）与 `[ebp]`（返回地址链），
    直接拿到调用者；
 3. 找到后看它从哪个全局/配置决定名字，再在服务端路径复刻。
+
+## 110. 2026-10-25 20:00–20:30：**找到 gametype → 包名的分派表（0x49E8E0）与注册函数（0x49E540）**
+
+### 110.1 包名表（.rdata 0xDB5F58–0xDB6578）
+
+```
+ui_mp / patch_ui_mp / patch_localized_ui_mp / localized_ui_mp
+common_gametype_zm
+common_gametype_survival
+common_gametype_coop
+common_gametype_zombie_arena
+common_gametype_dmz
+common_gametype_zombie_hunter
+common_gametype_zhunt_humanoid
+common_gametype_zhunt_zombie
+common_gametype_zombie_survival
+common_gametype_zombie_champions
+common_gametype_td
+common_gametype_mp            ← 0xDB60C8
+common_gametype_hostage
+common_gametype_asym
+...
+common_mp / patch_common_mp / patch_localized_common_mp / localized_common_mp
+common_mp_reload
+common_gametype_clash / common_gametype_spy
+```
+
+`common_gametype_mp` 在**整个 exe 里只有 1 处代码引用**。
+
+### 110.2 引用点：0x49E8E0 的分派函数
+
+```asm
+0x49E8E9  mov eax, 6 / mov edx, 0xDCE314     ; 比较 gametype 名字（长度 6）
+0x49E8F3  call 0x7745E0                      ; strncmp
+0x49E914  mov ecx, 0xDB6090                  ; "common_gametype_zombie_champions"
+0x49E919  jmp 0x49EA70
+
+0x49E924  mov edx, 0xDD9D70                  ; 另一个 gametype 名
+0x49E951  mov ecx, 0xDB60B4                  ; "common_gametype_td"
+0x49E956  jmp 0x49EA77
+
+0x49E977  lea eax, [ebp-0xE14]
+0x49E97D  mov ecx, 0xDB60C8                  ; "common_gametype_mp"   ← 默认分支
+0x49E982  call 0x49E540                      ; 注册该包
+
+0x49E9C0  mov ecx, 0xDB60DC                  ; "common_gametype_hostage"
+0x49E9C5  call 0x49E540
+
+0x49E9F8  mov ecx, 0xDB60F4                  ; "common_gametype_asym"
+```
+
+→ `0x49E540` 是"注册/加载 gametype 包"的函数，按 gametype 名分派到具体包名。
+
+### 110.3 意义
+
+- 服务端路径缺 88 个武器，正是因为**没有走到 `0x49E540` 这条注册路径**；
+- 若能让客户端执行 `0x49E540("common_gametype_mp", ...)`（或让它被游戏主循环调用），
+  就能补上这 88 个注册。
+
+### 下一步
+
+1. 反汇编 `0x49E540`，确认参数（是否只吃一个包名 + 若干缓冲区指针）；
+2. 看它是否可直接用 `call_fn` 调用（比 `0x49E160` 轻量）；
+3. 若可行，在服务端路径的 login 完成后调用 `0x49E540`，验证表是否 +88。
