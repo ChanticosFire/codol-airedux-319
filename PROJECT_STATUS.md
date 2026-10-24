@@ -1,5 +1,11 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [SESSION CLOSE: handover final, deliverables verified, objective NOT met]**
+> SNAPSHOT-FORMAT-VERIFIED.md §9 states the open problem precisely: the client matched its 8-byte session token and sits in [+0x5E8]==3 ("matched, waiting"), which maps to status 2 and ui_state 5. §10 lists the next three steps and notes the harness has no memory-write breakpoint and no single-step.
+> Verified: selfcheck 8/8; evidence 1304 records, invalid JSON 0; 1436 commits.
+> Established this session: snapshot header byte-for-byte with 8-bit last_changed; five content blocks; the entity list layout (gates 1307/1308, count byte at buffer[164], three-part id skipping byte 164) with a verified id recipe; the delta pipeline with the 13-entry jump table and a demonstrated float write; the position component encoding (scale 5.0); and that ui_state 5 is a frontend connection state decided by [+0x5E8]==3, while net_state 10 is not an acceptance signal.
+> NOT established: any rendered world. The goal remains open.
+> Evidence: docs/SNAPSHOT-FORMAT-VERIFIED.md, runs/codex-r231-shot.png, runs/codex-r237-a.png / -b.png.
 > **2026-10-23 [State 3 is entered by an 8-byte token comparison at [obj+0x5FC]]**
 > 0xBA3C05 compares 8 bytes at [obj+0x5FC] with a caller-supplied value via 0xB73FE0; on equality it zeroes nothing, sets [+0x5EC] and [+0x5F0] to 1 and [+0x5E8] to 3. So state 3 = token matched and waiting, not a failure.
 > The transition out of 3 is the missing piece; given the token check passed, it is most likely gated on a further message or a timer.

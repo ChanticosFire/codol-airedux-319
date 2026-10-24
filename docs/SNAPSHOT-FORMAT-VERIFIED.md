@@ -209,9 +209,39 @@ initialised**: it contains `0xBAADF00D` (the debug-heap uninitialised marker).
 
 Everything the server sends is accepted: the header parses, five blocks are entered, the entity
 count becomes 1, an entity id is stored, and a mode-1 delta writes real floats into the entity
-struct. **The client nevertheless keeps a loading object alive and never leaves `ui_state = 5`.**
+struct. **The client nevertheless stays on a screen whose spinner animates** (two captures one
+second apart differ), so it is genuinely still *waiting*, not failing to draw.
 
-That object is **partially initialised** (`0xBAADF00D` in two slots) and is at least `0x4F8`
-bytes. **The next work item is to identify what fills those slots**, which requires either
-symbolic information for this build or a memory-write breakpoint — neither of which the current
-harness provides (it supports `int3` breakpoints at fixed addresses only).
+The waiting is a **frontend connection state**, not a map-asset load:
+
+- `ui_state` (`0x84ABA50`) is driven by `0x803780`, which reads a singleton at `[0x8269774]`
+  (created lazily by the getter at `0x803830`, **`0x1618` bytes**) and maps it through
+  **`0xB7A670` → `0xBA0780`**;
+- that mapping yields **status 2**, and `0x8037D6` chooses `ui_state = 5` when the status is 2;
+- the deciding field is **`[sub+0x5E8]`** (`sub = [singleton+0x4F4]`). Measured live:
+  **`[+0xC8] = 2`, `[+0x644] = 0`, `[+0x5E8] = 3`**, and the code at `0xBA07A4`
+  (`sete al; inc eax`) turns **`[+0x5E8] == 3` into status 2**;
+- **`[+0x5E8] = 3` is written at `0xBA3C47`, and only when an 8-byte comparison at
+  `[obj+0x5FC]` succeeds** (`0xBA3C05..0xBA3C1A`, `call 0xB73FE0`) — most plausibly a
+  **session-token match**.
+
+So the client has **already matched its token and is sitting in a "matched, waiting" state**.
+The piece that has not been located is **the transition out of `[+0x5E8] == 3`** (states 0/1/2
+are written at `0xBA3460`, `0xBA3252`, `0xBA3DA3`; several sites write 0). Because the token
+check already passed, that transition is most likely gated on **a further message the server
+does not send**, or on a **timer**.
+
+## 10. Next concrete steps
+
+1. **Read the `0xBA3xxx` handlers as a group** and find the one that advances `[+0x5E8]` past 3,
+   and what it tests. This is a static task and needs no running client.
+2. **Instrument the receive path** for whatever message that handler consumes; if it is a
+   session-level message (not a snapshot), add it to `server1649370` and re-test with
+   `ui_state != 5` as the acceptance signal.
+3. **Keep the acceptance signal at `ui_state != 5` plus a screenshot** — `net_state == 10` is
+   not evidence of anything beyond the network handshake.
+
+The current harness supports **fixed-address `int3` breakpoints only**; there is **no
+memory-write breakpoint and no single-step**, which is why the state field had to be located by
+static search. Any future work on this client benefits more from a real debugger than from more
+snapshot variants.
