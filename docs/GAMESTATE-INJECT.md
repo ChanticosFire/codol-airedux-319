@@ -8886,3 +8886,89 @@ lock       0x81A55A0（dword[2] = recursion）
    （候选：`ui_startmatch`、`party_*`、`xpartygo`、`devmap`、`ui_map`）；
 2. 若命令表里没有，则用 Cbuf 注入 UI 脚本命令驱动菜单；
 3. 或回到 connect 主线，但这次可以用 Cbuf 注入 `set` 系列去满足 `0xB7A670()` 之外的条件。
+
+## 251. 2026-10-27 19:00–19:40：**🎯 突破三 —— 拿到全部 175 个控制台命令（命令表运行时枚举成功）**
+
+### 251.1 新工具 `tools/dump_cmdtable_1649370.py`
+
+原理：引擎的 Cbuf 命令表是单链表
+
+```c
+struct cmd_function_s {
+    cmd_function_s *next;   // +0x00
+    const char    *name;    // +0x04
+    const char    *desc;    // +0x08
+    xcommand_t     func;    // +0x0C
+};
+```
+
+做法：
+1. 在镜像里定位已知命令名 `vid_restart` → 字符串 VA = `0xDC06B8`；
+2. 在**运行时**扫描全部可读内存，找值为 `0xDC06B8` 的 dword（= 条目的 name 字段）；
+3. 命中地址减 4 = 条目头，沿 `next` 遍历整个链表。
+
+### 251.2 结果
+
+```
+entry = 0xE9C6A8C   layout = (next@0, name@4)   **count = 175**
+dump  = runs/cmdtable-vid_restart.json
+```
+
+前 12 个：`vid_restart`、`pf`、`mr`、`showhud`、`hidehud`、`uiViewer.setFaction`、
+`uiviewer.testentitymove`、`uiviewer.emote`、`uiviewer.setanim`、`viewerResetModelRotation`、
+`item.listnew`、`item.removenew`
+
+### 251.3 关键命令（按主题）
+
+| 主题 | 命令 |
+|---|---|
+| **开私人比赛** | **`xstartprivatematch`**、`xstartlobby`、`xpartygo` |
+| **房间** | `room.create`、`room.join`、`room.list`、`room.servers`、`room.leave`、`room.startgame`、`room.jumpgame`、**`room.changemap`**、`room.balance`、`room.changeteam` |
+| **匹配** | `room.match.quick`、`room.match.ranked`、`room.match.coop`、`room.match.cancel` |
+| **地图** | `preloadmap`、`room.changemap` |
+| **连接/会话** | `disconnect`、`disconnectwithkeepsession`、`xcancelconnectingdialog`、`xsessionupdate` |
+| **派对** | `party.create`、`party.join`、`party.leave`、`party.invite`、`xjoinpasswordparty` |
+| **播放** | `xplaylistchoosegame`、`pausegame`、`unpausegame`、`downloadplaylist` |
+
+→ **`map` / `connect` 确实不在表里**（与上一轮的注入无效果吻合）。
+
+### 251.4 `xstartprivatematch` 实测（真的执行了）
+
+```
+注入 xstartprivatematch（0→21，被消费）
+→ 画面从大厅切走，变成深色背景 + 居中「错误 815」对话框 + 「退出」按钮
+→ ui_state 仍为 0，stage 仍 5，进程 Responding
+→ LSG 日志：task_request 8 / candidate_task_reply 8，之后只剩 zero_frame / idle_control（无新请求）
+```
+
+**判读**：
+- 命令**确实执行**（画面切换 + 错误弹窗，不可伪造）；
+- **错误 815 = 缺少匹配/会话服务**（XSession 层），不是地图数据缺失；
+- LSG 在轮询但**没有收到新的匹配请求**，说明该流程走的是另一条通道（XSession/title server）。
+
+### 251.5 附带发现（重要修正）
+
+`ui_state == 0` **不等于**"游戏内"，也**不等于**"大厅"：
+
+| ui_state | 画面 |
+|---|---|
+| 5 | 加载遮罩（此前误读为"黑屏卡死"） |
+| 0 + 大厅数据 | 完整大厅（截图 A） |
+| 0 + 815 错误 | 深色背景 + 错误对话框（截图 B） |
+
+→ `ui=0` 只表示"不在 UI 遮罩层"，具体显示什么由游戏状态决定。
+→ **验收判据必须靠截图，不能只看 `ui_state`**（与既定判据一致）。
+
+### 251.6 后续注入导致黑屏
+
+`xcancelconnectingdialog` 注入后画面变成**全黑 10143 字节 PNG**
+（sha256 `a5d8fab8…`，与上次 `toggleconsole` 之后完全相同的空帧），
+5 秒后仍黑，但进程 `Responding=True`、`ui=0`、`stage=5`。
+→ 客户端卡在"命令流程中断"的中间态，需要重启才能回到干净大厅。
+
+### 251.7 下一步
+
+1. **重启到干净大厅**；
+2. 走**本地房间链**（不依赖匹配服务器）：
+   `room.create` → `room.changemap mp_crash_tropical` → `room.startgame`；
+3. 若 `room.*` 也依赖会话，则补 LSG 的匹配端点（`task_request` 之后没有 `candidate_task_reply` 的分支）。
