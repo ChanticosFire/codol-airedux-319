@@ -578,3 +578,35 @@ call 0xB783C0        ; 5 参数解码器：从消息里读出 8 字节到 [ebp-0
 - 5E8=3 由 `0xBA3BA0`（LSG 0x83 令牌校验）写入；
 - 5EC=2、5F0（事件计数）在 ui=5 期间演进；
 - 客户端在 ui=5 时不向任何游戏端口发 connect。
+
+## 23. 2026-10-24 15:00–15:15：T4 entry 生效但无效；trace-files 揭示 UI 音乐循环重试
+
+### 23.1 T4 entry 已生效（上一轮判断有误）
+
+给 `(71,4)` 分支的 reason 加上模式与负载长度后实测：
+
+```
+svc71/task4 reference candidate mode=entry payload=140
+```
+
+→ `LSG_T4_MODE=entry` **确实生效**（140 字节匹配记录，不是 31 字节空包）；
+上一轮把 194 字节的**整体回复长度**误当成"zero 模式"。
+
+但即便回完整匹配记录，客户端仍 `state=4`、`ui=5`，gs 只收到 inband。
+
+### 23.2 trace-files：加载屏在反复请求 UI 音乐
+
+带 `--trace-files` 跑到 ui=5，`events.jsonl` 里 **5178 条**文件事件，尾部全是同一种失败在循环：
+
+```
+file_missing: CreateFileA error=3
+path: .\hires\sound\music\ui\ui_sp_hz_t_menumusic.mp3
+caller: 0xc513d9
+```
+
+还有 `ui_sp_hz_af_caves_loud*`。文件其实存在（`offline-resources\main\sound\music\ui\` 下有 5,627,532 字节副本），
+但客户端只在 **`hires\`** 下找，overlay/runtime 的 `hires` 里没有。
+
+**判断**：这是加载屏期间的**音频循环重试**，很可能是"转圈"噪声的一部分，
+但不一定是 ui=5 的根因（音乐加载失败不应阻塞 UI 状态机）。下一步可把这几首 UI 音乐放进
+`offline-resources\hires\sound\music\ui\`，消掉这条重试再看状态是否变化。

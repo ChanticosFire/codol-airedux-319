@@ -17721,3 +17721,7 @@ lobby          = 0x37E19850
 > **2026-10-24 14:44–15:00【端口与 T4 记录两次尝试均未改变 ui=5】**
 >
 > 1) `inject_client_gamestate.py` 的净地址端口原写死 28969，已加 `--port`；改 29000（bridge）后仍 state=4/ui=5、gs 只收 inband → **端口不是原因**。2) `LSG_T4_MODE=entry`（task4 回 114B 匹配记录）环境变量确认可读，但 LSG 实际回复仍 194B（zero 短包），entry 分支未走到，下一轮需查 `(71,4)` 分支的读取位置/短路。
+
+> **2026-10-24 15:00–15:15【T4 entry 生效但无效；trace 显示 UI 音乐循环缺失】**
+>
+> ① `LSG_T4_MODE=entry` 实测生效（`mode=entry payload=140`，上一轮把总长 194 误判为 zero）；但客户端仍 state=4/ui=5，gs 只收 inband。② `--trace-files` 跑到 ui=5：5178 条文件事件，尾部循环 `CreateFileA error=3 .\hires\sound\music\ui\ui_sp_hz_t_menumusic.mp3`（文件存在于 overlay 的 `main\...`，但客户端只在 `hires\` 下找）。→ 下一步把 UI 音乐放进 `offline-resources\hires\sound\music\ui\` 消掉重试再观察。

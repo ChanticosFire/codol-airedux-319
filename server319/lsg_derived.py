@@ -545,7 +545,8 @@ class DerivedLsgServer(AuthServer):
                     conn.sendall(reply)
                     self.evidence.write("candidate_task_reply", session,
                                         reply_hex=reply.hex(),
-                                        reason="svc71/task4 reference candidate; client consumption unverified")
+                                        reason=f"svc71/task4 reference candidate mode={t4_mode} "
+                                               f"payload={len(reply_payload)}")
                     counter += 1
                 elif service == 80 and task in (130, 131, 132, 133):
                     # Marketplace getBalance: u8 currency + u32 balance, from the
