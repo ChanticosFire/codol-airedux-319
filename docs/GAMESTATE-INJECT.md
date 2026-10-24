@@ -3174,3 +3174,45 @@ briefcase_bomb_defuse_mp, ...
   让服务端路径的表达到 1266；
 - 下一步先验证这 130 个名字确实来自 `common_gametype_mp.ff`（解码该包搜索），
   再决定用"补 configstring"还是"触发加载 common_gametype_mp.ff"。
+
+## 98. 2026-10-25 14:00–14:30：**根因锁定 —— 88 = common_gametype_mp.ff 武器，42 = 动态复合**
+
+### 98.1 130 个缺失的构成
+
+| 来源 | 数量 | 说明 |
+|---|---|---|
+| `common_gametype_mp.ff`（1400 asset） | **88** | 连杀奖励/空中支援武器（`ac130_*`、`airdrop_*`、`airstrike_mp`、`artillery_mp`、`auto_tow_mp`、`briefcase_bomb_defuse_mp` …） |
+| 运行时动态复合（`** <idx> 0 0 <components>`） | **42** | 不在任何 ff 里，由 `0x431810` 在 demo 播放时动态合成 |
+
+样例（动态复合）：
+
+```
+** 249 0 0
+** 682 0 0 9930 8738 6747 10545 9321 6690 6825
+** 320 0 0 6747 8738 9321 6825
+...
+```
+
+### 98.2 数字对上
+
+```
+服务端路径表 = 1136
++ gametype 武器 88
+= 1224  ← demo 数据要求的索引（181 错误里的 1224）
+```
+
+→ **181 的直接原因就是缺这 88 个 gametype 武器**，与 HANDOFF 的"差 88 个"完全一致。
+42 个动态复合武器是 demo 播放时现场生成的，属于"正常增量"，不是缺失。
+
+### 98.3 修复方向（明确）
+
+1. **让服务端路径加载 `common_gametype_mp.ff`**（等价于 demo 播放时的 gametype 包加载）；
+2. 或把 88 个武器名以 configstring 形式补进 gamestate（`build_native_gamestate` 的
+   configstrings 参数，或直接构造 `d <idx> <name>` 命令序列）；
+3. 验证：表到 1224+ 后，`0x59B560` 的 1224 比较应通过，181 消失。
+
+### 98.4 产物
+
+- `runs/weapon-diff.json`（130 个缺失）
+- `runs/weapon-diff-sources.json`（88 in gametype / 42 nowhere）
+- `runs/ff-decoded/gametype`（1400 asset 的 zone 数据）

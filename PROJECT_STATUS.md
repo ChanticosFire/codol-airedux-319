@@ -18027,3 +18027,7 @@ lobby          = 0x37E19850
 > **2026-10-25 13:30–14:00【决定性成果：130 个缺失武器清单确定（全为连杀奖励/空中支援）】**
 >
 > 运行时表快照：demo 路径 1266（r126）、服务端路径 1136（r130，命中 gamestate_source 后 0.25-0.5s 连续采样抓到重建窗口）。差集：missing=130、extra=0，缺的全是 `ac130_*`/`airdrop_*`/`airstrike_mp`/`artillery_mp`/`auto_tow_mp`/`briefcase_bomb_defuse_mp` 等连杀奖励武器（`runs\weapon-diff.json`）。→ 根因确认：服务端 gamestate 未覆盖 common_gametype_mp.ff/ui_mp.ff 的连杀武器定义。下一步验证来源并补进 gamestate。
+
+> **2026-10-25 14:00–14:30【根因锁定：88 = common_gametype_mp.ff 武器；42 = 运行时动态复合；1136+88=1224 正好对上】**
+>
+> 130 个缺失拆解：**88 个在 common_gametype_mp.ff**（1400 asset，连杀/空中支援武器），**42 个是运行时动态复合**（`** <idx> 0 0 <components>`，不在任何 ff）。`1136 + 88 = 1224` 正是 181 错误里的期望索引 → **181 的直接原因就是缺这 88 个 gametype 武器**，与 HANDOFF 的"差 88 个"一致。产物：`runs/weapon-diff.json`、`runs/weapon-diff-sources.json`、`runs/ff-decoded/gametype`。→ 修复：让服务端路径加载 common_gametype_mp.ff，或把 88 个名字补进 gamestate。
