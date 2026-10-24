@@ -17857,3 +17857,7 @@ lobby          = 0x37E19850
 > **2026-10-24 23:10–23:25【只放 demo 不播放不预加载地图；推测 cf_dvar 走 fallback】**
 >
 > r74（启动+放 demo 不播放）fastfile 12 个，**无 crash/cross** → 启动不扫描 demo 预加载地图。矛盾仍在：r58（cf_dvar.demo，地图名改成 cross_fire）trace 有 `patch_mp_crash_tropical.ff`，而 r72/r73（原始 demo）FSOpen/FileExists 播放期间 0 命中。推测：cf_dvar 按 `mp_cross_fire` 找包失败后 **fallback** 到 crash_tropical。→ 下一步用 cf_dvar.demo 跑 FSOpen 断点，若读到 patch_mp_cross_fire.ff/fallback 即确认；若是，则在 overlay 放 patch_mp_cross_fire.ff 让 fallback 命中。
+
+> **2026-10-24 23:25–23:40【0xC513D9 在 demo 播放期间始终 0 命中（原始 + cf_dvar 均如此）】**
+>
+> r73（原始 demo）与 r75（cf_dvar 改图 demo）在 `0xC513D9:FSOpen` 断点下，播放期间命中均为 **0**（只有启动 1 次）→ demo 播放不经过 CreateFileA，地图加载不走 FS 层（可能内存缓存/预读）。顺带发现 `read_call_arg.py` 的 GBK 编码 bug（需 ensure_ascii=True）。→ 下一步修工具编码，并用 trace-files 分析播放期间所有文件事件，确认是否完全无 IO。

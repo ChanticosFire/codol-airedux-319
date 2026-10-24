@@ -1683,3 +1683,32 @@ localized_code_pre_gfx_mp
 2. 若 fallback 成立，则在 overlay 放入 `patch_mp_cross_fire.ff`（内容用 mp_cross_fire.ff 复制）
    并让客户端在 fallback 前命中它——这是"让 demo 加载 cross_fire"的最后一条路；
 3. 否则只能回到服务端路线（另找 net_state=7 入口）。
+
+## 57. 2026-10-24 23:25–23:40：`0xC513D9` 在 demo 播放期间始终 0 命中
+
+| 实验 | demo | 断点 | 播放期间命中 |
+|---|---|---|---|
+| r73 | 原始（crash_tropical） | 0xC513D9:FSOpen | **0**（仅启动 1 次） |
+| **r75** | cf_dvar（cross_fire） | 0xC513D9:FSOpen | **0**（仅启动 1 次） |
+
+→ 无论 demo 的地图名是什么，**demo 播放都不经过 0xC513D9（CreateFileA）**。
+
+### 57.1 顺带发现的工具 bug
+
+`read_call_arg.py` 在打印时遇到非 ASCII 字符触发 `UnicodeEncodeError: 'gbk' codec ...`
+（Windows 控制台默认 GBK）。需要改成 `ensure_ascii=True` 或用 `errors="replace"`。
+
+### 57.2 推论
+
+demo 播放触发的地图加载**不经过 FS 层**（CreateFileA）。两种可能：
+
+1. 地图 fastfile 在更早阶段已加载进内存（启动时的 4 个基础包之外，还有一条没被断点捕获的加载）；
+2. demo 播放直接用内存里的地图数据（fastfile 已被预读进缓存），不重新打开文件。
+
+### 下一步
+
+1. 修 `read_call_arg.py` 的编码问题（`ensure_ascii=True`）；
+2. 用 `--trace-files` 完整 trace 分析 demo 播放期间**所有**文件事件（不只 `.ff`），
+   确认播放期间是否还有任何文件 IO；
+3. 若播放期间完全没有文件 IO，则"换图"必须在播放前完成——此时唯一的入口是
+   demo 播放器读取地图名的位置（`0x813C20` 内部或 `0x49E600` 的第三个调用者）。
