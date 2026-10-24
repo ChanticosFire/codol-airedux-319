@@ -110,3 +110,27 @@ gamestate 是 inband（带 `svc 0x03`），客户端要用 **netchan 序号** �
 
 下一步：在注入 gamestate 前，先读出客户端当前的期望 seq（`connection` 对象或 `ring_a` 的写序号），
 把 payload 的 netchan 头改成该 seq；或改走 gs 的真实分片（它带 `seq|0x80000000` 与 XOR key）。
+
+## 7. 2026-10-24 12:49–12:52：state 6 是稳定卡点
+
+两个变量都排除了：
+
+| 变量 | 设置 | 结果 |
+|---|---|---|
+| gamestate 延迟 | `--delay-send 0`（connect 后立即发） | `state=6`、`ui=0` |
+| snapshot 序号起点 | `--snapshot-seq 1`（从 1 递增） | `state=6`、`ui=0` |
+
+两轮服务端日志都完整：`connect → out oob×4 → stats → gamestate 分片 → snapshot`，
+客户端也在发 `heartbeat`；但 `net_state` 稳定停在 **6**，不再前进。
+
+静态补充：`0x76446B0` 的**立即数**写入只有 5 处 ——
+`0x470467=3`、`0x5BE90A=7`、`0x5BEA8B=4`、`0x77C343=0`、`0x813D34=7`；
+**没有直接写 5/6/9/10 的立即数**，5/6 一定是由寄存器写入（`mov [0x76446B0], eax/ecx`）。
+`0x5BE730` 是 `CONNECT_FN`，`0x5BEA8B` 写 4 就在它附近 —— 下一轮应反汇编 `0x5BE900–0x5BEB40`，
+找出 5→6 的写入点及 6 的等待条件（很可能是"等 svc 消息/等 netchan ack"）。
+
+### 下一步
+
+1. 反汇编 `0x5BE900–0x5BEB40`，定位 `mov [0x76446B0], reg` 的 5/6 写入；
+2. 从写入点向回找条件跳转，确认 6→9 需要什么消息/字段；
+3. 按条件补服务端消息（而不是继续换 seq/delay）。

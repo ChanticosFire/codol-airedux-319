@@ -17657,3 +17657,7 @@ lobby          = 0x37E19850
 > **2026-10-24 12:49–12:51【分步注入到 5，gamestate 未被接受】**
 >
 > 分步注入：challenge（1→3，pump 后 4）→ connectResponse（4→5）→ native gamestate（仍 5），`ui_state` 0。前两步顺序正确；gamestate 是 inband（svc 0x03），客户端需要 **netchan seq** 与它当前期望值对齐后才解析，而 `inject_one` 写的是裸 svc 数据（ack=0、无递增 seq），被当过期消息丢弃。下一步：注入前先读客户端期望 seq 并改写 netchan 头，或改走 gs 的真实分片（带 `seq|0x80000000` 与 XOR key）。
+
+> **2026-10-24 12:49–12:52【state 6 稳定；定位下一步】**
+>
+> `--delay-send 0`（gamestate 立即发）与 `--snapshot-seq 1`（序号从 1 起）两轮都只到 **state 6**、`ui=0`；服务端日志完整（connect/oob×4/stats/gamestate/snapshot），客户端也发 heartbeat。`0x76446B0` 的立即数写入仅 5 处（3/7/4/0/7），**没有 5/6/9/10 的立即数**，5/6 由寄存器写入；`0x5BE730`=CONNECT_FN、`0x5BEA8B` 写 4。→ 下一轮反汇编 `0x5BE900–0x5BEB40` 找 5→6 写入点与 6 的等待条件，按条件补消息，不再换 seq/delay。
