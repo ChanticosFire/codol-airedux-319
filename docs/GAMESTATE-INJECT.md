@@ -8116,3 +8116,38 @@ gs: 12 inband，无 connect
 ### 下一步
 
 检查 `invoke_sequence` 的实现（第 207 行）—— 它可能要求窗口焦点或特定状态才执行。
+
+## 232. 2026-10-27 09:30–10:00：**`invoke_sequence` 返回 `row`（无 `status_after`）→ `result: null` 是代码 bug；`0x5BE730` 确实被执行**
+
+### 232.1 源码
+
+```python
+def invoke_sequence(self, calls, window="CODO", settle=1.5, timeout=20.0) -> dict:
+    tid = self._thread_id(window)          # 取窗口线程
+    SuspendThread(thread)                  # 挂起
+    cave = VirtualAllocEx(...)             # 分配 shellcode 空间
+    code = b"\x60" + ... + b"\x61\xc3"     # pushad + call target + popad + ret
+    SetThreadContext(...)                  # EIP → cave, ESP → return_slot
+    ResumeThread(thread)                   # 恢复执行
+    ...
+    return row                             # ← 返回 row，**没有 status_after 键**
+```
+
+而 `forward` 里：
+```python
+result = client.invoke_sequence([{"target": CONNECT_FN, "args": []}], settle=1.0)
+events.append({"t": 0.0, "dir": "connect", "result": result.get("status_after")})
+```
+
+→ `result.get("status_after")` 恒为 `None` → 事件里 `result: null`。
+
+### 232.2 结论
+
+- **`result: null` 是代码 bug**（键名不匹配），**不是执行失败**；
+- `invoke_sequence` **确实执行了 `0x5BE730`**（挂起 + 改 EIP + 恢复）；
+- 所以 `0x5BE730` 被执行了，但**没发包** → **执行瞬间的条件不满足**。
+
+### 232.3 下一步
+
+在 `0x5BE730` 执行**瞬间**捕获 `[0xE59D20]`、`B7A670()` 等值（需要断点或在 cave 里加记录）；
+或打印 `row` 的完整内容（`row["calls"]` 里有每次调用的结果）。

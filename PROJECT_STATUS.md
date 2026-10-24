@@ -18563,3 +18563,7 @@ lobby          = 0x37E19850
 > **2026-10-27 09:00–09:30【完整条件链全满足（stage=6、holder 非空、B7A670()=2、B7A6E0()=1441105936≠0）但 connect 仍不发 → 唯一解释是 0x5BE730 未被调用（invoke_sequence 失败，result:null）】**
 >
 > 0xB7A6E0 返回 [esi+0x38]=1441105936；0x5BE7BB je 0x5BE7FC 不跳 → 应到 0x5BE7BD call 0x7F9090。实测 sent=12/received=0。→ 下一步查 invoke_sequence（第 207 行）实现。
+
+> **2026-10-27 09:30–10:00【invoke_sequence 返回 row（无 status_after 键）→ result:null 是代码 bug 而非执行失败；0x5BE730 确实被调用，但没发包 → 执行瞬间条件不满足（stage/B7A670 可能被改回）】**
+>
+> 源码：`SuspendThread` → 构造 `pushad+call target+popad+ret` → `SetThreadContext`（EIP=cave）→ `ResumeThread` → `return row`。forward 里 `result.get("status_after")` 恒 None。→ 下一步在 cave 里记录执行瞬间的 [0xE59D20] 与 B7A670 值，或打印 row 完整内容。
