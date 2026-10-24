@@ -317,3 +317,35 @@ key 假设可以排除。
 1. 读 `0x5C1678`（challengeResponse 分支）之后的状态写入，确认 5→? 的条件；
 2. 在 `0x472D80` 下断点，配合 `--challenge-override` 再跑一次，确认 gamestate 是否终于进入解析器；
 3. 若仍不进，改在 ring 消费点（`0x4F8D70` 内部）下断点，看包交给谁。
+
+## 15. 2026-10-24 13:24–13:32：复现 ui_state=5，并定位到 LSG 未实现任务
+
+带 **LSG 登录**的流程（`server319.lsg` + `drive_login_state_machine` + `inject_client_gamestate` + `ring_bridge connect`）：
+
+| 观测 | 结果 |
+|---|---|
+| `state` | 4 |
+| **`ui_state`** | **5（加载屏）** ← 首次在该流程中复现原始卡点 |
+| 截图 | `runs/r23-ui5.png` |
+| `0x472D80` 断点 | 0 次命中 |
+
+同时 `runs/r23-lsg.jsonl` 里客户端连续请求了 **5 类 LSG 任务**，服务端全部未实现（`error=4`）：
+
+| service/task | 参数摘要 | LSG 回复 |
+|---|---|---|
+| 28/4 | `tag(0x6c)` | presence not implemented |
+| 102/7 | `u32(50),u8(1),u64(0),u8(1),u64(1),u8(1),u64(2),u8(1)` | unhandled |
+| 102/1 | `u32(0),u32(1),u8(3),u64(0)` | unhandled |
+| 3/46 | `str_hex(),u64(0),str_hex(),u32(10),u32(0)` | unhandled |
+| 3/48 | `str_hex(),u64(0),str_hex(),u32(0),u32(100),u32(0)` | unhandled |
+| 80/232 | `str_hex()` | unhandled |
+
+**结论**：`ui_state=5` 不是游戏服务器/快照造成的，而是 **LSG（大厅服务）在登录后等待这些任务响应**；
+LSG 回 `error=4` 后客户端停在加载屏。→ 主线的下一关是 **LSG 任务覆盖**，不是快照格式。
+
+### 下一步
+
+1. 用 `tools/room_backend_1649370.py`、`tools/native_room_flow.py` 里已有的房间/服务契约，
+   给 `server319.lsg` 补上 28/4、102/1、102/7、3/46、3/48、80/232 的最小合法响应；
+2. 每补一类就重跑（LSG + drive_login），观察 `ui_state` 是否离开 5；
+3. `ui_state` 离开 5 后再接游戏服务器与快照。
