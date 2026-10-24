@@ -2159,3 +2159,51 @@ in oob 2 / connect 1 / out oob 3 / in stats 1 / in inband 1 / meta gamestate_sou
 2. 对比 `runs/gamestate-3426.bin`（真实抓包）与 gs 的 `--gamestate-source native`
    生成内容，检查 client_num / challenge / mapname 等字段；
 3. 修好后重发 demo 快照（`00-62474.bin`），验证 `Entities=1`。
+
+## 72. 2026-10-25 03:30–04:00：接手 Codex 交接；确认武器计数机制
+
+### 72.1 接手内容
+
+已读 `docs/DEEPSEEK-HANDOFF.md`、`tools/parse_demo_outer.py`、`tools/run_match.py`、
+`evidence/experiments/20261024-demo-outer-and-weapon-blocker.json`、
+`evidence/experiments/20261024-demo-delta-and-netchan-regression.json`。
+
+关键事实（Codex 已确立）：
+
+- netchan 已恢复：**gamestate 序号从 3 开始**、单分片 **10 字节头**（`086a140`）；
+- demo 外层从 `0x8020` 解析：type 2 = `02 + u32 seq + u32 len + payload`，18,366 包；
+- 精确导出（`runs/demo-outer-exact/`）：gamestate 6407（zlib 解压）、291 configstring、
+  baseline 包 17 = 245 字节（delta_distance=0）、首个 p 增量包 113 = 259 字节（delta_distance=1）；
+- **当前精确阻塞**：武器定义索引 — 本地 1136 vs demo 要求 1224（差 88）；
+- 删 configstring 7184–7218（r104）→ 越过错误 181 但在 `0x58F3C0` 空指针崩溃。
+
+### 72.2 环境确认
+
+- demo 原路径 `E:\GAME\COD\使命召唤OL\main\demo\` **已不存在**；
+  实际在 `E:\GAME\COD\1649370\workspaces\offline-runs\20261023-codex-delay-a2\runtime\main\demo\`；
+- `runs/demo-outer-exact/` 完整保留（gamestate 6407/6411、baseline 245、p 增量 259/209/268/332/352）；
+- `snapshot_due` 的 15 秒钳制已由 Codex 移除（第 321 行 `+ self.snapshot_delay`）。
+
+### 72.3 武器计数机制（本轮新证据）
+
+`0x42F432 inc dword ptr [0x1988634]` 的上下文：
+
+```asm
+0x42F424  mov ecx, [0x1988634]     ; 计数作为新索引
+0x42F42A  call 0x431810            ; 创建复合武器
+0x42F432  inc dword ptr [0x1988634] ; 只在"创建新复合武器"时递增
+```
+
+demo 播放采样：`0x1988634` 全程 **0**（从启动到播放 24 秒），`net_state` 1→0
+（本次 demo 未进入 8/10，需复跑确认）。
+
+→ **demo 播放路径不创建复合武器**（`0x42F2F0` 查找命中已有字符串），
+而服务端 gamestate 路径会创建（索引 1136）。
+这印证了 HANDOFF 的推断：**差异在"预注册"**，demo 的某个前置步骤把武器注册好了。
+
+### 下一步
+
+1. 复跑 demo 播放，确认 `0x42F2F0`（查找已有字符串）在 demo 路径的命中率；
+2. 对比服务端 gamestate 路径（`0x42F3E0` 返回 miss → 创建 → 1136）；
+3. 用 `run_match.py` 复现 Codex 的 r103（`--gamestate-file runs/demo-outer-exact/gamestate-network-ffb56d7e-6411.bin`），
+   确认武器错误可稳定复现后，再找 88 个缺失注册。
