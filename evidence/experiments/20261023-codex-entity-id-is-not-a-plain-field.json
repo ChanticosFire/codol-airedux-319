@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T23:00:00+00:00",
+  "scope": "the entity id is NOT a plain 12-bit field at bit 1309: the body already had bits 000100000000 there yet the client decoded 4048",
+  "the_measurement": {
+    "body_bits_1309_1320": "000100000000 (= 8 if read as a plain LSB-first 12-bit field)",
+    "client_decoded_id": "0x0FD0 = 4048",
+    "conclusion": "the id is not read as a straight 12-bit field from 1309"
+  },
+  "why": [
+    "the read goes through 0x66EC30, which reads WHOLE BYTES starting at byte ([+0x20] >> 3) and then shifts within the byte using the bit offset",
+    "so the value depends on the byte alignment and on how the function combines the bytes, not on a clean bit slice",
+    "the earlier observation that one 12-bit read advances the position by 20 bits is the same phenomenon seen from the other side"
+  ],
+  "what_this_invalidates": [
+    "the plan to choose the entity id by writing bits 1309..1320",
+    "and my prediction that id 4048 is out of range for the map - that may still be true, but the id cannot be changed the way I assumed"
+  ],
+  "what_is_needed": [
+    "read the body of 0x66EC30 (0x66EC8D onwards) to learn exactly how it assembles N bits from bytes, including the shift direction and the byte order",
+    "then the id can be set deliberately and the 'small id' experiment becomes possible"
+  ],
+  "the_other_observation": [
+    "the client process was gone at the end of this run, so this body (changed bit 1, count 1, id whatever) makes it exit",
+    "whereas snapshot-id8.bin is byte-identical in the id bits to ent2, so the exit is the same behaviour ent2 already showed"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r226-gs.jsonl",
+    "body": "runs/snapshot-id8.bin"
+  }
+}

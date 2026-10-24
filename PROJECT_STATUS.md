@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The entity id is not a plain 12-bit field at 1309]**
+> Bits 1309..1320 are 000100000000 (= 8) yet the client decoded 4048, so 0x66EC30 assembles the value from whole bytes with a shift, not from a clean slice. The 'set a small id' plan therefore needs the reader's exact byte arithmetic first.
+> Next: read 0x66EC30 from 0x66EC8D to learn the assembly, then the id becomes settable.
+> Evidence: [entity id is not a plain field](evidence/experiments/20261023-codex-entity-id-is-not-a-plain-field.json).
 > **2026-10-23 [DIAGNOSIS: an entity's presence alone keeps the client at state 9]**
 > mode5 (no-op delta) with count=1 gives state 9, exactly like mode1 and ent2/ent4, while single22 (count=0) gives state 10. So the entity list being non-empty is what blocks the in-match state, independent of delta content.
 > Most likely cause: id 4048 is out of range for the map. The id is 12 bits at 1309 and fully controllable. Next: rebuild with a small id (1, 64, 100).
