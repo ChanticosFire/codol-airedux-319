@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T13:00:00+00:00",
+  "scope": "MEASURED: one 12-bit id read at an unaligned position advances the cursor by 20 bits and lands at 1329, which is where the per-entity payload begins",
+  "the_measurement": [
+    {
+      "probe": "0x6716AA EntReadDone (immediately after the id read returns)",
+      "bitpos": 1329,
+      "ids": "not yet stored"
+    },
+    {
+      "probe": "0x6716C3 EntLoopDone (after the loop)",
+      "bitpos": 1329,
+      "ids": "d00f... (= 4048)"
+    },
+    {
+      "before_the_read": 1309
+    },
+    {
+      "advance": 20
+    }
+  ],
+  "why_20_and_not_12": [
+    "the read starts at bit 1309, which is byte 163 with a bit offset of 5",
+    "12 bits from there span bytes 163, 164 and 165",
+    "0x66EC30 reads whole bytes and shifts, so after the read the position is advanced past the bytes it touched rather than by exactly N",
+    "the empirical rule is therefore: an unaligned N-bit read costs whole bytes, not N bits",
+    "the exact landing 1329 = byte 166 bit 1 suggests it advances to the start of the next byte plus one, which is a detail that matters only for reproducing the payload offset"
+  ],
+  "what_this_fixes_for_the_payload": [
+    "the per-entity payload begins at bit 1329 for this body (one entity, id 4048)",
+    "so the first payload field is read from bit 1329 onward",
+    "any payload we write must be placed at 1329, not at 1309 + 12"
+  ],
+  "the_remaining_step_for_a_visible_world": [
+    "place a valid first payload field at 1329",
+    "the field table 0xDA63E8 maps the entity state offsets to codecs, and the encoder already knows how to write a gate + value",
+    "the immediate goal is not a specific value but a parse that survives: the client currently exits after the snapshot, and a consistent payload is the most likely fix"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r221-gs.jsonl",
+    "body": "runs/snapshot-ent2.bin"
+  }
+}

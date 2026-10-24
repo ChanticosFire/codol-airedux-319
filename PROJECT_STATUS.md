@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [One 12-bit id read advances the cursor by 20 bits; the payload starts at 1329]**
+> EntReadDone and EntLoopDone both read bitpos 1329; before the read it was 1309, so an unaligned 12-bit read costs 20 bits because 0x66EC30 reads whole bytes and shifts.
+> So the per-entity payload begins at bit 1329 for this body (id 4048). Next: place a valid first payload field there and see whether the client survives.
+> Evidence: [id read costs 20 bits](evidence/experiments/20261023-codex-id-read-costs-20-bits.json).
 > **2026-10-23 [The id loop reads exactly 12 bits but the position advanced 20]**
 > 0x6716A1..0x6716C1 is a clean 12-bit read per entity, looping count times. 0x66EC30 reads N bits at [+0x20] and derives the byte index as [+0x20]>>3. Yet bitpos went 1309 -> 1329 across one 12-bit read.
 > Next: log [+0x20] at 0x6716A5 and 0x6716C3 to learn the exact cost of one 12-bit read; that unit is needed to locate the per-entity payload.
