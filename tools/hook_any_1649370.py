@@ -33,6 +33,11 @@ import struct
 import subprocess
 from ctypes import wintypes as W
 
+import capstone
+
+_MD = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
+_MD.detail = False
+
 k32 = C.WinDLL("kernel32", use_last_error=True)
 
 k32.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
@@ -208,7 +213,41 @@ def main() -> int:
         code += b"\xB9" + struct.pack("<I", count_words)     # mov ecx,words
         code += b"\xF3\xA5"                                  # rep movsd
     code += b"\x61"                                          # popad
-    code += original                                         # replay stolen bytes
+
+    # Replay the stolen bytes, *relocating relative jumps*.
+    #
+    # A blind `code += original` is wrong whenever the stolen span contains a
+    # relative branch: `0F 84 xx xx xx xx` means "jump to <target>" only while it
+    # sits at its original address.  Copies into the cave keep the old
+    # displacement and therefore jump to garbage -- that crash is what killed the
+    # 0x5C2388 experiment in Round 39.
+    replay_addr = cave + len(code)
+    replay = bytearray()
+    for ins in _MD.disasm(bytes(original), args.target):
+        here = replay_addr + len(replay)
+        raw = bytes(ins.bytes)
+        if ins.mnemonic in ("call", "jmp") and ins.size == 5:
+            tgt = int(ins.op_str, 16)
+            replay += raw[:1] + struct.pack("<I", (tgt - (here + 5)) & 0xFFFFFFFF)
+        elif ins.mnemonic.startswith("j") and ins.size == 6 and raw[0] == 0x0F:
+            tgt = int(ins.op_str, 16)
+            replay += raw[:2] + struct.pack("<I", (tgt - (here + 6)) & 0xFFFFFFFF)
+        elif ins.mnemonic.startswith("j") and ins.size == 2:
+            # A short branch cannot stay short from the cave: relocation may push
+            # the distance past +-127.  Widen it to the rel32 form.
+            tgt = int(ins.op_str, 16)
+            if ins.mnemonic == "jmp":
+                replay += b"\xE9" + struct.pack("<I", (tgt - (here + 5)) & 0xFFFFFFFF)
+            else:
+                jcc = raw[0] - 0x70
+                replay += bytes([0x0F, 0x80 + jcc]) + \
+                    struct.pack("<I", (tgt - (here + 6)) & 0xFFFFFFFF)
+        else:
+            replay += raw
+    if len(replay) < args.len:
+        raise SystemExit(f"relocated replay shorter than stolen span: "
+                         f"{len(replay)} < {args.len}")
+    code += bytes(replay)
     rel = (args.target + args.len - (cave + len(code) + 5)) & 0xFFFFFFFF
     code += b"\xE9" + struct.pack("<I", rel)                 # jmp target+len
 
