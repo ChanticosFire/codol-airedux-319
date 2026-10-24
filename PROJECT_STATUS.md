@@ -18667,3 +18667,7 @@ lobby          = 0x37E19850
 > **2026-10-27 23:10–23:30【switchtomainmenu 在 demo 播放中调用会终止进程（ui/net/table 全 None、窗口消失）→「返回大厅」需改路径：让 demo 自然播完(30:45)/用短 demo/物理点快进/用 closemenu。本轮已达成验收判据（ui=0 + 两张真实地图截图 + net=10 + table 1135→1266）】**
 >
 > 可复现 6 步已写入 docs/GAMESTATE-INJECT.md §257.3。
+
+> **2026-10-27 23:30–00:10【「对局可结束」铁证：短 demo（01:16）播完自动弹出「暗影军团有权 / 获胜」结算（runs/r219-shots/after-demo-finished.png），状态 ui=0 net=10 table=1266；返回大厅三种尝试：closemenu 无效、Esc 脚本 hwnd=0 未发出、switchtomainmenu 会杀进程】**
+>
+> 验收判据除「返回大厅」外全部满足。下一步：Python 发 Esc / 物理点击结算返回按钮 / disconnect。
