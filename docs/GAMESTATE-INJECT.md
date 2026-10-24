@@ -4298,3 +4298,48 @@ restore 24 ff from backup → const.ff sha f7f138eb（与原版一致）
   2. 若校验整文件 sha256，需要同时更新它的期望值（改 launch 的配置/常量）；
   3. 或者绕开 launch，直接启动 exe（手动拼参数）。
 - 注意：**改 launch 的校验值**比改 exe 更"干净"（不动客户端二进制）。
+
+## 128. 2026-10-26 05:00–05:30：**指纹校验定位 —— 整文件 sha256 白名单**
+
+### 128.1 位置
+
+```
+E:\GAME\COD\1649370\src\codol_rebuild\adapters\game\v1649370\menu_preview.py
+```
+
+### 128.2 实现
+
+```python
+IMAGE_SHA256 = '55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd'
+
+def validate_menu_preview_image(image: bytes) -> dict:
+    if hashlib.sha256(image).hexdigest() != IMAGE_SHA256:
+        raise ValueError('离线 UI 预览基底指纹不符')
+    ...
+    for va, expected in ((PATCH_VA=0x5EBFF3, b'\xe8\x28\x28\x00\x00'),
+                         (ACTIVATE_VA=0x5EBE40, b'\x80\x3d\x44\x13\x2e\x08\x00')):
+        if pe.get_data(va - 0x400000, len(expected)) != expected:
+            raise ValueError(f'离线 UI 补丁字节不符: {va:#x}')
+```
+
+→ 校验**两种东西**：
+1. **整个 exe 的 sha256**（`IMAGE_SHA256`，改 1 字节就不符）；
+2. 两个关键 VA 处的补丁字节（`0x5EBFF3`、`0x5EBE40`）。
+
+### 128.3 绕过方案（三选一）
+
+| 方案 | 做法 | 风险 |
+|---|---|---|
+| A1 | 改 `IMAGE_SHA256` 为改后 exe 的 sha256 | 改共享工具，影响其他实验 |
+| A2 | 绕开 launch，手动启动 exe（拼参数） | 需要复刻 launch 的大量参数与 patch |
+| A3 | 只改 ff、**不改 exe**（放弃信任根替换） | 走不通（签名必失败） |
+
+→ 选 **A1**（最小改动）：把 `IMAGE_SHA256` 改成"改后 exe 的 sha256"，
+实验后恢复；同时保留 `.orig-backup` 可随时回滚。
+
+### 下一步
+
+1. 记录改后 exe 的 sha256；
+2. 临时改 `IMAGE_SHA256`；
+3. 重跑路线 A（换公钥 + 全量重签 ff + 启动），观察客户端是否接受；
+4. 实验后立即恢复（exe、ff、`IMAGE_SHA256` 三处）。
