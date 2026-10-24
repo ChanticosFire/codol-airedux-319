@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T18:00:00+00:00",
+  "scope": "DECISIVE: mode 1 writes THREE FLOATS into the entity at +0x24, +0x28 and +0x2C - that is the entity's ORIGIN",
+  "the_commit_tail_0x671873": {
+    "0x671873": "call 0x6715D0 ; fstp dword [edi+0x24]   - a float, first position component",
+    "0x67187B": "call 0x6714D0 ; fstp dword [edi+0x2C]   - second position component",
+    "0x671883": "call 0x671550 ; fstp dword [edi+0x28]   - third position component",
+    "0x67188B": "jmp 0x671A0D                            - the common exit of the delta decoder"
+  },
+  "the_complete_list_of_what_mode_1_writes": [
+    "[edi+0x10] = the value accumulated by mode 3 (11-bit)",
+    "[edi+8]    = the value accumulated by mode 4 (-97)",
+    "[edi+0x30] = a 2-bit value read inline",
+    "[edi+0x18] = an id looked up from the entity id array (mode 1 only)",
+    "[edi+0x24], [edi+0x2C], [edi+0x28] = three FLOATS, i.e. the entity ORIGIN"
+  ],
+  "why_this_is_the_answer_to_the_original_question": [
+    "the goal has been to give an entity an eType and an origin so the client draws it",
+    "mode 1 is precisely the operation that writes the origin as three floats",
+    "and the three floats are computed by 0x6715D0, 0x6714D0 and 0x671550 from the accumulated scratch values, so the position is derived from the mode 3 / mode 4 accumulators",
+    "that means a three-operation delta (mode 3, mode 4, mode 1) is exactly what places an entity at a chosen position"
+  ],
+  "the_immediate_next_step": [
+    "read 0x6715D0, 0x6714D0 and 0x671550 to learn how each float is derived from the scratch values",
+    "then choose mode 3 and mode 4 values that produce the desired x, y, z",
+    "mode 1 also needs its 2-bit inline value and, when the id width is non-zero, an id index - those are cheap to supply"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x671873 float stores",
+      "0x6715D0",
+      "0x6714D0",
+      "0x671550",
+      "0x671A0D common exit"
+    ],
+    "server_log": "runs/codex-r223-gs.jsonl"
+  }
+}

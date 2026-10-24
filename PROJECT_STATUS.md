@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [DECISIVE: mode 1 writes the entity ORIGIN as three floats at +0x24/+0x28/+0x2C]**
+> 0x671873..0x67188B: call 0x6715D0 -> [edi+0x24]; call 0x6714D0 -> [edi+0x2C]; call 0x671550 -> [edi+0x28]; then jmp 0x671A0D (common exit). So mode 1 commits +0x10, +8, +0x30, +0x18 and the three origin floats.
+> The floats are computed from the mode 3 and mode 4 accumulators, so a three-operation delta (3, 4, 1) is what places an entity at a chosen position. Next: read 0x6715D0 / 0x6714D0 / 0x671550 to learn the derivation.
+> Evidence: [mode1 writes origin](evidence/experiments/20261023-codex-mode1-writes-origin.json).
 > **2026-10-23 [Entity modes are a PIPELINE: 3/4 accumulate, 1/8 commit into the entity struct]**
 > Modes reading bits: 1,2,3,4,8,11,12,13. Mode 3 reads 11 bits into [esi+0x24]; mode 4 reads a -97 value into [esi+0x28]; mode 1 commits them to [edi+0x10] and [edi+8], reads 2 bits into [edi+0x30], and indexes the id array into [edi+0x18]. Mode 8 is the same commit without the cross-entity reference.
 > So a delta is a sequence: [mode3][mode4][mode1 commit]. That explains why single-mode bodies changed nothing.
