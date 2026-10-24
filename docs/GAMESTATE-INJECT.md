@@ -8015,3 +8015,32 @@ gs: 12 inband，无 connect
 ### 下一步
 
 在 `stage=6` 状态下，重新读 holder 的 `+0x4F4/+0x4F8/+0xC8/+0x644/+0x5E8`，算出 `B7A670()` 的真实值。
+
+## 229. 2026-10-27 08:00–08:30：**`stage=6` + `B7A670()=2` 都满足，connect 仍不发；`state` 或是必要条件**
+
+### 229.1 实测
+
+```
+before unlock: holder=0x4AEBF5B8 loader=0x4AE9E518 flag=3131961345
+               c8=2 c644=0 c5e8=3  BA=2  B7=2
+after unlock+advance: stage=6
+after: 同上（B7=2 保持）
+forward: sent=12 received=0  state=0  stage=6
+after: ui=5 net=0 table=1135 load=2 stage=6
+gs: 12 inband，无 connect
+```
+
+### 229.2 结论
+
+- `0x5BE730` 的两个关键条件（`stage∈{4,6}`、`B7A670()==2`）**都满足**；
+- 但客户端**仍然不发 connect 包**；
+- 对比 r176（成功）：它的事件序列是 `state 4 → 5 → 6`，**`state` 从 4 开始**；
+- 现在 `state=0`（未连接状态）。
+
+→ **`state`（net_state）可能是 `0x5BE730` 之前的前置状态**：
+客户端必须先处于"已发起连接（state=4）"状态，`0x5BE730` 才会真正发包。
+
+### 229.3 下一步
+
+1. 让 `state` 回到 4（可能需要先 `forward` 触发一次"连接请求"，或改 `[0x76446B0]=4` 试试）；
+2. 查 `0x5BE730` 的调用者是否在 `state!=4` 时根本不调用它。
