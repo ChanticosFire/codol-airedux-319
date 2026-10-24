@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MAJOR REINTERPRETATION: the object is the CONNECTION object (holds 127.0.0.1, status 2)]**
+> Object 0x424EDBE8: [+0x4F4] sub-object 0x42425E70, [+0x4F8]=1. Sub-object holds vtable 0xD5A4F4, status 2, IP 127.0.0.1, and 0xBAADF00D. Status logic: with [+0x4F8]=1 the status passes through as 2, and 0x8037D6 takes the ui-5 branch.
+> So ui_state 5 is most plausibly the CONNECTING screen, and the client is stuck at 'connected to 127.0.0.1 but session not established' rather than loading the map. Net state 10 vs connection status 2 is the mismatch to explain.
+> Evidence: [object is the connection](evidence/experiments/20261023-codex-object-is-the-connection.json).
 > **2026-10-23 [The loader object is a lazy singleton of 0x1618 bytes; ui_state 5 = its status equals 2]**
 > 0x803830 is a get-or-create singleton: allocate 0x1618, construct via 0xB82130, cache in [0x8269774], init via 0xB7A400 and attach a sub-object. So the object exists because the subsystem is in use, and the earlier 0x4F8 size estimate is withdrawn.
 > ui_state 5 is chosen at 0x8037FA when 0xB838A0/0xB7A670 report status 2. Next question: what moves that status off 2.

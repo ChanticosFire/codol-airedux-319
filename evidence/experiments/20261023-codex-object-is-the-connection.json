@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T23:00:00+00:00",
+  "scope": "MAJOR REINTERPRETATION: the object holds 127.0.0.1 and status 2, and [+0x4F8] = 1 forces that status - so ui_state 5 is very likely a CONNECTION screen, not a map-loading screen",
+  "the_readings": {
+    "object": "0x424EDBE8",
+    "sub_object_0x4F4": "0x42425E70",
+    "flag_0x4F8": 1,
+    "sub_object_first_16_bytes": "f4a4d500 02000000 7f000001 0df0adba",
+    "decoded": {
+      "0x00D5A4F4": "a vtable",
+      "0x00000002": "the STATUS = 2",
+      "0x0100007F": "127.0.0.1 - the SERVER address",
+      "0xBAADF00D": "uninitialised marker"
+    }
+  },
+  "the_status_logic_at_0xB7A670": {
+    "0xB7A673": "ecx = [obj+0x4F4] ; if null -> status 0",
+    "0xB7A681": "call 0xBA0780 -> eax = a status",
+    "0xB7A686": "cmp byte [obj+0x4F8], 0 ; jne -> return eax unchanged",
+    "0xB7A68F": "if [obj+0x4F8] == 0 AND eax == 2 -> return 1",
+    "implication": "with [+0x4F8] = 1 the status passes through as 2, and 0x8037D6 takes the ui-5 branch"
+  },
+  "why_this_changes_the_picture": [
+    "the sub-object contains the SERVER's IP address, so this object is about the NETWORK CONNECTION rather than about loading map assets",
+    "status 2 with an address set reads like a connection state, not a load progress",
+    "so ui_state 5 is most plausibly the CONNECTING screen - which also explains the spinner: a connecting UI animates it",
+    "and the client would then be stuck at 'connected to 127.0.0.1 but the session is not established', not at 'loading the map'"
+  ],
+  "what_that_points_at": [
+    "the network layer reads net_state 10, but the client's own connection object still reports status 2",
+    "that mismatch is the thing to explain: something in the session setup (not the map, not the snapshots) leaves the connection object in status 2",
+    "candidates are the parts of the session handshake that follow gamestate: the client's acknowledgement path, or a session-level message our server does not send"
+  ],
+  "artifacts": {
+    "addresses": {
+      "object": "0x8269774",
+      "status_fn": "0xB7A670",
+      "flag": "+0x4F8",
+      "status_holder": "+0x4F4 -> +0x04"
+    },
+    "server_log": "runs/codex-r238-gs.jsonl"
+  }
+}
