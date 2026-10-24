@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Cursors are self-consistent (byte 163, bit 3); the id/count overlap is real]**
+> [+0x1C] = 164 and [+0x20] = 1307 satisfy the reader's own rule (old_byte 163 -> 1304 + offset 3). So the overlap between the 12-bit id (bytes 163-165) and the count byte 164 is a genuine format contradiction.
+> Therefore the header must end on a byte boundary: pad it to 1312 bits so gates land at 1312/1313 and the count stays at byte 164.
+> Evidence: [cursors self-consistent](evidence/experiments/20261023-codex-cursors-self-consistent.json).
 > **2026-10-23 [The 12-bit id overlaps the count byte - the entity block must be byte-aligned]**
 > ent3 (id=1 at bit 1309) destroyed the count byte at 164 because the id bits span bytes 163-165. A byte-aligned whole-byte field cannot live inside a continuing bit stream, so the entity block must start at a multiple of 8; 1307 is not, so our header is 5 bits too long.
 > Revised target: entity gates at 1312/1313 and count at byte 164, which is self-consistent. Next: build that body.
