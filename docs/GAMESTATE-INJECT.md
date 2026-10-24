@@ -11195,3 +11195,77 @@ state: ui=5  net=0  table=1135
 | 17 | 三个 C++ 处理都不加载地图 → 指向 UI 层 `ui_mapname` |
 | 18 | 拿到 dvar 结构/只读特性，值 = `mp_ui_viewer` |
 | **19** | **dvar 地址跨进程固定 `0x80FC008` —— 改写退化为一次 dword 写入，时机问题可用"先改后连"绕开** |
+
+## 282. 2026-10-28 21:00–22:00：**证伪 —— 改写 `ui_mapname` 不触发地图加载**
+
+### 282.1 实验按"先改后连"执行（Round 19 建议的顺序）
+
+```
+STEP 1（连接建立前）：
+  dvar name pointer = 0xdb2f98   ← 地址假设成立
+  flags             = 0x7
+  value before      = 'mp_afghan'          ← 这次是另一张图，不是 mp_ui_viewer
+  write map name    = True
+  point dvar+0x0C   = True
+  value after       = 'mp_crash_tropical'
+  state: ui=5 net=1 table=0 stage=5 loader5E8=3
+
+STEP 2：arm net_state = 3
+
+STEP 3（forward 之后每 2 秒采样，共 24 秒）：
+  t+ 2s ui=5 net=4 table=0 stage=5 loader5E8=3 map=mp_crash_tropical
+  t+ 4s ui=5 net=5 table=0 ...   map=mp_crash_tropical
+  t+ 6s … t+24s  全部相同
+```
+
+### 282.2 结论：`ui_mapname` 不是加载触发点
+
+- `net_state` 顺利推进到 **5**（握手链路正常）；
+- `ui_mapname` dvar **始终是 `mp_crash_tropical`**（没被覆盖）；
+- **`table` 从头到尾都是 0**，`loader5E8` 恒为 3（CA_LOADING）；
+- 也就是说：**"UI 层看到地图名就会去加载地图"这个假设不成立**。
+
+本轮因此**排除**了 Round 17–19 建立的那条假设链。
+
+### 282.3 一个旁证：flags 与本轮不同
+
+Round 18 读到 `flags = 0x107`（含 `DVAR_ROM`），本轮读到 `flags = 0x7`。
+说明该字段在运行期会被改动（也可能是我上轮写 `+0x0C` 之后的状态差异），
+**不宜再把它当作稳定特征**。真正稳定的是 `+0x00 == 0xDB2F98`（名字指针）。
+
+### 282.4 现在的确定事实清单
+
+已排除（都有实测证据）：
+
+| 假设 | 排除依据 |
+|---|---|
+| 网络不通 | gs 收到 getchallenge/connect/stats；`net_state` 到 5 |
+| 包没送达 | `CLpacketEvent` 1808 次、`recvPump` 32451 次 |
+| 客户端报错 | `Com_Error` 零调用 |
+| 地图文件缺失 | `mp_crash_tropical.ff` / `_load.ff` / `_const.ff` 都在 |
+| `loadingnewmap` 可注入 | 它是 UI 脚本字符串，零代码引用 |
+| `Com_LoadFastfiles` 未触发 | 已触发 2 次（UI 层 5 件套） |
+| `ui_mapname` 是触发器 | **本轮证伪：改写后 table 仍 0** |
+
+### 282.5 下一步方向（重新回到"谁真正加载地图 ff"）
+
+既然 UI dvar 路线走不通，需要**直接观测 fastfile 请求是否发生**。
+最可靠的两个观测点：
+
+1. **hook `FS_LoadFastfile`（`0x49ED40`）并记录全部名字**（Round 13 只记录了最后一个
+   `localized_ui_mp`）。需要把 capture 改成**收集数组**，才能看到 14 次分别是谁 ——
+   如果其中**从未出现 `mp_crash_tropical`**，就确认"地图 ff 请求根本没发出"；
+2. **观察 fastfile 打开的文件名**：hook `0x774900`（sprintf）太泛，
+   但可以 hook `FS_FOpen` 类的文件打开，或在 `%s.ff` 拼接后（`0x49ED71` 之后）
+   记录 `[ebp-0x108]` 的内容 —— 这正是拼好的文件名。
+
+**优先做第 2 条**：在 `0x49ED40` 里 sprintf 之后的位置记录缓冲区，
+能直接列出所有被请求的 `.ff` 文件名，一举判定地图 ff 有没有被请求过。
+
+### 282.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 17 | 指向 UI 层 `ui_mapname` |
+| 18/19 | 拿到 dvar 地址与写法 |
+| **20** | **证伪：改写 `ui_mapname` 不触发加载（table 仍 0）；排除清单再添一项，方向转为"直接列出被请求的 .ff 文件名"** |

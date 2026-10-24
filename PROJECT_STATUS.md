@@ -18763,3 +18763,7 @@ lobby          = 0x37E19850
 > **2026-10-28 20:00–21:00【🎯 ui_mapname 的 dvar 地址跨进程固定 = 0x80FC008（两次独立启动 Dvar_FindVar 都返回它），结构 +0x00="ui_mapname"、+0x08=0x107(ROM)、+0x0C=当前值"mp_ui_viewer"。改写退化为一次 dword 写入，不必每次调 Dvar_FindVar。另记录两个坑：①subprocess text=True 在中文 Windows 用 GBK 解码导致 remote_call 输出为空，需 encoding="utf-8",errors="replace" ②分段扫描找 dvar 会因部分页读取失败而漏检，直接读固定地址更可靠】**
 >
 > 下轮改顺序：先把 "mp_crash_tropical" 写进 0xC7AF590 并把 [0x80FC008+0x0C] 指过去（建连接前就改好），再 forward --start-challenge，观察 table 是否从0增长、ui 是否离开5。
+
+> **2026-10-28 21:00–22:00【⚠ 证伪：按"先改后连"执行后，ui_mapname 已是 mp_crash_tropical（连接前写入，全程未被覆盖），net_state 顺利到 5，但 table 从头到尾都是 0、loader5E8 恒 3 —— "UI 层看到地图名就加载地图"的假设不成立。另注：flags 本轮读到 0x7 而非 Round18 的 0x107，该字段运行期会变，只有 +0x00==0xDB2F98 稳定】** 
+>
+> 下一步：在 0x49ED40 里 sprintf("%s.ff") 之后的位置（0x49ED71 后）记录 [ebp-0x108] 缓冲区，直接列出所有被请求的 .ff 文件名，一举判定 mp_crash_tropical 有没有被请求过；另可把 hook_any 的 capture 改成收集数组以看到全部 14 次名字。
