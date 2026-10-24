@@ -2841,3 +2841,36 @@ r58 里 `patch_mp_crash_tropical.ff` 的 caller `0x776F80` 来自 **cf_dvar.demo
    抓原始 demo 播放 20 秒后所有 `.ff` 请求的返回地址；
 2. 或在 LoadDemo（`0x49E600`）返回后，跟踪它如何触发地图加载（同一调用栈的后续调用）；
 3. 拿到入口后，就能在服务端路径复刻"先加载地图 fastfile，再发 gamestate"。
+
+## 89. 2026-10-25 10:10–10:30：FS_OpenFile 完全间接调用，静态扫描无果
+
+### 89.1 扫描结果
+
+| 目标 | 结果 |
+|---|---|
+| `0xC51196`（FS_OpenFile 入口）的 `call` 引用 | **0** |
+| `0xC51196` 的 `push/mov/lea` 地址引用 | **0** |
+
+→ 该函数**完全通过间接方式**（vtable / 函数指针 / 动态分配）被调用，
+静态 xref 这条路走不通。
+
+### 89.2 已有确凿证据（r120 trace）
+
+原始 demo 播放 28 秒期间，`patch_mp_crash_tropical.ff` 的请求有两条：
+
+```
+caller 0xC513D9  (FS_OpenFile 内部，CreateFileA 返回点)
+caller 0x776F80  (FileExists 内部，CreateFileA 返回点)
+```
+
+说明地图 fastfile **确实**经过 FileExists + FS_OpenFile 这两层；
+但 r122 在 `0x776F00`（FileExists 入口）断点却只命中启动那次 —— 说明
+**断点可能被热路径/时序绕过**（或 events 文件取错，`reuse-*` 子目录每次不同）。
+
+### 下一步
+
+1. 用**断点 + 栈回溯**代替静态 xref：在 `0xC513D9` 命中时读 `[ebp]` 链
+   （返回地址 → 调用者 → 调用者的调用者），直接拿到"谁提供了地图名"；
+2. 用 `--trace-files` 的 `caller` 字段已能确认 0xC513D9/0x776F80，问题只是
+   "它们的上一级是谁"；
+3. 拿到上一级后，在服务端路径复刻该调用（或直接手工调用它）。

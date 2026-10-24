@@ -17991,3 +17991,7 @@ lobby          = 0x37E19850
 > **2026-10-25 09:40–10:10【重大纠正：0x49E600 是 LoadDemo（stack 有 demo 路径明文），不是 LoadMap】**
 >
 > r121 断点 `0x49E600` 命中 stack 含明文 `demo/0C-2021-8-26[19-26-24]war.demo` → 它是 **LoadDemo**，参数是 demo 路径，之前"LoadMap(mapname)"的分析错误。r122：原始 demo + `0x776F00` 断点等满 32 秒只 1 命中（启动 `patch_code_pre_gfx_mp.ff`）→ 原始 demo 的地图 fastfile 不经过 FileExists/0x49E600/0x484370；r58 的 0x776F80 caller 是 cf_dvar.demo 的 fallback。→ 下一步 hook CreateFileA 调用者，抓原始 demo 播放 20 秒后 .ff 请求的返回地址。
+
+> **2026-10-25 10:10–10:30【FS_OpenFile 完全间接（0xC51196 无任何静态引用）；改用断点栈回溯】**
+>
+> 扫描 `0xC51196`（FS_OpenFile 入口）：call 引用 0、push/mov/lea 地址引用 0 → 完全间接调用，静态 xref 不通。r120 trace 已确证原始 demo 的 `patch_mp_crash_tropical.ff` 经过 `0xC513D9`（FS_OpenFile）与 `0x776F80`（FileExists）。→ 下一步在 `0xC513D9` 命中时读 `[ebp]` 链做栈回溯，直接拿"谁提供了地图名"。
