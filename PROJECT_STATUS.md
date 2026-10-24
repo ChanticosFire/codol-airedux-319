@@ -18155,3 +18155,7 @@ lobby          = 0x37E19850
 > **2026-10-26 05:30–06:00【🎉 信任根替换成功：客户端接受自建公钥 + 24 个自签 fastfile，engine-init 5.798s、无错误、ui=0】**
 >
 > A1 路线：备份 menu_preview.py → 换离线壳公钥（0x9AC958 → 0d40328d）→ 新 exe sha256=26362b54… → 同步 IMAGE_SHA256 → 重签 24 个 ff（24/24 ok）→ 启动：**engine-init 5.798s、error 空、ui=0**。→ 首次让客户端接受"改过的二进制 + 自签 ff"。回滚三处：exe(.orig-backup)、24 个 ff(overlay-backup)、menu_preview.py(.orig-backup)。→ 下一步验证正常流程不受影响，再往 common_gametype_mp/common_mp 写 88 个武器定义。
+
+> **2026-10-26 06:00–06:30【回归测试：自签 ff 行为与原件完全一致（state 1135→1136→回退、ui=5），181 仍在（符合预期）】**
+>
+> r142：t=0 表 1135 → t=9.4 net=4 → t=10.4 net=7 → 表 1136/net=8 → 回退 1135/net=0。→ 信任根替换是"透明"的，不改变行为；181 是少 88 个 asset，与签名无关。→ 意义：现在**可以改 ff 内容**。下一步 B1：把 `common_gametype_mp.ff` 里已有的 88 个 asset 合并进 `common_mp.ff`（启动必加载），重签后验证 181 消失。
