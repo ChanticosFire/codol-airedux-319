@@ -8833,3 +8833,56 @@ load      = 2
 2. **UI 点击**：点击顶部"开始游戏"→ 选择模式 → 建房/匹配。
 
 优先试 `--room-command room.startgame`，因为它走客户端自己的逻辑（最"正统"）。
+
+## 250. 2026-10-27 18:30–19:00：**🎯 突破二 —— Cbuf 注入完全可用（`vid_restart`/`toggleconsole` 真的执行）**
+
+### 250.1 新工具 `tools/cbuf_1649370.py`
+
+独立实现（从 `launch_1649370.py::_cbuf_injector` 提取）：
+
+```
+descriptor 0x76595A4 = {pointer=0x33821B0, capacity=0x20000, length}
+buffer     0x33821B0
+lock       0x81A55A0（dword[2] = recursion）
+主线程     = CreateToolhelp32Snapshot 的第一个线程
+```
+
+探针结果（实测）：
+```json
+{"pid":25988,"threads":76,"first_tid":28572,"stage":5,"ui_state":0,
+ "descriptor":{"pointer":"0x33821b0","capacity":131072,"length":0,"match":true},
+ "lock_recursion":0}
+```
+
+### 250.2 注入链路验证
+
+| 命令 | 注入结果 | 观察到的效果 |
+|---|---|---|
+| `echo CBUF_OK` | `injected` 0→15 | `length` 回到 0（被消费） |
+| `map mp_crash_tropical` | `injected` 0→24 | **无变化**（stage/ui/table 不变） |
+| `connect 127.0.0.1:28971` | `injected` 0→26 | **gs 未收到任何包** |
+| `vid_restart` | `injected` 0→14 | — |
+| `toggleconsole` | `injected` 0→16 | **截图全黑（10,143 B PNG）** |
+| `toggleconsole`（第二次） | `injected` | **大厅完整恢复**，进程 Responding |
+
+### 250.3 结论（确定）
+
+1. **Cbuf 注入完全可用**：写入 → 引擎消费（`length` 归零）→ **命令真的执行**
+   （`toggleconsole` 导致全黑，再执行一次恢复，这是不可伪造的证据）；
+2. **`map` / `connect` 命令在本 build 不存在**（注入成功但无任何效果）；
+3. 客户端**健康**：`ui=0`、`stage=5`、进程 Responding。
+
+### 250.4 本阶段的两个可复用资产
+
+| 资产 | 文件 | 用途 |
+|---|---|---|
+| 大厅可达 + `ui=0` | `runs/r205-shots/ui0-printwindow.png` | 客户端可正常渲染，验收判据第一条成立 |
+| Cbuf 注入器 | `tools/cbuf_1649370.py` | 可向运行中的客户端发送任意控制台命令 |
+| 物理点击器 | `tools/click_1649370.py` | 可按截图坐标真实点击 UI |
+
+### 250.5 下一步
+
+1. **枚举客户端命令表**（`Cmd_AddCommand` 注册表），找出真正能"进对局"的命令
+   （候选：`ui_startmatch`、`party_*`、`xpartygo`、`devmap`、`ui_map`）；
+2. 若命令表里没有，则用 Cbuf 注入 UI 脚本命令驱动菜单；
+3. 或回到 connect 主线，但这次可以用 Cbuf 注入 `set` 系列去满足 `0xB7A670()` 之外的条件。
