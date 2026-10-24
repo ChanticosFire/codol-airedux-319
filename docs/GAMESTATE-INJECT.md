@@ -3919,3 +3919,37 @@ alias count = 0   recipe count = 0   at byte 6397   next byte 05
 1. 确认 `0x7EF0D0`（Frontend tick）是否高频且在主线程（用 trace 或断点计数）；
 2. 实现 `tools/hook_load_gametype.py`：写 jmp + cave + 只触发一次；
 3. 在 login 完成后注入，观察表变化与 181。
+
+## 117. 2026-10-25 23:30–00:00：**主线程 hook 注入成功且不崩**（首次跑通，但时机在启动前）
+
+### 117.1 工具
+
+`tools/hook_load_gametype.py`：
+
+- 目标 `0x7EF0D0`（Frontend tick，前 5 字节 = `55 8B EC 83 EC 14`）
+- 分配 cave：`pushad` → 检查 flag → `push 0/4/list` → `call 0x49E160` → `add esp,12`
+  → 置 flag → `popad` → 重放原 5 字节 → `jmp back`
+- 写 `E9 <rel32>` 到目标（`VirtualProtectEx` 改可写）
+
+### 117.2 结果（启动后、未 login）
+
+```
+cave = 0x45160000   list = 0x45161400   flag = 0x45161F00
+patched = true      code_len = 52
+alive = true        ← 没崩！
+table_before = 0    table_after = 0
+```
+
+→ **关键进展**：主线程 hook **不崩**（cave 与远线程都会崩），说明
+"在主线程正常调用栈里执行 `0x49E160`"这条路**可行**。
+
+### 117.3 为什么表没涨
+
+hook 在启动阶段（表=0）触发，`0x49E160` 内部依赖的表/全局尚未初始化，
+调用被跳过（或未产生注册）。需要在**表=1135 之后**再触发。
+
+### 下一步
+
+1. 先 login 到表=1135，**再注入 hook**（flag 初始 0）；
+2. 让 `0x7EF0D0` 在状态稳定时触发一次，观察表是否 1136 → 1224；
+3. 若成功，181 应消失（`0x59B560` 的 1224 比较通过）。
