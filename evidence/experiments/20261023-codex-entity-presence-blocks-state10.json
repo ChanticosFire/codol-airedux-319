@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T22:00:00+00:00",
+  "scope": "DIAGNOSIS: the mere PRESENCE of an entity keeps the client at state 9 - the delta content is irrelevant",
+  "the_experiment": {
+    "body": "runs/snapshot-mode5.bin",
+    "mode_selected": 5,
+    "mode_5_behaviour": "returns 1 without writing any field (a no-op delta)",
+    "probe": "0x671B21:EntMode5",
+    "result": {
+      "bitpos": 1334,
+      "mode": 5,
+      "count": 1,
+      "ids": "d00f (4048)"
+    },
+    "final_state": 9
+  },
+  "the_comparison_that_matters": [
+    "snapshot-single22.bin: count = 0, no entity -> state 10 (the in-match state this project has always reached)",
+    "snapshot-ent2 / ent4 / mode1 / mode5: count = 1, one entity -> state 9 in every case",
+    "so the presence of an entity is what keeps the client on the loading screen",
+    "and it does not depend on what that entity's delta contains, because even a no-op delta gives the same result"
+  ],
+  "the_most_likely_cause": [
+    "the entity id is 4048, which is out of range for a map like mp_cross_fire (typical CoD entity counts are in the hundreds to low thousands)",
+    "a client that cannot resolve an entity in its list will not finish loading, which is exactly the observed behaviour",
+    "and the id is fully under our control: it is read as 12 bits from bit 1309"
+  ],
+  "the_decisive_next_experiment": [
+    "rebuild the body with a SMALL entity id (for example 1, 64 or 100) instead of the arbitrary 4048, keeping everything else identical",
+    "if the client then reaches state 10 with count = 1, the id range was the blocker and the entity pipeline is complete",
+    "if it stays at 9, the client needs something else besides a valid id, and the search narrows again"
+  ],
+  "why_this_is_progress": [
+    "it moves the failure from 'the world is not drawn' to 'the entity id is probably out of range', which is a one-line change",
+    "it also explains why every entity experiment so far ended on the loading screen: the id was never chosen, it fell out of the bit pattern at 1309"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r225-gs.jsonl",
+    "body": "runs/snapshot-mode5.bin"
+  }
+}

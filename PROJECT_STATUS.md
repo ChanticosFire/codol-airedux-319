@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [DIAGNOSIS: an entity's presence alone keeps the client at state 9]**
+> mode5 (no-op delta) with count=1 gives state 9, exactly like mode1 and ent2/ent4, while single22 (count=0) gives state 10. So the entity list being non-empty is what blocks the in-match state, independent of delta content.
+> Most likely cause: id 4048 is out of range for the map. The id is 12 bits at 1309 and fully controllable. Next: rebuild with a small id (1, 64, 100).
+> Evidence: [entity presence blocks state10](evidence/experiments/20261023-codex-entity-presence-blocks-state10.json).
 > **2026-10-23 [MILESTONE 4: mode-1 delta wrote real non-zero floats into the entity struct]**
 > Probe at 0x67188B on snapshot-mode1.bin: edi 0x1312AFF0, f24 3.5806, f28 1.0, f2c 0.1; count 1, id 4048, state 9.
 > The full chain now runs: list -> changed bit -> mode selector -> mode handler -> entity struct. The values are not the plain value*5 we predicted, so the arithmetic involves the previous value, but they are real and changed.
