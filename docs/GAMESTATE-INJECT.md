@@ -1657,3 +1657,29 @@ localized_code_pre_gfx_mp
 2. 用 `0xC513D9`（CreateFileA 返回点）作为唯一权威断点，在**播放 demo 后**读该时刻的
    `[ebp+0xC]` 文件名（需要让客户端在命中时保持运行，用后台读脚本）；
 3. 一旦读到文件名，回溯调用栈（`[ebp]` 链）即可找到地图名的最终来源。
+
+## 56. 2026-10-24 23:10–23:25：只放 demo 文件不播放，启动不预加载地图
+
+| 实验 | 配置 | fastfile 请求 |
+|---|---|---|
+| r70 | 只启动（无 demo 文件） | 11 个，无 crash/cross |
+| **r74** | 启动 + 放 demo 文件、**不播放** | **12 个，无 crash/cross** |
+
+→ 客户端**不会**在启动时扫描 `main/demo` 并预加载地图。
+
+### 矛盾仍未解
+
+- r58（play **cf_dvar.demo**，地图名已被改成 `mp_cross_fire`）：trace 有 `patch_mp_crash_tropical.ff`；
+- r72/r73（play **原始 demo**，地图名 `mp_crash_tropical`）：`FSOpen`/`FileExists` 断点在播放期间 **0 命中**。
+
+**推测**：r58 看到的是 `cf_dvar.demo` 的 **fallback** 路径——客户端按 `mp_cross_fire` 找包，
+找不到后回退 `crash_tropical`，于是请求 `patch_mp_crash_tropical.ff`；
+而原始 demo 的 `crash_tropical` 在启动或更早就已加载，播放时不再请求。
+
+### 下一步
+
+1. 用 `cf_dvar.demo`（地图名 cross_fire）跑一次 `FSOpen` 断点，若命中并读到
+   `patch_mp_cross_fire.ff`（或 crash 的 fallback），即可确认 fallback 链条；
+2. 若 fallback 成立，则在 overlay 放入 `patch_mp_cross_fire.ff`（内容用 mp_cross_fire.ff 复制）
+   并让客户端在 fallback 前命中它——这是"让 demo 加载 cross_fire"的最后一条路；
+3. 否则只能回到服务端路线（另找 net_state=7 入口）。
