@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [BREAKTHROUGH: bit 1307 is the entity gate]**
+> 0x671678 reads gate bit 1 (body bit 1307) and 0x671685 reads gate bit 2 (body bit 1308). With ent1 the probe caught EntGateA (the zero branch of gate 1) and never EntStore, and every body had bit 1307 = 0 - the reason the entity list was always empty.
+> Setting bit 1307 = 1 (byte 163 |= 0x08) plus byte 164 = 0x01 makes 0x671698 (count store) fire for the first time. The client exits afterwards, so the per-entity path is the next problem.
+> Evidence: [entity gate is bit 1307](evidence/experiments/20261023-codex-entity-gate-is-bit-1307.json).
 > **2026-10-23 [Buffer is byte-exact (0x01 at 164) yet count is 0: the count reader is never reached]**
 > Memory at stream+0x34 bytes 160..171 equals the file exactly, so body[164]=0x01 is in place. Bit position 1307, byte cursor 164, length 172, bound 131072, state 9, count 0.
 > By the disassembly 0x66ED70 would return 1. So it is never called: one of the two gates returns 0. Next: probe the store 0x671698 and the two gate targets 0x6716ED / 0x6716F0.

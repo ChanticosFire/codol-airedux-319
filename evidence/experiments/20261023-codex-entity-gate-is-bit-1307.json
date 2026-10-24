@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T07:00:00+00:00",
+  "scope": "BREAKTHROUGH: bit 1307 is the entity gate; setting it to 1 makes the count store at 0x671698 execute for the first time",
+  "the_gate_identified": {
+    "0x671678": "call 0x447190 -> gate bit 1; if 0 -> jumps to 0x6716F0 (the branch measured last round)",
+    "0x671685": "call 0x447190 -> gate bit 2; if 0 -> jumps to 0x6716ED",
+    "bit_1_equals": "body bit 1307 (the bit position measured at 0x671650 entry)",
+    "bit_2_equals": "body bit 1308"
+  },
+  "the_previous_measurement_that_proved_it": [
+    "with snapshot-ent1.bin the probe recorded EntGateA (0x6716F0) exactly once and EntStore never",
+    "0x6716F0 is the target of the FIRST gate's zero branch, so gate bit 1 was 0",
+    "and reading the files confirmed bit 1307 = 0 in single22, ent1 and the hybrid body alike",
+    "which is why the entity list has been empty in every body this project ever produced"
+  ],
+  "the_fix_and_its_result": {
+    "body": "runs/snapshot-ent2.bin = single22 with byte 163 |= 0x08 (bit 1307 = 1) and byte 164 = 0x01 (count = 1)",
+    "probe": "0x671698:EntStore",
+    "result": "FIRED ONCE - the count store executed",
+    "client_after": "process gone at the end of the run, so the subsequent per-entity path still needs work"
+  },
+  "why_this_matters": [
+    "for the first time the entity count write is reached, which means the entity list is no longer structurally unreachable",
+    "the gate was a single bit that every body had wrong, and no amount of field-level work could have fixed it",
+    "the client exiting afterwards is the next problem, and it is a DIFFERENT problem: it is about what follows the count (12-bit id, then the per-entity payload)"
+  ],
+  "next": [
+    "re-run ent2 and read entity_count and the first ids right after the store, before the client exits, to see what was decoded",
+    "then find what the 12-bit id read does with count = 1 and whether the per-entity payload expects more bits"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r217-gs.jsonl",
+    "body": "runs/snapshot-ent2.bin"
+  }
+}

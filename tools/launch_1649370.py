@@ -2848,6 +2848,14 @@ def main(argv=None) -> int:
                 self.record({"map_loading_configstrings": {"pool_cursor": cursor, "slots": rows}})
             except (OSError, ValueError, struct.error) as error:
                 self.record({"map_loading_configstrings_error": str(error)})
+        if label.startswith("Ent"):
+            try:
+                n = getattr(self, "_ent_count", 0)
+                if n < 12:
+                    self.record({"ent": {"label": label, "n": n}})
+                self._ent_count = n + 1
+            except (OSError, ValueError) as error:
+                self.record({"ent_error": f"{label}: {error}"})
         if label.startswith("Cursor"):
             try:
                 registers = row.get("registers", {})
