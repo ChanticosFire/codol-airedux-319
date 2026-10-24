@@ -18039,3 +18039,7 @@ lobby          = 0x37E19850
 > **2026-10-25 15:00–15:30【load_fastfile 工具就绪：首次调用成功返回但表未变（表在 login 前为 0）】**
 >
 > `tools/load_fastfile.py`（VirtualAllocEx + 主线程调 `0x49E160(list,1,0)`）：启动后调用 `status=null/returned_eip=0x77D9826C/alive=true`，但 `table_before=0/table_after=0` —— 表在 login 前未初始化。第二次尝试（先 login）客户端已退出，无数据。→ 下一步重跑"login 后立即 load_fastfile"，看表是否 1135→1223+。
+
+> **2026-10-25 15:30–16:00【load_fastfile 在表未初始化时调用会崩（timeout + 退出）；表初始化在 login 后段】**
+>
+> r132（launch+login 5s+load_fastfile）：`table=0/state=1` → 调用 `0x49E160` 得 `returned_eip="timeout"`、state=0、**客户端退出**。对照 r114（run_match login 18s）表=1135 → 表初始化在 login 后段（ring-a-drain + refresh hook 之后）。→ 下一步用 run_match 在 `gamestate_source` 出现时并行调用 load_fastfile。

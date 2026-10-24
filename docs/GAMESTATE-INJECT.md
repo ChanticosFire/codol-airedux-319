@@ -3288,3 +3288,30 @@ table_after  = 0
 2. 若表从 1135 涨到 1223+，则 88 个 gametype 武器的来源确认，181 应消失；
 3. 若表不变，检查列表结构（`add [ebp+8], 8` 的 header 布局可能不同）或改调
    `0x49E3B6` 附近的内部函数。
+
+## 101. 2026-10-25 15:30–16:00：load_fastfile 在表未初始化时调用会崩（timeout + 退出）
+
+### 101.1 r132（手动流程：launch + login(5s) + load_fastfile）
+
+```
+after login: table = 0     state = 1
+load_fastfile: status=null  returned_eip="timeout"  state=0  alive=false
+```
+
+→ 两个发现：
+
+1. **手动 login 5 秒后表仍是 0**（而 r114 的 run_match 流程 login 18s 后表是 1135）——
+   说明表初始化发生在 login 流程的更后段（run_match 的 ring-a-drain + refresh hook 之后）；
+2. 在表为 0 时调 `0x49E160` → **timeout + 客户端退出**，说明该函数依赖
+   `[0x7886E6C]` 等全局已初始化。
+
+### 101.2 结论
+
+`load_fastfile` 必须在"表已到 1135"之后调用，否则崩溃。
+
+### 下一步
+
+1. 用 `run_match` 跑（它能让表到 1135），在 `gamestate_source` 日志出现时
+   并行调用 `load_fastfile common_gametype_mp`；
+2. 或把手动流程补上 run_match 的 ring-a-drain + refresh hook 两步，等表到 1135 再调用；
+3. 成功判据：表从 1135 涨到 1223+，且 `0x59B560` 的 1224 比较通过（181 消失）。
