@@ -9323,3 +9323,45 @@ cl_demo_play_local_only_index 1
 「对局可结束并返回大厅」：
 - demo 总长 30:45，可让它播完或用 `cl_demo_jumptostart` / 拖动进度到结尾；
 - 播完后客户端应自动回到大厅（`ui` 回到大厅态），需截图验证。
+
+## 257. 2026-10-27 23:10–23:30：`switchtomainmenu` 在 demo 播放中会崩溃
+
+### 257.1 实测
+
+```
+demo 播放中（ui=0 net=10 table=1266）
+注入 switchtomainmenu（0→19，被消费）
+→ 5 秒后：ui=None net=None table=None stage=None
+→ capture_window: "no visible window with class CODO"
+→ 客户端进程消失
+```
+
+### 257.2 结论
+
+- `switchtomainmenu` **不能在 demo 播放中调用**（会终止进程）；
+- 「对局结束返回大厅」需要另一条路径：
+  1. **让 demo 自然播完**（总长 30:45，播完引擎应自动回大厅）；
+  2. 或用短 demo（如 `0C-2021-8-26[19-24-23]war.demo`，247KB）快速验证播完行为；
+  3. 或物理点击 demo 控制条的「快进 →|」按钮把进度推到结尾；
+  4. 或用 `closemenu` / `disconnect` 等更温和的命令。
+
+### 257.3 本轮总结
+
+**已达成**（按既定验收判据）：
+- `ui_state = 0`（≠ 5）✅
+- 截图里有 `mp_crash_tropical` 真实地图（两张，含完整 HUD）✅
+- `net=10`、`table` 1135→1266（资源真加载）✅
+
+**未验证**：
+- 「对局结束并返回大厅」的具体路径（`switchtomainmenu` 已排除）。
+
+**可复现步骤**（完整）：
+```
+1. lsg(TCP 28969) + launch（不带 --transport-connect）
+2. launch_1649370.py --reuse-runtime r107flow --until-close --local-profile --full --local-auth-lsg --loopback-tcp-guard
+3. drive_login_state_machine.py --ticks 24 --set-ui-state 1
+4. 写 [[0x8536F60]+0x14]=4 且 [0x84ABA50]=0        → ui=0 大厅
+5. cbuf_1649370.py --command "cl_demo_play_local_only_index 1"
+   （demo 必须在 runtime\main\demo\，且不能有 32KB 垃圾残留）
+6. 5 秒内：net 0→10、table 1135→1266、画面进入地图
+```
