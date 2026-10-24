@@ -17781,3 +17781,7 @@ lobby          = 0x37E19850
 > **2026-10-24 18:25–18:40【cross_fire gamestate 被解析但地图不切换】**
 >
 > demo 起状态后把 gs 的 `--gamestate-map mp_cross_fire`：`Dispatch=1`、`GamestateParse=1`、state=8，但截图 `runs/r56-crossfire.png` 仍是 crash_tropical（灰度画面）→ demo 播放器已锁定地图，后到的 mapname 不换图。另：`cl_demo_play doesnotexist` 不会到 state 7（`0x4F4A90` 资源检查失败 → 跳过 CL_Init，`State7=0`）。下一步：改 demo 头部/首条 gamestate 的地图名，或让 net_state 稳定在 7 后由 gamestate 选图。
+
+> **2026-10-24 18:40–18:55【demo 消息流：地图名在 dvar/configstring 文本消息里】**
+>
+> demo = 文本命令 + 二进制帧；地图名出现在 `01 <u32 len> d 3635 …mp_crash_tropical`、`d 3636 …`、**`d 2557 "mp_crash_tropical" 1000`**（offset 73655）等消息里，共 27 处（含资产名）。之前全量替换把 `mp_crash_tropical_tp` 等资产名改坏，state 8 即退出。→ 下一步只改 `d 2557` 这条地图名（等长替换），或从 `0x813C20` 内部确认 demo 播放器用哪个字段选图。
