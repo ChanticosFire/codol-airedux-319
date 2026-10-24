@@ -2985,3 +2985,54 @@ FastfileError: rsa_material 客户端版本的 RSA 公钥指纹不匹配
    IWff0100 布局：明文前缀 → RSA 密文 → AES 头 → 段表 → 数据块）；
 3. 解码成功后，定位 zone 目录中的 weapon 资产，评估"注入 122 个武器定义"的可行性
    （备选路线 §91）。
+
+## 93. 2026-10-25 11:30–12:00：**重大突破 —— Fastfile 解码全线打通，武器定义在 common_mp.ff**
+
+### 93.1 解码器可用（原始 exe 是关键）
+
+`decode_fastfile(path, client_exe)` 需要**原始客户端 exe**：
+
+```
+E:\GAME\COD\Original Client\codoMP_client_shipRetail.exe   ✅ 指纹匹配（461）
+E:\GAME\COD\1649370\bin\v1649370\codol1649370-offline.exe  ❌ 指纹不匹配（离线壳补丁过）
+```
+
+### 93.2 三个 ff 的解码结果
+
+| 文件 | 大小 | asset_count | 备注 |
+|---|---|---|---|
+| `mp_crash_tropical_const.ff` | 90 KB | **17** | 全校验通过 |
+| `mp_crash_tropical.ff` | 32 MB | **381** | 全校验通过；**不含武器定义**（只有 3 个 weapon 字符串，且是 tag_weapon） |
+| **`common_mp.ff`** | 77 MB | **8557** | 全校验通过；**1723 个 weapon 字符串** |
+
+`common_mp.ff` 的类型分布：
+
+```
+2:1845  4:170  5:395  9:209  10:39  11:3348  25:43  28:1134  30:798
+31:1    36:250 37:25  40:3   43:285 44:12
+```
+
+weapon 字符串样例：
+
+```
+weapon/bowss/fx_wea_bowss_bj
+weapon/csg12/fx_csg12_singularity
+weapon/freeze_gun/fx_freezegun_body_shatter
+mp_weapon_usa_sticky_grenade_lod0
+```
+
+→ **武器定义（含复合武器字符串）在 `common_mp.ff`**，不在 `mp_crash_tropical.ff`。
+
+### 93.3 为什么这解释 181
+
+- demo 播放会加载 `common_mp.ff`（启动基础包），注册 1266 个武器定义；
+- 服务端路径只发 gamestate（291 条 configstring），**没有加载 `common_mp.ff` 的武器表**，
+  所以只到 1136；
+- 之前"122 差距来自 fastfile"的推断方向正确，现在**具体到 common_mp.ff**。
+
+### 下一步
+
+1. 从 `runs/ff-decoded/common`（77 MB zone 数据）里提取**武器定义表**（1723 个字符串的完整列表）；
+2. 对照 demo 的 1224 个定义，找出服务端路径缺的 88 个；
+3. 用 `build_native_gamestate` 把这些武器 configstring 补进 gamestate（或直接构造
+   `d <idx> <weapon>` 命令序列下发）。

@@ -18007,3 +18007,7 @@ lobby          = 0x37E19850
 > **2026-10-25 11:10–11:30【Fastfile 解码器：inspect 可用（461/11 块）；decode 需 client_exe 且当前 exe 指纹不匹配】**
 >
 > 工具在 `E:\GAME\COD\1649370\src\codol_rebuild\resources\fastfile.py`。`inspect_fastfile` 实测 const.ff：IWff0100/461/signed/body 90112/11 块。`decode_fastfile(path, client_exe)` 报 `rsa_material 客户端版本的 RSA 公钥指纹不匹配`——当前离线壳 exe 与 461 签名 ff 指纹不符（可能 exe 被补丁过或 ff 来自不同构建）。→ 下一步换原始 exe 或手工解析（按参考文档布局）。
+
+> **2026-10-25 11:30–12:00【重大突破：Fastfile 解码全线打通；武器定义在 common_mp.ff（1723 个 weapon 字符串）】**
+>
+> 关键：`decode_fastfile` 需要**原始 exe**（`Original Client\codoMP_client_shipRetail.exe` 指纹匹配 461；离线壳 exe 不匹配）。解码结果：const.ff 17 asset、crash_tropical.ff 381 asset（**不含武器**，仅 3 个 tag_weapon）、**common_mp.ff 8557 asset + 1723 个 weapon 字符串**（类型分布 2:1845/4:170/5:395/9:209/10:39/11:3348/25:43/28:1134/30:798/...）。→ 181 的根因：服务端路径没加载 common_mp.ff 的武器表。下一步从 `runs/ff-decoded/common` 提取完整武器定义表，对照 demo 的 1224 找缺的 88 个并补进 gamestate。
