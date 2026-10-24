@@ -1149,3 +1149,35 @@ demo 不是纯二进制——它是**文本命令 + 二进制帧**的混合流�
    "加载地图 fastfile"（`Com_LoadMap`/`SV_SpawnServer` 一类）时用的参数来源；
 2. 或直接看 trace-files：播放 `cf_dvar.demo` 时客户端访问了哪个 `.ff`——
    若仍是 `mp_crash_tropical.ff`，说明选图发生在更早的字段。
+
+## 40. 2026-10-24 19:10–19:25：地图加载走 `patch_<map>.ff`，选图字段仍未知
+
+### 40.1 trace 证据
+
+播放 `cf_dvar.demo`（`d 2557` 已改成 cross_fire）时的文件访问里，地图包是：
+
+```
+.\client_shipRetail\chinese\patch_mp_crash_tropical.ff
+```
+
+即客户端**先找 `patch_` 前缀的补丁包**，再回退 `mp_crash_tropical.ff`。
+overlay 里没有这些 `patch_*.ff`，所以回退到主包也能加载。
+
+### 40.2 地图名在 demo 里的分布
+
+`mp_crash_tropical` 独立出现（前后是引号或 NUL）共 **21 处**，首处 `0x11FB7`
+（就是 `d 2557 "mp_crash_tropical" 1000`），其后在 0x136137、0x24A55D 等。
+其余 6 处是 `mp_crash_tropical_tp` 之类的资产名。
+
+### 40.3 结论
+
+- 改 `d 2557` 不影响选图（上一轮已实测）；
+- 选图字段要么在 demo 头，要么在更早的 gamestate 二进制消息里；
+- 客户端地图包命名规则已确认：`patch_<map>.ff` → `<map>.ff` 回退。
+
+### 下一步
+
+1. 反汇编 FS 加载点（trace 里的 caller `0xC513D9`）的上游，看 `patch_...` 文件名由哪段代码拼出；
+2. 从那个函数往回找"地图名来自哪个全局/dvar"，即可定位 demo 选图字段；
+3. 或用一个更直接的办法：既然加载的是 `patch_<map>.ff`，把 `patch_mp_cross_fire.ff`（内容可用
+   `mp_cross_fire.ff` 复制）放进 overlay，再想办法让客户端请求它（需要先知道选图字段）。
