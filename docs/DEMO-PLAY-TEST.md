@@ -86,3 +86,34 @@ overlay 修复后重跑（`demo-run9/10`，`--full`，注入前先确认主菜�
 **含义**：demo 播放**不能绕过** `CA_LOADING`——它需要先完成游戏初始化（dvar/地图）；
 反过来说，一旦主线能进入地图，demo 回放应可立即工作。demo 作为"渲染基准"的价值到此为止：
 它已证明渲染与地图资源链路完好，剩下的都是**游戏状态初始化**问题。
+
+## 7. 2026-10-24 12:22–12:31：补丁推进与完整服务端流程
+
+### 7.1 demo 的 dvar 根因被二次确认
+
+- 运行时把 `0x432049` 的 `mov edx,[0x32AA908]; mov ecx,[edx+0xC]` 改成 `jmp 0x43208E`（`EB 53 ...`），
+  崩溃**前移**到 **`0x5A5AC3`**（`mov esi,[eax+0xC]`，`eax=0`）——同一 `g_gametype` dvar 的第二个解引用点
+  （`0x5A5AB0` 也读 `[0x32AA908]`）。
+- 控制台 `set g_gametype war` 之后 `[0x32AA908]` 仍为 **0**（读内存确认）——`set` 不创建未注册 dvar。
+- `map mp_cross_fire` / `devmap mp_cross_fire` 注入后客户端**仍留在大厅**——离线壳里这些服务器命令不生效。
+- 结论：demo 播放必须在"游戏已初始化"之后；离线壳没有这条路径，demo 不能作为进图替代。
+
+### 7.2 完整服务端流程跑到"客户端发起 connect"
+
+按 `server1649370/README.md` 的 Quick start 搭起：
+
+| 进程 | 命令 | 结果 |
+|---|---|---|
+| LSG | `python -m server319.lsg --port 28969 --allow-auth-tls` | 登录成功（`client_frame_verified`） |
+| gameserver | `python -m server1649370.gameserver --port 28971 --snapshot-file runs/snapshot-hybrid-empty-actors.bin --match-duration 60` | 收到 connect/stats，发出 gamestate + 5 个 snapshot |
+| bridge | `python tools/ring_bridge_1649370.py forward --target 127.0.0.1:28971 --bind-port 29000 --adr-type 2 --fake-stats --keepalive` | 转发正常 |
+
+触发方式：`python tools/probe_2697_connect.py --host 127.0.0.1 --port 29000 --name crossfire`
+（`ring_bridge connect` 只写地址，不触发 getchallenge；`probe_2697_connect` 才会触发完整握手）。
+
+- 服务端日志：`in oob connect`(401 B) → `in connect` → `out oob`×4 → `in oob stats` → `out fragment`(gamestate) → `snapshot_source`×5；
+- 客户端：**离开大厅进入地图加载画面**（`runs/fullflow-t50.png`，背景是 loading 纹理，不再是主菜单），
+  但弹出 **"无法连接主机"**，`net_state=0`、`ui_state=5`。
+
+**判断**：客户端确实尝试进图，卡点在 **gamestate 分片/确认层**（bridge 转发后客户端没接受），
+不是资源或渲染问题。下一步应修 bridge 的 gamestate 分片（或改用 `inject_client_gamestate.py` 直接注入）后再看 `net_state` 与 `ui_state`。
