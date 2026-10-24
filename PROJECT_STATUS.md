@@ -18419,3 +18419,7 @@ lobby          = 0x37E19850
 > **2026-10-27 14:30–15:00【ui=4 时客户端不发 connect：gs 只收到 17 个 inband、无 connect；forward 正常、客户端未崩 → net 停 4，进不了 gamestate；判定 ui=4 不是游戏内（table=0、无连接）】**
 >
 > 日志：`('meta','start')1`、`('in','inband')17`、**无 ('in','connect')**；fwd.err 空、launch 无 stop_reason。→ ui!=5 已达成，但地图可见可玩未达成。下一步确认 ui=4 界面含义、找进入连接的入口，或改用已验证的 demo 路径作证明。
+
+> **2026-10-27 15:00–15:30【⚠️ 重大理解修正：ui=5 是"连接/加载中"的正常状态（未 patch 时 net 4→5→7、gs 收到 connect/stats/gamestate、table=1135）；patch 后 ui=4 反而不发 connect（gs 只有 inband）、table=0 → patch 让事情变糟。真正卡点是 net=7 后 gamestate 处理崩溃】**
+>
+> 对照：原始 ui=5 → connect/stats/gamestate 全有、table 1135、net 到 7 后 unhandled_exception；patch 后 ui=4 → 无 connect、table 0。→ patch 应撤销；重点转向 net=7 后崩溃（exit_va=0x6193C8）。
