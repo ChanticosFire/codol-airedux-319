@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The byte reader's bound check against [+0x10] is the new suspect]**
+> stream+0x8 = 0x16DA20 = stream+0x34 (the embedded body buffer), +0xC = 0, length 172, byte cursor 164, bit position 1307, count 0.
+> 0x66ED70 takes the 0x66ED97 branch (164 < 172) and then checks `cmp ecx,[+0x10] ; jge error`. If [+0x10] <= 164 the count read always errors, which would explain why body[164]=0x01 changed nothing.
+> Next: measure [+0x10].
+> Evidence: [bound field is the gate](evidence/experiments/20261023-codex-bound-field-is-the-gate.json).
 > **2026-10-23 [Entity block starts at bit 1307; both gates read 1; count still 0]**
 > Cursor probe: b20 = 1307 (bit position), b1c = 164 (byte index), length 172, state 10, count 0. So gate1 = bit 1307 (= last header bit, 1) and gate2 = bit 1308 (= our has-ps, 1). Both pass, yet the count read still gives 0, and body[164]=0x01 did not change it.
 > Two explanations: the gate is not the block's first read, or 0x66ED70 indexes into a buffer whose base is [stream+8]/[stream+0xC] rather than the body. Next: probe those two pointers.

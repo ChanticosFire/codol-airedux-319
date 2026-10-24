@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T04:00:00+00:00",
+  "scope": "the byte reader reads buffer[164] where buffer = stream+0x34, but a bound check against [+0x10] runs first - and if 164 >= [+0x10] the count read fails silently",
+  "measurement": {
+    "stream": "0x16D9EC",
+    "stream_0x8": "0x16DA20 (= stream + 0x34, the embedded body buffer)",
+    "stream_0xc": "0x0",
+    "stream_0x14": 172,
+    "stream_0x18": 0,
+    "stream_0x1c": 164,
+    "stream_0x20": 1307,
+    "state": 10,
+    "entity_count": 0
+  },
+  "the_byte_reader_traced_with_these_values": [
+    "ecx = [+0x1C] = 164",
+    "esi = [+0x14] = 172",
+    "eax = [+0x18] + esi = 172",
+    "cmp ecx,eax ; jl 0x66ED97  -> 164 < 172, so it takes the 0x66ED97 branch",
+    "0x66ED97: cmp ecx,[+0x10] ; jge 0x66EDAD  -> if 164 >= [+0x10] it jumps to the error path and returns 0",
+    "0x66ED9C: test ecx,ecx ; js 0x66EDAD     -> negative cursor also errors",
+    "0x66EDA0: eax = [+0x8] = 0x16DA20",
+    "0x66EDA3: movzx eax, byte [eax+ecx]      -> reads buffer[164], i.e. body[164]"
+  ],
+  "the_new_suspect": [
+    "[+0x10] has not been measured yet and it decides whether the read happens at all",
+    "if [+0x10] is 164 or less, the count read takes the error path every time - which would explain why patching body[164] changed nothing",
+    "that is a single field, and a single probe settles it"
+  ],
+  "next": [
+    "add [+0x10] to the Cursor probe and re-run; if it is <= 164 the mystery is solved and the fix is to make the body long enough (or the field larger) that the count byte is inside the valid window",
+    "note the buffer is embedded at stream+0x34, so the body is copied there and body[164] really is buffer[164] - the offset arithmetic is confirmed"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r213-gs.jsonl"
+  }
+}
