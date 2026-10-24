@@ -9745,3 +9745,96 @@ gs = 仅 meta/start             ← 仍零包
    **运行时在 `0x622040` 入口装哨兵**（`mov [0xE54BC54],0xCAFEBABE`），
    然后正常跑客户端（不等调用），看哪些动作会让哨兵触发；
 3. 同时确认 `net_state`（`0x76446B0`）的**写入者**，理解状态机到底在等什么。
+
+## 263. 2026-10-28 03:00–04:00：**API 层证明客户端从不发 UDP；`0x5C05F0` 根因链完全定位**
+
+### 263.1 新工具：API 级钩子（决定性证据）
+
+`tools/hook_sendto_1649370.py` —— 钩住 `ws2_32!sendto` / `ws2_32!send`（经 IAT
+`0xCA8518` / `0xCA84E0`），透明记录 **调用次数 + 返回地址 + socket + buf + len + 前 4 字节**。
+
+**实测结果**：
+```
+hook sendto (=0x7783AD80)  ──  pump ×3 + 0x5BE730  →  count = 0
+hook send   (=0x77837630)  ──  pump ×3 + 0x5BE730  →  count = 0
+hook send   ──  0x5C05F0（net=3, adr14=4, chan28=4, stage=6）  →  count = 0
+gs 日志  ──  始终只有 meta/start
+```
+
+→ **客户端根本不是"发包失败"，而是从来没有发出过任何 UDP 数据报。**
+
+### 263.2 客户端导入的套接字函数全表（IAT）
+
+```
+ws2_32: ntohs 0xca84d4, getsockname, WSAIoctl, send 0xca84e0, recv, select,
+        getpeername, connect 0xca84f0, freeaddrinfo, getaddrinfo, listen, accept,
+        htonl, getnameinfo, ntohl, shutdown, inet_ntoa, sendto 0xca8518,
+        recvfrom, WSACleanup, WSASetLastError, __WSAFDIsSet, getsockopt
+wsock32: WSAStartup, gethostname, WSAGetLastError, inet_addr, closesocket,
+         socket 0xca8548, ioctlsocket, htons, bind, setsockopt, gethostbyname
+```
+
+### 263.3 `0x5C05F0` 完整控制流（关键）
+
+```asm
+0x5C0607  eax = [0x76446B0]          ; net_state
+0x5C0611  ecx = [0x331C0C8]          ; encoded conn
+0x5C0617  ebx = ecx ^ 0xD362501F
+0x5C0635..0x5C0647  net_state ∈ {3,4,5,6} ? 否则 jmp 0x5C0F1B（返回）
+0x5C0662  eax = [ebx+0x28]           ; ← **通道号**（不是 adr+0x14！）
+0x5C0666  call 0x7F4F10              ; 查通道状态
+0x5C0673  jmp [eax*4 + 0x5C0F2C]     ; 跳转表
+```
+
+**跳转表 @0x5C0F2C（已读出）**：
+```
+state 0 → 0x5C067A   ; call 0x5BE700
+state 1 → 0x5C0F1B   ; 直接返回
+state 2 → 0x5C0693   ; 超时检查
+state 3 → 0x5C067A   ; call 0x5BE700
+```
+
+**`0x5C067A` 之后**：
+```asm
+0x5C067A  call 0x5BE700
+0x5C067F  test al,al
+0x5C0681  je 0x5C0F1B        ; ← 返回 0 就退出，永不发送
+0x5C0687  push 0xDB45C4 / push 2 / jmp 0x5C0F13
+```
+
+### 263.4 实测：`0x7F4F10(channel)` 恒为 0
+
+```
+0x7F4F10(4)    = 0x0
+0x7F4F10(0x9d) = 0x0
+0x5BE700()     = 0x0        → al=0 → 直接退出
+```
+
+→ **通道状态永远是 0，`0x5BE700` 永远返回 0，所以永远不发包。**
+
+### 263.5 `0x621E50`（建通道）的真实结构
+
+```
+0x621E50  push ebp / mov ebp,esp / sub esp,0xa8
+0x621E63  eax=[ebp+8]  ebx=[ebp+0xc]  （三参数：[ebp+8]/[ebp+0xc]/[ebp+0x10]）
+0x621E6C  EnterCriticalSection(0x81A5558)
+0x621E7D  esi = 0xFFFFFFF7  （-9 预置）
+0x621E82  call 0x643300 → 若 0 则失败
+0x621E91  call 0xBAC600 → edi = 对象；若 0 则失败
+0x621EA0  edx = [edi]                  （vtable）
+0x621EA7  call [edx+0x20]              ; 返回值必须 == 1，否则失败
+0x621EB4  edx = [edx+0x2c]
+0x621ED3  call edx                     ; 核心建通道调用
+0x621ED5  esi = eax                    ; 返回值
+0x621ED7  cmp esi,4 / jne ...
+```
+
+→ 我此前观察到"`0x621E50` 返回 0"，**0 很可能是成功码**（不是失败），
+真正的问题是后续**通道状态查询 `0x7F4F10` 恒为 0**。
+
+### 263.6 下一步（明确）
+
+1. 反汇编 **`0x7F4F10`**：看它从哪里读通道状态、为什么恒为 0；
+2. 反汇编 **`0x5BE700`**：它是 state 0/3 的处理函数，返回 al=0 就终止；
+3. 目标：让 `0x7F4F10(channel)` 返回 2 或 3，或让 `0x5BE700` 返回 al≠0，
+   使 `0x5C05F0` 走到真正调用 `send` 的分支。
