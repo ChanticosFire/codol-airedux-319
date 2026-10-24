@@ -17817,3 +17817,7 @@ lobby          = 0x37E19850
 > **2026-10-24 20:40–20:55【FS 断点参数读不出文件名；trace 时序需对齐】**
 >
 > `0xC513D9:FSOpen` 仅命中 1 次，`[ebp+0xC]` 读出乱码（参数非文件名/帧不对）。r64 带 trace-files 跑 demo 播放 12 秒后 grep `patch_mp_crash_tropical|mp_crash_tropical.ff` 为 **0**，而 r58 的 trace 里有该请求 → 地图包请求在更早阶段或 events 未 flush。→ 下一步用 r58 的 events 反查 caller/时机；换图应在 demo 播放前改字段；或另找 state 7 入口。
+
+> **2026-10-24 20:55–21:10【patch_mp_crash_tropical.ff 的两个请求点】**
+>
+> r58 trace 精确匹配：`error=2, caller=0xc513d9`（FS_OpenFile）与 `error=2, caller=0x776f80`（**FileExists**，函数 0x776F00，`sprintf(path, 0xDDA780, name)` 后 CreateFileA）。FileExists 唯一调用者 = **0x49EDA3**（0x49EXXX 资源/地图加载区）。→ 下一步正确反汇编 0x49EDA3 上下文，回溯传给 FileExists 的名字参数，定位地图名最终来源。

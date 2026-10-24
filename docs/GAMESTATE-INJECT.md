@@ -1362,3 +1362,37 @@ refs = 1: 0x813E96 lea esi,[ebx+0x108394]   (modrm 0xB3)
    对应全局，而不是等 demo 播放中途；
 3. 更稳的路线：放弃"改 demo 选图"，改为"先入 state 7，再由 gamestate 选图"——
    但 state 7 的唯一可靠写入点是 demo 路径，形成循环，需要另找入口。
+
+## 47. 2026-10-24 20:55–21:10：`patch_mp_crash_tropical.ff` 的两个请求点
+
+r58 的 trace 里精确找到（16 条 `mp_crash_tropical` 匹配中只有 2 条是 `.ff`）：
+
+```json
+{"file_missing": {"error": 2, "caller": "0xc513d9",
+  "path": ".\\client_shipRetail\\chinese\\patch_mp_crash_tropical.ff"}, "time": 1792821500.44}
+{"file_missing": {"error": 2, "caller": "0x776f80",
+  "path": ".\\client_shipRetail\\chinese\\patch_mp_crash_tropical.ff"}, "time": 1792821502.68}
+```
+
+### 47.1 第二个请求点 0x776F80
+
+`0x776F00` 是 **FileExists(path)**：
+
+```asm
+0x776F48  push 0xDDA780         ; 路径格式串（如 ".\\client_shipRetail\\chinese\\%s"）
+0x776F59  call 0x774900         ; sprintf(path, fmt, name)
+0x776F6E  push 0x80000000       ; GENERIC_READ
+0x776F7A  call [0xCA8208]       ; CreateFileA(path, ...)
+0x776F80  ...                   ; 返回点
+```
+
+- 唯一调用者：**`0x49EDA3`**；
+- `0x49EXXX` 正是资源/地图加载区（`0x49E600` LoadMap、`0x49EAB8` 等都在此）。
+
+### 47.2 下一步
+
+1. 正确反汇编 `0x49EDA3` 附近（`0x49ED80`/`0x49ED90` 起，找到指令边界），看传给 FileExists 的
+   路径/名字来自哪个参数；
+2. 顺着这个参数回溯，就能找到"地图名"的最终来源——它同时决定
+   `.\client_shipRetail\chinese\patch_<map>.ff` 与后续的 `<map>.ff`；
+3. 拿到来源后改内存即可让 demo 加载 mp_cross_fire（不必改 demo 文件）。
