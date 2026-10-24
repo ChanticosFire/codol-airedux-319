@@ -2872,6 +2872,23 @@ def main(argv=None) -> int:
                 self._ent_count = n + 1
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"ent_error": f"{label}: {error}"})
+        if label.startswith("Bits"):
+            try:
+                registers = row.get("registers", {})
+                esi = int(registers["esi"], 0)
+                eax = int(registers.get("eax", "0"), 0)
+                bitpos = 0
+                buf = 0
+                if esi:
+                    bitpos = struct.unpack("<I", self.process.read(esi + 0x20, 4))[0]
+                    buf = struct.unpack("<I", self.process.read(esi + 8, 4))[0]
+                n = getattr(self, "_bits_count", 0)
+                if n < 14:
+                    self.record({"bits": {"esi": hex(esi), "buf": hex(buf),
+                                          "bitpos": bitpos, "eax": eax, "n": n}})
+                self._bits_count = n + 1
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"bits_error": f"{label}: {error}"})
         if label.startswith("Float"):
             try:
                 registers = row.get("registers", {})

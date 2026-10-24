@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [First bit read of a snapshot is at bit 243; the hot path cannot be probed]**
+> The 0x66ECA1 probe captured one read (bitpos 243, byte 7, buffer stream+0x34) and the client then died. So the header consumes ~30 bytes before any bit field, and this address is unusable for sampling.
+> The id encoding must therefore be settled statically: disassemble 0x671650 and trace the argument to 0x66EC30 and the store at 0x7859358.
+> Evidence: [first bit read at 243](evidence/experiments/20261023-codex-first-bit-read-at-243.json).
 > **2026-10-23 [The reader is LSB-first over the buffer at [esi+8]; the probe's stream pointer is the suspect]**
 > 0x66EC30: buffer [esi+8], index [+0x20]>>3, shr by [+0x20]&7, mask to N bits, advance [+0x20]. So a 12-bit read at 1309 would return 8, not 4048.
 > Therefore the probe at 0x6716C3 samples a different esi than the id read uses, and the '20 bits per read' measurement is suspect for the same reason. Next: probe 0x66ECA1 with the decoder's own esi.

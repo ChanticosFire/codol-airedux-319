@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T01:00:00+00:00",
+  "scope": "the hot-path probe at 0x66ECA1 captured ONE bit read and then broke the client - but the single record is informative: the first bit read of a snapshot is at bit 243, not bit 0",
+  "the_single_record": {
+    "esi": "0x16D9EC",
+    "buffer": "0x16DA20 (stream + 0x34)",
+    "bitpos": 243,
+    "eax": 7,
+    "n": 0
+  },
+  "what_it_tells_us": [
+    "the first bit read of a snapshot happens at bit 243, i.e. the header consumes about 30 BYTES before the first bit-level field",
+    "that is consistent with the header containing configstrings and commands, which are byte/string data",
+    "so the bit stream genuinely starts partway into the body, which is why the earlier assumption 'bits 0..1307 are the header' was only approximately right"
+  ],
+  "why_the_run_failed": [
+    "0x66ECA1 is on the hot path - it executes for every single bit read",
+    "the probe fired once and the client then died, which is the same failure mode seen with other mid-function hot addresses",
+    "so this address cannot be used for repeated sampling"
+  ],
+  "the_consequence_for_the_id_question": [
+    "the id value (4048) and the '20 bits per 12-bit read' figure both came from probes whose register semantics are uncertain",
+    "and the hot path cannot be probed to correct them",
+    "so the id must be settled by STATIC analysis: read 0x671650 end to end and follow the value from the byte fetches to the store at 0x7859358, with the actual call site of 0x66EC30 in that function"
+  ],
+  "next": [
+    "disassemble 0x671650 completely (it is a short function, roughly 0x671650..0x671700) and trace which arguments reach 0x66EC30 and where the result is stored",
+    "that gives the id encoding without any dynamic sampling"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r227-gs.jsonl"
+  }
+}
