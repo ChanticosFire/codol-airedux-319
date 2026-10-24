@@ -8683,3 +8683,46 @@ ring_bridge pump --settle 2
 
 1. 写地址 + `pump`（不用 `CONNECT_FN`）+ 观察 gs 收到什么；
 2. 若 pump 发出 connect → 完成；若只发 keepalive → 需要别的触发。
+
+## 247. 2026-10-27 17:00–17:30：**pump 不会自动 connect（6 轮 pump，gs 仍 0 个 in 包）**
+
+### 247.1 实验
+
+```
+写 ADDRESS_STRING = "127.0.0.1:29000"（成功）
+stage=6 net=4 ui=5
+pump × 6（每轮 --settle 1）
+  round 0..5: 全部 resumed=true / process_alive=true / tid=30088（窗口线程）
+  status_after: stage=6 state=4 address_string 已写 connection_adr 0.0.0.0:0
+gs kinds: ('meta','start') 1 —— **0 个 in 包**
+final: ui=5 net=4 table=1135 stage=6
+```
+
+### 247.2 结论
+
+- `pump`（`0x674F30`）**只驱动网络状态机，不发 connect**；
+- 即使地址已写、`stage=6`、`state=4`，pump 也不会让客户端主动连接；
+- 之前 `forward` 报告的 `sent=7..12` 是 **`forward` 自己注入的 keepalive**（写入 `ring_a`），**不是 pump 发的**。
+
+### 247.3 当前的完整负面知识
+
+| 尝试 | 结果 |
+|---|---|
+| `invoke_sequence(CONNECT_FN)`（窗口线程） | `0x5BE730` 不执行 |
+| `invoke_sequence(CONNECT_FN)`（主线程） | 网络停（sent=0） |
+| 只写 ADDRESS_STRING | 12 秒无变化 |
+| 只 pump（×6） | gs 无 in 包 |
+| 清 `[0xE54BC48/4C]` + forward | 仍无 connect |
+| 直接写 `[0xE59D20]=4` | 状态被重置 |
+
+### 247.4 还剩下的路
+
+1. **找到客户端自己的"连接"UI 入口**（主线程里 `0x5BE730` 的 6 个调用点之一）；
+2. **`QueueUserAPC`** 到主线程；
+3. **`SetWindowsHookEx`** 全局钩子；
+4. **patch 主循环里的某个判断**，让它直接调用 `0x5BE730`。
+
+### 247.5 备注
+
+`0x7EEBC0` 有 6 个调用点（`0x7EF1xx–0x7EF3xx`），它们可能就是"每帧检查是否该连接"的逻辑。
+找到其中一个、改写条件，或许能让主线程自发调用 `0x5BE730`。

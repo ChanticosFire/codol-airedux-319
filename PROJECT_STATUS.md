@@ -18623,3 +18623,7 @@ lobby          = 0x37E19850
 > **2026-10-27 16:30–17:00【🎯 决定性对比：哨兵 patch 0x674F30 后 pump 成功写入 0xBADC0DE（窗口线程 tid=29340 可执行）；而 0x5BE730 在主线程从未执行 → run_match 的 net=10 靠 pump 而非 connect；连接或许不需要 CONNECT_FN】**
 >
 > 实验：patch PUMP_FN 入口为 cave 写哨兵 + 重放 8 字节，ring_bridge pump --settle 2 → 哨兵 0xBADC0DE 命中、进程存活。→ 下一步：写地址 + pump，观察 gs 收到什么。
+
+> **2026-10-27 17:00–17:30【pump 不会自动 connect：写地址后 6 轮 pump，gs 仍 0 个 in 包（仅 meta start），connection_adr 仍 0.0.0.0:0；forward 的 sent=7..12 是它自己注入的 keepalive 而非 pump 所为】**
+>
+> 实验：ADDRESS_STRING 写入后 pump×6（全 resumed、tid=30088 窗口线程）→ gs kinds 仅 meta start。→ 剩余路径：找 0x5BE730 的 UI 调用点 / QueueUserAPC / 改主循环判断。
