@@ -2853,14 +2853,14 @@ def main(argv=None) -> int:
                 registers = row.get("registers", {})
                 esi = int(registers["esi"], 0)
                 vals = []
-                for off in (0x8, 0xC, 0x14, 0x18, 0x1C, 0x20, 0x24):
+                for off in (0x8, 0xC, 0x10, 0x14, 0x18, 0x1C, 0x20, 0x24):
                     raw = self.process.read(esi + off, 4)
                     vals.append(struct.unpack("<I", raw)[0])
                 n = getattr(self, "_cursor_count", 0)
                 if n < 12:
                     self.record({"cursor": {"esi": hex(esi), "b8": hex(vals[0]), "bc": hex(vals[1]),
-                                            "b14": vals[2], "b18": vals[3],
-                                            "b1c": vals[4], "b20": vals[5], "b24": vals[6], "n": n}})
+                                            "b10": vals[2], "b14": vals[3], "b18": vals[4],
+                                            "b1c": vals[5], "b20": vals[6], "b24": vals[7], "n": n}})
                 self._cursor_count = n + 1
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"cursor_error": f"{label}: {error}"})

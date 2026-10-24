@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T05:00:00+00:00",
+  "scope": "[+0x10] is 131072, so the bound check is NOT the blocker - the read at buffer[164] should happen, which makes the remaining suspect the buffer's CONTENT",
+  "full_cursor_reading": {
+    "stream": "0x16D9EC",
+    "b8_buffer": "0x16DA20 (= stream + 0x34, the embedded body buffer)",
+    "bc": "0x0",
+    "b10": 131072,
+    "b14_length": 172,
+    "b18_start": 0,
+    "b1c_byte_cursor": 164,
+    "b20_bit_position": 1307,
+    "b24": "0xFFFFFFFF",
+    "state": 10,
+    "entity_count": 0
+  },
+  "why_the_bound_check_is_cleared": [
+    "0x66ED97 compares the cursor 164 against [+0x10] = 131072",
+    "164 >= 131072 is false, so the error path is NOT taken",
+    "and 164 < [+0x14] = 172, so the 0x66ED97 branch is the right one",
+    "both conditions therefore allow the read of buffer[164]"
+  ],
+  "the_remaining_suspects": [
+    "(1) the buffer content at stream+0x34+164 is not our patched byte - i.e. the body copy into the stream differs from the file we sent",
+    "(2) the count read happens on an EARLIER frame's buffer, before the patched byte is in place",
+    "(3) the two gate bits are not 1307/1308 after all, and the block never falls through to the count"
+  ],
+  "the_decisive_next_step": [
+    "dump the memory at stream+0x34+164 (0x16DAC4 in this run) at the moment of the probe and compare it with the file byte",
+    "if it shows 0x01 the copy is fine and suspect (3) is the answer; if it shows 0x00 the copy is not what we think and suspect (1) is the answer",
+    "either way this is a direct observation, not an inference"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r214-gs.jsonl"
+  }
+}

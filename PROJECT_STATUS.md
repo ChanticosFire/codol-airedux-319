@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [+0x10] = 131072, so the bound check is not the blocker]**
+> Full cursor: b8 = 0x16DA20 (stream+0x34), b10 = 131072, b14 = 172, b1c = 164, b20 = 1307, count 0. Since 164 < 131072 and 164 < 172, buffer[164] IS allowed to be read.
+> Remaining suspects: the buffer content is not our patched byte, or the count read uses an earlier frame, or the gates are not at 1307/1308. Next: dump memory at stream+0x34+164 during the probe.
+> Evidence: [bound not the blocker](evidence/experiments/20261023-codex-bound-not-the-blocker.json).
 > **2026-10-23 [The byte reader's bound check against [+0x10] is the new suspect]**
 > stream+0x8 = 0x16DA20 = stream+0x34 (the embedded body buffer), +0xC = 0, length 172, byte cursor 164, bit position 1307, count 0.
 > 0x66ED70 takes the 0x66ED97 branch (164 < 172) and then checks `cmp ecx,[+0x10] ; jge error`. If [+0x10] <= 164 the count read always errors, which would explain why body[164]=0x01 changed nothing.
