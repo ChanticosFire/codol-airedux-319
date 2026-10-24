@@ -1129,3 +1129,23 @@ demo 不是纯二进制——它是**文本命令 + 二进制帧**的混合流�
 2. 但更可靠的是从 `0x813C20`（CL_PlayDemo）内部找**它自己用哪个字段决定加载哪张图**——
    demo 播放器很可能用 `d 2557`（mapname dvar）或 gamestate 首包；
 3. 如果它用 `d 2557`，改这一条就能让 demo 加载 `mp_cross_fire`。
+
+## 39. 2026-10-24 18:55–19:10：改 `d 2557` 地图名不改变 demo 选图
+
+生成 `runs/cf_dvar.demo`：把唯一的 `d 2557 "mp_crash_tropical" 1000` 等长改成
+`d 2557 "mp_cross_fire"\0\0\0\0 1000`（31→30 字节，其余 27 处资产名不动）。
+
+播放结果：`state` 仍 1→8→**10**，画面 `runs/r58-cf.png` 仍是 **crash_tropical** 的灰度建筑
+（多了"等待队伍就绪……"与一个"16"计数），**没有换成 cross_fire**。
+
+→ **demo 播放器选图字段不是 `d 2557`**。它可能用：
+1. demo 头里的某个定长字段；
+2. demo 流里另一个更早的 gamestate 消息；
+3. 或它根本不"选图"——demo 首帧就带地图资产引用，客户端按资产名找 ff。
+
+### 下一步
+
+1. 反汇编 `0x813C20` 内部（CL_PlayDemo 主体，0x813C20–0x814000），找它调用
+   "加载地图 fastfile"（`Com_LoadMap`/`SV_SpawnServer` 一类）时用的参数来源；
+2. 或直接看 trace-files：播放 `cf_dvar.demo` 时客户端访问了哪个 `.ff`——
+   若仍是 `mp_crash_tropical.ff`，说明选图发生在更早的字段。
