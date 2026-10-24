@@ -17979,3 +17979,7 @@ lobby          = 0x37E19850
 > **2026-10-25 08:40–09:00【demo 回放与网络互斥：connect 1 秒崩、inject 2 秒崩】**
 >
 > r116：demo 到 state 10、武器表 **1266**（0x4F2）后 `ring_bridge connect` → 客户端 1 秒退出。r117：同样状态只 `inject_client_gamestate`（写 ring_b + state=3）→ 2 秒内退出。→ demo 回放模式（state 10）与网络模式互斥，正向混合不可行（HANDOFF 的 r97 反向也崩）。→ 下一步找出 demo 触发地图加载的最小调用序列（CL_Init → fastfile → state 7/8/10），在服务端 connect 后手动执行。
+
+> **2026-10-25 09:00–09:20【地图加载路径复核：demo 的 fastfile 加载走第三条路径；计划手工执行 CL_Init 序列】**
+>
+> 矛盾仍在：r58 trace 证明 demo 播放请求 `patch_mp_crash_tropical.ff`（播放后 17-20s），但 `0x49E160`/`0x49ED40`/`0x776F00` 在播放期间都 0 命中 → 走第三条路径。demo 的已知序列：`0x5C8A70`(CL_Shutdown) → `0x5C83D0`(CL_Init) → `0x813D34`(state=7)，但 `0x813E96`（LoadMap 分支）0 命中。→ 下一步在服务端 connect 后手工执行 `0x5C8A70` + `0x5C83D0(1)`，观察 state 是否到 7，再发 gamestate 检查武器表是否从 1135 起算。round 79/80，计划待执行。

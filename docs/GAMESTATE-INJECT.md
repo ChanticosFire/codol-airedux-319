@@ -2718,3 +2718,43 @@ HANDOFF 记录的 r97 是反向（先服务端再 demo）：ACK 了 snapshot 100
 2. 在服务端连接路径（connect 之后、gamestate 之前）**手动调用**该序列；
 3. 若成功，服务端 gamestate 就会落在"地图已加载"的状态里，武器表能从 1266 起算，
    181 错误应随之消失。
+
+## 86. 2026-10-25 09:00–09:20：地图加载路径复核与"最小调用序列"计划
+
+### 86.1 已知矛盾
+
+- r58 trace：demo 播放时确实请求 `patch_mp_crash_tropical.ff`（**播放后 17–20 秒**，r76 时间线）；
+- 但 `0x49E160`（Com_LoadFastfiles）、`0x49ED40`（LoadFastfile）、`0x776F00`（FileExists）
+  在 demo 播放期间**都 0 命中**（r67/r68/r72）。
+
+→ 说明 demo 播放时地图 fastfile 的加载**走第三条路径**（既不是 Com_LoadFastfiles，
+也不是 LoadFastfile/FileExists 的已知调用点），或断点因热路径/时序未生效。
+
+### 86.2 demo 播放的已知调用序列（0x813C20 内部）
+
+```
+0x813C20  CL_PlayDemo(name)
+  0x5C8A70  CL_Shutdown
+  0x5C83D0  CL_Init
+  0x813D34  net_state = 7
+  ...       （后续分支：0x813E96 lea esi,[connection+0x108394] → 0x49E600 LoadMap）
+```
+
+但 `0x813E96` 在 demo 播放时 0 命中（§43）→ 它走的是另一条子分支。
+
+### 86.3 下一步（服务端路径独立触发地图加载）
+
+在 `connect` 完成（state 5）后、gamestate 之前，尝试手工执行 demo 的初始化序列：
+
+1. `call 0x5C8A70`（CL_Shutdown）；
+2. `call 0x5C83D0(1)`（CL_Init）；
+3. 观察 `net_state` 是否写 7（`0x813D34` 的等价效果）；
+4. 若到 7，再发 gamestate/快照，检查武器表是否从 1135 起算而不是被清空重建到 1136。
+
+用 `tools/call_fn_1649370.py`（已有）可以直接在主线程调用 `0x5C83D0`，
+但它是热路径函数，必须先确认参数（`push 1`）。
+
+### 备注
+
+本轮为 round 79/80，接近轮次上限；以上是下一步的明确执行计划，
+尚未执行（需要一次新客户端会话与调用序列验证）。
