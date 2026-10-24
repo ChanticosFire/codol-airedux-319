@@ -4773,3 +4773,39 @@ zlib 解压 → zone len 100407，与原 zone 完全一致 ✅
 2. `ff_rebuild_body.py` 重打包 `common_mp.ff`（body 会变大，注意 sections 数量）；
 3. 替换 overlay 里的 `common_mp.ff`；
 4. 启动客户端 + run_match，观察武器表是否 1136 → 1224、181 是否消失。
+
+## 140. 2026-10-26 11:00–11:30：**注入 21 个武器 asset 的 common_mp.ff 已生成**
+
+### 140.1 合并
+
+```
+indices = 3,10,11,53,257,271,278,294,295,296,301,302,304,306,356,381,459,553,879,960,989
+zone_merge --base common --add gametype --indices ... --out runs/ff-edit/common-weapons.zone
+  base=8557 added=21 total=8578 size=113378504 strings=2653
+validate_zone 通过 ✅
+```
+
+### 140.2 重打包
+
+```
+ff_rebuild_body --source common_mp.ff --zone common-weapons.zone --out common_mp-weapons.ff --key self.pem
+  wrote runs/ff-edit/common_mp-weapons.ff size=76,038,421 zone=113,378,504 blocks=9244 sections=37
+  elapsed 6.8s
+```
+
+→ zone 从 112.9 MB → 113.4 MB，zlib 后 76.0 MB，37 个 section（上限 244，安全）。
+
+### 140.3 ⚠️ 实测前的状态问题
+
+- 当前 exe 公钥**已恢复为原版**（§127 恢复过）；
+- 而 `common_mp-weapons.ff` 是**自签**的；
+- → 直接替换会验签失败，**必须先重做 A1 状态**：
+  1. `patch_exe_pubkey.py` 换公钥；
+  2. 同步 `menu_preview.py` 的 `IMAGE_SHA256`；
+  3. 其余 23 个 ff 也要重签（它们现在也是原版）；
+  4. 替换 `common_mp.ff`；
+  5. 启动 + run_match 实测。
+
+### 下一步
+
+执行上面的 A1 流程并实测：观察武器表是否 1136 → 1224、181 是否消失。
