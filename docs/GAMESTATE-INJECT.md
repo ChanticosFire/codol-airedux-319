@@ -88,3 +88,25 @@ overlay 里的 `mp_cross_fire_load.ff`（24,853，sha `0b04da67…`）与 `mp_cr
 
 `inject_client_gamestate.py` 一次性塞 3 条消息、随后又被 `ring_bridge connect` 把状态改成 4，
 正好破坏了这条顺序；这解释了两轮里"注入后 state 只到 4/6"的现象。
+
+## 6. 2026-10-24 12:49–12:51：分步注入走到 5，gamestate 未被接受
+
+按"先 challenge、再 connectResponse、最后 gamestate"的顺序，用 `inject_one.py` 分三步注入，
+每步后 `ring_bridge pump` 并采样：
+
+| 步骤 | `state_before` | `state_after` | pump 后 |
+|---|---|---|---|
+| `--kind challenge --set-state 3` | 1 | 3 | **4** |
+| `--kind connect` | 4 | 4 | **5** |
+| `--kind gamestate --file runs/gamestate-native.bin` | 5 | 5 | **5** |
+
+- 前两步顺序正确：challenge 把客户端推进到 4，connectResponse 再推到 5；
+- 第三步 `gamestate`（`build_native_gamestate` 的 90 字节）**没有**把 5 推到 9，`ui_state` 仍 0。
+
+解释：`challengeResponse`/`connectResponse` 是 OOB，客户端从环里取出后直接处理；
+gamestate 是 inband（带 `svc 0x03`），客户端要用 **netchan 序号** 与它当前期望的 seq 对齐后才会解析。
+`inject_one` 写入的是裸 svc 数据（前 4 字节 ack 为 0），没有携带客户端期望的递增 seq，
+因此被当作"过期/重复"消息丢掉。
+
+下一步：在注入 gamestate 前，先读出客户端当前的期望 seq（`connection` 对象或 `ring_a` 的写序号），
+把 payload 的 netchan 头改成该 seq；或改走 gs 的真实分片（它带 `seq|0x80000000` 与 XOR key）。
