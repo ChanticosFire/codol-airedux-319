@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T19:30:00+00:00",
+  "scope": "THE SCALE CONSTANT IS 5.0: a position component is a delta of value*1.0 or value*5.0 with a 5-bit value, so the first delta can move an entity up to 155 units",
+  "the_component_encoding": {
+    "gate": "1 bit - 0 means the component is unchanged",
+    "scale": "1 bit - 1 selects the constant at 0xDB1118, 0 selects 1.0",
+    "value": "5 bits via 0x66EC30",
+    "constant_at_0xDB1118": "5.0 (read directly from the image as a float32)",
+    "arithmetic": "component = value * (scale ? 5.0 : 1.0), applied as a delta to the entity's previous position"
+  },
+  "what_that_gives_us": {
+    "resolution": "1 world unit with scale 0, 5 world units with scale 1",
+    "range_per_update": "0..31 units (scale 0) or 0..155 units (scale 1)",
+    "cost": "7 bits per component, about 21 bits for a full origin"
+  },
+  "why_this_completes_the_recipe": [
+    "the entity's position is delta-coded, and its initial value is whatever the entity struct already holds",
+    "so the first update can place the entity anywhere within 155 units of that initial value",
+    "combined with the earlier findings, a positioned entity needs: mode 3 selector + 11-bit value, mode 4 selector + -97 value, mode 1 selector + 2-bit value, then three component blocks of gate+scale+5-bit value",
+    "every one of those is a plain bit sequence the existing BitWriter can emit"
+  ],
+  "the_one_remaining_unknown": [
+    "the exact FPU arithmetic after the 5-bit read at 0x67160F, i.e. whether it adds the scaled value to a stored float or replaces it",
+    "that determines whether the first update positions the entity absolutely or relatively",
+    "it does not block the experiment: any non-zero component will produce a visible change if the entity is drawn"
+  ],
+  "next": [
+    "emit the three-operation delta with a non-trivial origin (for example scale 1, value 20 on the first component) and observe whether the entity's float fields at +0x24/+0x28/+0x2C become non-zero",
+    "that is the last step before the client has a positioned entity"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x6715D0",
+      "0x6714D0",
+      "0x671550",
+      "0xDB1118 = 5.0"
+    ]
+  }
+}

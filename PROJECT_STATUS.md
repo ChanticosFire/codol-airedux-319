@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Scale constant is 5.0: a position component is gate + scale + 5-bit value]**
+> Component = gate(1) + scale(1) + value(5), with 0xDB1118 = 5.0, so resolution is 1 or 5 units and the range per update is 0..31 or 0..155. Position is delta-coded, so the first update moves the entity up to 155 units from its stored value.
+> With mode 3 + mode 4 + mode 1 and three components, a positioned entity is fully expressible in bits the BitWriter already handles. Next: emit it with scale 1, value 20 and check +0x24/+0x28/+0x2C.
+> Evidence: [origin component encoding](evidence/experiments/20261023-codex-origin-component-encoding.json).
 > **2026-10-23 [DECISIVE: mode 1 writes the entity ORIGIN as three floats at +0x24/+0x28/+0x2C]**
 > 0x671873..0x67188B: call 0x6715D0 -> [edi+0x24]; call 0x6714D0 -> [edi+0x2C]; call 0x671550 -> [edi+0x28]; then jmp 0x671A0D (common exit). So mode 1 commits +0x10, +8, +0x30, +0x18 and the three origin floats.
 > The floats are computed from the mode 3 and mode 4 accumulators, so a three-operation delta (3, 4, 1) is what places an entity at a chosen position. Next: read 0x6715D0 / 0x6714D0 / 0x671550 to learn the derivation.
