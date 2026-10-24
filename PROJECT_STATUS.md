@@ -17955,3 +17955,7 @@ lobby          = 0x37E19850
 > **2026-10-25 06:20–06:50【武器计数采样脚本就绪；手动流程连不上（ui=5, conn_5e8=3, gs 只收 inband 17）】**
 >
 > 新增 `tools/watch_weapon_count.py`（轮询 0x1988634 + net/ui）。手动流程（LSG+launch+login+gs+forward）结果：net_state=0、ui=5、conn_5e8=3、gs 只收 `in inband 17`（无 connect/stats）、武器计数全程 0。差异在 run_match 的 ring-a-drain + refresh hook 步骤。→ 下一步用 run_match 后台跑 + 并行轮询，确认武器计数峰值（1135 或更高）。
+
+> **2026-10-25 06:50–07:20【关键时序：state 0→4→5→7→8；weapon_count 峰值=1（本次新建），1135 是预注册】**
+>
+> run_match 后台 + 轮询实测：net 0→4→5→7→8（t=9.6 到 7，t=18.8 到 8），weapon_count 在 t=20.0 才首次 +1（峰值 **1**），t=24.9 回 0（181 弹窗）。→ 此前采到 state 0 是采样太晚。`0x1988634` 只统计**本次连接新建**的复合武器；结合 HANDOFF：1135 预注册 + 1 新建 = 1136，demo 要 1224 → **缺的 88 个在预注册侧**。下一步查 1135 个预注册的来源与 demo 侧 1223 的差异。
