@@ -8044,3 +8044,38 @@ gs: 12 inband，无 connect
 
 1. 让 `state` 回到 4（可能需要先 `forward` 触发一次"连接请求"，或改 `[0x76446B0]=4` 试试）；
 2. 查 `0x5BE730` 的调用者是否在 `state!=4` 时根本不调用它。
+
+## 230. 2026-10-27 08:30–09:00：**`net=4` + `stage=6` + `B7A670()=2` 全满足，connect 仍不发；下一个检查 `[holder+0x38]`**
+
+### 230.1 实测
+
+```
+start: guardC=0 stage=5 net=0 ui=5 table=1135
+unlock+advance: stage=6
+write net_state=4 -> True  now=4（0.3s 后仍 4）
+forward: sent=12 received=0  **state=4**  stage=6
+after: ui=5 **net=4** table=1135 load=2 stage=6
+gs: 12 inband，无 connect
+```
+
+→ **三个条件全部满足**（`stage=6`、`net=4`、`B7A670()=2`），**connect 仍不发**。
+
+### 230.2 下一个怀疑点
+
+`0xB7A6E0`（`0x5BE7B4` 调用）：
+
+```asm
+0xB7A706  call 0xB7A670
+0xB7A70B  cmp eax, 2 / je 0xB7A727     ; （=2 时继续）
+0xB7A727  cmp dword [esi+0x38], 0       ; ← holder+0x38
+0xB7A72B  jne 0xB7A757
+0xB7A72D  push 4 / call 0xB74220        ; 分配 4 字节
+0xB7A745  ecx = [esi+4]
+0xB7A74B  call 0xB84540
+```
+
+→ `[holder+0x38]` 为 0 时会**分配新对象**（可能失败/阻塞），非 0 时跳 `0xB7A757`。
+
+### 230.3 下一步
+
+读 `[holder+0x38]`；若为 0，考虑直接写一个非 0 值（或反汇编 `0xB7A757` 之后）。

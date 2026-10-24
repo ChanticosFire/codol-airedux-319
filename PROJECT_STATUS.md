@@ -18555,3 +18555,7 @@ lobby          = 0x37E19850
 > **2026-10-27 08:00–08:30【stage=6 且 B7A670()=2（holder/loader/c8/c644/c5e8 全部符合）但 connect 仍不发；对比 r176 成功时 state 从 4 开始，现在 state=0 → state 可能是前置条件】**
 >
 > 实测：holder=0x4AEBF5B8/loader=0x4AE9E518/flag=3131961345/c8=2/c644=0/c5e8=3 → BA=2、B7=2；stage=6。forward sent=12/received=0、state=0。→ 下一步让 state=4（改 [0x76446B0] 或先触发连接请求）。
+
+> **2026-10-27 08:30–09:00【net=4 + stage=6 + B7A670()=2 三条件全满足，connect 仍不发（sent=12/received=0、state=4）；怀疑点转向 0xB7A6E0 里的 [holder+0x38] 检查（为 0 时分配新对象）】**
+>
+> 实测：写 net_state=4 保持；forward state=4、stage=6、received=0。→ 下一个检查 `[holder+0x38]`，若非 0 跳 0xB7A757，为 0 则 0xB74220 分配。
