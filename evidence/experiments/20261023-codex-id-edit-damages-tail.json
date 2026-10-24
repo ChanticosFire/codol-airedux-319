@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T06:00:00+00:00",
+  "scope": "COMPARISON: the mode-1 body (bit-edited only) left the client alive, while the id-8 body (byte 165 edited) made it exit - so editing the id bytes damages the blocks that follow",
+  "the_two_runs": [
+    {
+      "body": "runs/snapshot-mode1.bin",
+      "edits": "bits 1330..1355 only",
+      "state": 9,
+      "process": "ALIVE and readable",
+      "entity_floats": "3.58 / 1.0 / 0.1"
+    },
+    {
+      "body": "runs/snapshot-id8b.bin",
+      "edits": "byte 165 = 0x01 and byte 166 &= 0xFE, on top of ent2",
+      "state": 9,
+      "process": "GONE at the end"
+    }
+  ],
+  "why_this_is_informative": [
+    "both bodies carry one entity with count = 1, so the entity itself is not the difference",
+    "mode1 changed only bits inside the delta region (1330 onwards) and the client survived",
+    "id8b changed bytes 165 and 166, which lie AFTER the id in the body and therefore belong to whatever block follows the entity list",
+    "so the exit is caused by damaging the following blocks, not by the entity or its id"
+  ],
+  "what_that_implies_for_id_control": [
+    "the id bits are not confined to bytes 163/165/166 in a way that is free of side effects: byte 165 and byte 166 are also data for later blocks",
+    "so an id can only be CHANGED at the cost of rewriting those later blocks consistently",
+    "which means the 'small id' experiment cannot be done by a blind byte edit - the tail has to be rebuilt for the new id"
+  ],
+  "the_practical_conclusion": [
+    "the earlier 4048 id came from the untouched body and the client tolerated it in some runs (mode1) and not in others, so the id value itself is not what decides survival",
+    "what decides survival is whether the bytes after the entity list are still a valid continuation of the stream",
+    "and that is the same lesson as the ps block: the snapshot is one stream and every edit propagates"
+  ],
+  "next": [
+    "build the entity with the tail regenerated from the edit point instead of patching bytes in place, so the following blocks start from a consistent position",
+    "concretely: after the id, rewrite the remaining bits with the same generator that produced the working tail, rather than leaving the original bytes in place"
+  ],
+  "artifacts": {
+    "bodies": [
+      "runs/snapshot-mode1.bin",
+      "runs/snapshot-id8b.bin"
+    ],
+    "logs": [
+      "runs/codex-r224-gs.jsonl",
+      "runs/codex-r229-gs.jsonl"
+    ]
+  }
+}

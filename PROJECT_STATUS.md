@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Editing the id bytes damages the tail; the mode-1 bit edit does not]**
+> mode1 (bits 1330+ only) left the client alive with entity floats 3.58/1.0/0.1. id8b (bytes 165/166 edited) exited. Both carry count=1, so the entity is not the difference: bytes 165/166 also belong to the blocks after the entity list.
+> So an id can only be changed by rebuilding the tail consistently. Next: regenerate the tail from the edit point instead of patching bytes.
+> Evidence: [id edit damages tail](evidence/experiments/20261023-codex-id-edit-damages-tail.json).
 > **2026-10-23 [ID control verified (4048 -> 8 exactly); the id is not what blocks state 10]**
 > snapshot-id8b.bin with bytes 163/164/165/166 = 18/01/01/1E produced eax = 8 at the store, exactly as predicted. So the assembly rule is confirmed and ids are now settable.
 > With id 8 the client still ends at state 9 and exits, so round 228's 'out of range id' hypothesis is falsified. Remaining candidates: the delta path corrupting the stream, a required eType/actor identity, or a clientNum/configstring gate.
