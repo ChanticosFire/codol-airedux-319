@@ -2458,3 +2458,38 @@ r107flow\reuse-3b946d9a\events.jsonl  0 字节  2026-10-24 16:03:12
    同时轮询该计数，确认它从 0 → 1135 的过程与时机；
 3. 若峰值确实是 1135，则"缺 88 个"的根因在**定义创建路径**（`0x42F2F0` 查找 vs
    `0x431810` 创建），而不是 configstring 数量。
+
+## 79. 2026-10-25 06:20–06:50：武器计数采样脚本就绪；手动流程连不上（ui=5, conn_5e8=3）
+
+### 79.1 新工具
+
+`tools/watch_weapon_count.py`：轮询 `0x1988634`（武器定义计数）并记录每次变化
+（同时记录 `net_state`、`ui_state`），支持 `--seconds/--interval/--output`。
+
+### 79.2 手动流程（r110）结果
+
+| 项 | 值 |
+|---|---|
+| 登录后 `net_state` | **0** |
+| `ui_state` | 5 |
+| `login_step` / `login_ready` | 0 / 2 |
+| `auth_state` / `lsg_state` | 9 / 2 |
+| `conn_5e8` | **3**（CA_LOADING） |
+| gs 收到 | 只有 `in inband 17`（**没有 connect/stats**） |
+| 武器计数采样 | 全程 0（1 个样本） |
+
+→ 手动流程（LSG + launch + login + gs + forward）**没有建立连接**：
+客户端停在 `ui_state=5 / conn_5e8=3` 的加载屏，gs 只收到 inband。
+
+### 79.3 与 run_match 的差异
+
+`run_match`（r105/r106/r108）能到弹 181 的阶段，而手动流程不能。差异在
+`run_match` 的额外步骤：**ring-a-drain（block）**、**refresh hook**、`--reuse-runtime` 的
+完整初始化序列。手动流程缺了这些，客户端网络状态机没有推进到 connect。
+
+### 下一步
+
+1. 用 `run_match` + **并行轮询**（run_match 在后台跑，轮询脚本同步采 `0x1988634`）；
+2. 或把 `run_match` 的 ring-a-drain / refresh hook 步骤复制进手动流程；
+3. 采样目标：确认武器计数峰值是 1135 还是更高，从而判定"缺 88 个"发生在
+   定义创建路径还是 configstring 数量。
