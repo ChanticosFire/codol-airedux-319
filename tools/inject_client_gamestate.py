@@ -37,6 +37,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("gamestate", type=Path)
     parser.add_argument("--cookie", type=int, default=1469978033)
+    parser.add_argument("--port", type=int, default=28969,
+                        help="UDP port stored in the connection netadr (game server / bridge)")
     parser.add_argument("--timeout", type=float, default=60)
     args = parser.parse_args()
     handle = k32.OpenProcess(0x0438, False, find_pid())
@@ -60,7 +62,7 @@ def main() -> int:
         gamestate,
     ]
     connection = (u32(0x331C0C8) ^ 0xD362501F)
-    adr = struct.pack("<I4sHHIII", 4, b"\x7f\x00\x00\x01", socket.htons(28969), 0, 0, 0, 0x9D)
+    adr = struct.pack("<I4sHHIII", 4, b"\x7f\x00\x00\x01", socket.htons(args.port), 0, 0, 0, 0x9D)
     wrote = C.c_size_t()
     if connection and 0x10000 <= connection < 0x7FFF0000:
         k32.WriteProcessMemory(handle, C.c_void_p(connection + 0x14),
