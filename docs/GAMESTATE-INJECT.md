@@ -5045,3 +5045,47 @@ r145 events: '"path": "*.ff"' 匹配数 = 0
 1. 重新跑一次**带 `--trace-files`** 的完整启动，拿到**真实 ff 请求列表**（哪些包在启动时被加载）；
 2. 从 trace 的 caller 字段定位"启动加载列表"的真实代码位置；
 3. 再改一次（同样的 C1 手法）。
+
+## 148. 2026-10-26 15:00–15:30：**拿到真实启动 ff 请求列表（15 个，全 patch 前缀）**
+
+### 148.1 数据（r146 的 trace，`reuse-a0d69138`）
+
+```
+ff requests = 15
+  3  patch_ui_mp.ff
+  2  patch_localized_ui_mp.ff
+  1  patch_code_post_gfx_mp.ff
+  1  patch_code_pre_gfx_mp.ff
+  1  patch_common_marketplace_lite.ff
+  1  patch_common_marketplace_lite1.ff
+  1  patch_common_mp.ff
+  1  patch_localized_code_post_gfx_mp.ff
+  1  patch_localized_code_pre_gfx_mp.ff
+  1  patch_localized_common_marketplace_lite.ff
+  1  patch_localized_common_mp.ff
+  1  ui_mp_const.ff
+```
+
+→ 全部是 **`patch_` 前缀**（overlay 里都没有），客户端用 FileExists 探测、缺失则回退到非 patch 版本。
+
+### 148.2 `patch_common_mp.ff` 的请求细节
+
+```json
+{"file_missing": {"api": "CreateFileA", "error": 2,
+  "caller": "0x776f80",
+  "path": ".\\client_shipRetail\\chinese\\patch_common_mp.ff"}}
+```
+
+→ caller `0x776F80`（FileExists 内部），说明"patch 探测 + 回退"逻辑在 `0x776F00`。
+
+### 148.3 结论
+
+- 启动加载的**真实入口**是 `0x776F00`（FileExists）的调用者；
+- 之前 C1 改的 `0x4FCC10` 是死代码（§147 已证）；
+- 要让客户端加载 `common_gametype_mp`，应改**调用 FileExists 的那条路径**，
+  或在列表里加一项（需要找到列表构造点）。
+
+### 下一步
+
+1. 从 trace 的 `caller=0x776F80` 反推 `0x776F00` 的调用者（运行时栈回溯或静态找 `call 0x776F00`）；
+2. 找到后看它如何决定"patch_ + 基名"的列表，再把 gametype 加进去。
