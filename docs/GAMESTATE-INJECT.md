@@ -134,3 +134,39 @@ gamestate 是 inband（带 `svc 0x03`），客户端要用 **netchan 序号** �
 1. 反汇编 `0x5BE900–0x5BEB40`，定位 `mov [0x76446B0], reg` 的 5/6 写入；
 2. 从写入点向回找条件跳转，确认 6→9 需要什么消息/字段；
 3. 按条件补服务端消息（而不是继续换 seq/delay）。
+
+## 8. 2026-10-24 12:52–12:55：connect 状态机反汇编
+
+`0x5BEA40–0x5BEB19`（`CONNECT_FN` 尾部）的实际结构：
+
+```asm
+0x005BEA45  cmp  dword ptr [0x76446B0], 5     ; 只有 state==5 才进
+0x005BEA53  jne  0x5BEA80
+0x005BEA55  call 0x7F9090                     ; 取连接对象
+0x005BEA5A  mov  ecx, [eax+0x30]
+0x005BEA6A  xor  edx, [eax+0x11128]           ; 解码 key
+0x005BEA71  mov  byte ptr [eax+0x1112C], 1
+0x005BEA78  mov  [eax+0x20], edx
+0x005BEA7B  call 0x7F85C0
+0x005BEA80  push 0x1398 / 0 / 0x7888788
+0x005BEA8B  mov  dword ptr [0x76446B0], 4     ; 无条件写 4
+0x005BEA95  call 0xC42DE0                     ; memset(0x7888788,0,0x1398)
+0x005BEA9A  eax = [0x331C0C8] ^ 0xD362501F    ; 解码 connection
+0x005BEAAA  mov  [eax], ecx
+0x005BEAAF  lea  esi, [eax+0x14]
+0x005BEAB7  mov  dword ptr [eax+0x30], 0xFFFFF448
+0x005BEAEA  call 0x5C05F0                     ; 发 getchallenge
+```
+
+结论：
+- **`state==5` 是"连接对象就绪"的分支**：它做一次连接对象解码/初始化，然后**无条件把 state 写回 4**，
+  紧接着调用 `0x5C05F0` 发 getchallenge。这正是"注入 challengeResponse 后状态回到 4"的机制。
+- state 5/6/9/10 都**不是立即数写入**：`0x76446B0` 的立即数写入只有 3/7/4/0/7 五处，
+  也没有 `A3`（moffs）写入；5/6 一定由寄存器/间接写入，需要动态 hook 或继续找 `mov [reg], eax`（reg 来自 `lea`）。
+
+### 下一步
+
+1. 动态：在 `0x5C05F0`（发 getchallenge）与 `0x7F85C0` 下断点，记录 state 6 时客户端正在等什么；
+2. 静态：从 `0x5C1678`（challengeResponse 分支）向前找 `mov [0x76446B0], reg` 的 5/6 写入；
+3. 服务端侧同时把 gamestate 的 netchan seq 从 3 改成 1（`_send_fragments` 的 `seq = 3 + count` 写死），
+   因为客户端第一个可靠包通常期望 seq=1。
