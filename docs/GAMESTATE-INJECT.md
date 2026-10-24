@@ -2794,3 +2794,50 @@ call 0x5C83D0(1) (CL_Init，未执行到)   → 客户端已死
   2. 或在服务端 connect 完成（state 5）后再尝试 `CL_Init`（本次在 state 0 调用失败）；
   3. 或从 `mp_crash_tropical.ff` 离线提取 122 个缺失武器定义，补进 gamestate configstring。
 - **目标状态**：未达成（ui_state=5、181 错误、无 mp_cross_fire 画面）。
+
+## 88. 2026-10-25 09:40–10:10：**重大纠正 —— 0x49E600 是 LoadDemo，不是 LoadMap**
+
+### 88.1 断点命中的明文证据（r121）
+
+在 demo 播放中给 `0x49E600` 下断点（等满 32 秒），命中的 stack 里出现明文：
+
+```
+... 64 65 6d 6f 2f 30 43 2d 32 30 32 31 2d 38 2d 32 36 5b 31 39 2d 32 36 2d 32 34 5d 77 61 72 2e 64 65 6d 6f 00
+    "demo/0C-2021-8-26[19-26-24]war.demo"
+```
+
+→ `0x49E600` 收到的参数是 **demo 文件路径**，不是地图名。
+之前把它当作 `LoadMap(mapname)` 的分析**是错的**；它实际是 **LoadDemo(name)**。
+
+这解释了为什么：
+- `0x813E96 lea esi,[connection+0x108394]` 在 demo 播放时 0 命中（那条分支不是它）；
+- 地图名从来没有出现在这个函数的参数里。
+
+### 88.2 FileExists（0x776F00）在原始 demo 路径只命中启动
+
+r122（原始 demo + `0x776F00:FileExists` 断点，等满 32 秒）：
+
+```
+FileExists hits = 1
+stack: "patch_code_pre_gfx_mp.ff"   ← 启动基础包
+```
+
+→ **原始 demo 的地图 fastfile 请求不经过 0x776F00**；
+r58 里 `patch_mp_crash_tropical.ff` 的 caller `0x776F80` 来自 **cf_dvar.demo（地图名被改）的 fallback 路径**，
+不是原始 demo 的正常加载路径。
+
+### 88.3 本轮结论
+
+| 事实 | 状态 |
+|---|---|
+| `0x49E600` = LoadDemo（参数是 demo 路径） | ✅ 已证 |
+| 原始 demo 地图加载**不经过** 0x49E600 / 0x484370 / 0x776F00 | ✅ 已证 |
+| cf_dvar.demo 的 crash 请求是 fallback（0x776F80） | ✅ 已证 |
+| 原始 demo 的地图加载入口 | ❓ 仍未定位 |
+
+### 下一步
+
+1. 在 `0x776F00` 入口之外，直接 hook **CreateFileA 本身**（`[0xCA8208]`）的调用者，
+   抓原始 demo 播放 20 秒后所有 `.ff` 请求的返回地址；
+2. 或在 LoadDemo（`0x49E600`）返回后，跟踪它如何触发地图加载（同一调用栈的后续调用）；
+3. 拿到入口后，就能在服务端路径复刻"先加载地图 fastfile，再发 gamestate"。
