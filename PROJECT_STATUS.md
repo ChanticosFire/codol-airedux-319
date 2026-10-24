@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MILESTONE 4: mode-1 delta wrote real non-zero floats into the entity struct]**
+> Probe at 0x67188B on snapshot-mode1.bin: edi 0x1312AFF0, f24 3.5806, f28 1.0, f2c 0.1; count 1, id 4048, state 9.
+> The full chain now runs: list -> changed bit -> mode selector -> mode handler -> entity struct. The values are not the plain value*5 we predicted, so the arithmetic involves the previous value, but they are real and changed.
+> Remaining: the client still sits at state 9 and draws nothing, so the next question is what else it needs to leave the loading screen.
+> Evidence: [mode1 writes real floats](evidence/experiments/20261023-codex-mode1-writes-real-floats.json).
 > **2026-10-23 [One mode op per delta; mode 1 reads its position components inline]**
 > 0x671A0D is bitset marking then return, so 0x671700 handles ONE operation. Modes 3/4 only fill scratch for [edi+0x10]/[edi+8], but the three position floats are read INLINE by 0x6715D0/0x6714D0/0x671550.
 > So a single mode-1 delta positions an entity. Next: emit mode 1 with 2 inline bits and three gate+scale+5-bit components, then probe [edi+0x24]/[+0x28]/[+0x2C].

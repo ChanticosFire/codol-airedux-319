@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T21:00:00+00:00",
+  "scope": "MILESTONE 4: a deliberately constructed mode-1 delta wrote REAL, non-zero floats into the entity struct",
+  "the_measurement": {
+    "body": "runs/snapshot-mode1.bin",
+    "probe": "0x67188B:Float (after the three float stores)",
+    "entity_pointer": "0x1312AFF0",
+    "f24": 3.5806450843811035,
+    "f28": 1.0,
+    "f2c": 0.10000000149011612,
+    "o10_as_float": "NaN (the field holds an integer, not a float)",
+    "o08_as_float": "NaN",
+    "count": 1,
+    "ids": "4048",
+    "state": 9
+  },
+  "what_was_built": {
+    "changed_bit": 0,
+    "mode_selector": "bit 1330 = 1 with two zero value bits -> mode 1",
+    "inline": "2 zero bits",
+    "component_1": "gate 1, scale 1, value 20",
+    "component_2": "gate 1, scale 0, value 0",
+    "component_3": "gate 1, scale 0, value 0"
+  },
+  "why_this_is_the_fourth_milestone": [
+    "milestone 1: entity count = 1",
+    "milestone 2: a real entity id in the list",
+    "milestone 3: the delta decoder entered and the client alive",
+    "milestone 4: the delta WROTE real data into the entity struct - three non-zero floats",
+    "so the full chain now runs: list -> changed bit -> mode selector -> mode handler -> entity struct"
+  ],
+  "the_values_themselves": [
+    "3.5806, 1.0 and 0.1 are not the plain value*5=100 we predicted, so the component arithmetic is not a bare multiply - it involves the previous value and possibly a normalisation",
+    "but they are plausible entity state numbers (an angle-like value, a scale-like 1.0 and a small fraction), which is what an orientation block would look like",
+    "and they are different from the previous contents, which proves the write took effect"
+  ],
+  "what_remains": [
+    "the entity has state but the client still sits at state 9 (loading screen) and draws nothing",
+    "the next question is therefore not the encoding but what else the client needs to leave the loading screen: probably a second entity, a valid view entity, or configstring/clientNum ties",
+    "and the component arithmetic should be read precisely (the FPU sequence after 0x67160F) if exact world positions matter"
+  ],
+  "next": [
+    "record this as the boundary: entity DATA encoding is now demonstrated end to end",
+    "and shift attention to what makes the client render - a probe on the render path or a second entity in the list"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r224-gs.jsonl",
+    "body": "runs/snapshot-mode1.bin"
+  }
+}

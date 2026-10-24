@@ -2872,6 +2872,21 @@ def main(argv=None) -> int:
                 self._ent_count = n + 1
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"ent_error": f"{label}: {error}"})
+        if label.startswith("Float"):
+            try:
+                registers = row.get("registers", {})
+                edi = int(registers["edi"], 0)
+                vals = []
+                for off in (0x24, 0x28, 0x2C, 0x10, 0x08):
+                    raw = self.process.read(edi + off, 4)
+                    vals.append(struct.unpack("<f", raw)[0])
+                n = getattr(self, "_float_count", 0)
+                if n < 12:
+                    self.record({"float": {"edi": hex(edi), "f24": vals[0], "f28": vals[1],
+                                           "f2c": vals[2], "o10": vals[3], "o08": vals[4], "n": n}})
+                self._float_count = n + 1
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"float_error": f"{label}: {error}"})
         if label.startswith("Cursor"):
             try:
                 registers = row.get("registers", {})
