@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MILESTONE 3: the entity delta decoder runs and the client survives]**
+> ent4 (bit 1329 cleared): EntDelta fired at bitpos 1330, count 1, id 4048, state 9, process alive. So the entity pipeline runs end to end for one entity; only the delta CONTENT remains.
+> Remaining: the mode selector at 1330+ reads arbitrary bits, and the state is 9 not 10. Next: probe 0x671785 to log the chosen mode, then write it explicitly with a first field from 0xDA63E8.
+> Evidence: [entity delta runs](evidence/experiments/20261023-codex-entity-delta-runs.json).
 > **2026-10-23 [Entity payload: changed-bit at 1329 is 1, so the delta decoder never runs]**
 > 0x471E03 reads one changed flag: 1 -> read N bits and copy a 52-byte struct; 0 -> call 0x671700 (delta decoder, which starts with a variable-length MODE selector). Our body has bit 1329 = 1, so it takes the copy branch.
 > Next: clear bit 1329 so the delta decoder runs, and observe whether the client survives.

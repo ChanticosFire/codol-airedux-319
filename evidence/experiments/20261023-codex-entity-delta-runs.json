@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T15:00:00+00:00",
+  "scope": "MILESTONE 3: with the changed bit cleared, the entity delta decoder runs, the entity id persists, and the client survives",
+  "the_measurement": {
+    "body": "runs/snapshot-ent4.bin (ent2 with bit 1329 cleared)",
+    "probe": "0x671700:EntDelta",
+    "records": 1,
+    "bitpos_at_entry": 1330,
+    "count": 1,
+    "ids": "d00f... -> 4048",
+    "final_state": 9,
+    "process": "alive and readable at the end of the run"
+  },
+  "what_each_field_shows": {
+    "EntDelta fired": "the changed flag at 1329 was read as 0, so the payload took the delta path instead of the struct-copy path",
+    "bitpos 1330": "exactly one bit after the changed flag, i.e. the delta decoder starts where it should",
+    "count 1 and id 4048": "the entity survived the whole parse - the list was neither cleared nor corrupted",
+    "process alive": "the client no longer exits during the snapshot, which it did in every previous entity experiment"
+  },
+  "why_this_is_the_third_milestone": [
+    "milestone 1: the count became 1",
+    "milestone 2: a real id landed in the list",
+    "milestone 3: the per-entity payload path is entered, the entity persists, and the client survives",
+    "so the entity pipeline now runs end to end for one entity, with the only unfinished part being the CONTENT of that entity's delta"
+  ],
+  "what_remains": [
+    "the mode selector inside 0x671700 reads bits from 1330 onwards; ours are arbitrary, so the delta decodes as some default mode with arbitrary field values",
+    "to give the entity an eType and an origin, the mode selector and the first fields must be written deliberately",
+    "and the state is 9 (loading screen) rather than 10, so the client still does not reach the in-match state with an entity present"
+  ],
+  "next": [
+    "observe which mode the selector picks: put a probe just after the selector (0x671785) and log [ebp-4]",
+    "then write the mode explicitly followed by a first field from the 0xDA63E8 table"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r222-gs.jsonl",
+    "body": "runs/snapshot-ent4.bin"
+  }
+}
