@@ -3762,3 +3762,46 @@ returned_eip = "timeout"
    让它在自然线程里执行；
 2. 或改用"**hook 游戏主循环的某个点**"，让游戏自己在正常上下文里调 `0x49E160`；
 3. 或退回"补 configstring"方案（只能补 42 个复合，已知到不了 1224）。
+
+## 113. 2026-10-25 21:30–22:00：远线程调用 0x49E160 也崩 —— 它必须跑在主线程
+
+### 113.1 工具
+
+`tools/load_gametype_thread.py`：写入 shellcode
+（`push mode; push 4; push list; call 0x49E160; xor eax,eax; ret`），
+用 `CreateRemoteThread` 在新线程执行。
+
+### 113.2 结果（表=1135 的窗口）
+
+```
+table_now = 0x46F = 1135
+stub = 0x40200000   list = 0x40200400
+thread_exit = 0xD1A6        ← 异常
+客户端退出（alive=false）
+```
+
+→ 远线程同样崩溃。
+
+### 113.3 原因（从 0x49E160 入口可知）
+
+```asm
+0x49E16C  call dword ptr [0xCA8164]      ; 取当前线程 id
+0x49E172  cmp eax, dword ptr [0x7886E6C] ; 与"主线程 id"比较
+0x49E17A  call 0xBEAA80                  ; 不是主线程 → 错误路径
+0x49E17F  call 0xC04BD0
+```
+
+→ `0x49E160` **要求在主线程上调用**。cave 机制（挂起主线程 + 跳板）与远线程
+（新线程）**都不满足**，所以两次都崩。
+
+### 结论
+
+手工调用 `0x49E160` 的路线**彻底关闭**（cave / 远线程都不行）。
+
+### 下一步（最后两条）
+
+1. **在主线程内部注入**：hook 主循环里某个高频函数（如 `0x7EF0D0` Frontend tick），
+   在它的执行流里插入 `call 0x49E160`（需要改写函数头部并保证栈平衡，风险高）；
+2. **放弃主动加载**，回到"补 configstring"：只能补 42 个复合武器（到 1178），
+   但 88 个 asset 仍缺 —— 除非改用"修改 fastfile + 重签"方案（参考文档 §91），
+   把 88 个武器定义直接写进 `common_mp.ff`。

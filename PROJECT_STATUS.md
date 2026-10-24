@@ -18087,3 +18087,7 @@ lobby          = 0x37E19850
 > **2026-10-25 21:00–21:30【正确 4 项列表仍 timeout：0x49E160 的 cave 调用不可行】**
 >
 > `tools/load_gametype.py` 按 `0x49E540` 布局构造 4 项列表（patch_/原/ patch_localized_/localized_）后调 `0x49E160(list,4,0)`，在表=1135 窗口仍 `returned_eip="timeout"` + 客户端退出。→ `0x49E160` 内部依赖主循环/线程上下文，cave 机制不适配。下一步改用 CreateRemoteThread 注入远线程调用，或 hook 主循环。
+
+> **2026-10-25 21:30–22:00【远线程调 0x49E160 也崩（0xD1A6）；它要求主线程（cmp [0x7886E6C]）】**
+>
+> `load_gametype_thread.py`（shellcode + CreateRemoteThread）：表=1135 时执行，`thread_exit=0xD1A6`、客户端退出。原因：`0x49E160` 入口 `call [0xCA8164]` 取线程 id、`cmp [0x7886E6C]` 比对主线程 id → 非主线程走错误路径。→ cave 与远线程都不满足，手工调用路线关闭。下一步：hook 主循环函数插入 call，或改用"改 fastfile + 重签"方案。
