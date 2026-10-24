@@ -11790,3 +11790,80 @@ CLpacketEvent (0x5C2260)   ← Round 11 实测被调用 1808 次，arg0 = 2
 |---|---|
 | 28 | `CL_ParseServerMessage` 命中 0 次 |
 | **29** | **`CLpacketEvent` 只认 OOB（检查 `FFFFFFFF`）；netchan 分支还要求 `net_state>=7`；`0x5C241C` 是死代码；活入口是 `0x5AA980`（CL 消息分发器）** |
+
+## 291. 2026-10-29 06:00–07:00：**🎯🎯 根因锁定 —— netchan 数据在 `CLpacketEvent` 被 `net_state >= 7` 丢弃**
+
+### 291.1 三个 hook 同时埋点，数据流一次看清
+
+```
+recvPump       0x4F8D70 = 8763     数据在收
+CLpacketEvent  0x5C2260 = 450      包事件被触发
+CL dispatcher  0x5AA980 = 0        ← **从未被调用**
+state: ui=5  net=5  table=0
+```
+
+**数据进了接收泵（8763 次）、也进了 `CLpacketEvent`（450 次），但一次都没有进入
+真正的消息分发器 `0x5AA980`。**
+
+### 291.2 为什么？就在 `0x5C2260` 的两个分支上
+
+```asm
+; --- OOB 分支 ---
+0x5C22AF  eax = [esi+0x14]              ; 长度
+0x5C22B5  cmp eax, 4 / jl 0x5C22FC      ; 太短 → 走 netchan 分支判断
+0x5C22BD  cmp dword ptr [ecx], -1       ; 数据前 4 字节 == FFFFFFFF ?
+0x5C22C0  jne 0x5C22FC                  ; 不是 OOB → 走 netchan 分支判断
+0x5C22ED  call 0x5C1EE0                 ; 处理 OOB 文本命令
+0x5C22FB  ret
+
+; --- netchan 分支 ---
+0x5C22FC  cmp dword ptr [0x76446B0], 7  ; **net_state >= 7 ?**
+0x5C2303  jl  0x5C2413                   ; **< 7 → 直接返回 false（丢弃）**
+0x5C2309  ebx = [0x331C0C8] ^ 0xD362501F
+0x5C2380  call 0x674EB0                  ; Netchan 处理
+0x5C2388  test eax,eax / je 0x5C2413     ; 失败也丢弃
+0x5C23A0  call 0x674740                  ; 解包
+0x5C23A8  test eax,eax / je 0x5C2413     ; 失败也丢弃
+…
+0x5C241C  call 0x470A60
+0x5C2434  call 0x473A50                  ; CL_ParseServerMessage
+```
+
+### 291.3 这是一个真正的死锁
+
+- 客户端在 `net_state = 5`（`CA_CHALLENGING`，我们推进到的状态）；
+- `CLpacketEvent` 的 netchan 分支**要求 `net_state >= 7` 才处理**；
+- 而 `net_state` 要往 7 走，恰恰需要 `CL_ParseGamestate`（它会把状态写成 8）；
+- `CL_ParseGamestate` 只能由 `CL_ParseServerMessage` 调用；
+- `CL_ParseServerMessage` 只在这条"要求 `net_state >= 7`"的分支后面。
+
+**因此只要 `net_state` 停在 5，gamestate 就永远进不来，而它也永远不会因为 gamestate 前进。**
+
+### 291.4 下一步：patch 掉 `0x5C2303` 的 `jl`
+
+`0x5C2303` 是 `jl 0x5C2413`，指令字节 `7C 0E`（2 字节）。
+把它改成 `90 90`，netchan 分支就会**无条件继续**：
+
+```
+0x5C22FC  cmp [0x76446B0], 7     ; 结果不再影响
+0x5C2303  90 90                  ; 不跳
+0x5C2309  … Netchan 处理 → CL_ParseServerMessage → CL_ParseGamestate
+```
+
+预期链式反应（全部可以用已有 hook 验证）：
+
+1. `0x5AA980` 命中数 > 0；
+2. `0x473A50`（`CL_ParseServerMessage`）命中数 > 0；
+3. `0x473260`（`CL_ParseGamestate`）命中数 > 0；
+4. `net_state` 从 5 变成 **8**；
+5. `0x49E600` 被调用 → `[0x1C2B6CC] = 1`；
+6. fastfile 收集器里出现 `common_gametype_mp.ff` 与 `mp_crash_tropical.ff`；
+7. `table` 从 0 增长，画面离开黑色遮罩。
+
+### 291.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 28 | `CL_ParseServerMessage` 命中 0 次 |
+| 29 | `CLpacketEvent` 只认 OOB；netchan 分支要求 `net_state>=7` |
+| **30** | **实测：接收泵 8763 次、包事件 450 次、分发器 0 次 → 数据确实到客户端，但在 `0x5C2303` 的 `jl` 上被整体丢弃。这是一个"要 7 才能到 7"的死锁，patch 该 `jl` 即有望解开整条链** |
