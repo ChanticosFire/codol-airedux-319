@@ -4026,3 +4026,36 @@ alive = false                    ← 崩了
 1. 用已解出来的 `common_gametype_mp.ff` zone 数据，把 88 个武器 asset 合并进 `common_mp.ff`（或直接让客户端加载 `common_gametype_mp.ff`）；
 2. 用参考文档方案重签；
 3. 验证 181 消失。
+
+## 120. 2026-10-26 01:00–01:30：**验证参考文档的前提 —— 改 1 字节就验签失败**
+
+### 120.1 实验
+
+```
+复制 mp_crash_tropical_const.ff → runs/ff-edit/
+改数据区 0x3000 一个字节：0xDD → 0x22
+decode_fastfile(dst, Original Client exe) →
+  FastfileError: 签名 SHA-256 校验失败
+```
+
+→ **证实参考文档的说法**：改动任何一个字节（即使不在签名覆盖的头部区间）都会因为
+数据块哈希链（每块 IV = sha256(明文)）而破坏整体校验。
+
+### 120.2 结论
+
+- 原版 ff 无法"只改内容不改签名"；
+- 要改 ff，**必须**：
+  1. 自建 RSA-2048 密钥对；
+  2. 覆盖客户端 exe 内的 270 字节 DER 公钥；
+  3. 用自建私钥重签目标 ff（含重算数据块的 sha256 链）。
+
+### 120.3 下一步（路线 A 的具体实现）
+
+1. 写 `tools/ff_resign.py`：
+   - 解码 ff（已有 decode_fastfile）；
+   - 重新打包 zone 数据（修改后）；
+   - 重算头部 sha256（`hdr[0x0C]`）与数据块哈希；
+   - 用自建私钥签 `hdr[0x2C:0x12C]`；
+   - 用原 IV 重新 AES 加密头部；
+2. 写 `tools/patch_exe_pubkey.py`：把 exe 的 270 字节 DER 公钥换成自建公钥；
+3. 验证：`decode_fastfile(改后 ff, 改后 exe)` 通过。
