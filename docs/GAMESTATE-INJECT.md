@@ -11736,3 +11736,57 @@ CLpacketEvent (0x5C2260)   ← Round 11 实测被调用 1808 次，arg0 = 2
 | 26/27 | `CL_ParseGamestate` 未执行（`net_state` 恒为 5 而非 8） |
 | 28 | 找到 `CL_ParseServerMessage`（`net_state==0` 直接返回） |
 | **29** | **实测 `CL_ParseServerMessage` 命中 0 次 → 客户端从未解析任何服务端消息；问题定位到 `CLpacketEvent`（`0x5C2260`）的分派层** |
+
+## 290. 2026-10-29 05:00–06:00：**找到 CL 消息分发器 `0x5AA980`；`CL_ParseServerMessage` 的"调用者"其实是死代码**
+
+### 290.1 逐个排掉
+
+| 候选 | 结论 |
+|---|---|
+| `0x5C2260`（`CLpacketEvent`） | **只处理 OOB**：`cmp dword ptr [ecx], -1`（检查 `FFFFFFFF`），不是 OOB 就 `ret` |
+| `0x5C22FC` 的 netchan 分支 | `cmp dword ptr [0x76446B0], 7` / `jl 0x5C2413` —— **要求 `net_state >= 7`**，失败即返回 |
+| `0x5C2413` | 只是 `xor al,al; pop…; ret`（返回 false），**不是 gamestate 分支** |
+| `0x5C241C`（含 `call 0x473A50`） | **死代码**：`call` 0 个、dword 引用 0 个 |
+| `0x5AAB40` | 是 `call 0x473A50` 的**指令地址**，所在函数入口是 **`0x5AA980`** |
+
+### 290.2 真正的消息处理器 `0x5AA980`
+
+```asm
+0x5AA980  push ebp / mov ebp,esp
+0x5AA983  mov eax, 0x2004C
+0x5AA988  call 0xC43280              ; __chkstk（131 KB 栈）
+0x5AA997  ebx = [ebp+8]
+0x5AA99D  edi = [0x331C0C8] ^ 0xD362501F     ; decode connection
+0x5AA9B0  ecx = [edi+0x109244]                ; 虚函数（读包）
+0x5AA9B9  call ecx
+0x5AA9C4  cmp byte ptr [ebp+0xC], 0
+0x5AAA00  memset …
+0x5AAE B3/BC  call 0x5AA980               ; **递归/循环调用自己**（处理后续包）
+…
+0x5AAB40  call 0x473A50                    ; → CL_ParseServerMessage
+```
+
+- 调用 `0x5AA980` 的只有 `0x5AAEB3`、`0x5AAEBC` 两处，**都在它自己内部**
+  （说明这是"一次调用处理一串包"的循环结构）；
+- `0x5AAB40`（`call 0x473A50`）位于该函数体中。
+
+### 290.3 现在的判断
+
+`CL_ParseServerMessage`（`0x473A50`）在活代码里的唯一入口是 `0x5AA980` 这条路径。
+它在 Round 28 实测 count=0，说明 **`0x5AA980` 也没有被有效执行**。
+
+因此下一步必须直接验证 `0x5AA980`：
+
+1. hook `0x5AA980`，跑一次完整握手，看它是否被调用；
+2. 若命中：说明包进来了但内部条件把它挡掉（重点看 `[edi+0x109244]` 那个虚函数的结果、
+   以及 `[ebp+0xC]` 这个参数）；
+3. 若不命中：说明包连"消息分发器"都没进 —— 那么问题在
+   `0x4F8D70`（接收泵）→ `0x5C2260`（`CLpacketEvent`，只认 OOB）这条线上，
+   即 **netchan 数据从未被交给消息分发器**。
+
+### 290.4 里程碑
+
+| Round | 结论 |
+|---|---|
+| 28 | `CL_ParseServerMessage` 命中 0 次 |
+| **29** | **`CLpacketEvent` 只认 OOB（检查 `FFFFFFFF`）；netchan 分支还要求 `net_state>=7`；`0x5C241C` 是死代码；活入口是 `0x5AA980`（CL 消息分发器）** |

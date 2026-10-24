@@ -18795,3 +18795,7 @@ lobby          = 0x37E19850
 > **2026-10-29 04:00–05:00【🎯 决定性：hook 实测 CL_ParseServerMessage(0x473A50)、CL_ParseGamestate(0x473260)、Netchan_Process(0x794380) 全部命中 0 次，而 net=5、table=0 —— 客户端从未解析任何服务端消息。这一条统一解释了此前所有现象：net_state 恒为 5 而非 8、0x515340/0x515680 count=0、[0x1C2B6CC] 恒 0、ff 只有 10 个、Com_Error 零调用】** 
 >
 > 下一步：反汇编 CLpacketEvent(0x5C2260) 看它对 arg0（Round11 实测=2）的分派，确认哪种 type 会走 CL_ParseServerMessage；扫 call 0x473A50 找真正调用者；若 CLpacketEvent 只处理 OOB 分支，则 forward 注入的 netchan 数据在分派层就被丢弃，需改成按 netchan 包格式注入。
+
+> **2026-10-29 05:00–06:00【🎯 逐个排掉：CLpacketEvent(0x5C2260) 只认 OOB（cmp dword [ecx],-1 检查 FFFFFFFF，非 OOB 直接 ret）；其 netchan 分支 0x5C22FC 要求 net_state>=7 否则 jl 返回；0x5C2413 只是返回 false 不是 gamestate 分支；含 call 0x473A50 的 0x5C241C 是死代码（0 调用 0 引用）；CL_ParseServerMessage 的活入口是 CL 消息分发器 0x5AA980（栈 0x2004C，递归调用自己 0x5AAEB3/0x5AAEBC，内部 0x5AAB40 处 call 0x473A50）】** 
+>
+> 下一步：hook 0x5AA980 判定是否被调用。命中→内部条件（[edi+0x109244] 虚函数结果、[ebp+0xC] 参数）挡掉了；不命中→netchan 数据从未交给消息分发器（问题在 0x4F8D70 → 0x5C2260 这条线）。
