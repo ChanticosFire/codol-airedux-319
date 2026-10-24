@@ -9838,3 +9838,94 @@ state 3 → 0x5C067A   ; call 0x5BE700
 2. 反汇编 **`0x5BE700`**：它是 state 0/3 的处理函数，返回 al=0 就终止；
 3. 目标：让 `0x7F4F10(channel)` 返回 2 或 3，或让 `0x5BE700` 返回 al≠0，
    使 `0x5C05F0` 走到真正调用 `send` 的分支。
+
+## 264. 2026-10-28 04:00–05:00：**🎯 发送链路完全解密 —— 从 `0x5C05F0` 到 `0x622040` 的完整调用链**
+
+### 264.1 全链路（逐层反汇编确认）
+
+```
+0x5C05F0  (net_state ∈ {3,4,5,6})
+  eax = [conn+0x28]                    ; 通道号
+  call 0x7F4F10(eax)                   ; 通道状态
+  jmp [eax*4 + 0x5C0F3C]               ; 状态跳转表
+      |
+      +-- state 0/3 → 0x5C067A → call 0x5BE700   (socket 可用性检查)
+      |                              al==0 → 退出
+      +-- state 1   → 直接返回
+      +-- state 2   → 0x5C0693 超时检查
+                       eax = now - [conn+0x30]
+                       if (net_state==3||4) && eax < 3000 → 返回
+                       [conn+0x34]++ ; [conn+0x30] = now
+                       eax = net_state - 3
+                       jmp [eax*4 + 0x5C0F3C]     ; 第二个跳转表
+                          net_state 3 → 0x5C070E
+                          net_state 4 → 0x5C0776
+                          net_state 5 → 0x5C0E07
+                          net_state 6 → 0x5C0EBB
+
+0x5C070E  (net_state = 3 的处理)
+  call 0x5BF860                        ; 构造地址字符串
+  sprintf(buf, "getchallenge 0 \"%s\"", addrstr)      ← fmt @0xDBFD04
+  call 0x675260(conn, adr_type, adr.bytes...)         ; ← 发送
+    失败 → push 0xDBB708 ("EXE_HOSTUNREACH")
+
+0x675260
+  edx = 命令字符串；长度检查 (< 0x800)
+  strcpy 到 [ebp-0x800]
+  call 0x6751F0
+
+0x6751F0
+  ecx = [ebp+0xc]                      ; ← **adr type**
+  if ecx == 0 || ecx == 1 → 返回 false
+  if ecx == 2 → call 0x6750A0          ; **loopback 环路径**
+  else        → call 0x77FB80          ; **真实网络路径**
+
+0x77FB80
+  push [ebp+8] ; push esi
+  call 0x622040                        ; ← **最终发送函数**
+  返回值 >= 0 → 成功；== -2 → 也算成功
+```
+
+### 264.2 关键常量表
+
+| 项 | 值 | 含义 |
+|---|---|---|
+| `0x7F4F10(0x9D)` | **返回 2** | `0x9D` 是**合法的进程内 loopback 通道** |
+| `0x7F4F10(4)` | 返回 0 | 通道 4 未被识别（通道表为空） |
+| `getchallenge` 格式串 | `@0xDBFD04` = `getchallenge 0 "%s"` | 确认这就是 challenge 包 |
+| 失败提示 | `@0xDBB708` = `EXE_HOSTUNREACH` | 发送失败时的错误 UI |
+| `[conn+0x14]` | **adr type**（2=loopback / 4=IP） | 决定走哪条发送路径 |
+| `[conn+0x28]` | 通道号（`0x9D` 有效） | `0x5C05F0` 用它查状态 |
+| `[conn+0x30]` | 上次发送时间（ms） | 超时判断基准（3000ms） |
+| `[conn+0x34]` | 重试计数 | 每次超时 ++ |
+| `0x5BE700` 检查 | `[0x7887040]=0x47C`、`[0x7886E64]=0x35C`（小整数，非指针） | 疑似 socket 句柄/索引 |
+
+### 264.3 当前卡点（非常具体）
+
+按完整配置触发 `0x5C05F0`：
+```
+adr type [conn+0x14] = 4        （走真实网络）
+channel  [conn+0x28] = 0x9D     （合法 loopback 通道）
+[conn+0x30]          = 0        （强制超时）
+net_state            = 3
+stage                = 6
+→ 0x622040 调用次数 = 0        （trace_sender 槽 0xE54BC64 仍为 0）
+→ gs 仍只有 meta/start
+```
+
+**推测问题在 `main_call_1649370.py --arg` 的传参**：
+用 `--arg 0x9d` 和 `--arg 4` 调 `0x7F4F10`，**两次都返回 0**，
+而按反汇编 `[ebp+8]==0x9d` 必须返回 2 —— 说明**栈参数没落到 `[ebp+8]`**。
+
+### 264.4 下一步
+
+1. **修 `main_call` 的传参**：`pushad` 会保存 ESP，`popad` 会恢复它；
+   当前实现 `push args → call → add esp,N → mov [slot],eax → popad`，
+   需确认 `add esp` 之后 ESP 是否回到 `pushad` 时的值；更稳妥的写法是
+   **先 `push args`，再 `call`，再 `add esp,N`，最后 `mov` 与 `popad`**，
+   并在 cave 里加一条"把 `[ebp+8]` 回读写到槽"的自检。
+2. 或**直接 hook `0x7F4F10`**（用 `trace_sender` 的机制改目标 + 记录参数），
+   亲眼确认 `0x5C05F0` 内部传进来的是不是 `0x9D`。
+3. 一旦 `0x622040` 被调用，`--raw-udp-patch` 就有意义了（它替换整个
+   `0x622040` 为 socket+sendto），配合本轮确认的签名 `[ebp+8]=len`、`[ebp+0xc]=data`
+   就能真正把 `getchallenge` 发到 127.0.0.1:28969。
