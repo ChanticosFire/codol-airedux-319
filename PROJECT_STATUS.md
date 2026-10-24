@@ -17995,3 +17995,7 @@ lobby          = 0x37E19850
 > **2026-10-25 10:10–10:30【FS_OpenFile 完全间接（0xC51196 无任何静态引用）；改用断点栈回溯】**
 >
 > 扫描 `0xC51196`（FS_OpenFile 入口）：call 引用 0、push/mov/lea 地址引用 0 → 完全间接调用，静态 xref 不通。r120 trace 已确证原始 demo 的 `patch_mp_crash_tropical.ff` 经过 `0xC513D9`（FS_OpenFile）与 `0x776F80`（FileExists）。→ 下一步在 `0xC513D9` 命中时读 `[ebp]` 链做栈回溯，直接拿"谁提供了地图名"。
+
+> **2026-10-25 10:30–10:50【断点与 trace 矛盾：r123 FSOpen 仅 1 命中且无 crash，r120 trace 明确有 crash 请求】**
+>
+> r123（原始 demo + 0xC513D9 断点，等 32s）：alive、FSOpen hits=1（无 crash）；而 r120（--trace-files）明确记录 `patch_mp_crash_tropical.ff` caller=0xC513D9/0x776F80。→ trace 可信、断点在 reuse-runtime 下不可靠（events 文件异常 + safe list）。下一步用 trace 时间线（1792835251.86/5252.63）对照播放时刻，改用轮询 0x1D06440/0x239B11C。

@@ -2874,3 +2874,39 @@ caller 0x776F80  (FileExists 内部，CreateFileA 返回点)
 2. 用 `--trace-files` 的 `caller` 字段已能确认 0xC513D9/0x776F80，问题只是
    "它们的上一级是谁"；
 3. 拿到上一级后，在服务端路径复刻该调用（或直接手工调用它）。
+
+## 90. 2026-10-25 10:30–10:50：断点与 trace 结果互相矛盾（events 文件问题）
+
+### 90.1 r123（原始 demo + `0xC513D9:FSOpen` 断点，等满 32 秒）
+
+```
+alive = True
+events = reuse-2e3cbe7b\events.jsonl  len=0  mtime=17:50:54（当前）
+FSOpen hits = 1（无 crash/.ff 记录）
+```
+
+而 r120（同样原始 demo + `--trace-files`，无断点）明确记录到：
+
+```
+patch_mp_crash_tropical.ff  caller=0xC513D9
+patch_mp_crash_tropical.ff  caller=0x776F80
+```
+
+→ **断点实验与 trace 结果矛盾**。可能原因：
+
+1. `0xC513D9` 不在断点 safe list，命中被丢弃；
+2. `reuse-*` 子目录的 events 写入有延迟/被截断（len=0 但能读到 1 条）；
+3. 断点本身拖慢导致播放时序变化，地图加载未触发。
+
+### 90.2 结论
+
+- **trace（r120）是可信的**：原始 demo 播放确实请求 `patch_mp_crash_tropical.ff`，caller 0xC513D9 / 0x776F80；
+- **断点路线在 `reuse-runtime` 下不可靠**（events 文件问题 + safe list 限制）；
+- 应改用 **trace 的时间线**（r120 已给出请求时刻）来推断加载阶段，而不是靠断点。
+
+### 下一步
+
+1. 用 r120 的 trace 精确时间（1792835251.86 / 1792835252.63）对照 demo 播放时刻，
+   确定 fastfile 请求发生在播放后第几秒；
+2. 在该时刻前后用**轮询**读 fastfile 请求表 `0x1D06440` / `0x239B11C`（不用断点）；
+3. 若能抓到表项，就能拿到"谁写入的"（表项内容 + 写入时序）。
