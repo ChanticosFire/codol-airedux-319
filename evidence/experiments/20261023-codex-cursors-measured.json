@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T00:00:00+00:00",
+  "scope": "CURSORS MEASURED: the byte cursor sits at byte 164 of a 172-byte body when the entity block reads the count, while the bit cursor is much further on - the two really are independent",
+  "measurement": {
+    "breakpoint": "0x671650:Cursor (function entry, a shape that has worked before)",
+    "stream": "0x16D9EC",
+    "stream_0x14": 172,
+    "stream_0x18": 0,
+    "stream_0x1C": 164,
+    "stream_0x24": "0xFFFFFFFF",
+    "state": 10
+  },
+  "what_these_fields_are": {
+    "+0x14": "172 = the total LENGTH of our snapshot body (snapshot-single22.bin is 172 bytes) - confirmed by the file size",
+    "+0x18": "0 = the window start",
+    "+0x1C": "164 = the BYTE CURSOR position when the entity block starts",
+    "+0x24": "0xFFFFFFFF = the sentinel the caller writes before each block (seen at 0x4723CF and 0x4723F3)"
+  },
+  "the_actionable_conclusion": [
+    "the entity COUNT is read from byte offset 164 of the body",
+    "the formula in 0x66ED70 is: bound = [+0x18] + [+0x14] = 172, cursor = [+0x1C] = 164, so the byte read is body[164]",
+    "the bit cursor is around bit 1350 at that moment, i.e. a completely different position - so the two cursors are indeed independent, and the count is NOT where a pure bit model would put it",
+    "therefore: to make the entity count equal 1, body byte 164 must be 0x01"
+  ],
+  "why_this_is_the_most_actionable_finding_in_a_long_time": [
+    "it is a single byte in a file we control",
+    "no bit-level construction is needed to test it - patch body[164] = 0x01 and read 0x7859558",
+    "and if the count becomes 1, the block will then read 12 bits per entity id from the BIT stream, which the encoder already handles"
+  ],
+  "next": [
+    "patch byte 164 of runs/snapshot-single22.bin to 0x01, run, and read 0x7859558",
+    "if it reads 1, the entity list is finally non-empty and the next question is the per-entity payload"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r210-gs.jsonl",
+    "body": "runs/snapshot-single22.bin (172 bytes)"
+  }
+}

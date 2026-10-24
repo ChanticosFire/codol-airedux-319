@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CURSORS MEASURED: entity count read from byte 164; byte cursor 164 vs bit cursor ~1350]**
+> Probe at 0x671650: stream 0x16D9EC, [+0x14]=172 (body length), [+0x18]=0, [+0x1C]=164 (byte cursor), [+0x24]=0xFFFFFFFF, state 10.
+> So the count comes from body[164]; the two cursors are independent. Next: patch body[164]=0x01 and read 0x7859558 - the entity list should become non-empty.
+> Evidence: [cursors measured](evidence/experiments/20261023-codex-cursors-measured.json).
 > **2026-10-23 [TWO CURSORS: the entity count comes from a BYTE cursor, not the bit stream]**
 > 0x66ED70 returns one whole byte and advances a byte cursor at [stream+0x1C]; the bit reader advances a different cursor. So the snapshot carries two cursors, and the entity count is byte-addressed.
 > That means bits inserted before the entity block change which byte is read as the count - explaining the erratic shifts seen across bodies. The recipe: bit1=1, bit2=1, then a 0x01 byte for the count, then 12 id bits.
