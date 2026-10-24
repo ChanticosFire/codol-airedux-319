@@ -17829,3 +17829,7 @@ lobby          = 0x37E19850
 > **2026-10-24 21:25–21:40【0x49ED40 断点仅启动时命中；demo 复用已加载地图】**
 >
 > 新工具 `tools/read_call_arg.py`（通用读取断点参数 [ebp+8]/[ebp+4]/[ebp+0xC]/[esp+8] 并按字符串解析）。`0x49ED40:LoadFastfile` 在 demo 播放中只命中 **1** 次（启动早期），说明 demo 的地图 fastfile 在启动阶段已加载（r58 trace 的 patch_mp_crash_tropical.ff 请求时间也确实更早），demo 播放器只是复用。→ 下一步在 `0x49E160` 下断点记录 list，或在 demo 播放前（启动阶段）改地图名。
+
+> **2026-10-24 21:40–21:55【0x49E160 只在启动加载时命中一次（返回 0x4FCC81）】**
+>
+> 断点 `0x49E160` 全程 **hits=1**（返回地址 0x4FCC81，启动初始化区），demo 播放期间不加载任何 fastfile。→ `patch_mp_crash_tropical.ff` 的请求发生在启动阶段，与 demo 播放无关；地图在启动时已确定并加载，demo 只是回放数据。因此"改地图名让 demo 换图"不成立，换图必须在启动阶段介入，或走服务端 gamestate 选图。下一步：读 0x4FCC81 的启动加载列表与 0x49ED40 那次命中的参数。
