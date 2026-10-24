@@ -4955,3 +4955,35 @@ runtime 的 24 个 ff 已从 `runs/ff-edit/overlay-backup` 恢复为原版
 2. 把 `0x4FCC5C` 的 `0xDBD708` 改为新字符串 1、`0x4FCC6C` 的 `0xDBD728` 改为新字符串 2；
 3. 重签（exe 不改签名验证逻辑，只是数据改动，但要同步 launch 的 IMAGE_SHA256）；
 4. 客户端实测：武器表应从 1135 → 1223+。
+
+## 145. 2026-10-26 13:30–14:00：启动列表补丁已应用且不崩，但表仍 1135（未生效，待 trace 确认）
+
+### 145.1 C1 补丁实现（`tools/patch_boot_list.py`）
+
+关键修正：`mov dword ptr [ebp-0x9F8], imm32` 的编码是
+`C7 85 <disp32= -0x9F8> <imm32>`，**imm32 在指令 +6 处**（不是 +2）。
+
+```
+python tools/patch_boot_list.py --exe <shell exe>
+  entry3 -> common_gametype_mp   @ 0xE15A6F
+  entry4 -> patch_common_gametype_mp @ 0xE15A83
+  exe sha256 = 843131b6abba33ba…
+```
+
+### 145.2 启动与 login
+
+```
+IMAGE_SHA256 -> 843131b6…（已同步）
+启动: engine-init 5.74s, stop_reason=（空）, ui=0     ← 不崩！
+login 后: table = 0x46F = 1135（未变）
+```
+
+→ 补丁被接受（不崩），但**武器表没有增长**。
+
+### 145.3 待确认
+
+r145 没加 `--trace-files`，无法确认 `common_gametype_mp` 是否真的被请求。
+下次带 trace 重跑，检查：
+1. trace 里是否出现 `common_gametype_mp.ff` 请求；
+2. 若没有，说明 `0x4FCC10` 不是启动加载（或列表被覆盖）；
+3. 若有但加载失败，看是否缺 `patch_common_gametype_mp`（我们 overlay 里确实没有这个 patch 文件）。
