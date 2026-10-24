@@ -1778,3 +1778,43 @@ after  = "mp_cross_fire"
    但更实际的是：表项只是**加载请求**，改它要抢在 `0x49F280` 遍历之前；
 3. 另一个更根本的办法：找"谁把 `patch_mp_crash_tropical` 写进表"（`0x49DE70` 的调用者
    `0x49E3BE` 上游 `0x49E160` 的 16 个调用者），在 demo 播放时定位那一次调用。
+
+## 60. 2026-10-25 00:10–00:30：**地图名来源 —— `CL_MapLoading(ecx, edx)` 与 server 表**
+
+### 60.1 `0x5C7C70` = CL_MapLoading(mapname, gametype)
+
+```asm
+0x5C7C82  esi = ecx            ; gametype
+0x5C7C85  edi = edx            ; 地图名
+0x5C7C87  call 0x5C92B0        ; 有效性检查
+0x5C7C95  call 0x775FF0        ; gametype 检查
+0x5C7CA5  call 0x776170        ; 格式化
+...
+0x5C7D4F  mov ecx, edi
+0x5C7D51  call 0x49E600        ; LoadMap(地图名)
+```
+
+### 60.2 调用点 `0x470760`（启动对局）
+
+```asm
+0x470765  ecx = [0x3306910]              ; idx
+0x47076B  eax = [ecx*4 + 0x3306994]      ; 状态（>2 才加载）
+0x47077E  edx = [ecx*4 + 0x33069D4]      ; server 表项
+0x470785  edx = [edx + 8]                ; ← 地图名字符串
+0x470794  eax = [ecx*4 + 0x33069D4]
+0x47079B  ecx = [eax + 4]                ; gametype
+0x47079E  call 0x5C7C70                  ; CL_MapLoading(gametype, mapname)
+0x4707A5  ecx = 0xDAE091（默认）
+0x4707AA  call 0x5C7C70
+```
+
+→ **地图名 = `[[0x33069D4 + idx*4] + 8]`**，gametype = `[... + 4]`，
+idx 来自 `[0x3306910]`：这是"服务器信息表"，**可写**。
+
+### 下一步
+
+1. 断点 `0x5C7C70`（CL_MapLoading 入口，参数 edx=地图名）跑 demo 播放，
+   看它是否命中、edx 指向什么字符串；
+2. 若命中，读 `edx` 指向的字符串（应含 crash_tropical），把该内存改成
+   `mp_cross_fire`（等长写入）即可换图；
+3. 若 demo 不走这条，则还有 `0x5C7E63` / `0x5C82A9` 两个调用者待查。
