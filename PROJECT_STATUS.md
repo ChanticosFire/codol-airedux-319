@@ -18187,3 +18187,7 @@ lobby          = 0x37E19850
 > **2026-10-26 09:30–10:00【body 重打包关键约束：hash table 的 IV 存在 header[0x150+section*32]，数据块 IV 存在 table 内；改 table 必须同时改 header 并重签】**
 >
 > `_signed_payload` 精确结构：table 块 IV 来自 `header[0x150+section*32]`（最多 16 section）、数据块 IV 来自 table 内（256×32）；`header[0x12C:0x1FD0]` 被签名覆盖。→ 重打包流程：zlib.compress → 8192 分块 → 每 256 块一组生成 table（sha256 of each）→ table 的 IV 写回 header[0x150..] → 重算摘要+签名 → 逐块 AES-CTR。下一步写 `ff_rebuild_body.py`，先做"原 zone 重打包 == 原文件"自检。
+
+> **2026-10-26 10:00–10:30【body 重打包工具就绪：尺寸一致 90389、分区结构正确；body 字节差异来自 zlib 压缩参数（不影响解压结果）】**
+>
+> 修正 `_ctr` 为小端 `iv[:16]` 后，`ff_rebuild_body.py` 重打包 const：`size=90389 zone=100407 blocks=9 sections=1`，与原文件同尺寸；diff 81895 字节（zlib level 9 与原流不同）。→ 下一步用 `decode_fastfile` 验证能解出相同 zone；通过后作为"塞 21 个武器 asset"的基座。

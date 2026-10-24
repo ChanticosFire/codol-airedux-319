@@ -4702,3 +4702,39 @@ raw[0x2115:] = AES-CTR(body_without_header, key, ...)  # 每块单独用 IV
 写 `tools/ff_rebuild_body.py`：
 1. 先做"原 zone → 重打包 → 与原 ff 逐字节比较"自检；
 2. 自检通过后，再塞 21 个武器 asset。
+
+## 138. 2026-10-26 10:00–10:30：body 重打包工具就绪（尺寸正确、body 字节不同因 zlib 参数）
+
+### 138.1 关键修正：CTR 是小端
+
+```python
+def _ctr(data, key, iv):
+    counter = Counter.new(128, initial_value=int.from_bytes(iv[:16], 'little'), little_endian=True)
+```
+
+→ 我最初写成大端 + 32 字节 IV，导致 `ctr()` 抛异常；修正为 **`iv[:16]` + little-endian**。
+
+### 138.2 重打包结果
+
+```
+python tools/ff_rebuild_body.py --source .../mp_crash_tropical_const.ff \
+    --zone runs/ff-decoded/const --out runs/ff-edit/const-rebuilt.ff --key runs/ff-edit/self.pem
+
+wrote runs/ff-edit/const-rebuilt.ff size=90389 zone=100407 blocks=9 sections=1
+orig 90389  rebuilt 90389  same size True
+diff bytes 81895    ← 几乎整个 body
+body identical (>=0x2115): False
+```
+
+→ **尺寸完全一致**（分区/分块结构正确），但 body 字节不同。
+
+### 138.3 差异原因
+
+`zlib.compress(zone, 9)` 的输出与原文件的压缩流**不完全相同**（压缩级别/策略差异）。
+这不影响正确性（解压后 zone 相同即可），但会改变 body 全部字节。
+
+### 138.4 下一步
+
+1. 用 `decode_fastfile` 验证 `const-rebuilt.ff` 能解出**相同 zone**（证明重打包逻辑正确）；
+2. 若通过，就用它作为"改内容"的基座：塞入 21 个武器 asset 后重打包 + 重签；
+3. 注意本地 exe 已是自建公钥（`_load_keys` 白名单已被我们改过），`decode_fastfile` 应能验过。
