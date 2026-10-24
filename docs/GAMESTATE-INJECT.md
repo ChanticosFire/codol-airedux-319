@@ -1048,3 +1048,32 @@ state=10
 - demo 播放是进入 state 7+ 的可靠手段；
 - 下一步可以把 snapshot 也送进同一条链（`0x471D80` 实体循环），并让服务端在 state 7+ 后接管，
   逐步脱离 demo（先 demo 起状态，再让服务端 gamestate 覆盖地图信息）。
+
+## 36. 2026-10-24 18:10–18:25：**快照的 3 个内容块全部被解析**
+
+在 §35 的链路上再给 gs 加 `--snapshot-file runs/snapshot-hybrid-empty-actors.bin`（12 次），
+并在三个内容块入口下断点：
+
+```
+Entities=2        (0x471D80，实体循环)
+PlayerState=1     (0x471980)
+Actors=1          (0x471010)
+state=10
+```
+
+→ **快照的实体/玩家状态/actor 三个内容块都真正执行了**。此前"实体循环只读越界、
+必然拒绝快照"的结论（README 的 known limitation）在 state>=7 的路径上没有复现。
+
+### 意义
+
+1. 服务端下发的 **gamestate + snapshot 都能被客户端完整解析**（不是"到 state 10 就停"）；
+2. 现在具备了"服务端数据 → 客户端实体表"的完整通道；
+3. 剩下的问题只是：**让地图是 mp_cross_fire，而不是 demo 的 crash_tropical**。
+
+### 下一步
+
+1. 把 gs 的 gamestate `mapname` 设为 `mp_cross_fire`，在 demo 起状态后立刻发送，
+   看客户端是否转而加载 `mp_cross_fire.ff`（overlay 里已是 V70 提取的 461 版本）；
+2. 若 demo 播放器锁死地图，则改为"假 dvar → 手工进入 state 7（不走 demo）→ gs gamestate"，
+   再验证实体表是否仍被解析；
+3. 验收仍是 `ui_state != 5` + 截图里出现 **mp_cross_fire**。
