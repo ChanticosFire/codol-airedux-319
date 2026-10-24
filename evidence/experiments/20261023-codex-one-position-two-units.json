@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T02:00:00+00:00",
+  "scope": "CORRECTION of the 'two cursors' idea: [+0x1C] is the BYTE index and [+0x20] is the BIT position of the SAME stream - they are two views of one position",
+  "the_bit_reader_0x447190": {
+    "0x447194": "cmp [edx],0 ; je 0x4471A0 - return -1 if the stream is already in error",
+    "0x4471A0": "ecx = [edx+0x20] & 7 - the bit offset inside the current byte",
+    "0x4471AC": "esi = [edx+0x18] + [edx+0x14] - the bound",
+    "0x4471B2": "eax = [edx+0x1C] - the BYTE index",
+    "0x4471B5": "cmp eax,esi ; jl 0x4471C7 - overrun sets [edx]=1 and returns -1",
+    "0x4471C7": "esi = eax*8 ; [edx+0x20] = esi ; [edx+0x1C] = eax+1 - when starting a new byte, the byte index advances and the bit position is set to byte*8",
+    "0x4471D6": "ebx = [edx+0x20] - the absolute bit position",
+    "0x4471DF": "eax = ebx >> 3 - the byte index derived from the bit position"
+  },
+  "the_correction": [
+    "the earlier note said the snapshot has 'two independent cursors, one in bits and one in bytes'",
+    "that is WRONG: [+0x20] is the absolute bit position and [+0x1C] is the byte index of the SAME stream, and the bit reader keeps them consistent",
+    "the byte reader 0x66ED70 also advances [+0x1C], so a byte read moves the same position forward by one byte",
+    "so there is ONE logical position, exposed in two units - and mixing the two units is what made the earlier interpretation look strange"
+  ],
+  "what_this_gives_us": [
+    "[+0x20] at 0x671650 entry is EXACTLY the bit index of the first gate bit",
+    "the second gate bit is [+0x20]+1, and the count byte is read at the byte containing [+0x20] after those two bits",
+    "so one more probe reading [+0x20] pins both gate bits precisely, and that is the last unknown before the gates can be set deliberately"
+  ],
+  "next": [
+    "extend the Cursor probe to also log [+0x20] and re-run with single22",
+    "then set the two gate bits in the body at exactly those indices and check whether the count reader is reached"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x447190 bit reader",
+      "0x4471A0 bit offset",
+      "0x4471D6 bit position",
+      "0x4471DF byte index"
+    ]
+  }
+}

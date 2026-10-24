@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CORRECTION: one position in two units, not two cursors]**
+> 0x447190: [+0x20] is the absolute BIT position, [+0x1C] the byte index of the same stream; the reader keeps them consistent and 0x66ED70 advances the same [+0x1C]. So the 'two independent cursors' note is withdrawn.
+> This gives us the exact gate bit indices: [+0x20] at 0x671650 entry. Next: log it and set the two gate bits there.
+> Evidence: [one position two units](evidence/experiments/20261023-codex-one-position-two-units.json).
 > **2026-10-23 [Byte-164 patch did not change the count: the two gate bits come first]**
 > snapshot-ent1.bin (byte 164 = 0x01): cursor still 164, length 172, count still 0, state moved 10 -> 9. So the byte participates but is not the count source: 0x671650 reads TWO GATE BITS (0x671678, 0x671685) before calling the count reader.
 > So the gates must read 1 first. Missing piece: the BIT cursor field, which is not +0x14/+0x18/+0x1C/+0x24. Next: disassemble 0x447190 to find which field it advances.
