@@ -18251,3 +18251,7 @@ lobby          = 0x37E19850
 > **2026-10-26 17:30–18:00【flags=0 队列仍被消费但 trace 无 gametype：疑被 [0x82CA046] 拦住（0x49F2B0 cmp/jne 跳出循环）】**
 >
 > 注入 flags=0 + hook → `count=0`、`table=1135`、`alive=true`，但 trace `gametype mentions=0`。关键：`0x49F2B0 cmp byte [0x82CA046],0 / jne 0x49F2C1`，非 0 就跳过 `0x49ED40`（count 已在循环前清 0）。→ 下一步读 `[0x82CA046]` 值，若非 0 则改 0 重试。
+
+> **2026-10-26 18:00–18:30【根因：队列项 +0x00 是内联字符串（0x49F2A7 传 edi 项地址给 0x49ED40 的 sprintf），我们写成了指针 → 拼出乱码路径】**
+>
+> 排除 `[0x82CA046]`（实测前后都是 0）。真正 bug：`0x49F2A7 push edi`（项地址）+ `0x49ED40` 用 `[ebp+8]` 当 `sprintf("%s.ff")` 的名字 → 要求队列项开头就是内联字符串。我们写的是指针（`+0x00`=name_addr），所以文件名变成乱码、文件不存在。→ 修复：`inject_load_queue.py` 改为把名字内联写进队列项。
