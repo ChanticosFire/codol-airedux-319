@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The loader object is a lazy singleton of 0x1618 bytes; ui_state 5 = its status equals 2]**
+> 0x803830 is a get-or-create singleton: allocate 0x1618, construct via 0xB82130, cache in [0x8269774], init via 0xB7A400 and attach a sub-object. So the object exists because the subsystem is in use, and the earlier 0x4F8 size estimate is withdrawn.
+> ui_state 5 is chosen at 0x8037FA when 0xB838A0/0xB7A670 report status 2. Next question: what moves that status off 2.
+> Evidence: [loader is a lazy singleton](evidence/experiments/20261023-codex-loader-is-a-lazy-singleton.json).
 > **2026-10-23 [DECISIVE: the spinner animates - the client is genuinely still loading]**
 > Two captures 1 s apart at net 10 with one entity: 10752 vs 10690 bytes, not identical. So the spinner is animating, the client is inside its load sequence, and the 'in-map but undrawn' hypothesis is false.
 > The chain that stands: handshake completes, header parses, five blocks entered, count 1 and id stored and mode-1 floats written - and a loading spinner still animates. The missing condition is inside the client's load sequence, not in the snapshot bytes.

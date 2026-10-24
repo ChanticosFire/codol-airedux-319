@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T22:00:00+00:00",
+  "scope": "the loader object is a LAZY SINGLETON of 0x1618 bytes; ui_state 5 is chosen when its status equals 2, so status 2 is 'loading'",
+  "the_getter_at_0x803830": {
+    "0x803830": "eax = [0x8269774] ; if non-null, return it (0x8038A7)",
+    "0x803839": "push 0x1618 ; call 0xB74220 - ALLOCATE 0x1618 bytes (5656)",
+    "0x80384C": "call 0xB82130 - construct",
+    "0x803851": "[0x8269774] = eax - cache the singleton",
+    "0x80385A": "push 0xE39B6E8 ; call 0xB7A400 - initialise with a parameter",
+    "0x803866": "push 4 ; call 0xC3E9F5 - a four-byte allocation",
+    "0x803874": "[eax] = 0xDE6814 ; call 0xB7A640 - attach that sub-object"
+  },
+  "what_that_tells_us": [
+    "the object is created on demand and cached, so its existence means 'the subsystem is in use', not 'a load is in progress'",
+    "the earlier 0x4F8 estimate was wrong: the allocation is 0x1618 bytes",
+    "and the destructor's [esi+0x4F4] access was just one field of a much larger object"
+  ],
+  "where_ui_state_5_actually_comes_from": [
+    "0x803780 reads the object, calls 0xB838A0 and then 0xB7A670, and compares the result with 2",
+    "when that result equals 2 it takes the branch at 0x8037FA, which is where ui_state becomes 5",
+    "so ui_state 5 == 'the loader object reports status 2'",
+    "and the spinner animating means the status stays 2 for as long as the client is stuck"
+  ],
+  "the_next_question_if_work_continues": [
+    "what moves the object's status away from 2 - that is inside 0xB838A0 and 0xB7A670, which take the object (0x1618 bytes) and return its state",
+    "since the object's initialisation left 0xBAADF00D in two slots, a plausible reading is that the status cannot advance until those slots are filled, and the code that fills them is what never runs"
+  ],
+  "artifacts": {
+    "addresses": {
+      "getter": "0x803830",
+      "singleton": "0x8269774",
+      "allocation": "0x1618",
+      "status_check": "0x8037D6",
+      "ui5_branch": "0x8037FA"
+    }
+  }
+}
