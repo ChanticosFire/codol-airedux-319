@@ -18107,3 +18107,7 @@ lobby          = 0x37E19850
 > **2026-10-25 23:30–00:00【主线程 hook 注入成功且不崩（52 字节 cave）；但时机在启动前表=0】**
 >
 > `tools/hook_load_gametype.py`：hook `0x7EF0D0`（Frontend tick，前 5 字节 `55 8B EC 83 EC 14`），cave 做 pushad → 检查 flag → push 0/4/list → call 0x49E160 → 置 flag → popad → 重放原字节 → jmp back。注入结果：`patched=true`、`code_len=52`、**alive=true（不崩！）**，但表 0（启动阶段未初始化）。→ 关键：主线程 hook 可行（cave/远线程都崩）。下一步先 login 到表 1135 再注入 hook，验证表是否 1136→1224。
+
+> **2026-10-26 00:00–00:30【login 后注入 hook 崩了；与启动时（不崩）对比：崩溃取决于初始化阶段】**
+>
+> r138：login 后（表=0、state=1）注入 hook → `patched=true` 但 **alive=false**（崩）。r137：启动后未 login（表=0、主菜单）注入 → 不崩。→ 崩溃与阶段有关：主菜单空闲时 `0x49E160` 被跳过；login/加载中调用冲突崩溃。hook 成功需三条件：主线程（满足）+ 表=1135（login 后段）+ 客户端空闲 → 只有 run_match 的 `blocking ring-a` 窗口满足。下一步在该窗口注入。
