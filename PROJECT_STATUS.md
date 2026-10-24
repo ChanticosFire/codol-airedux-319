@@ -18295,3 +18295,7 @@ lobby          = 0x37E19850
 > **2026-10-26 23:00–23:30【实测修正：connect 后 conn+0x5E8=0（不是 3），load_status[0x84ABA7C]=2；ui=5 与 +0x5E8 无关】**
 >
 > login 后：`[0x84ABA7C]=2`、`[0x84ABB08/0C]=0`、`[0x84ABB14]=0x246A4ED0`、ui=5/state=0。connect 后：load_status 仍 2、`conn+0x5E8=0`、ui=5/state=4。→ 之前"`+0x5E8==3`"是某时刻观测（非 connect 后常态）；ui=5 与 +0x5E8 无直接关系。下一步在 state 4→5→7→8 各阶段采样，找 ui 保持 5 的原因。
+
+> **2026-10-26 23:30–00:00【分阶段采样：net 卡 4；根因是 forward 启动顺序错误（客户端未运行时启动 → fwd.err "codol1649370-offline.exe 未运行"）】**
+>
+> 采样：`t=0 net=0/ui5/load2/table1135`，`t=1.12 net=4` 后 30 秒无变化。gs 日志只有 meta start，fwd.err 报客户端未运行。→ 我把 forward 放在 launch 之前启动，导致其自检失败退出。修正顺序：launch→login→forward→connect→pump。下一步按正确顺序重跑采样。
