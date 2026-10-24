@@ -17825,3 +17825,7 @@ lobby          = 0x37E19850
 > **2026-10-24 21:10–21:25【fastfile 加载链完整打通】**
 >
 > 完整链：`0x49E160(list,count)`（16 调用者）→ `0x49E3BE` 调 `0x49DE70(list,count)` 填请求表（表基址 `0x1D06440`、每项 0x44、数量 `0x239B11C`、名字在表项+0x00、flags 在 +0x40）→ `0x49F2A8` 调 `0x49ED40(name)`：`sprintf(buf, "%s.ff", name)`（格式串 `0xDB617C`）→ `0x776F00` FileExists → CreateFileA。→ 地图名最终来自 `0x49E160` 的 list 参数。下一步：在 `0x49E160`/`0x49ED40` 下断点，读 demo 播放时的 list/名字，随后改内存换成 mp_cross_fire。
+
+> **2026-10-24 21:25–21:40【0x49ED40 断点仅启动时命中；demo 复用已加载地图】**
+>
+> 新工具 `tools/read_call_arg.py`（通用读取断点参数 [ebp+8]/[ebp+4]/[ebp+0xC]/[esp+8] 并按字符串解析）。`0x49ED40:LoadFastfile` 在 demo 播放中只命中 **1** 次（启动早期），说明 demo 的地图 fastfile 在启动阶段已加载（r58 trace 的 patch_mp_crash_tropical.ff 请求时间也确实更早），demo 播放器只是复用。→ 下一步在 `0x49E160` 下断点记录 list，或在 demo 播放前（启动阶段）改地图名。
