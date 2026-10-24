@@ -7294,3 +7294,38 @@ gs 日志：仅 15 个 inband，无 connect
 1. 前台运行 `ring_bridge forward` 看它的真实报错（之前 `fwd.err` 曾报"客户端未运行"）；
 2. 确认它的自检条件（是否要求某个窗口/句柄）；
 3. 修复后用同一套流程重跑，验证 `gametype=mp` 是否让 table 涨到 1223。
+
+## 209. 2026-10-27 22:00–22:30：**修正误判 —— `forward` 工作正常（不是 TCP 转发，而是直接改客户端 connection 结构）**
+
+### 209.1 前台运行的真实输出
+
+```json
+{"sent": 2, "received": 0, "injected": 0,
+ "events": [{"dir":"state","state":1,"stage":5},
+            {"dir":"keepalive","seq":2}, {"dir":"keepalive","seq":3}],
+ "status_after": {"pid": 31096, "stage": 5, "state": 1,
+                  "connection": "0x13d7d9dc",
+                  "address_string": "",
+                  "connection_adr": {"type":0,"ip":"0.0.0.0","port":0},
+                  "connection_state": 0}}
+```
+
+### 209.2 修正两个误判
+
+1. **`forward` 没有"启动失败"** —— 它正常运行（`state: 1`、`stage: 5`）；
+   之前 `fwd.out` 为空是**重定向缓冲问题**（进程被 kill 时缓冲未 flush）；
+2. **`forward` 不是 TCP 转发** —— 它**直接读写客户端的 connection 结构**
+   （`--bind-port 29000` 不是监听端口，只是传给客户端的地址参数）。
+
+### 209.3 这意味着什么
+
+- `forward` 会把客户端的 `connection_state` 设为 1（连接中）、`stage` 设为 5；
+- 然后客户端自己发起 TCP 连接（到 `--bind-port` 指定的地址）；
+- **但 `connection_adr` 是 `0.0.0.0:0`** —— 地址还没设置！
+
+→ 所以真正的顺序应该是：先 `forward`（设 state/stage，并**写入地址**），
+  客户端才会连到 29000；而我们的 `ring_bridge connect --address 127.0.0.1:29000` 应该就是做这个的。
+
+### 下一步
+
+用长时间 `forward`（`--seconds 40`）+ `connect`，且**先检查 `connection_adr` 是否被写入**。

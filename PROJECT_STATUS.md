@@ -18471,3 +18471,7 @@ lobby          = 0x37E19850
 > **2026-10-27 21:30–22:00【connect 卡住的直接原因：ring_bridge forward 未监听 29000（fwd.out/err 均空、Get-NetTCPConnection 无记录）→ connect 发到无人监听端口 → net 停 4】**
 >
 > r174：客户端 alive/table=1135/ui=5/net=4；gs 仅 15 inband 无 connect；fwd.out 与 fwd.err 皆空；29000 无监听。→ 与 --gamestate-gametype 无关，是 forward 启动失败。下一步前台运行 forward 看真实报错。
+
+> **2026-10-27 22:00–22:30【修正误判：forward 工作正常（输出 state=1/stage=5/connection=0x13d7d9dc），之前 fwd.out 为空是重定向缓冲问题；forward 不是 TCP 转发而是直接改客户端 connection 结构，且 connection_adr 仍是 0.0.0.0:0 说明地址未写入】**
+>
+> 前台输出：`{"sent":2,"received":0,"events":[{"dir":"state","state":1,"stage":5},...],"status_after":{"stage":5,"state":1,"connection":"0x13d7d9dc","address_string":"","connection_adr":{"type":0,"ip":"0.0.0.0","port":0}}}`。→ 下一步用长时 forward + connect，并先检查 connection_adr 是否被写入。
