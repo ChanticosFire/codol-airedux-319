@@ -10631,3 +10631,89 @@ gs: {('in','getchallenge'):2, ('in','connect'):1,
 | 9 | net_state→5、table 清零 |
 | 11 | 无错误卡在 CA_LOADING，问题收敛到 Com_LoadFastfiles |
 | **12** | **Com_LoadFastfiles 确实被调用（2 次，请求 5 个 ff），失败后回滚 → 问题收敛到"5 个 ff 为什么加载失败"** |
+
+## 275. 2026-10-28 14:00–15:00：**🎯 加载了 14 个 fastfile，全部是 UI 层级 —— 地图 ff 从未被请求**
+
+### 275.1 找到真正的 fastfile 加载函数 `0x49ED40`
+
+```asm
+0x49ED40  push ebp
+0x49ED41  mov ebp,esp
+0x49ED43  sub esp,0x12c
+0x49ED54  ebx = [ebp+8]              ; ← 第一个参数 = fastfile 名字
+0x49ED59  push ebx
+0x49ED5A  push 0xDB617C              ; "%s.ff"
+0x49ED65  push 0x100
+0x49ED6A  push eax
+0x49ED71  call 0x774900              ; sprintf(buf, "%s.ff", name)
+0x49ED79  esi = ebx
+0x49ED7B  call 0x77B3B0
+0x49ED80  ecx = [0xE56FE0]
+0x49EDB0  cmp edi,-1
+0x49EDB3  jne 0x49EEC8               ; 成功分支
+0x49EDB9  ...                        ; 失败分支
+```
+
+`%s.ff`（`0xDB617C`）在整个 `.text` 里只有 **2 个引用**：`0x484C4A` 和 `0x49ED5B`。
+后者就在这个函数里，因此 `0x49ED40` 是 `FS_LoadFastfile(name)` 的实现。
+
+### 275.2 实测：14 次调用，最后一个是 `localized_ui_mp`
+
+```
+hook FS_LoadFastfile: count=14
+arg0 = 0x1D0650C
+captured_hex = 6c6f63616c697a65645f75695f6d70...
+             = "localized_ui_mp"
+state: ui=5  net=0  table=1135
+```
+
+### 275.3 名字表揭示了层级关系
+
+`0xDB5F28`–`0xDB610C` 是连续的 fastfile 名字常量：
+
+```
+0xDB5F28  'patch_%s'
+0xDB5F34  'localized_%s'
+0xDB5F44  'patch_localized_%s'
+0xDB5F58  'ui_mp'
+0xDB5F60  'patch_ui_mp'            ← Com_LoadFastfiles 抓到的第一个
+0xDB5F6C  'patch_localized_ui_mp'
+0xDB5F84  'localized_ui_mp'
+0xDB5F94  'common_gametype_zm'
+...
+0xDB60C8  'common_gametype_mp'
+0xDB610C  '%s_const'
+0xDB617C  '%s.ff'
+```
+
+加上 Round 12 的捕获（`Com_LoadFastfiles` 的 `arg1=5`、`arg0` 指向
+`patch_ui_mp` 那一段），可以确认：
+
+> **`0x49E160` 加载的是 UI 层 5 件套
+> （`ui_mp` / `patch_ui_mp` / `patch_localized_ui_mp` / `localized_ui_mp` / `common_gametype_mp`），
+> 而 `0x49ED40` 是逐件加载的具体实现。14 次调用全部落在这一层。**
+
+### 275.4 结论：地图 ff 从未进入加载队列
+
+- `mp_crash_tropical` **从未出现在** `FS_LoadFastfile` 的名字里；
+- 名字表里也**没有任何地图名**（只有 UI 与 gametype 常量）；
+- 地图名是运行时由 `configstring 0`（`\mapname\mp_crash_tropical`）拼出来的，
+  所以地图 ff 的加载必然由**另一个函数**发起。
+
+→ 问题从"5 个 ff 为什么失败"进一步收敛为：
+> **"为什么客户端只加载 UI 层，没有发起地图层加载？"**
+
+### 275.5 下一条线索（已定位）
+
+`%s.ff` 的**另一个**引用是 `0x484C4A`（上下文 `85 c0 75 72 56 68 7c 61 db 00 e8 2d`），
+位于 `0x484xxx` 区域 —— **很可能就是地图/关卡层的加载入口**。
+下一步反汇编 `0x484C00` 附近，确认它是不是 `Com_LoadMapFastfiles`，
+并 hook 它看是否被调用、参数是什么。
+
+### 275.6 里程碑
+
+| Round | 结论演进 |
+|---|---|
+| 11 | 无错误卡在 CA_LOADING |
+| 12 | Com_LoadFastfiles 被调用（请求 5 个 ff） |
+| **13** | **14 次 FS_LoadFastfile 全是 UI 层，地图 ff 从未被请求 → 问题收敛到"地图层加载未发起"** |

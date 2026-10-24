@@ -85,6 +85,8 @@ def main() -> int:
     ap.add_argument("--len", type=int, default=5)
     ap.add_argument("--slot", type=lambda v: int(v, 0), default=SLOT_BASE_DEFAULT,
                     help="base address of the four result slots")
+    ap.add_argument("--capture", type=int, default=0,
+                    help="copy this many bytes of the buffer arg0 points at, at call time")
     ap.add_argument("--pid", type=int, default=0)
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--read", action="store_true")
@@ -117,6 +119,7 @@ def main() -> int:
     slot_ret = args.slot + 4
     slot_arg0 = args.slot + 8
     slot_arg1 = args.slot + 12
+    slot_capture = args.slot + 0x40
     _head = read(args.target, 16) or b""
     if _head:
         args.len = aligned_length(_head, args.target, args.len)
@@ -133,6 +136,11 @@ def main() -> int:
     for key in ("ret", "arg0", "arg1"):
         if isinstance(report["counters"].get(key), int):
             report["counters"][key] = hex(report["counters"][key])
+    if args.capture:
+        blob = read(slot_capture, args.capture) or b""
+        report["captured_hex"] = blob.hex()
+        words = [struct.unpack_from("<I", blob, i)[0] for i in range(0, len(blob) - 3, 4)]
+        report["captured_words"] = [hex(w) for w in words]
 
     if args.probe or args.read:
         print(json.dumps(report, indent=2))
@@ -169,6 +177,15 @@ def main() -> int:
     code += b"\x8B\x44\x24\x28"                              # mov eax,[esp+0x28] arg1
     code += b"\xA3" + struct.pack("<I", slot_arg1)
     code += b"\xFF\x05" + struct.pack("<I", slot_count)
+    if args.capture and args.capture >= 4:
+        # Copy the buffer arg0 points at, *while the call is still live*.
+        # Stack-passed fastfile name arrays die as soon as the function returns,
+        # so reading them afterwards always yields zeros.
+        count_words = args.capture // 4
+        code += b"\x8B\x74\x24\x24"                          # mov esi,[esp+0x24] arg0
+        code += b"\xBF" + struct.pack("<I", slot_capture)    # mov edi,capture_dst
+        code += b"\xB9" + struct.pack("<I", count_words)     # mov ecx,words
+        code += b"\xF3\xA5"                                  # rep movsd
     code += b"\x61"                                          # popad
     code += original                                         # replay stolen bytes
     rel = (args.target + args.len - (cave + len(code) + 5)) & 0xFFFFFFFF
