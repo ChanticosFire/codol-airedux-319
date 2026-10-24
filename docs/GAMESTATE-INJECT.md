@@ -10422,3 +10422,70 @@ gs: {('in','getchallenge'):1, ('in','connect'):1, ('in','stats'):163,
 
 - Round 7：`connect` + `stats` 到达服务端（阶段 3 完成）；
 - **Round 9：`net_state` 推进到 5、`table` 清零重载、gamestate 6 分片 + 快照已下发（阶段 4 启动）**。
+
+## 272. 2026-10-28 11:00–12:00：`loadingnewmap` 是 UI 脚本字符串；地图档案确认齐全；长跑仍卡在加载
+
+### 272.1 `loadingnewmap` 的性质（重要澄清）
+
+| 检索 | 结果 |
+|---|---|
+| demo 文件（7286117 字节） | **零命中**（录制从对局开始时起，不含进图前流程） |
+| exe 字符串 | **命中 1 处**：文件偏移 `0x9BF0F0`，`.rdata`，VA **`0xDBF0F0`** |
+| 指向该 VA 的 dword 引用 | **0 个** |
+| `lea r32,[0xDBF0F0]` 指令 | **0 个** |
+
+→ **`loadingnewmap` 没有任何代码引用**，它是 **UI 脚本层的事件名**
+（与 `ui_mp.ff` 里的 menufile 一起被脚本引擎按名字查找），
+**不是**可以通过网络直接下发的控制台命令，也不是 Cbuf 能触发的命令。
+
+`0xDBF0F0` 四周是游戏内字符串表（`CG_FakeFireWeapon`、`180`、`181 %s %d %d`），
+与网络层无关。
+
+### 272.2 地图档案确认齐全
+
+```
+runtime\client_shipretail\chinese\mp_crash_tropical.ff        （主档，较大）
+runtime\client_shipretail\chinese\mp_crash_tropical_load.ff   24,853
+runtime\client_shipretail\chinese\mp_crash_tropical_const.ff  90,389
+同目录另有 common_mp.ff(77.5MB) / common_gametype_mp.ff(34.7MB) /
+        code_post_gfx_mp.ff(10.0MB) 等
+```
+
+→ **"本地缺少地图资源"这一假设可以排除**。demo 回放能加载、文件也在，
+说明资源侧没有问题，卡点纯在"进图通知/加载触发"这一层。
+
+### 272.3 长跑实验（110 秒桥接）结果
+
+gs 侧链路**完全正常**：
+```
+gs: {('in','getchallenge'):2, ('out','oob'):3, ('in','connect'):1,
+     ('meta','gamestate_source'):1, ('out','fragment'):7, ('meta','snapshot_source'):1}
+{"kind":"start","map":"mp_crash_tropical"}
+```
+
+但客户端每 10 秒采样一次，**始终是** `ui=5 net=0 table=1135 stage=5`：
+- 说明采样时已错过 `net_state=5` 的窗口；
+- 且客户端在连接中断后**回滚**到 `table=1135`（旧资源表恢复）；
+- Round 9 观察到的 `table=0`、`net=5` 是真实存在过的中间态，但**未能维持并推进到加载完成**。
+
+### 272.4 结论与下一步
+
+**已排除**的假设：
+- 地图文件缺失 ❌（文件齐全）
+- 客户端渲染能力 ❌（demo 已证）
+- `loadingnewmap` 是可注入命令 ❌（它是 UI 脚本字符串）
+
+**仍然成立的问题**：
+客户端在收到 gamestate 后进入 `CA_LOADING`、清空 `table`，
+但**没有触发实际的 fastfile 装载**，然后因连接中断而回滚。
+
+**下一步（三条，按优先级）**：
+1. **抓 `gamestate` 处理后的真实状态**：用 `hook_any` 在
+   `0x4F8D70`（接收泵）/`0x5C2260`（CL packet event）上埋点，
+   确认 gamestate 分片是否被完整重组、解析到哪一步；
+2. **检查 configstring 解析**：社区强调客户端会校验资源名称/编号/类型/校验值，
+   不匹配报 `EXE_CONFIGSTRINGMISMATCH`；需要 hook `Com_Error(0x4F82E0)`，
+   看它是否被调用、错误号是多少；
+3. **保持连接不中断**：让 gs/forward 与客户端同寿命运行（`--match-duration 600`、
+   `forward --seconds 600`），并在 `table=0` 出现的瞬间连续采样，
+   确认它是"短暂加载中"还是"永久卡住"。

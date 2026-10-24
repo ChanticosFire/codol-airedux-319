@@ -18723,3 +18723,7 @@ lobby          = 0x37E19850
 > **2026-10-28 10:00–11:00【🎉 阶段4启动：去掉 gs 的 inband_seen 门控（原来双方互等死锁）后，connect 后即下发 gamestate（6411B→6 分片，seq=3）+ snapshot（249B，seq=1000）；forward sent=165 received=449 injected=449；客户端 net_state 0→5、table 1135→0（旧资源卸载）、loader+0x5E8=3(CA_LOADING)、ui=5 黑屏。gs 日志 inband_received 仍为 0】**
 >
 > 缺口：gs 里 loadingnewmap 零命中（社区阶段4 必需），客户端只读不发。下一步实现 loadingnewmap（netchan reliable command，参数 map+gametype），可参考 forward 的 forge_ack_packet 里的 2697 协议编码注释。
+
+> **2026-10-28 11:00–12:00【澄清：loadingnewmap 是 UI 脚本字符串（VA 0xDBF0F0，0 个 dword/lea 引用），不是可下发命令；地图档案确认齐全（mp_crash_tropical.ff/_load.ff/_const.ff 都在 runtime\client_shipretail\chinese\），排除资源缺失假设；长跑 110s 桥接时 gs 侧链路完全正常（getchallenge×2 + connect + gamestate 7 分片 + snapshot），但客户端采样始终 net=0 table=1135（已回滚），Round9 的 net=5/table=0 是真实中间态但未维持】**
+>
+> 下一步：①hook 0x4F8D70/0x5C2260 看 gamestate 分片是否完整重组 ②hook Com_Error(0x4F82E0) 看是否报 EXE_CONFIGSTRINGMISMATCH ③gs/forward 与客户端同寿命并在 table=0 瞬间连续采样。
