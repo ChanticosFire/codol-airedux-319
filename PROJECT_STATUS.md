@@ -18447,3 +18447,7 @@ lobby          = 0x37E19850
 > **2026-10-27 18:30–19:00【注入队列+hook 实验异常：table_before=0（应为 1135，说明 common_mp 未加载）、hook 后 3 秒内崩；疑 login 未完成或 hook 在未初始化时执行】**
 >
 > 实验：table_before=0 → inject ok → hook ok → 3s 后 alive=False。两个异常：table=0（此前多次为 1135）、崩溃比之前更快（r154 是 6s、r142 是 8s）。→ 下一步先确认 login 完成（ui/state/table 三者到位）再注入，或 table>=1000 后才装 hook。
+
+> **2026-10-27 19:00–19:30【新问题：客户端在 login 期间就崩（unhandled_exception、table=0），而之前多次 login 成功（table=1135）→ 环境疑似被污染；lsg 显示 task_request 后 peer_closed】**
+>
+> r172：round0 table=0，round1-3 读不到（客户端退出）；launch `stop_reason=unhandled_exception`、`engine_init_returned=true`；lsg `task_request(svc71/task4)` → `candidate_task_reply` → `raw_session_end: peer_closed`。→ 需检查 exe sha256 与 runtime ff 完整性，恢复已知良好状态。

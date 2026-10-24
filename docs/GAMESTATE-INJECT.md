@@ -7077,3 +7077,37 @@ hook_queue_processor 0x7EF0D0 -> ok
 
 1. 先确认 login 确实完成（`ui`、`state`、`table` 三者都到位）再注入；
 2. 或者在 `table >= 1000` 之后才装 hook。
+
+## 203. 2026-10-27 19:00–19:30：**新问题 —— 客户端在 login 期间就崩溃（table=0），环境疑似变化**
+
+### 203.1 现象
+
+```
+round 0: table = 0
+round 1..3: 读不到（客户端已退出）
+client NOT running
+launch: "stop_reason": "unhandled_exception"
+        "engine_init_returned": true, "menu_command_queued": true
+lsg: task_request(service=71 task=4) → candidate_task_reply → raw_session_end: peer_closed
+```
+
+### 203.2 与之前对比
+
+| 时间点 | login 结果 | table |
+|---|---|---|
+| 之前多次（r149/r151/r154/r161…） | 成功 | **1135** |
+| 本次（r172） | **崩溃**（unhandled_exception） | **0** |
+
+→ login 流程本身现在会崩，说明**环境发生了变化**。
+
+### 203.3 可能原因
+
+1. `server319` 的 `--seconds 300` 与之前不同（不影响）；
+2. runtime 目录被之前的实验改动过（`r107flow` 的 ff 可能不是原始状态）；
+3. 客户端 exe 被 patch 过（`patch_ui5_guard.py` 是内存 patch，不持久；但 `patch_exe_pubkey` 可能仍生效）。
+
+### 下一步
+
+1. 检查 exe 的 sha256 是否与原始一致；
+2. 检查 runtime 的 ff 是否完整（24 个原始文件）；
+3. 若环境被污染，先恢复到已知良好状态再继续。
