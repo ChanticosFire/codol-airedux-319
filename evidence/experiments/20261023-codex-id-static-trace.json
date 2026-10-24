@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T02:00:00+00:00",
+  "scope": "STATIC TRACE of the id read: the arguments say bits 1309..1320 = 8, yet the stored word measured 4048 - so the store instruction must be sampled directly",
+  "the_static_trace": {
+    "0x67168F": "call 0x66ED70 - the byte-based count reader; it advances [+0x1C] only, not [+0x20]",
+    "0x671698": "mov [0x7859558], al - the count byte is stored",
+    "0x67169D": "test al,al ; je 0x6716C3 - skip the loop when the count is 0",
+    "0x6716A1": "push 0xC",
+    "0x6716A3": "mov eax,esi - eax = the stream (esi is the function's stream argument)",
+    "0x6716A5": "call 0x66EC30 - reads 12 bits from [+0x20] of that stream",
+    "0x6716AA": "movzx ecx,bl - the loop index",
+    "0x6716AD": "mov word [ecx*2 + 0x7859358], ax - store the returned value"
+  },
+  "the_reasoning_that_should_hold": [
+    "0x66ED70 advances only [+0x1C], so [+0x20] is unchanged by the count read",
+    "the two gate bits at 1307 and 1308 advanced [+0x20] to 1309",
+    "so the 12-bit read starts at bit 1309",
+    "bits 1309..1320 of the body are 000100000000, which is 8",
+    "0x66EC30 masks to N bits and returns that value, so ax should be 8",
+    "and the store writes it to word[0] of 0x7859358"
+  ],
+  "the_contradiction": [
+    "the measured word[0] was 0x0FD0 = 4048, not 8",
+    "so at least one of the steps above is wrong, and the candidates are: [+0x20] is not 1309 at that moment, the body bits are not what the file says, or the store is not the one I identified"
+  ],
+  "the_direct_way_to_settle_it": [
+    "probe 0x6716AD (the store instruction, once per entity, not on a hot path) and log eax, bl, and [+0x20] of the stream via esi",
+    "that binds the returned value, the loop index and the read position in one record, and it cannot corrupt the parse the way a per-bit probe does"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x6716A1 push 0xC",
+      "0x6716A5 call",
+      "0x6716AD store",
+      "0x66ED70 count reader"
+    ]
+  }
+}

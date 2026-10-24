@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Id static trace: arguments say 8, measurement says 4048]**
+> 0x6716A1..0x6716AD: push 0xC, eax=esi, call 0x66EC30, store ax to word[0] of 0x7859358. Since 0x66ED70 only advances [+0x1C], the read should start at 1309 and return 8. The measured 4048 contradicts that.
+> Next: probe 0x6716AD (once per entity, safe) and log eax, bl and [+0x20] together.
+> Evidence: [id static trace](evidence/experiments/20261023-codex-id-static-trace.json).
 > **2026-10-23 [First bit read of a snapshot is at bit 243; the hot path cannot be probed]**
 > The 0x66ECA1 probe captured one read (bitpos 243, byte 7, buffer stream+0x34) and the client then died. So the header consumes ~30 bytes before any bit field, and this address is unusable for sampling.
 > The id encoding must therefore be settled statically: disassemble 0x671650 and trace the argument to 0x66EC30 and the store at 0x7859358.
