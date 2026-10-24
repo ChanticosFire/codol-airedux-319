@@ -8151,3 +8151,40 @@ events.append({"t": 0.0, "dir": "connect", "result": result.get("status_after")}
 
 在 `0x5BE730` 执行**瞬间**捕获 `[0xE59D20]`、`B7A670()` 等值（需要断点或在 cave 里加记录）；
 或打印 `row` 的完整内容（`row["calls"]` 里有每次调用的结果）。
+
+## 233. 2026-10-27 10:00–10:30：**🎯 `0x7F9090` 里有"重复连接保护"（`[0xE54BC48/4C]` 相同则跳过发包）**
+
+### 233.1 反汇编 `0x7F9090`
+
+```asm
+0x7F9096  eax = [0xE59D20]         ; stage
+0x7F909E  cmp eax,4 / je 0x7F90A8
+0x7F90A3  cmp eax,6 / jne 0x7F90EE ; 非 4/6 → 返回
+0x7F90A8  ecx = [0x84ABB08]        ; auth 源 1
+0x7F90AE  test ecx,ecx
+0x7F90B0  jne 0x7F90BC
+0x7F90B2  ecx = [0x84ABB14]        ; auth 源 3
+0x7F90BA  je 0x7F90EE              ; **都 0 → 直接返回**
+0x7F90BC  call 0xB9A0F0            ; 取地址
+0x7F90C1  ecx = [eax+0x20]
+0x7F90C4  eax = [eax+0x24]
+0x7F90C7  [esp] = ecx / [esp+4] = eax
+0x7F90CE  cmp [0xE54BC48], ecx
+0x7F90D4  jne 0x7F90DE
+0x7F90D6  cmp [0xE54BC4C], eax
+0x7F90DC  je 0x7F90EE              ; **地址相同 → 跳过（已连过）**
+0x7F90DE  lea edx,[esp] / push edx / push 0
+0x7F90E4  ecx = 0xE54BC48
+0x7F90E9  call 0x7F8E10            ; ← **真正的发包**
+```
+
+### 233.2 关键
+
+- **`[0x84ABB08]` 或 `[0x84ABB14]` 必须非 0**（之前实测 `0x84ABB14=0x246A4ED0` ✅）；
+- **`[0xE54BC48]/[0xE54BC4C]` 与 `[0xB9A0F0()+0x20/0x24]` 相同则跳过**；
+- 这是"**同一地址不重复连接**"的保护。
+
+### 233.3 下一步
+
+读 `[0xE54BC48]`、`[0xE54BC4C]` 与 `0xB9A0F0()` 的地址值，
+若它们相同 → 说明客户端认为"已连接过该地址" → 清空这两个值即可重新发包。

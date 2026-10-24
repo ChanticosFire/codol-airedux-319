@@ -18567,3 +18567,7 @@ lobby          = 0x37E19850
 > **2026-10-27 09:30–10:00【invoke_sequence 返回 row（无 status_after 键）→ result:null 是代码 bug 而非执行失败；0x5BE730 确实被调用，但没发包 → 执行瞬间条件不满足（stage/B7A670 可能被改回）】**
 >
 > 源码：`SuspendThread` → 构造 `pushad+call target+popad+ret` → `SetThreadContext`（EIP=cave）→ `ResumeThread` → `return row`。forward 里 `result.get("status_after")` 恒 None。→ 下一步在 cave 里记录执行瞬间的 [0xE59D20] 与 B7A670 值，或打印 row 完整内容。
+
+> **2026-10-27 10:00–10:30【🎯 0x7F9090 的重复连接保护：cmp [0xE54BC48],[0xB9A0F0()+0x20] 与 [0xE54BC4C],[+0x24] 相同则跳过发包；前提 stage∈{4,6} 且 ([0x84ABB08]|[0x84ABB14])!=0】**
+>
+> 反汇编：stage 检查 → auth 源检查 → `call 0xB9A0F0` 取地址 → 与 `[0xE54BC48/4C]` 比较 → 相同 je 0x7F90EE（跳过）→ 否则 `call 0x7F8E10` 发包。→ 下一步读 [0xE54BC48/4C] 与地址值，若相同则清空即可重发。
