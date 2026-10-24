@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Entity block starts at bit 1307; both gates read 1; count still 0]**
+> Cursor probe: b20 = 1307 (bit position), b1c = 164 (byte index), length 172, state 10, count 0. So gate1 = bit 1307 (= last header bit, 1) and gate2 = bit 1308 (= our has-ps, 1). Both pass, yet the count read still gives 0, and body[164]=0x01 did not change it.
+> Two explanations: the gate is not the block's first read, or 0x66ED70 indexes into a buffer whose base is [stream+8]/[stream+0xC] rather than the body. Next: probe those two pointers.
+> Evidence: [entity block at bit 1307](evidence/experiments/20261023-codex-entity-block-at-bit-1307.json).
 > **2026-10-23 [CORRECTION: one position in two units, not two cursors]**
 > 0x447190: [+0x20] is the absolute BIT position, [+0x1C] the byte index of the same stream; the reader keeps them consistent and 0x66ED70 advances the same [+0x1C]. So the 'two independent cursors' note is withdrawn.
 > This gives us the exact gate bit indices: [+0x20] at 0x671650 entry. Next: log it and set the two gate bits there.
