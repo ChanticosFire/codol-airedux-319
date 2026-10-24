@@ -18479,3 +18479,7 @@ lobby          = 0x37E19850
 > **2026-10-27 22:30–23:00【🎯 connect 卡住真因：forward 只有传 `--connect-address` 才写 ADDRESS_STRING 并调 CONNECT_FN（源码第 720-723 行）；我之前从未传该参数 → connection_adr 恒为 0.0.0.0:0、net 恒停 4。正确命令需加 `--connect-address 127.0.0.1:29000`】**
 >
 > `cmd_forward`：`sock.bind(...)` 监听；`elif args.connect_address: client.write(ADDRESS_STRING, ...); invoke_sequence([CONNECT_FN])`。→ 过去多轮 connect 卡住的根因就是缺这个参数（我的命令构造错误）。下一步用正确命令 + `--gamestate-gametype mp` 重跑验证 table 是否到 1223。
+
+> **2026-10-27 23:00–23:30【🎉🎉 重大突破：connect 走通（收到 connectResponse mapname=mp_cross_fire/gametype=war）、gamestate 分包 5×1172+611 全部接收、**ui=0**、net=6、table=0；forward 的 address_string="localhost"、state 4→5→6】**
+>
+> 事件序列：connect → out 400B → connectResponse 105B → statResponse → state 4/5/6 → gamestate 分包。客户端：ui=0（首次！）、net=6、table=0、load=0。→ 遗留：connectResponse 的 gametype 仍是 war（--gamestate-gametype mp 未生效于 OOB）；table=0。下一步让 gametype 生效并观察 net→7、table 加载，同时截图确认地图。

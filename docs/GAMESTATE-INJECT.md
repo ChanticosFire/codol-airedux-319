@@ -7373,3 +7373,51 @@ python tools\ring_bridge_1649370.py forward \
 ### 下一步
 
 用正确命令重跑完整流程 + `--gamestate-gametype mp`，验证 table 是否从 1135 涨到 1223。
+
+## 211. 2026-10-27 23:00–23:30：**🎉🎉 重大突破 —— connect 走通、gamestate 分包、`ui=0`、`net=6`**
+
+### 211.1 forward 的真实事件序列（`--connect-address 127.0.0.1:29000`）
+
+```
+t=0.0    dir=connect           （触发 CONNECT_FN）
+t=0.0    dir=out  length=400    "\xff\xff\xff\xffconnect a731af49a6a2c7e2 ..."
+t=0.0    dir=fake_stats blocks=1
+t=0.0    dir=state state=4
+t=0.033  dir=in   length=105    "\xff\xff\xff\xffconnectResponse \mapname\mp_cross_fire\gametype\war\sv_maxclients\12\protocol\1\shortversion\1.1.1.13"
+t=0.3    dir=state state=5
+t=0.6    dir=in   length=18     "\xff\xff\xff\xffstatResponse 0"
+t=0.85   dir=state state=6
+t=1.1    dir=in   length=1172   gamestate 分包 #0
+t=1.1    dir=in   length=1172   gamestate 分包 #1
+t=1.1    dir=in   length=1172   gamestate 分包 #2
+t=1.1    dir=in   length=1172   gamestate 分包 #3
+t=1.3    dir=in   length=611    gamestate 末包
+status_after: state=6, stage=5, address_string="localhost", connection=0x13c7db5c
+```
+
+### 211.2 客户端状态
+
+```
+ui = 0        ← **不是 5！**
+net = 6       ← 接近 7
+table = 0     ← 武器表为空（本次未加载 common_mp）
+load = 0
+```
+
+### 211.3 意义（重大）
+
+1. **connect 完全走通**（`connectResponse` 收到了 mapname/gametype/protocol）；
+2. **gamestate 分包被正确接收**（5×1172 + 611 字节）；
+3. **`ui = 0`** —— 这是 201 轮以来**第一次在连接路径上看到 ui=0**；
+4. `net = 6`（statResponse 阶段），距离 7 只差一步。
+
+### 211.4 遗留问题
+
+- `connectResponse` 里的 `gametype` 仍是 **`war`**，说明 `--gamestate-gametype mp` **没有影响 OOB 的 connectResponse**（那是 gs 的另一个字段）；
+- `table = 0`（武器表空）—— 但 `ui=0` 说明客户端**没有卡在加载屏**。
+
+### 下一步
+
+1. 让 `--gamestate-gametype mp` 真正生效（检查 gs 的 connectResponse 构造）；
+2. 观察 `net` 是否到 7、`table` 是否加载；
+3. 若 `ui=0` 保持，地图可能已经可见 —— 需要截图确认。
