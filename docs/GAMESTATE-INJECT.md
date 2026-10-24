@@ -2758,3 +2758,39 @@ HANDOFF 记录的 r97 是反向（先服务端再 demo）：ACK 了 snapshot 100
 
 本轮为 round 79/80，接近轮次上限；以上是下一步的明确执行计划，
 尚未执行（需要一次新客户端会话与调用序列验证）。
+
+## 87. 2026-10-25 09:20–09:40（round 80/80）：手工调用 CL_Shutdown 挂起
+
+### 87.1 实验
+
+在 `state=0`（登录后但未连接）时通过 `call_fn_1649370.py` 调用：
+
+```
+call 0x5C8A70 (CL_Shutdown)          → returned_eip = "timeout"，客户端随后退出
+call 0x5C83D0(1) (CL_Init，未执行到)   → 客户端已死
+```
+
+→ **在 state 0 手工调用 CL_Shutdown 会挂起/崩溃**，说明它依赖连接对象已就绪
+（或在主线程之外有同步要求）。直接"抄 demo 的初始化序列"这条路不可行。
+
+### 87.2 本轮（68–80）累计成果
+
+1. 接手 Codex 交接（HANDOFF、parse_demo_outer、run_match、两份 evidence）；
+2. `run_match + gamestate-network-ffb56d7e-6411.bin` **稳定复现 181 错误**（用户截图一致）；
+3. 定位武器表结构：`0x1988B50`（字符串表）、`0x827F738`（表大小）、`0x19E30F0`（定义表，0x1474/项）；
+4. 拿到完整 state 时序：`0 → 4 → 5 → 7 → 8`（t≈9.6 到 7、t≈18.8 到 8）；
+5. **关键对照**：demo 播放表 **1258→1266**、weapon 35→43；服务端 gamestate 表 **1136**、weapon 1；
+6. 排除 demo 的 `d` 命令（540 条无 `*` 值、无 7184-7218）→ 122 差距来自 **fastfile 注册**；
+7. 确认 **demo 回放与网络互斥**（connect 1s 崩、inject 2s 崩）；
+8. 手工 `CL_Shutdown` 在 state 0 挂起 → 不能直接抄 demo 初始化序列。
+
+### 87.3 给下一次接手的起点
+
+- **正面事实**：demo 能加载地图并注册 1266 个武器定义（地图加载机制没问题）；
+- **核心障碍**：服务端路径没有触发地图 fastfile 加载，导致武器表只有 1136，触发 181；
+- **下一步建议**：
+  1. 找出 demo 播放时**真正触发 fastfile 加载**的第三条路径（在 `0x49E160/0x49ED40/0x776F00`
+     之外，按 r58 trace 的 `patch_mp_crash_tropical.ff` 请求回溯）；
+  2. 或在服务端 connect 完成（state 5）后再尝试 `CL_Init`（本次在 state 0 调用失败）；
+  3. 或从 `mp_crash_tropical.ff` 离线提取 122 个缺失武器定义，补进 gamestate configstring。
+- **目标状态**：未达成（ui_state=5、181 错误、无 mp_cross_fire 画面）。

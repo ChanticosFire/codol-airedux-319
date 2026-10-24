@@ -17983,3 +17983,7 @@ lobby          = 0x37E19850
 > **2026-10-25 09:00–09:20【地图加载路径复核：demo 的 fastfile 加载走第三条路径；计划手工执行 CL_Init 序列】**
 >
 > 矛盾仍在：r58 trace 证明 demo 播放请求 `patch_mp_crash_tropical.ff`（播放后 17-20s），但 `0x49E160`/`0x49ED40`/`0x776F00` 在播放期间都 0 命中 → 走第三条路径。demo 的已知序列：`0x5C8A70`(CL_Shutdown) → `0x5C83D0`(CL_Init) → `0x813D34`(state=7)，但 `0x813E96`（LoadMap 分支）0 命中。→ 下一步在服务端 connect 后手工执行 `0x5C8A70` + `0x5C83D0(1)`，观察 state 是否到 7，再发 gamestate 检查武器表是否从 1135 起算。round 79/80，计划待执行。
+
+> **2026-10-25 09:20–09:40（round 80/80）【手工 CL_Shutdown 在 state 0 挂起；本轮累计成果与下一步】**
+>
+> 在 state=0 调用 `0x5C8A70`（CL_Shutdown）→ `returned_eip="timeout"`、客户端退出；`0x5C83D0(1)` 未执行到。→ 不能直接抄 demo 初始化序列。本轮（68-80）累计：稳定复现 181（用户截图一致）、定位武器表结构（0x1988B50/0x827F738/0x19E30F0）、拿到 state 时序 0→4→5→7→8、关键对照（demo 表 1258/1266 vs 服务端 1136）、排除 d 命令、确认 demo 回放与网络互斥。下一步：找 demo 触发 fastfile 的第三条路径，或 connect 后再试 CL_Init，或从 fastfile 提取 122 个缺失武器定义补进 gamestate。目标未达成。
