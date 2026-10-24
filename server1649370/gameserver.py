@@ -277,7 +277,7 @@ class GameServer:
         """Send once after connect's delay, after the first client in-band packet."""
         for addr, peer in self.state.peers.items():
             due = peer.get("gamestate_due")
-            if due is None or peer.get("gamestate_sent") or not peer.get("inband_seen"):
+            if due is None or peer.get("gamestate_sent"):
                 continue
             if time.monotonic() < due:
                 continue

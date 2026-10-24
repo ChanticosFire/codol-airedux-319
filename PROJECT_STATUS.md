@@ -18719,3 +18719,7 @@ lobby          = 0x37E19850
 > **2026-10-28 09:00–10:00【关键确认：connectResponse 已正确带 mapname\mp_crash_tropical\gametype\war，但客户端收到后一律回到 state=0 —— 印证社区"仅回复 connectResponse 不足以进入地图"，之后必须有 gamestate/netchan 数据。另确认：--oob-only 会丢弃 netchan 数据（Round7 用它时客户端发了 4 个 stats，不用时直接 state=0）；同一客户端进程只能成功尝试一次，必须重启；已修 forward 的 SuspendThread 失败致命化问题】**
 >
 > 下一步：用不带 --oob-only 的 forward 让 netchan 数据通过 ring B 注入，并让 gs 把 6411 字节 gamestate 作为第一条 netchan 消息下发；先确认 forward 的 netchan 注入语义与 gs 下发是否同一 UDP 连接。
+
+> **2026-10-28 10:00–11:00【🎉 阶段4启动：去掉 gs 的 inband_seen 门控（原来双方互等死锁）后，connect 后即下发 gamestate（6411B→6 分片，seq=3）+ snapshot（249B，seq=1000）；forward sent=165 received=449 injected=449；客户端 net_state 0→5、table 1135→0（旧资源卸载）、loader+0x5E8=3(CA_LOADING)、ui=5 黑屏。gs 日志 inband_received 仍为 0】**
+>
+> 缺口：gs 里 loadingnewmap 零命中（社区阶段4 必需），客户端只读不发。下一步实现 loadingnewmap（netchan reliable command，参数 map+gametype），可参考 forward 的 forge_ack_packet 里的 2697 协议编码注释。

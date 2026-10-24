@@ -10340,3 +10340,85 @@ Round 8 第二次 `forward`（同一客户端进程）只得到 `sent=1 received
 需要先确认两件事：
 1. `forward` 的 netchan 注入是否已实现（`--forge-ack`、`--reliable-until-state` 的语义）；
 2. gs 侧 `snapshot`/`gamestate` 的下发是否走同一 UDP 连接（`127.0.0.1:60371` 这类源端口）。
+
+## 271. 2026-10-28 10:00–11:00：**🎉 阶段 4 启动 —— `state` 0→5，gamestate/snapshot 已下发，客户端开始加载地图**
+
+### 271.1 决定性修复：去掉 `inband_seen` 门控（解开死锁）
+
+`server1649370/gameserver.py::send_due_gamestates` 原本要求：
+
+```python
+if due is None or peer.get("gamestate_sent") or not peer.get("inband_seen"):
+    continue
+```
+
+而 `inband_seen` 只有客户端**发过 in-band 包**才会置位 ——
+但客户端在 `connectResponse` 之后一直是 `state=0`，从不发 in-band。
+**双方互等，永远卡死。**
+
+改为只用 `gamestate_due` + `gamestate_sent` 两个条件后，gs 在 `connect` 后
+`--delay-send 1` 秒就直接下发 gamestate。
+
+### 271.2 实测结果（`runs/r234-gs.jsonl`）
+
+```
+gs: {('in','getchallenge'):1, ('in','connect'):1, ('in','stats'):163,
+     ('out','oob'):444, ('meta','gamestate_source'):1,
+     ('out','fragment'):7, ('meta','snapshot_source'):1}
+
+{"kind":"gamestate_source","source":"file","payload_length":6411,
+ "registration_checksum":"0xffb56d7e",
+ "configstrings":[[0,"\\g_gametype\\war\\mapname\\mp_crash_tropical"],[1,""],[2,"cod"]],
+ "configstring_count":3,
+ "payload_head":"00000000030100..."}
+
+{"kind":"fragment","message":"gamestate","seq":3,"index":0,"count":6,"stride":1162}
+{"kind":"fragment","message":"gamestate","seq":3,"index":1..5,"count":6,"stride":1162}
+{"kind":"snapshot_source","payload_length":249,"seq":1000,
+ "payload_head":"0000000000001a010000046637631a..."}
+
+{"kind":"stop","counters":{"oob_received":165,"oob_sent":444,
+ "inband_received":0,"inband_sent":7,"getchallenge":1,"connect":1,"stats":163}}
+```
+
+`forward` 侧：`sent=165, received=449, injected=449`。
+
+### 271.3 客户端状态变化（关键）
+
+| 项 | Round 8 | Round 9 |
+|---|---|---|
+| `net_state` | 0 | **5** |
+| `ui_state` | — | **5**（加载遮罩） |
+| `table`（物品/资源表） | 1135 | **0** |
+| `load_status` | 2 | 2 |
+| `loader+0x5E8` | — | **3（CA_LOADING）** |
+
+- `net_state` 从 0 推到 **5** —— 客户端接受 `statResponse` 并进入加载阶段；
+- `table` 从 1135 掉到 **0** —— 客户端**卸载了全部旧资源**，正在等待新地图资源；
+- 画面是**黑屏**（10143 字节，`sha256 a5d8fab8…`，与历史上的加载黑屏同一个哈希）。
+
+**这是阶段 4 的正常中间态**，不是失败。
+
+### 271.4 缺口定位：`loadingnewmap` 完全没有实现
+
+社区信息里"阶段 4 加载地图"需要 **`loadingnewmap` 通知中的地图名、模式名**。
+在 `server1649370/gameserver.py` 里搜索 `loadingnewmap` **零命中** ——
+服务端只发了 `gamestate`（含 configstring 0 的 `\g_gametype\war\mapname\mp_crash_tropical`）
+和一条 `snapshot`，**从未发出 `loadingnewmap` 命令**。
+
+另外 `inband_received` 仍为 **0**：客户端读了 449 个注入包（`ring_b` read=write=449），
+但一个 in-band 包都没回 —— 说明它还在等某些东西（最可能就是 `loadingnewmap`）。
+
+### 271.5 下一步
+
+1. **实现 `loadingnewmap`**：作为 netchan reliable command 下发，
+   参数为地图名 + 模式名（`mp_crash_tropical` / `war`）；
+2. 需要先确认该命令在本版的**编码格式**（reliable command 的序号与类型字段），
+   可参考 `forward` 已实现的 netchan 编码（`forge_ack_packet` 里对 2697 协议的注释）；
+3. 若 `loadingnewmap` 生效，客户端应开始装载 `mp_crash_tropical.ff`
+   （`table` 重新增长），并从 `CA_LOADING(3)` 推进。
+
+### 271.6 里程碑
+
+- Round 7：`connect` + `stats` 到达服务端（阶段 3 完成）；
+- **Round 9：`net_state` 推进到 5、`table` 清零重载、gamestate 6 分片 + 快照已下发（阶段 4 启动）**。
