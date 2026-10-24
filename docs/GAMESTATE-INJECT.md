@@ -7484,3 +7484,29 @@ alive_final = True
 
 用前台 forward（`& python ...` + 合适的 `--seconds`）重跑完整流程，
 验证 `net` 到 7 后 `table` 是否从 0/1135 涨到 1223。
+
+## 214. 2026-10-27 00:30–01:00：前台 forward 这次 `received: 0` —— gs 参数差异导致失败
+
+### 214.1 结果（r180）
+
+```
+forward: sent=9  received=0  injected=0
+events: connect → state 4 → keepalive ×9（没有任何 in 包）
+status_after: state=4, stage=5, address_string="localhost"
+客户端: ui=5  net=4  table=1135  load=2
+gs: ('meta','start') 1 + ('in','inband') 9   —— 无 connect
+```
+
+### 214.2 与 r176（成功）的差异
+
+| 项 | r176（成功，net=6） | r180（失败，net=4） |
+|---|---|---|
+| gs snapshot 参数 | `--snapshot-file ... --snapshot-delay 20 --snapshot-seq 1000` | `--snapshot-delay 8 --snapshot-interval 0.5 --snapshot-repeat 10` |
+| forward | 前台 `--seconds 8` | 前台 `--seconds 20` |
+| forward 收到 | **10 个包** | **0 个包** |
+
+→ **变量是 gs 的 snapshot 参数**：`--snapshot-repeat 10` / `--snapshot-interval 0.5` 可能让 gs 在 connect 阶段就阻塞或异常，导致它不再响应 connect。
+
+### 214.3 下一步
+
+用**与 r176 完全相同**的 gs 参数重跑（`--snapshot-file ... --snapshot-delay 20 --snapshot-seq 1000`，去掉 repeat/interval），确认 net 到 6，再逐步加变量。
