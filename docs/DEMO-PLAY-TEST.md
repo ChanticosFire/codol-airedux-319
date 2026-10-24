@@ -62,3 +62,27 @@ robocopy runs\20261022-survival-loose-v461\main        <runtime>\devraw_shared /
 本轮期间有另一个执行体在同一项目里并行跑联机实验（`runs/codex-r242-*`，12:11:25 起，
 含自己的客户端 PID 24080）。两个客户端同时运行会争窗口/焦点，
 因此 `cl_demo_play` 的最终判定应在其运行结束后进行。
+
+## 6. 2026-10-24 12:15–12:20 复测：资源缺失消失，改为 dvar 空指针
+
+overlay 修复后重跑（`demo-run9/10`，`--full`，注入前先确认主菜单）：
+
+- 不再出现 `WIN_FILE_NOT_FOUND`（`loadscreen` 图、`dpad_ks_uav`、`localized_common_gametype_mp` 都已齐）；
+- 客户端进入 `unhandled_exception`：**`0xC0000005` @ `0x43204F`**，`mov ecx, [edx+0xC]`，`edx = [0x32AA908] = 0`；
+- 调用栈与栈内容显示它正在处理 **`mp_crash_tropical` / `war`** 的 configstring（`g_gametype\war\g_hardcore\0\mapname\mp_crash_tropical`），并加载 UI 字符串表（`MP_WAITING_FOR_PLAYERS`、`MP_OBJECTIVE_NEUTRAL` …）。
+
+静态确认：
+
+| 地址 | 事实 |
+|---|---|
+| `0x32AA908` | 全局 dvar 指针；唯一写入点 `0x4E8A68`（`mov [0x32AA908], eax`），其参数含字符串 **`g_gametype`**（`0xDAFAD4`） |
+| `0x432000` | 把入参复制到栈、按 **`"|"`**（`0xDB0224`）切分、再与 `[g_gametype+0xC]`（dvar 当前字符串）比较 |
+| `0x7CB6BC` | 另一处读取点**有空检查**（`cmp [0x32AA908],0; je ...`），说明部分代码允许它为空；`0x43204F` 没有 |
+
+**结论**：demo 播放已经走到"应用对局 configstring / 判定 gametype"的阶段，**资源问题已排除**；
+卡点是离线壳里 **`g_gametype` dvar 尚未注册**（dvar 注册发生在进入游戏/地图初始化时，
+而 demo 播放是在主菜单直接发起的）。
+
+**含义**：demo 播放**不能绕过** `CA_LOADING`——它需要先完成游戏初始化（dvar/地图）；
+反过来说，一旦主线能进入地图，demo 回放应可立即工作。demo 作为"渲染基准"的价值到此为止：
+它已证明渲染与地图资源链路完好，剩下的都是**游戏状态初始化**问题。

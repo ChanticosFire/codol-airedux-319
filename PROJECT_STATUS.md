@@ -17624,3 +17624,9 @@ lobby          = 0x37E19850
 > 3. **demo 播放链路已实测**：客户端可正常进主菜单（`runs/demo-run4-t0.png`）；Cbuf 注入 `cl_demo_play 0C-2021-8-26[19-26-24]war.demo` 成功（stage=5），客户端开始加载 `mp_crash_tropical` 资源，并按顺序报缺 `images/loadscreen_mp_crash_tropical.iwi` → `images/dpad_ks_uav.iwi` → `localized_common_gametype_mp.ff`。前两个用 5 个 loose 包（3,301 文件/336 MB）并入 `runtime/devraw_shared` 解决，第三个用 V69 成员 1 解决。详见 `docs/DEMO-PLAY-TEST.md`。
 > 4. **待验证**：替换 overlay 后重跑 demo 播放，观察是否越过 `WIN_ZONE_ERROR` 并出现真实地图画面（唯一验收：截图里有地图）。
 > 5. **并发提示**：12:11 起另有执行体在跑 `runs/codex-r242-*` 联机实验（客户端 PID 24080），两个客户端会争窗口；demo 最终判定安排在其结束后。
+
+> **2026-10-24 12:15–12:20【demo 播放结论：资源已齐，卡在 g_gametype dvar 未注册】**
+>
+> overlay 修复后重跑 `cl_demo_play`：资源缺失（`loadscreen_*.iwi`/`dpad_ks_uav.iwi`/`localized_common_gametype_mp.ff`）全部消失；客户端进入对局 configstring 处理（栈中可见 `g_gametype\war\...\mapname\mp_crash_tropical` 与 `MP_WAITING_FOR_PLAYERS` 等 UI 串），随后 `0xC0000005 @ 0x43204F`：`mov ecx,[edx+0xC]`，`edx=[0x32AA908]=0`。静态确认 `0x32AA908` 是 **`g_gametype` dvar**（唯一写入点 `0x4E8A68`，参数含 `0xDAFAD4="g_gametype"`）；`0x432000` 按 `"|"` 切分入参并与该 dvar 当前值比较。→ **demo 不能绕过 CA_LOADING**：它需要先有游戏初始化；但 demo 已证明**渲染/地图资源链路完好**，剩余问题是游戏状态初始化。
+>
+> 另：修复 overlay 后跑 `--map-probe mp_cross_fire_native`（`gtfix-devmap`，100 s）本次**未触发 devmap**（全程主菜单，`stop_reason=observation_timeout`），与 4:09 的 loadscreen2（能到 ui=5）不同，需下一轮定位 `+devmap` 未生效的原因（可能与 cross_fire 37,331,221 替换后的资源装配有关）。
