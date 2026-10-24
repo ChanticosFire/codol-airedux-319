@@ -71,8 +71,10 @@ def main() -> int:
 
     back = args.target + PATCH_LEN
     code = b"\x60"                                                       # pushad
+    code += b"\x83\x3D" + struct.pack("<I", 0x239B11C) + b"\x00"          # cmp dword [count],0
+    code += b"\x74" + bytes([0x05])                                       # je +5 (skip the call)
     rel = (QUEUE_PROC - (cave + len(code) + 5)) & 0xFFFFFFFF
-    code += b"\xE8" + struct.pack("<I", rel)                             # call 0x49F280
+    code += b"\xE8" + struct.pack("<I", rel)                              # call 0x49F280
     code += b"\x61"                                                      # popad
     code += DEFAULT_ORIGINAL                                             # replay 5 bytes
     code += b"\xE9" + struct.pack("<I", (back - (cave + len(code) + 5)) & 0xFFFFFFFF)

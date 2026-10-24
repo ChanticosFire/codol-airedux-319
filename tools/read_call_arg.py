@@ -93,7 +93,7 @@ def main() -> int:
             found.append({"source": source, "pointer": hex(pointer), "text": text})
         if len(found) >= args.limit:
             break
-    print(json.dumps(found, ensure_ascii=False, indent=1))
+    print(json.dumps(found, ensure_ascii=True, indent=1))
     return 0
 
 
