@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [State 3 is entered by an 8-byte token comparison at [obj+0x5FC]]**
+> 0xBA3C05 compares 8 bytes at [obj+0x5FC] with a caller-supplied value via 0xB73FE0; on equality it zeroes nothing, sets [+0x5EC] and [+0x5F0] to 1 and [+0x5E8] to 3. So state 3 = token matched and waiting, not a failure.
+> The transition out of 3 is the missing piece; given the token check passed, it is most likely gated on a further message or a timer.
+> Evidence: [state3 token compare](evidence/experiments/20261023-codex-state3-token-compare.json).
 > **2026-10-23 [The state field's writers: 0/1/2/3 from handlers around 0xBA3xxx]**
 > 0xBA3C47 sets [esi+0x5E8]=3 and zeroes two adjacent counters; 0xBA3DA3 sets 2; 0xBA3252 sets 1; three sites set 0; the singleton destructor resets it. So the state machine is 0..3 in the 0xBA3xxx region, and our live value is 3.
 > Unresolved: which handler advances past 3 and what it tests - a larger static read than the remaining rounds allow.

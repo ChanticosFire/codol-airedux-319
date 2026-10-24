@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-31T03:00:00+00:00",
+  "scope": "THE DECISION THAT SETS STATE 3: an 8-byte comparison at [obj+0x5FC] against a value in the caller's frame - it reads like a session token check",
+  "the_code_at_0xba3c05": {
+    "0xBA3C05": "push 8 ; lea edx,[ebp-0xC] ; lea eax,[esi+0x5FC] ; push eax",
+    "0xBA3C12": "call 0xB73FE0 - compare 8 bytes at [obj+0x5FC] with the 8 bytes at [ebp-0xC]",
+    "0xBA3C1A": "test eax,eax ; jne 0xBA3C62 - if not equal, take the other branch (which sets something else and returns)",
+    "0xBA3C1E": "ebx = 1",
+    "0xBA3C21": "cmp [obj+0x644], 0 ; jne 0xBA3C38 - if the flag is already set, skip the call",
+    "0xBA3C30": "call 0x8435D0 with [obj+0x640]",
+    "0xBA3C3B": "[obj+0x5EC] = 1 ; [obj+0x5F0] = 1",
+    "0xBA3C47": "[obj+0x5E8] = 3   <-- state 3"
+  },
+  "what_that_means": [
+    "state 3 is entered when an 8-byte value stored at [obj+0x5FC] equals an 8-byte value supplied by the caller",
+    "an 8-byte equality check on a connection object is most naturally a session id or handshake token",
+    "so the client reaches state 3 when its token matches the one the caller compares against, and our client IS at state 3 - so that comparison already succeeded",
+    "which means state 3 is not the failure point: it is the state the client is in after a successful token comparison, and something must then move it onward"
+  ],
+  "what_this_implies_for_the_remaining_work": [
+    "the state machine around 0xBA3xxx is a session state machine: 0 idle, 1/2 intermediate, 3 token-matched-and-waiting",
+    "the transition out of 3 is the one that has not been located",
+    "and because state 3 is reached by a successful 8-byte comparison, the missing transition is most likely gated on a further message or on a timer rather than on the token"
+  ],
+  "artifacts": {
+    "addresses": {
+      "decision": "0xBA3C05..0xBA3C47",
+      "token_field": "+0x5FC (8 bytes)",
+      "compare": "0xB73FE0",
+      "state_field": "+0x5E8",
+      "flags": "+0x640, +0x644"
+    }
+  }
+}
