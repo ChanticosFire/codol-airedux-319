@@ -18211,3 +18211,7 @@ lobby          = 0x37E19850
 > **2026-10-26 12:30–13:00【注入版真正加载后 fatal dialog：asset 内部有跨 zone 引用，不能直接搬运】**
 >
 > 同步 24 个 ff 进 runtime（common_mp=76,038,421 注入版）→ 启动 `stop_reason="fatal_dialog"`、客户端退出。→ 之前"表 1135"是 runtime 旧 ff；真加载注入版则崩，说明 21 个 asset 内部含 asset 索引/zone 偏移引用，指向 gametype 里其它 asset，搬进 common_mp 后索引无效。已恢复 runtime 原版 ff。→ 下一步：递归分析 asset 引用依赖树，或改策略（让客户端加载 common_gametype_mp，现已能改 exe 代码）。
+
+> **2026-10-26 13:00–13:30【找到启动加载列表：0x4FCC10 函数 count=4（patch_code_pre_gfx_mp/code_pre_gfx_mp/patch_localized_code_pre_gfx_mp/localized_code_pre_gfx_mp）；列表结构每项 0xC】**
+>
+> 反汇编 + 字符串：`lea eax,[ebp-0xA10]; push 4; push eax; mov [..]=0xDBD6E0..; call 0x49E160`。另一个 0x4FCCA0 是 post_gfx（count=5）。→ 改造 C1：把第 3、4 项（localized pre_gfx）替换成 `common_gametype_mp`/`patch_common_gametype_mp`（改 2 个立即数 + 写 2 个新字符串，长度不变）。下一步实施 + 同步 IMAGE_SHA256 + 实测表 1135→1223+。

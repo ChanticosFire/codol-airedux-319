@@ -4908,3 +4908,50 @@ runtime 的 24 个 ff 已从 `runs/ff-edit/overlay-backup` 恢复为原版
 2. **换策略**：不搬 asset，而是让客户端**加载 `common_gametype_mp.ff`**——
    回到"谁触发 gametype 包加载"的问题（§110 的 `0x49E540`/`0x49E160`），
    但这次有了"改 exe 代码"的能力（信任根已打通，可以改代码段并重签 ff）。
+
+## 144. 2026-10-26 13:00–13:30：**找到启动加载列表（0x4FCC10 函数，4 项硬编码）**
+
+### 144.1 结构
+
+```asm
+0x4FCC10  （函数入口，sub esp,0xA10）
+0x4FCC33  lea eax, [ebp-0xA10]        ; 列表基址
+0x4FCC39  push 4                       ; count = 4
+0x4FCC3B  push eax                     ; list
+0x4FCC3C  mov [ebp-0xA10], 0xDBD6E0    ; 1: patch_code_pre_gfx_mp
+0x4FCC46  mov [ebp-0xA0C], ecx (1)     ;    flags = 1
+0x4FCC4C  mov [ebp-0xA04], 0xDBD6F8    ; 2: code_pre_gfx_mp
+0x4FCC56  mov [ebp-0xA00], ecx
+0x4FCC5C  mov [ebp-0x9F8], 0xDBD708    ; 3: patch_localized_code_pre_gfx_mp
+0x4FCC66  mov [ebp-0x9F4], ecx
+0x4FCC6C  mov [ebp-0x9EC], 0xDBD728    ; 4: localized_code_pre_gfx_mp
+0x4FCC76  mov [ebp-0x9E8], ecx
+0x4FCC7C  call 0x49E160                ; 批量加载
+```
+
+### 144.2 字符串表（.rdata）
+
+```
+0xDBD6E0 'patch_code_pre_gfx_mp'
+0xDBD6F8 'code_pre_gfx_mp'
+0xDBD708 'patch_localized_code_pre_gfx_mp'
+0xDBD728 'localized_code_pre_gfx_mp'
+0xDBD744 'code_post_gfx_default_mp'      ← 另一个函数（0x4FCCA0，count=5）
+0xDBD760 'patch_code_post_gfx_mp'
+```
+
+### 144.3 改造方案（两条）
+
+| 方案 | 做法 | 影响 |
+|---|---|---|
+| **C1** | 把第 3、4 项（localized pre_gfx）**替换**为 `common_gametype_mp` / `patch_common_gametype_mp` | 改动小（2 个 u32 + 2 个字符串），但会失去 localized pre_gfx |
+| C2 | `push 4` → `push 6`，并在 `0x4FCC76` 后追加 2 项 | 需要插入指令（长度变化），要重排代码 |
+
+→ **优先 C1**（改 2 个立即数 + 2 个字符串地址，长度不变）。
+
+### 下一步
+
+1. 在 `.rdata` 末尾（或空隙）写入两个新字符串 `common_gametype_mp`、`patch_common_gametype_mp`；
+2. 把 `0x4FCC5C` 的 `0xDBD708` 改为新字符串 1、`0x4FCC6C` 的 `0xDBD728` 改为新字符串 2；
+3. 重签（exe 不改签名验证逻辑，只是数据改动，但要同步 launch 的 IMAGE_SHA256）；
+4. 客户端实测：武器表应从 1135 → 1223+。
