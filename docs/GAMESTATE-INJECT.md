@@ -349,3 +349,33 @@ LSG 回 `error=4` 后客户端停在加载屏。→ 主线的下一关是 **LSG 
    给 `server319.lsg` 补上 28/4、102/1、102/7、3/46、3/48、80/232 的最小合法响应；
 2. 每补一类就重跑（LSG + drive_login），观察 `ui_state` 是否离开 5；
 3. `ui_state` 离开 5 后再接游戏服务器与快照。
+
+## 16. 2026-10-24 13:32–13:44：补齐 7 个 LSG 任务，unhandled 归零
+
+在 `server319/lsg_derived.py` 的分发链里，给登录后客户端连发的任务补了"空成功"回复
+（与已实现任务相同的 envelope）：
+
+```python
+if (service, task) in ((28, 4), (102, 1), (102, 7), (3, 46), (3, 48), (80, 232), (9, 5)):
+    reply_payload = (_typed_u64(counter) + _typed_u32(0) + b"\x03"
+                     + bytes([task & 0xFF]) + _typed_u32(1) + _typed_u32(1))
+```
+
+结果：
+
+| 观测 | 结果 |
+|---|---|
+| `runs/r24-lsg.jsonl` | 5 类任务从 unhandled 变为 `candidate_task_reply`；客户端继续发 `9/5` |
+| `runs/r25-lsg.jsonl` | 补上 `9/5` 后 **unhandled = 0**，客户端共发 8 个任务后不再发新请求 |
+| `ui_state` | 仍 **5**（加载屏） |
+| 接游戏服务器（`inject` + `connect` + gs） | gs 只收到 **inband**，客户端在 ui=5 时**不发 connect** |
+
+结论：**LSG 任务链已经走通**（unhandled 归零），但 `ui_state=5` 不因此解除；
+而且 ui=5 时客户端不会主动向游戏服务器发起 connect。也就是说加载屏在等一条**异步事件**
+（匹配成功/房间开始），而不是等任务响应。
+
+### 下一步
+
+1. 查客户端"开始/匹配"的触发点（`0x803780` 读 `[singleton+0x4F4]+0x5E8`，状态 3 = matched-waiting）；
+2. 由 LSG 主动推送一条"匹配成功/房间已就绪"消息（需要 LSG 的出站主动帧，`lsg_derived.py` 里已有 `build_server_frame85`）；
+3. 或从 UI 触发（点击"开始游戏"按钮/注入对应 UI 事件），让客户端自己进入 connect 流程。

@@ -513,7 +513,23 @@ class DerivedLsgServer(AuthServer):
                                     reason=f"service={service} task={task} bytes={len(payload)} "
                                            f"args={decode_typed_fields(payload[3:])}",
                                     body_hex=payload.hex() if len(payload) <= 1024 else None)
-                if (service, task) == (71, 4):
+                if (service, task) in ((28, 4), (102, 1), (102, 7), (3, 46), (3, 48), (80, 232),
+                                       (9, 5)):
+                    # Tasks the client requests right after LSG login; the
+                    # historical server left them unanswered (error=4) and the
+                    # client stayed on the loading screen (ui_state=5).  Answer
+                    # with the same success envelope the implemented tasks use.
+                    reply_payload = (_typed_u64(counter) + _typed_u32(0) + b"\x03"
+                                     + bytes([task & 0xFF])
+                                     + _typed_u32(1) + _typed_u32(1))
+                    reply = build_server_frame85(keys, reply_payload, counter=received_counter,
+                                                 iv=os.urandom(16))
+                    conn.sendall(reply)
+                    self.evidence.write("candidate_task_reply", session,
+                                        reply_hex=reply.hex(),
+                                        reason=f"svc{service}/task{task} empty success (unblocks loading)")
+                    counter += 1
+                elif (service, task) == (71, 4):
                     # LSG_T4_MODE selects the task4 reply shape. "entry" sends a
                     # full 114-byte bdMatchMaking record (same as task9), which
                     # may be what prompts the client to continue with task9;
