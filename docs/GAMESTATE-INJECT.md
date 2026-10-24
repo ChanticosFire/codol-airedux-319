@@ -4987,3 +4987,29 @@ r145 没加 `--trace-files`，无法确认 `common_gametype_mp` 是否真的被�
 1. trace 里是否出现 `common_gametype_mp.ff` 请求；
 2. 若没有，说明 `0x4FCC10` 不是启动加载（或列表被覆盖）；
 3. 若有但加载失败，看是否缺 `patch_common_gametype_mp`（我们 overlay 里确实没有这个 patch 文件）。
+
+## 146. 2026-10-26 14:00–14:30：C1 补丁未生效的直接证据 —— trace 里没有 gametype 请求
+
+### 146.1 证据
+
+```
+r145 events: reuse-0a9a7769/events.jsonl (49,277 B)
+  gametype mentions = 0        ← 客户端从未请求 common_gametype_mp.ff
+```
+
+（r146 的 events 是 0 字节，可能 trace 未 flush；但 r145 已足够说明问题。）
+
+### 146.2 结论
+
+**`0x4FCC10` 不是"启动加载列表"**（或它的列表未被真正使用）：
+- 我们替换了它的第 3、4 项为 `common_gametype_mp` / `patch_common_gametype_mp`；
+- 客户端启动正常、但**从未请求**这两个包；
+- 说明该函数要么没被调用，要么调用时列表被别处覆盖，要么它做的是别的事
+  （比如"卸载/重载 pre_gfx"）。
+
+### 146.3 下一步
+
+1. 找 `0x4FCC10` 的调用者（静态 xref）与调用时机（trace/断点）；
+2. 或者从**另一条线**入手：`0x4FCC7C` 之后真正的启动加载在哪
+   （`0x77F8B8 Engine init returned` 附近、或 `0x4FCD32`/`0x4FCE4F` 两个调用者）；
+3. 拿到真正启动加载列表后，再改一次（同样的 C1 手法）。
