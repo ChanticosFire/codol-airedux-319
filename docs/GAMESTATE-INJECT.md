@@ -785,3 +785,45 @@ state=5  ui=0  Dispatch=0  GamestateParse=0
 
 找 `0x5C23E0` 所在函数的入口与调用者（上游帧调度），确认它在 state=5 时是否被调度；
 若没有，用 `--main-call` 直接调用它（必要时先写 stream 缓冲），把 ring 里的包推进分发链。
+
+## 29. 2026-10-24 16:30–16:45：决定性门槛 —— `net_state >= 7` 才处理 inband 包
+
+### 29.1 接收函数的门禁
+
+`0x5C2260`（网络帧处理，被 `0x4F8CD6/0x4F8D60/0x4F8ED8` 调用，即 **PUMP 函数内部**）在
+OOB 分支之后：
+
+```asm
+0x5C22FC  cmp dword ptr [0x76446B0], 7     ; net_state
+0x5C2303  jl 0x5C2413                      ; < 7 → 直接返回 false（丢包）
+0x5C2309  ebx = connection
+0x5C2315  cmp eax, 4                       ; 长度检查
+...
+0x5C23E0  call 0x66EE10                    ; 读 seq_word
+0x5C242B  call 0x470A60
+0x5C2434  call 0x473A50                    ; 分发
+```
+
+**这就是所有"包被丢弃"的根因**：我们一直把 `net_state` 停在 4/5/6，而客户端
+**只有 state >= 7 才处理 inband 包**。所以 `0x473420`（分发）和 `0x472D80`（gamestate 解析）
+永远 0 命中，与包格式、加密、seq 全部无关。
+
+### 29.2 state=7 的写入点
+
+| 地址 | 上下文 |
+|---|---|
+| `0x5BE90A` | CONNECT_FN 尾部，只在 `state >= 7` 时才走到（鸡生蛋） |
+| **`0x813D34`** | **无条件** `mov [0x76446B0], 7`，前面是 `0x5C8A70`（CL_Shutdown）、`0x5C83D0`（CL_Init），是**连接初始化**路径 |
+
+```asm
+0x813D11  call 0x5C8A70
+0x813D16  eax = 3 / (ebx ? 7 : 3)
+0x813D25  call 0x5C83D0        ; CL_Init
+0x813D34  mov [0x76446B0], 7   ; ← 无条件
+```
+
+### 下一步
+
+1. 用 `--main-call` 调用 `0x813CF0` 所在函数（先找入口），让 `net_state=7`；
+2. state 7 后再发 gamestate（小包、大 seq），验证 `0x473420` / `0x472D80` 是否终于命中；
+3. 注意 `0x813D11` 会先 CL_Shutdown/CL_Init，可能重置已注入的连接对象——需要在其后重新注入/连接。
