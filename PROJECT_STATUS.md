@@ -18059,3 +18059,7 @@ lobby          = 0x37E19850
 > **2026-10-25 18:00【关键发现：demo 播放请求 patch_common_gametype_mp.ff（4 次）；服务端路径没有 → 88 差异根源】**
 >
 > r120 trace：ff 请求 14,016 次（每把武器一个独立 ff，全缺失但不影响播放），其中 **`patch_common_gametype_mp.ff` 4 次**、`patch_localized_common_gametype_mp.ff` 4 次。全盘搜索 `ac130*_mp.ff`/`airstrike*_mp.ff` 为 0；Original Client 的 `*_mp.ff` 为 0；overlay 12 个。→ demo 播放主动请求 gametype patch 包触发加载（表 1266），服务端路径没触发（表 1136）。下一步：找 demo 里该请求的 caller 与时间点，在服务端路径复刻触发。
+
+> **2026-10-25 18:00–18:30【gametype 包与地图包同一时刻请求（同一批加载）；服务端路径只加载地图】**
+>
+> trace 对齐：`patch_common_gametype_mp.ff`（caller 0xC513D9/0x776F80，time …251.86/251.91）与 `patch_mp_crash_tropical.ff`（time …251.86/252.63）**同一批请求**。服务端路径（r105）有地图包、无 gametype 包 → 批量加载列表缺 gametype 项，表少 88。→ 下一步：对比 demo gamestate（6407）与下发（6411）的 gametype 相关字段，找客户端构造 fastfile 列表的代码。

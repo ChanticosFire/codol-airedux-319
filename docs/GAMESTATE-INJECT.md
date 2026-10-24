@@ -3464,3 +3464,39 @@ overlay：**12 个**（基础包）。
    与时间点，对照 demo 播放阶段）；
 2. 在服务端路径复刻该触发（例如向客户端注入对应 configstring/命令）；
 3. 或直接把 `common_gametype_mp.ff` 放进 overlay 并让它被启动加载（启动列表加一项）。
+
+## 106. 2026-10-25 18:00–18:30：gametype 包与地图包同一时刻请求（同一批加载）
+
+### 106.1 trace 时间对齐
+
+`runs/r107flow/reuse-074c6159/events.jsonl`：
+
+```
+patch_common_gametype_mp.ff        caller 0xC513D9  time 1792835251.8613465
+patch_common_gametype_mp.ff        caller 0x776F80  time 1792835251.9109170
+patch_mp_crash_tropical.ff         caller 0xC513D9  time 1792835251.8626547
+patch_mp_crash_tropical.ff         caller 0x776F80  time 1792835252.6339579
+```
+
+→ **gametype 包与地图包在同一批请求**（相差 1 毫秒），说明它们由**同一次批量加载**
+（`0x49E160` 或等价路径）触发，列表里同时包含 `patch_mp_crash_tropical` 与
+`patch_common_gametype_mp`。
+
+### 106.2 服务端路径少加载 gametype
+
+- 服务端路径（r105 trace）确实请求了 `patch_mp_crash_tropical.ff`（地图包被 gamestate 的 mapname 触发）；
+- 但**没有** `patch_common_gametype_mp.ff`（gametype 字段 `war` 不足以触发该包）。
+
+→ 服务端路径的批量加载列表**缺 gametype 项**，所以表少 88 个武器。
+
+### 106.3 修复思路（最直接）
+
+在地图加载的批量列表里**加入 gametype 项**：
+1. 找到服务端路径触发地图加载的入口（gamestate 的 mapname → 某个加载函数）；
+2. 该函数构造的列表若可被拦截/扩展，加入 `patch_common_gametype_mp`；
+3. 或在 gamestate 里增加触发 gametype 包的字段（对比 demo 的 gamestate 与我们的差异）。
+
+### 下一步
+
+1. 对比 demo 的 gamestate（6407）与我们下发的（6411）字段差异（尤其 gametype 相关）；
+2. 找客户端"根据 gamestate 构造 fastfile 列表"的代码，确认它为什么不加 gametype。
