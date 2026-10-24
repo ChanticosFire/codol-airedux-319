@@ -3805,3 +3805,44 @@ thread_exit = 0xD1A6        ← 异常
 2. **放弃主动加载**，回到"补 configstring"：只能补 42 个复合武器（到 1178），
    但 88 个 asset 仍缺 —— 除非改用"修改 fastfile + 重签"方案（参考文档 §91），
    把 88 个武器定义直接写进 `common_mp.ff`。
+
+## 114. 2026-10-25 22:00–22:30：**发现 gamestate 尾部的两个武器表（10 位 alias + 11 位 recipe）**
+
+### 114.1 build_native_gamestate 的实现（关键代码）
+
+```python
+writer.raw(b"\x04")                    # svc: configstrings
+writer.raw(struct.pack("<H", len(rows)))
+for index, value in rows:
+    if index == previous + 1: writer.bits(1, 1)
+    else:                     writer.bits(0, 1); writer.bits(index, 14)
+    writer.string(value)
+# 两个位打包的武器表：
+writer.bits(0, 10)                     # ← alias 表数量（10 位）
+writer.bits(0, 11)                     # ← recipe 表数量（11 位）
+writer.raw(b"\x05")                    # close configstring block
+writer.raw(struct.pack("<II", client_number, checksum_feed))
+writer.raw(b"\x05")                    # close initial state
+```
+
+→ **gamestate 的 configstring 块尾部就是两个位打包武器表**：
+- **alias 表**（10 位 count）
+- **recipe 表**（11 位 count）
+
+这两个正是 HANDOFF 里"10 位/11 位"的出处，也是"88 个 gametype 武器"可能的注册入口。
+
+### 114.2 demo gamestate 尾部
+
+```
+... f5 2b 31 32 35 39 00 | fb 05 74 61 67 5f 70 6c 61 79 65 72 00 | 00 00 05 01 00 00 00 00 00 00 00 05
+        "+1259"                    "tag_player"                         ...
+```
+
+- `+1259`、`tag_player` 是最后两条 configstring 值；
+- 之后的 `00 00 05 01 ...` 是位打包的 alias/recipe 表 + 关闭标记 `05`。
+
+### 下一步
+
+1. 写**位级解析器**，从 demo gamestate 精确读出 alias count 与 recipe count（预期非 0）；
+2. 再看每一项的字段格式（可能 `{str alias; u16 weapon_count; u16 alias_count; str refs[]}`）；
+3. 若能构造，就直接把 88 个 gametype 武器写进 alias 表 —— 这是**不依赖加载 fastfile** 的补注册路径。
