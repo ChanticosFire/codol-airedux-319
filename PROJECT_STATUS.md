@@ -18960,3 +18960,79 @@ filters       : 6
 | `319\runs` 占用 | 7.25 GB | 49.2 MB |
 | guard 依赖 | 未入库，易丢 | ✅ 已入库 |
 | 客户端启动 | 正常 | ✅ 验证正常 |
+
+## 301. 2026-10-29 16:00–17:00：**🎯 修复 hook 重定位缺陷后锁定失败点 —— `Netchan_Process` 每次都返回失败**
+
+### 301.1 重定位缺陷已修复（Round 39 崩溃根因）
+
+`hook_any` 原先用 `code += original` 直接重放被偷字节。
+当被偷区间含相对跳转时（`0x5C2388` 是 `85 c0 0f 84 83 00 00 00`，
+其中 `0F 84 xx xx xx xx` 即 `je`），副本搬进 cave 后**旧位移失效**，跳到错误地址 → 崩溃。
+
+修复：重放前用 capstone 逐条解析并**重算相对偏移**；
+short jcc（`7x`）/ short jmp（`EB`）自动**扩展成 rel32 形式**，以免搬迁后距离超出 ±127。
+
+离线验证：
+```
+stolen     : 85 c0 0f 84 83 00 00 00   (0x5C2388)
+relocated  : 85 c0 0f 84 0b 24 5c f0   （新位移已按 cave 地址重算）
+span check : 8 == 8
+```
+
+在线验证（cave=0x4c5a0000）：
+```
+✅ CLIENT ALIVE -- 不再崩溃
+NetchanRet(0x5C2388) count = 7
+```
+
+### 301.2 决定性观测：`Netchan_Process` 每次都失败
+
+```
+0x5C2388 hit count   = 7
+last EAX (返回值)    = 0        ← 0 = 失败
+ParseServerMsg       = 0        ← 因此 0x5C238A je 每次都跳走
+gate [0x1C2B6CC]     = 0
+ui=0  net=0  table=1135
+ff 收集器 count      = 10（仍无地图）
+gs: stats = 0 / inbound = 6（getchallenge×2 + connect×1）
+```
+
+`0x674EB0` 用 `neg/sbb/inc` 把内部 `0x674E10` 的返回值布尔化反转：
+- 内部返回 0（成功）→ `0x674EB0` 返回 **1**
+- 内部返回非 0（错误）→ `0x674EB0` 返回 **0**
+
+实测恒为 0 ⇒ **`0x674E10` 每次都返回非 0 的错误码**。
+
+### 301.3 下一步：读出 `0x674E10` 的错误码
+
+最佳观测点：`0x674F13`（`mov ecx,[ebp-4]`，3 字节 `8B 4D FC`），
+此处 **EAX 正是 `0x674E10` 的返回值**：
+
+```asm
+0x674F0E  call 0x674E10
+0x674F13  mov ecx, [ebp-4]     ; ← hook 这里，EAX = 错误码
+0x674F16  neg eax
+```
+
+拿到错误码后即可对照 netchan 的失败原因（序列号、CRC、分片、压缩格式等）。
+
+### 301.4 ⚠ 两个清理失误（已确认，待恢复）
+
+清理 `319\runs` 时误删了两个**运行时依赖**：
+
+| 路径 | 作用 | 恢复方式 |
+|---|---|---|
+| `runs/guard-build/` | `--loopback-tcp-guard` 必需 | ✅ 已用 `tools/build_tcp_loopback_guard.py` 重建，并已入库 |
+| `runs/20261020-live-derived01/tls/`（`auth.crt` + `auth.key`） | `server319.lsg --cert/--key` | ❌ **git 无备份，待重新生成** |
+
+**但实测影响有限**：本轮 gs 仍正常收到 `getchallenge ×2` 与 `connect`
+（新 uid `a731af49a6a2c7e2`），说明 `--allow-auth-tls` 下缺证书不阻断 UDP 握手。
+仍需恢复以保证可复现性。
+
+### 301.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 39 | hook `0x5C2388` 崩溃（重定位缺陷未修） |
+| 40 | 确认崩溃根因是被偷字节含 `je rel32` |
+| **41** | **修复重定位 → 客户端不再崩；锁定 `Netchan_Process` 每次返回失败（EAX=0），下一观测点 `0x674F13` 可读出错误码** |
