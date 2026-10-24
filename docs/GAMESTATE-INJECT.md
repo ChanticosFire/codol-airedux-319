@@ -12200,3 +12200,74 @@ forward: sent=10  received=31  injected=12
 | 33 | 误判死代码（只扫 `call`） |
 | 34 | 纠正：`0x5C241C` 由 `jge` 到达；门是序列号窗口检查 |
 | **35** | **双 patch 后 `stats` 首次出现、`injected` 增到 12 —— 连接链跑通了；但客户端 `unhandled_exception`，需隔离是哪个 patch 引起** |
+
+## 297. 2026-10-29 12:00–13:00：**温和阈值 patch 不足以让 `stats` 出现 —— 瓶颈在 `Netchan_Process` 返回值**
+
+### 297.1 本次做法（比上轮温和）
+
+```asm
+原始：
+  0x5C23F9  mov eax, [ebx+0x140]        ; 当前接收序列号基线
+  0x5C23FF  lea edx, [eax - 0x200]      ; 8D 90 00 FE FF FF
+  0x5C2405  cmp [ebx+0x144], edx
+  0x5C240B  jge 0x5C241C                ; 7D 0F（保留不动）
+改成：
+  0x5C23FF  xor edx, edx                ; 31 D2 90 90 90 90  → 阈值 = 0
+```
+
+这样 `jge`（有符号比较）变成"`[ebx+0x144] >= 0`"。因为
+`0x5C23E7 and ecx, 0x7FFFFFFF` 已经把写入 `[ebx+0x144]` 的值掩成非负，
+**符号检查本身不应再成为阻碍**。
+
+同时 `0x5C2303`（`net_state >= 7`）也 patch 成 `90×6`。
+
+### 297.2 结果：`stats` 依然没有出现
+
+```
+sent=3  received=10  injected=10
+ALIVE
+ParseServerMsg 0x473A50 = 65536      ← 可疑（0x10000），可能是槽被污染
+ParseGamestate 0x473260 = 0
+mapLoader      0x49E600 = 0
+gate [0x1C2B6CC]        = 0
+state: ui=5  net=0  table=1135
+ff 收集器 count = 10（无地图）
+gs: stats lines = 0                  ← **stats 仍然没有**
+```
+
+对比 Round 35（把 `0x5C240B` 改成 `EB 0F` 无条件跳）：那次 `stats` 出现了。
+本轮只放宽阈值，`stats` 没出现 ⇒ **说明 `jge` 之前还有什么东西把它挡掉了**。
+
+### 297.3 定位：`Netchan_Process` 的返回值
+
+在 `jge` 之前有两个提前返回：
+
+```asm
+0x5C2380  call 0x674EB0            ; Netchan_Process
+0x5C2388  test eax, eax
+0x5C238A  je 0x5C2413              ; ← 返回 0 就直接 return false
+0x5C2390  …
+0x5C23A0  call 0x674740
+0x5C23A8  test eax, eax
+0x5C23AA  je 0x5C2413              ; ← 同上
+```
+
+**只要 `Netchan_Process`（`0x674EB0`）返回 0，就永远到不了序列号窗口检查。**
+这解释了为什么"放宽阈值"没有效果 —— 路根本没走到那里。
+
+### 297.4 下一步
+
+1. hook `0x674EB0` 记录**命中次数与 `ret`（返回地址）**，
+   必要时用 `--capture` 读它的输出参数，判断它为什么返回 0；
+2. 若 `Netchan_Process` 命中但返回 0：说明 netchan 包被它判为无效
+   （常见原因：序列号太旧、CRC/校验失败、分片不完整）；
+3. 若 `Netchan_Process` 根本不命中：说明 `0x5C2315 cmp eax,4 / jl 0x5C24BC`
+   这个长度前置条件把它挡掉了，需要记录当时的 `eax`。
+
+### 297.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 35 | 双 patch（含无条件跳）后 `stats` 出现，但客户端崩 |
+| 36 | 只打 `net_state>=7` 不崩，但 `stats` 也没出现 |
+| **37** | **温和放宽序列号阈值仍不足以让 `stats` 出现 → 瓶颈前移到 `Netchan_Process`（`0x674EB0`）的返回值** |
