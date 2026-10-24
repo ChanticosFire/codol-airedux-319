@@ -32,5 +32,14 @@
     "r103": "Checksum passes; error 181 with weapon string ** 646 0 0 8738 9321, resolver index 1136 versus expected 1224; no snapshot accepted",
     "r104": "Filtering configstrings 7184 through 7218 avoided error 181 but caused client access violation at 0x58F3C0 (null weapon definition pointer); forward summary incomplete"
   },
+  "weapon_registration_inference": {
+    "pre_gamestate_definition_count": 1135,
+    "first_local_composite_index": 1136,
+    "demo_expected_index": 1224,
+    "gap": 88,
+    "static_path": "0x42F3E0 first calls 0x42F2F0 to find an existing string; on miss 0x431810 creates a composite and 0x42F432 increments 0x1988634",
+    "header_scan": "first 0x8020 demo bytes contain no printable string of length >= 8 and do not contain the known weapon string",
+    "limit": "the exact source of the missing earlier registrations has not been identified"
+  },
   "next": "Recover or remap demo weapon registry ordering before replaying the matching baseline, then adapt to mp_cross_fire."
 }
