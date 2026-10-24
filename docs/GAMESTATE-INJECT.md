@@ -10115,3 +10115,81 @@ gs: {('meta','start'):1, ('in','oob'):8, ('in','getchallenge'):8, ('out','oob'):
 - 距目标（服务端下发进图对局）仍有阶段 3 后半（connect/stats）、
   阶段 4-6（loadingnewmap / 初始化 / 首帧快照）要走；
 - 本轮是 267 轮里**第一个协议层实证突破**。
+
+## 268. 2026-10-28 07:00–08:00：**loopback 环路线的实测结果与真正的桥接方案**
+
+### 268.1 `patch_nodelay` 会拖垮客户端
+
+把 `0x5C06B8` 的 `jl` 整体换成 `nop nop` 后，状态机每帧都完整构造并发包，
+客户端在几秒内 `unhandled_exception` 退出。
+
+**改为只降阈值** —— 新工具 `tools/patch_retry_ms_1649370.py`：
+```
+0x5C06B3  cmp eax, 0xBB8   ->   cmp eax, <ms>
+```
+- `--ms 1` 无效（同一毫秒内 `eax == 0`，`jl` 仍跳）
+- `--ms 0` **有效**（`eax >= 0` 恒真 → 每帧一次尝试）
+
+### 268.2 实测：客户端确实构造并发送了，但被它自己消费
+
+```
+设置 adr = {type:2, port:0, channel:0x9D}、net_state=3、retry=0ms
+
+3 秒后：
+  ring_a: {read: 52, write: 52}      ← **52 个包真的产生了**
+  ring_c0: {read: 0, write: 0}       ← 但 ring C（server queue）是空的
+  connection_adr: {type:0, port:0, channel:0}   ← adr 被重置
+  state: 3
+```
+
+- `drain-ring` 连续抢读 3 次**都是空**，因为 `read == write`：
+  包一写进 ring A 就被客户端自己的网络泵（`0x674F30`）读走了；
+- 随后客户端把 `connection_adr` 重置成 `type=0`（放弃这次连接）。
+
+→ **type=2（loopback）路径下，包停留在 ring A 并被内部泵消化，既没进 ring C，
+也不会到我手上。** 单纯改 `adr type` 无法把数据导出去。
+
+### 268.3 目前唯一被证明能把包送出进程的路径
+
+Round 5 的 `patch_sender_hard`（`type=4` + 把 `0x622040` 换成 `socket()+sendto()`）
+**已经实证有效**：
+
+```
+gs: ('in','getchallenge'): 8   包长 38 字节
+    args = ["0","0cf7ee44e08c4c28"]
+    → 服务端回 challengeResponse
+```
+
+它的缺陷只是**每次调用都新建 socket**（源端口 54869/54871/50480… 各不相同），
+所以应答回到一个没人监听的端口。
+
+### 268.4 正确的桥接方案（下一步）
+
+`ring_bridge` 的文档给出了完整机制：
+- **发送**：`0x6750A0`/`0x5BAA00` 写本地 server queue（ring C，按 port 分槽）
+- **接收**：`0x675140` 从 ring B 读入 → `0x4F8D70` 客户端接收泵 →
+  `0x5C2260`（CL packet event）→ `0x5C1EE0`（OOB 字符串分发）
+
+因此应当**发送走真实 UDP、接收走 ring B**：
+
+1. 保持 `adr type = 4` + `patch_sender_hard`（发送已实证可达 gs）；
+2. 用 `ring_bridge forward --target 127.0.0.1:28969 --start-challenge`
+   让桥自己完成 challenge 往返，并把服务端应答通过
+   **`inject-oob` 写入 ring B**；
+3. 客户端接收泵读到 `challengeResponse` 后，会通过 `patch_sender_hard`
+   发出 `connect` —— 服务端就能看到握手推进；
+4. 之后每一轮服务端下行都从 ring B 注入，上行都走 `sendto`。
+
+### 268.5 本轮产出
+
+| 工具 | 说明 |
+|---|---|
+| `tools/patch_retry_ms_1649370.py` | 把 3000ms 重试阈值改为任意值（`--ms 0` 表示每帧尝试） |
+| `tools/patch_sender_hard_1649370.py` | 已实证可让 `getchallenge` 出网 |
+| `tools/hook_any_1649370.py` | 指令边界对齐的通用 hook |
+
+### 268.6 状态
+
+- **上行已通**（gs 能收到 `getchallenge`）；
+- **下行未通**（客户端收不到 `challengeResponse`）；
+- 下一步明确：**`forward --start-challenge` + `inject-oob` 写 ring B**。

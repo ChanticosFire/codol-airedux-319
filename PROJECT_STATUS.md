@@ -18707,3 +18707,7 @@ lobby          = 0x37E19850
 > **2026-10-28 06:00–07:00【🎉 里程碑：客户端首次真正发出 getchallenge！gs 收到 8 个 38 字节包（参数 0cf7ee44e08c4c28 = [0xE54BC48/4C]），服务端已回 challengeResponse。打通依赖三点：①main_call 只在登录后几秒窗口有效 ②hook 必须按指令边界切片（0x7F4F10 取7/0x675260 取9/0x622040 取9）③patch 0x5C06B8 的 jl→nop 去掉 3000ms 等待。新问题：客户端每次 socket() 新建端口（54869/54871/50480…）导致收不到响应】** 
 >
 > 下一步：改走 loopback 环 —— 恢复 0x622040，设 adr type=2 + chan=0x9D + net=3，保留 nodelay，用 ring_bridge 观察 ring_a 并用 forward --pump 桥接收发。
+
+> **2026-10-28 07:00–08:00【loopback 环实测：type=2 + retry=0ms 后 ring_a 真的产生 52 个包，但被客户端自己的网络泵 0x674F30 消费（read==write，drain 抢不到），ring C 仍空，adr 被重置为 type=0。patch_nodelay 会导致每帧发包、客户端崩溃，改用 patch_retry_ms（0x5C06B3 cmp eax,0xBB8 → cmp eax,0/1）。目前唯一实证能出网的是 type=4 + patch_sender_hard（gs 已收到 8 个 getchallenge），缺陷是每次新建 socket 导致收不到响应】**
+>
+> 下一步方案：发送保持 type=4 + patch_sender_hard，接收改用 ring_bridge forward --start-challenge 把服务端应答 inject-oob 写入 ring B，由 0x4F8D70 接收泵送入 0x5C1EE0。
