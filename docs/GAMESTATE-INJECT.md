@@ -7266,3 +7266,31 @@ trace: 无 gametype 相关请求
 
 去掉 `--gamestate-gametype`/`--trace-files`，用与 r159 完全相同的参数重跑一次，
 确认 connect 能走通，再逐步加 `--gamestate-gametype mp`。
+
+## 208. 2026-10-27 21:30–22:00：**connect 卡住的直接原因 —— forward 没有监听 29000（启动失败）**
+
+### 208.1 证据
+
+```
+r174-fwd.out：**空**
+r174-fwd.err：**空**
+Get-NetTCPConnection -LocalPort 29000：**无任何监听**
+gs 日志：仅 15 个 inband，无 connect
+客户端：alive=True、table=1135、ui=5、net=4
+```
+
+→ `ring_bridge forward` **启动后立即退出**（无输出、无监听），
+所以 `ring_bridge connect --address 127.0.0.1:29000` 发到一个**无人监听**的端口，
+客户端从没收到 connect → `net` 停在 4。
+
+### 208.2 排除项
+
+- 不是 `--gamestate-gametype mp` 的问题（本实验已去掉 `--trace-files`，结果相同）；
+- 不是客户端未运行（本次 `alive=True`）；
+- 是 **forward 自身启动失败**。
+
+### 208.3 下一步
+
+1. 前台运行 `ring_bridge forward` 看它的真实报错（之前 `fwd.err` 曾报"客户端未运行"）；
+2. 确认它的自检条件（是否要求某个窗口/句柄）；
+3. 修复后用同一套流程重跑，验证 `gametype=mp` 是否让 table 涨到 1223。
