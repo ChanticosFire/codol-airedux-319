@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-31T01:00:00+00:00",
+  "scope": "CORRECTION of round 252 plus the measured values: [0x5E8] == 3 is what PRODUCES status 2, so the client is waiting for [0x5E8] to leave 3",
+  "the_three_field_readings": {
+    "sub_object": "0x42535E70",
+    "plus_0xC8": 2,
+    "plus_0x644": 0,
+    "plus_0x5E8": 3,
+    "plus_0x04": 2,
+    "ui_state": 5,
+    "net_state": 10
+  },
+  "the_code_re_read": {
+    "0xBA079F": "cmp eax,2 ; jne -> if [+0xC8] != 2 return it; ours is 2 so we continue",
+    "0xBA07A4": "xor eax,eax -> eax = 0",
+    "0xBA07A6": "cmp dword [ecx+0x5E8], 3 ; sete al -> al = 1 when [+0x5E8] == 3",
+    "0xBA07B0": "inc eax -> eax = 1 + 1 = 2 when equal, or 0 + 1 = 1 when not",
+    "result": "status = 2 when [+0x5E8] == 3, and status = 1 otherwise"
+  },
+  "the_correction": [
+    "round 252 said '[0x5E8] == 3 would return 1' - that was wrong: sete sets al to 1 and the following inc eax makes it 2",
+    "so [+0x5E8] == 3 PRODUCES status 2, which is exactly the status we measure",
+    "and the client would leave the ui-5 screen when [+0x5E8] becomes anything other than 3"
+  ],
+  "what_that_means": [
+    "the single field that decides the screen is [sub+0x5E8], and its current value 3 keeps the client on the waiting screen",
+    "the other two fields are already in their expected states: [+0xC8] = 2 (matching the code's branch) and [+0x644] = 0",
+    "so there is exactly one condition left, and it is a field inside the client's connection object"
+  ],
+  "the_natural_next_question": [
+    "what writes [sub+0x5E8] and what the values 0..5 mean",
+    "the field is at a fixed offset in a 0x1618-byte singleton, so a static search for stores to [reg+0x5E8] with reg derived from the object would identify the writer",
+    "that is the same technique that found the arm/disarm and the singleton creator, and it does not need a running client"
+  ],
+  "artifacts": {
+    "addresses": {
+      "state_fn": "0xBA0780",
+      "raw_state": "+0xC8",
+      "flag": "+0x644",
+      "gate_field": "+0x5E8"
+    },
+    "server_log": "runs/codex-r239-gs.jsonl"
+  }
+}

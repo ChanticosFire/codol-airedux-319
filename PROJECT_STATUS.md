@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [CORRECTION: [0x5E8] == 3 PRODUCES status 2; the client waits for it to leave 3]**
+> Measured: [sub+0xC8]=2, [sub+0x644]=0, [sub+0x5E8]=3, ui 5, net 10. Re-reading 0xBA0780: sete al + inc eax gives status 2 when [0x5E8]==3 and 1 otherwise. Round 252's 'returns 1' was wrong.
+> So one field decides the screen: [sub+0x5E8], currently 3. Next: find what writes it, by static search for stores to [reg+0x5E8].
+> Evidence: [substate 3 produces wait](evidence/experiments/20261023-codex-substate-3-produces-wait.json).
 > **2026-10-23 [The connection state machine: status maps [netobj+0xC8] plus two flags]**
 > 0xBA0780: path A ([0x644]!=0) returns 2 for [0xC8] in {1,2}; path B ([0x644]==0) with [0xC8]==2 returns ([0x5E8]==3)+1, i.e. 1 if [0x5E8]==3 else 2. Status 2 selects ui_state 5.
 > So [0x5E8] == 3 is the most specific condition that would flip the screen - a deeper session sub-state that net_state 10 does not cover. Next: read [0x644], [0xC8], [0x5E8].
