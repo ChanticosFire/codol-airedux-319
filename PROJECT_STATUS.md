@@ -18139,3 +18139,7 @@ lobby          = 0x37E19850
 > **2026-10-26 03:30–04:00【两个 exe 公钥位置：原版 0x698958、离线壳 0x9AC958，同一把密钥（sha256 9ac28dd6）】**
 >
 > 定位：`codoMP_client_shipRetail.exe` 公钥在 0x698958；`codol1649370-offline.exe` 在 0x9AC958；两者 DER 相同。launch 用离线壳 → 实测必须改 0x9AC958（全局共享，需备份）。→ 下一步写 `patch_exe_pubkey.py`（偏移可配/不校验指纹/幂等）+ 备份 + 客户端实测。
+
+> **2026-10-26 04:00–04:30【离线壳公钥已替换（0x9AC958，备份 exe.orig-backup）；副作用：原版 ff 会验签失败，需成对重签】**
+>
+> `patch_exe_pubkey.py`：备份 + 替换 270 字节公钥（old 9ac28dd6 → new 0d40328d），校验一致。⚠️ 换公钥后原版 ff 的零售签名必然失败 → 必须同时把 overlay 里的 ff 换成自签版（const-resigned.ff 已生成）。→ 下一步：替换 overlay const.ff + 启动实测；实验后必须 --restore。

@@ -4229,3 +4229,37 @@ if _sha(public_der) != SIGNING_PUBLIC_SHA256:
 1. 写 `tools/patch_exe_pubkey.py`（偏移可配、不校验指纹、幂等）；
 2. 备份离线壳 → 换公钥 → 用 `--image` 指向改后副本做客户端实测；
 3. 若客户端接受自签 ff，路线 A 打通。
+
+## 126. 2026-10-26 04:00–04:30：**离线壳公钥已替换**（备份已存）
+
+### 126.1 工具与执行
+
+`tools/patch_exe_pubkey.py`：
+
+```
+python tools/patch_exe_pubkey.py --exe <shell exe> --pub runs/ff-edit/self.pem.pub
+  backup -> codol1649370-offline.exe.orig-backup
+  patched ... at 0x9ac958  old_sha=9ac28dd61aa9c92a  new_sha=0d40328dc9a1bc8d
+```
+
+校验：`0x9AC958` 处 270 字节已与 `self.pem.pub` 完全一致（`0d40328d…`）。
+
+### 126.2 ⚠️ 关键副作用
+
+换公钥后，**原版 ff 的零售签名会验签失败**（客户端用新公钥验旧签名）。
+所以必须**成对**：
+
+| 组件 | 状态 |
+|---|---|
+| exe 公钥 | ✅ 已换为自建 |
+| overlay 里的 ff | ❌ **仍是原版**（零售签名）→ 会报"磁盘读取错误" |
+
+→ 下一步必须**同时**把 overlay 里要用的 ff 换成自签版本。
+
+### 126.3 下一步
+
+1. 重签 `mp_crash_tropical_const.ff`（已生成 `const-resigned.ff`）；
+2. 备份并替换 overlay 里的原件；
+3. 启动客户端，观察是否报"磁盘读取错误"；
+4. 若通过，说明**信任根替换成功**，再谈改内容（写入 88 个武器定义）。
+5. 实验结束后必须 `--restore` 恢复 exe 与 ff（否则所有原版 ff 都会验证失败）。
