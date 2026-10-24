@@ -3036,3 +3036,41 @@ mp_weapon_usa_sticky_grenade_lod0
 2. 对照 demo 的 1224 个定义，找出服务端路径缺的 88 个；
 3. 用 `build_native_gamestate` 把这些武器 configstring 补进 gamestate（或直接构造
    `d <idx> <weapon>` 命令序列下发）。
+
+## 94. 2026-10-25 12:00–12:30：common_mp.ff 的武器字符串统计与 asset 名定位受阻
+
+### 94.1 weapon 字符串统计
+
+从 `runs/ff-decoded/common`（77 MB zone 数据）提取：
+
+```
+unique 'weapon/...' + 'mp_weapon*' 字符串 = 228
+  weapon/... 前缀 = 219（多为 fx 特效，如 weapon/bowss/fx_wea_bowss_bj）
+  mp_weapon_* = 9（武器名，如 mp_weapon_usa_sticky_grenade_lod0）
+```
+
+而总 "weapon" 出现 1723 次（含非独立字符串）。
+
+### 94.2 asset 名不在数据开头
+
+尝试对每个 asset 取数据开头的可打印串作为名字：
+
+```
+weapon-like asset names = 0
+```
+
+→ 只有 type 30 的 props 类资产在开头内联名字（`props/copypaper_...`），
+武器类资产（type 11 的 3348 个）**不在开头内联名字**。
+
+### 94.3 结论
+
+- 武器定义（1224 个）在 `common_mp.ff` 里，但名字存储位置**还没定位**；
+- 可能在 zone 的 string table（`string_count` 为 0，说明该 zone 没有独立 string table），
+  或在 asset 结构内部的其它偏移。
+
+### 下一步
+
+1. 读 `codol_rebuild/resources/fastfile.py` 的 `zone` 解析实现，看它是否解析 asset 名；
+2. 或对比 demo 播放时 `0x1988B50` 表里的字符串（运行时快照），直接拿到 1224 个名字，
+   不必从 ff 里逆推；
+3. 拿到 1224 个名字后，与 `common_mp.ff` 的 1723 个 weapon 字符串做差集，补进 gamestate。
