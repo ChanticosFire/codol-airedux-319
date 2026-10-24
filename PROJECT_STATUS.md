@@ -19572,3 +19572,79 @@ gs: stats = 0 / out = 10
 |---|---|
 | 46/47 | 写 0 被改回 / 持续压会崩 |
 | **48** | **反转 `cmp` 语义也无效（`flag` 跨实例取值 0/1 不稳定）⇒ 放弃与该标志博弈，改为在 `0x5C2388` 处把"比较失败"分支直接放行** |
+
+## 309. 2026-10-30 01:00–02:00：**查清 `forward` 报错的真实性质；四个补丁已就位但本次缺 gs**
+
+### 309.1 `forward` 报"找不到窗口类 CODO"的真相
+
+`r270`（Round 49 被中断的那次）留下：
+
+```
+r270-fwd.err   = "找不到窗口类 CODO"   （23:22:35）
+r270-launch.out                         （23:22:35，child_terminated）
+r270-gs.jsonl  = getchallenge×2 + connect×1，out: fragment×7   （最后 23:22:36）
+```
+
+**`.err` 与 `launch.out` 同一秒更新** ⇒ **客户端先崩溃、窗口随之销毁**，
+`forward` 之后才去 `FindWindowW("CODO")` 并失败。
+
+**结论：`forward` 的报错是"客户端已死"的结果，不是它自己找不到窗口。**
+
+### 309.2 窗口类名与出现时机（已实测）
+
+启动客户端后枚举其全部窗口：
+
+```
+CODO|使命召唤online                        ← 主窗口
+CoD Splash Screen|使命召唤online Multiplayer
+IME|Default IME
+MSCTFIME UI|MSCTFIME UI
+```
+
+主窗口 `CODO` 在 **t+2.0 s** 即存在（`hwnd=415763394`），
+所以 `forward` 的窗口依赖本身没有问题。
+
+### 309.3 四个补丁均已就位（本轮全部 match=True）
+
+| 标签 | 地址 | 原字节 | 现字节 |
+|---|---|---|---|
+| bypass lookup-fail | `0x5C238A` | `0F 84 83 00 00 00` | `90×6` |
+| bypass `0x674740`-fail | `0x5C23AA` | `74 67` | `90 90` |
+| `net_state>=7` 门控 | `0x5C2303` | `0F 8C 0A 01 00 00` | `90×6` |
+| 序列号窗口 | `0x5C23FF` | `8D 90 00 FE FF FF` | `31 D2 90 90 90 90` |
+
+### 309.4 本次实验缺了 gs
+
+为省时间复用了 r271 的客户端，但 **r271 启动时没有启动 gameserver**：
+
+```
+forward: sent=4  received=0  injected=0
+gs log 未生成
+ParseServerMsg=0  mapLoader=0  gate=0  ui=0  net=0  table=1135  keys=全 0
+```
+
+`received=0` 是因为服务端不在，**补丁效果无法判定**。
+
+### 309.5 下一轮（完整重跑，勿再复用旧客户端）
+
+必须一次性起全套，顺序：
+
+```
+1. gs（--gamestate-map mp_crash_tropical --gamestate-gametype war）
+2. lsg（--allow-auth-tls，端口 28969）
+3. 客户端（--reuse-runtime r107flow --local-auth-lsg --loopback-tcp-guard）
+4. patch_retry_ms --ms 0
+5. drive_login_state_machine
+6. 四个补丁（0x5C238A / 0x5C23AA / 0x5C2303 / 0x5C23FF）
+7. 装 0x473A50 / 0x49E600 hook + fastfile 收集器
+8. **前台跑 forward**（能立即看到 sent/received/injected 与窗口错误）
+9. arm net_state=3
+10. 观察 stats / ParseServerMsg / gate / ff 列表
+```
+
+### 309.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 49 | 实验被中断 |
+| **50** | **查清 `forward` 的"找不到窗口"是客户端已崩溃的结果；主窗口 `CODO` 在 t+2s 即存在；四个补丁全部就位；但本次复用了无 gs 的旧客户端，无法验证** |
