@@ -18771,3 +18771,7 @@ lobby          = 0x37E19850
 > **2026-10-28 22:00–23:00【🎯 决定性证据：在 0x49ED76（sprintf("%s.ff") 之后）挂钩收集到 10 个 fastfile 名字：patch_localized_common_marketplace_lite / localized_common_marketplace_lite / patch_common_mp / common_mp / patch_localized_common_mp / localized_common_mp / patch_ui_mp / ui_mp / patch_localized_ui_mp / localized_ui_mp。mp_crash_tropical.ff 与 common_gametype_mp.ff 都不在其中 → 客户端加载完 marketplace_lite→common_mp→ui_mp 三族后彻底停住，与 Round15 的 [0x1C2B6CC]==0 使 0x484370 直接返回完全吻合，因果链闭环】**
 >
 > 下一步：①扫描 call 0x484370 找调用者、搜 mov [0x1C2B6CC],1 的指令模式 ②登录后立刻（forward 之前）写 [0x1C2B6CC]=1，用本轮收集器验证 count 是否从 10 增加、是否出现 common_gametype_mp.ff 与 mp_crash_tropical.ff。
+
+> **2026-10-28 23:00–24:00【🎯 定位地图加载真正调用点：0x5156BF（CL_SystemInfoChanged 内）→ 0x49E600（先写 [0x1C2B6CC]=1 再 call 0x484370 加载 gametype/地图族，后 call 0x49E160）。全镜像只有 2 处写该门控为 1、0 处写 0 → 实测 [0x1C2B6CC]=0 证明 0x49E600 从未执行。三个门控实测：[conn+0x100260]=0 通过、[0x76446A4]=0 通过、ebx 未知（!=0 即跳过）】** 
+>
+> 下一步：①反汇编 0x515400 之前找 ebx 来源 ②在 0x5156A1 装 hook 记录 ebx 实际值 ③若确认 ebx!=0，直接 patch 0x5156A1 的 jne 为 nop nop 强制进入加载，再用 Round21 的 fastfile 收集器验证 common_gametype_mp.ff / mp_crash_tropical.ff 是否出现。
