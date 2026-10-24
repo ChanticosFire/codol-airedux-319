@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T17:00:00+00:00",
+  "scope": "STRUCTURE FOUND: the entity modes are a PIPELINE - modes 3 and 4 accumulate values into stream scratch fields, and modes 1/8 commit them into the entity struct",
+  "the_classification": {
+    "modes_that_read_bits": [
+      1,
+      2,
+      3,
+      4,
+      8,
+      11,
+      12,
+      13
+    ],
+    "modes_that_only_copy": [
+      5,
+      6,
+      7,
+      9,
+      10
+    ]
+  },
+  "mode_3_and_4_are_accumulators": {
+    "mode 3 @0x6717A1": "reads 11 bits and stores them at [esi+0x24]",
+    "mode 4 @0x6717B5": "reads one -97 value and stores it at [esi+0x28]"
+  },
+  "mode_1_is_a_commit": {
+    "0x671890": "eax = [esi+0x24]",
+    "0x671893": "[edi+0x10] = eax          <- entity field at +0x10",
+    "0x671896": "ecx = [esi+0x28]",
+    "0x67189D": "[edi+8] = ecx            <- entity field at +8",
+    "0x6718A0": "read 2 bits",
+    "0x6718A5": "[edi+0x30] = eax         <- entity field at +0x30",
+    "0x6718A8": "cl = [0x7859559]          <- the entity-id width computed by the list parser",
+    "0x6718B7": "if cl != 0: read cl bits",
+    "0x6718C5": "eax = word [eax*2 + 0x7859358]   <- index into the entity id array",
+    "0x6718CD": "[edi+0x18] = eax         <- entity field at +0x18 (a reference to another entity)"
+  },
+  "mode_8_is_a_partial_commit": {
+    "0x6718D2": "copies [esi+0x24] -> [edi+0x10], [esi+0x28] -> [edi+8], reads 2 bits -> [edi+0x30]",
+    "difference_from_mode_1": "no [edi+0x18] write, i.e. no cross-entity reference"
+  },
+  "why_this_is_a_structural_insight": [
+    "the delta is NOT a field loop and NOT a single field - it is a SEQUENCE of mode-coded operations",
+    "modes 3 and 4 write into stream scratch fields (+0x24, +0x28)",
+    "modes 1 and 8 take those scratch values and write them into the entity struct at +0x10, +8, +0x30 and (mode 1 only) +0x18",
+    "so a real entity update looks like: [mode 3: set scratch A][mode 4: set scratch B][mode 1: commit A and B into the entity]",
+    "and that explains why single-mode bodies changed nothing visible: they set scratch values that were never committed"
+  ],
+  "the_concrete_target_now": [
+    "emit a three-operation delta: mode 3 (11-bit value), mode 4 (-97 value), mode 1 (commit)",
+    "then the entity struct at [edi+0x10], [+8] and [+0x30] receives real values",
+    "+0x10 and +8 are the first two fields of the 0x58-byte entity state, which is where a position would live"
+  ],
+  "artifacts": {
+    "table": "0x671B2C",
+    "server_log": "runs/codex-r223-gs.jsonl"
+  }
+}

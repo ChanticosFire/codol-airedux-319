@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Entity modes are a PIPELINE: 3/4 accumulate, 1/8 commit into the entity struct]**
+> Modes reading bits: 1,2,3,4,8,11,12,13. Mode 3 reads 11 bits into [esi+0x24]; mode 4 reads a -97 value into [esi+0x28]; mode 1 commits them to [edi+0x10] and [edi+8], reads 2 bits into [edi+0x30], and indexes the id array into [edi+0x18]. Mode 8 is the same commit without the cross-entity reference.
+> So a delta is a sequence: [mode3][mode4][mode1 commit]. That explains why single-mode bodies changed nothing.
+> Next: emit mode 3 + mode 4 + mode 1 and check that the entity struct receives real values at +0x10 and +8.
+> Evidence: [modes are a pipeline](evidence/experiments/20261023-codex-modes-are-a-pipeline.json).
 > **2026-10-23 [Mode jump table read: a mode selects a SINGLE field and its codec]**
 > 0x671B2C holds 13 handlers. Mode 3 reads 11 bits into [esi+0x24]; mode 4 reads one -97 value into [esi+0x28]; mode 5 is a no-op. So an entity delta is [mode selector][one field value], not a field-table loop - which explains why entity payload experiments never lined up.
 > Next: classify the remaining handlers by whether they write [edi+off] (entity) or [esi+off] (scratch); the [edi] ones can carry eType and origin.
