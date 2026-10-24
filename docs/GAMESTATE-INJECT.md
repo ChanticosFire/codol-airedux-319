@@ -5365,3 +5365,40 @@ hook_queue_processor patched = true
 1. 用 `--flags 1` 再试（patch 路径，可能会找 `patch_common_gametype_mp.ff` 并回退）；
 2. 检查崩溃地址（launch 的 `exit_va` 或 events）；
 3. 若确定是"资源依赖"，考虑把 `common_gametype_mp` 的依赖也一起注入（转到 asset 合并路线）。
+
+## 156. 2026-10-26 19:00–19:30：**flags=1 也崩，崩溃点定位到 0x7EF0DA（hook 返回后的第 5 字节）**
+
+### 156.1 结果
+
+```
+inject --flags 1 → written=true
+hook → patched=true
+8s: alive=False
+stop_reason = "unhandled_exception"
+崩溃地址 = 0x7EF0DA（异常 c0000005，tid 与 hook 相同）
+```
+
+### 156.2 崩溃点在 hook 的"重放区之后"
+
+```
+0x7EF0D0  55              push ebp        ← 被 hook 覆盖的 5 字节
+0x7EF0D1  8B EC           mov ebp,esp
+0x7EF0D3  83 EC 14        sub esp,0x14
+0x7EF0D6  A1 ...          mov eax,[0x849BA34]
+0x7EF0DB  3B 05 ...       cmp eax,[0x849BA30]   ← 崩溃在 0x7EF0DA（此指令内）
+```
+
+→ cave 执行完（`pushad` + `call 0x49F280` + `popad` + 重放 5 字节 + `jmp 0x7EF0D5`）后，
+原函数继续跑到 `0x7EF0DA` 就访问冲突。
+
+### 156.3 推断
+
+`popad` 已恢复全部寄存器与 `esp`，重放 5 字节也在**原栈**上进行，所以栈帧是对的。
+最可能的原因：`0x49F280` 内部**破坏了一个全局状态**（例如 `[0x849BA30]`/`[0x849BA34]`
+这对"帧计数器"，或 `0x49ED40` 失败后留下的错误状态），导致原函数的后续代码解引用失效。
+
+### 下一步
+
+1. 只在 `[0x239B11C] != 0` 时才调用 `0x49F280`（cave 里加判断），避免无谓地在每帧调用它；
+2. 或者干脆**不 hook 每帧函数**，改成 hook 一次（如 `0x77F8B8` Engine init returned 之后）；
+3. 若仍崩，说明 `0x49F280` 本身不适用于"非加载循环"上下文，需要换触发点。
