@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T20:00:00+00:00",
+  "scope": "KEY: the delta decoder handles exactly ONE mode operation per entity per snapshot, and mode 1 reads its three position components INLINE - so a single mode-1 delta positions an entity",
+  "the_exit_0x671a0d": [
+    "it loads a list head from [0x77D8218], walks it comparing [edi+0x18] (the entity id), and finally sets a bit in a bitset at [0x77D821C] using id>>3 and 1<<(id&7)",
+    "that is a 'mark this entity as changed' bookkeeping step, then it returns",
+    "so 0x671700 processes ONE mode operation and returns - it does not loop over further operations"
+  ],
+  "the_consequence_for_sequences": [
+    "modes 3 and 4 only set the stream scratch fields [+0x24] and [+0x28]; mode 1 and mode 8 read them",
+    "since each snapshot carries one operation, a mode-3-then-mode-1 sequence would have to be spread across TWO snapshots",
+    "but that is only needed for the fields at [edi+0x10] and [edi+8]"
+  ],
+  "why_mode_1_alone_is_enough_for_a_position": [
+    "the three position components are read INLINE by 0x6715D0, 0x6714D0 and 0x671550 from the bit stream, not from scratch",
+    "0x6715D0 reads gate, scale and a 5-bit value and produces a float",
+    "so mode 1, by itself, supplies everything needed to write [edi+0x24], [edi+0x2C] and [edi+0x28]",
+    "the scratch-based fields ([edi+0x10], [edi+8]) would be zero, but the entity would still have a real position"
+  ],
+  "the_body_to_build": {
+    "changed_bit": 0,
+    "mode_selector": "produce mode 1: the first bit at 1330 must be 1 (value+1 branch) with the two value bits = 0, giving mode = 1",
+    "mode_1_payload": "2 bits inline, then three component blocks each = gate(1) + scale(1) + value(5)",
+    "suggested_values": "component 1: gate 1, scale 1, value 20 (=> +100 units); components 2 and 3: gate 1, scale 0, value 0 (=> +0)"
+  },
+  "next": [
+    "emit exactly that body and probe the entity struct floats at +0x24, +0x28, +0x2C for entity 4048",
+    "that is the first time a deliberately chosen position should appear in the client's entity state"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x671A0D bitset marking",
+      "0x671890 mode 1 handler",
+      "0x6715D0 component 1"
+    ]
+  }
+}

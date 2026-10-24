@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [One mode op per delta; mode 1 reads its position components inline]**
+> 0x671A0D is bitset marking then return, so 0x671700 handles ONE operation. Modes 3/4 only fill scratch for [edi+0x10]/[edi+8], but the three position floats are read INLINE by 0x6715D0/0x6714D0/0x671550.
+> So a single mode-1 delta positions an entity. Next: emit mode 1 with 2 inline bits and three gate+scale+5-bit components, then probe [edi+0x24]/[+0x28]/[+0x2C].
+> Evidence: [one op per delta](evidence/experiments/20261023-codex-one-op-per-delta.json).
 > **2026-10-23 [Scale constant is 5.0: a position component is gate + scale + 5-bit value]**
 > Component = gate(1) + scale(1) + value(5), with 0xDB1118 = 5.0, so resolution is 1 or 5 units and the range per update is 0..31 or 0..155. Position is delta-coded, so the first update moves the entity up to 155 units from its stored value.
 > With mode 3 + mode 4 + mode 1 and three components, a positioned entity is fully expressible in bits the BitWriter already handles. Next: emit it with scale 1, value 20 and check +0x24/+0x28/+0x2C.
