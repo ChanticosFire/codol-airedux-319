@@ -7546,3 +7546,37 @@ forward events：
 1. 去掉 `--reliable-until-state 0` 试试；
 2. 或在 `forward` 启动后先 drain 一次清空旧包，再调 CONNECT_FN；
 3. 或改用 `--start-challenge`（另一条路径）。
+
+## 216. 2026-10-27 01:30–02:00：排除 `--reliable-until-state`；`ring_a` 有包但无 `out` 事件
+
+### 216.1 `--reliable-until-state` 只影响 inbound
+
+```python
+# 第 832-837 行（inbound 分支）
+if (not data.startswith(b"\xff\xff\xff\xff") and not fragment
+        and state_now < args.reliable_until_state):
+    events.append({"dir": "drop_snapshot", ...})   # 丢弃**收到的**快照
+```
+
+→ 它只丢弃**服务端发来的快照**，与客户端**发出的** connect 包无关。
+**`--reliable-until-state 0` 不是 connect 包丢失的原因。**
+
+### 216.2 `ring_a` 状态对比
+
+| 实验 | ring_a | events 里的 out |
+|---|---|---|
+| r176（成功） | read 1 / write 1 | **有 dir=out length=400** |
+| r181（失败） | read 5 / write 5 | **无 out 事件** |
+
+→ `drain_ring_a` **确实读走了 5 个包**，但它们**没有出现在 events 里**。
+
+### 216.3 可能原因
+
+- 这 5 个包可能是 keepalive（206 字节）而非 connect（400 字节）；
+- 若客户端**没发 connect 包**（`CONNECT_FN` 只设置了状态、没触发发包），
+  那 `ring_a` 里就只有 keepalive。
+
+### 下一步
+
+检查 `CONNECT_FN = 0x5BE730` 的真实作用（是否只设状态、不发包），
+以及 r176 成功时 connect 包是**谁**放进 ring_a 的。
