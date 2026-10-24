@@ -12271,3 +12271,74 @@ gs: stats lines = 0                  ← **stats 仍然没有**
 | 35 | 双 patch（含无条件跳）后 `stats` 出现，但客户端崩 |
 | 36 | 只打 `net_state>=7` 不崩，但 `stats` 也没出现 |
 | **37** | **温和放宽序列号阈值仍不足以让 `stats` 出现 → 瓶颈前移到 `Netchan_Process`（`0x674EB0`）的返回值** |
+
+## 298. 2026-10-29 13:00–14:00：**确认 `Netchan_Process` 的返回值语义，定位最佳观测点 `0x5C2388`**
+
+### 298.1 `0x674EB0` 的结尾
+
+```asm
+0x674F0E  call 0x674E10          ; 核心逻辑（返回 0 表示成功）
+0x674F13  mov ecx, [ebp-4]       ; 栈 cookie
+0x674F16  neg eax
+0x674F18  sbb eax, eax
+0x674F1A  xor ecx, ebp
+0x674F1C  inc eax                ; eax = (原始 eax == 0) ? 1 : 0
+0x674F1D  call 0xC3C20F          ; __security_check_cookie
+0x674F22  mov esp, ebp
+0x674F24  pop ebp
+0x674F25  ret
+```
+
+所以 **`0x674EB0` 返回 1 = 成功、0 = 失败**（内部 `0x674E10` 以 0 表示成功，
+这里用 `neg/sbb/inc` 把它布尔化反转）。
+
+### 298.2 因此 `0x5C2388` 是最佳观测点
+
+```asm
+0x5C2380  call 0x674EB0
+0x5C2388  test eax, eax          ; ← **EAX 就是 Netchan_Process 的返回值**
+0x5C238A  je 0x5C2413            ; 返回 0 → 直接 return false
+```
+
+在 `0x5C2388` 处读 `EAX` 即可判定"解包成功/失败"，不必去 hook `ret`
+（`0x674F22` 附近只有 4 字节有效指令，紧跟 `int3`，直接 hook 会把 `int3` 也偷走，
+replay 时触发断点）。
+
+### 298.3 需要给 `hook_any` 增加 EAX 记录
+
+现有槽位：
+
+```
+slot+0x00  count
+slot+0x04  ret
+slot+0x08  arg0
+slot+0x0C  arg1
+slot+0x10  ecx
+slot+0x40  capture
+```
+
+`pushad` 之后各寄存器的位置（已实测）：
+
+```
+[esp+0x00]=EDI [esp+0x04]=ESI [esp+0x08]=EBP [esp+0x0C]=ESP(原)
+[esp+0x10]=EBX [esp+0x14]=EDX [esp+0x18]=ECX [esp+0x1C]=EAX
+[esp+0x20]=返回地址 [esp+0x24]=参数0
+```
+
+所以再加一条 `mov eax,[esp+0x1C]` → 写入 `slot+0x14`（EAX 槽）即可。
+
+### 298.4 下一轮执行计划
+
+1. 扩展 `hook_any_1649370.py`：新增 `slot+0x14` 记录 EAX，并在报告里输出 `"eax"`；
+2. hook `0x5C2388`，跑完整握手（打上 `0x5C2303` 与 `0x5C23FF` 两个已验证不崩的补丁）；
+3. 读 `0x5C2388` 的 `count` 与 `eax`：
+   - `count == 0` → 连 `Netchan_Process` 都没调用（长度前置条件把它挡了）；
+   - `count > 0 且 eax == 0` → **netchan 解包失败**，需要进 `0x674E10` 查失败原因；
+   - `count > 0 且 eax == 1` → 解包成功，问题在后面（序列号窗口或解析器）。
+
+### 298.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 37 | 温和阈值 patch 不足，瓶颈前移到 `Netchan_Process` |
+| **38** | **确认 `0x674EB0` 返回 1=成功/0=失败；最佳观测点 `0x5C2388`（EAX 即返回值）；`hook_any` 需补 EAX 记录（`[esp+0x1C]`）** |
