@@ -10717,3 +10717,90 @@ state: ui=5  net=0  table=1135
 | 11 | 无错误卡在 CA_LOADING |
 | 12 | Com_LoadFastfiles 被调用（请求 5 个 ff） |
 | **13** | **14 次 FS_LoadFastfile 全是 UI 层，地图 ff 从未被请求 → 问题收敛到"地图层加载未发起"** |
+
+## 276. 2026-10-28 15:00–16:00：**🎯 找到地图层加载函数 `0x484C10` 及其两个门控 —— 两个门控都是关闭的**
+
+### 276.1 函数全文（`ecx` 传入 fastfile 名字）
+
+```asm
+0x484C10  push ebp / mov ebp,esp / sub esp,0x10c
+0x484C23  eax = [0x81A9774]
+0x484C28  cmp dword ptr [eax+0xC], 0
+0x484C2C  push esi
+0x484C2D  mov  esi, ecx                ; ← **名字是 ecx 传入的（不是栈参数）**
+0x484C2F  je   0x484CBA                ; 门控 1 失败 → 走另一条路
+0x484C35  ecx = [0x7795818]
+0x484C3B  push 0
+0x484C3D  push ecx
+0x484C3E  call dword ptr [0xCA8168]    ; WaitForSingleObject([0x7795818], 0)
+0x484C44  test eax,eax
+0x484C46  jne  0x484CBA                ; 门控 2 失败 → 走另一条路
+0x484C48  push esi
+0x484C49  push 0xDB617C                ; "%s.ff"
+0x484C4E  call 0x774980                ; sprintf
+0x484C6C  call 0x4F4630                ; **真正的同步加载**
+0x484C9D  cmp eax, -1 / je 0x484C7E    ; -1 → 返回 0（失败）
+0x484CA3  call 0x65ABC0                ; 成功后续
+
+0x484CBA  mov ecx, esi                 ; ← 两条门控都跳到这里
+0x484CBC  call 0x4A02F0                ; **另一条加载路径**
+0x484CC1  ... ret
+```
+
+### 276.2 两个门控的实测值（关键）
+
+```
+gate1  [0x81A9774]   = 0x80F9E7C
+       [obj + 0xC]   = 0          ← **门控 1 不通过**，je 直接跳到 0x484CBA
+gate2  [0x7795818]   = 0          ← **事件句柄是空指针**
+```
+
+因此每次进入 `0x484C10` 都会：
+1. 在 `0x484C2F` 因 `[obj+0xC] == 0` 跳到 `0x484CBA`；
+2. 即使不跳，`0x484C3E` 的 `WaitForSingleObject(NULL,0)` 也必然失败，
+   `0x484C46` 再跳到 `0x484CBA`。
+
+→ **同步加载路径（`0x4F4630`）永远走不到。**
+
+### 276.3 但这不等于"没有加载" —— 另一条路是 `0x4A02F0`
+
+`0x484CBA` 并不是"直接返回"，而是：
+
+```asm
+0x484CBA  mov ecx, esi
+0x484CBC  call 0x4A02F0
+```
+
+**`0x4A02F0` 才是两条门控共同汇入的加载实现。**
+
+所以完整图景变成：
+
+```
+Com_LoadFastfiles (0x49E160)          只加载 UI 层 5 件套
+   └─ FS_LoadFastfile (0x49ED40)      实测被调用 14 次，全是 UI 名字
+                                   （Round 13 结论）
+
+Com_LoadMapFastfile (0x484C10)        地图层，ecx = 名字
+   ├─ 门控1 [0x81A9774]+0xC == 0  → 跳过同步路径
+   ├─ 门控2 [0x7795818] == NULL   → 跳过同步路径
+   └─ 0x484CBA → 0x4A02F0         ← 实际走的路径（尚未观测）
+```
+
+### 276.4 下一步（两条并行）
+
+1. **改造 `hook_any_1649370.py` 记录 `ecx`**：
+   `pushad` 之后 `[esp+4]` 就是调用者的 ECX，
+   这样才拿得到 `0x484C10` 的 fastfile 名字（它是 `ecx` 传参，不是栈参数）；
+2. **同时 hook `0x484C10` 和 `0x4A02F0`**，判定：
+   - 若 `0x484C10` **未被调用** → 说明连地图层入口都没进，问题在更上游；
+   - 若被调用且都走 `0x4A02F0` → 直接研究 `0x4A02F0` 的行为（它可能就是
+     排队/异步加载，需要看它是否真的打开了 `mp_crash_tropical.ff`）。
+
+### 276.5 里程碑
+
+| Round | 结论演进 |
+|---|---|
+| 11 | 无错误卡在 CA_LOADING |
+| 12 | `Com_LoadFastfiles` 被调用（5 个 UI ff） |
+| 13 | 14 次 `FS_LoadFastfile` 全是 UI 层 |
+| **14** | **找到地图层入口 `0x484C10`；两个门控实测均为关闭（`[obj+0xC]=0`、`[0x7795818]=NULL`），同步路径不可达，实际被导向 `0x4A02F0`** |
