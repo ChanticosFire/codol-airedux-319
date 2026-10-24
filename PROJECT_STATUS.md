@@ -18587,3 +18587,7 @@ lobby          = 0x37E19850
 > **2026-10-27 12:00–12:30【🎯 确定性结论：0x5BE730 从未被调用（0x5BE740 入口哨兵 0xCAFEBABE 未写）→ 问题在 ring_bridge.invoke_sequence（应用层），不在客户端；[0xE54BC48] 被别处写成 0xE08C4C28】**
 >
 > 实验：patch 0x5BE740 → cave 写哨兵 → forward 15s → 读回 0xE08C4C28（非哨兵）。→ 225 轮来首个"确定断点"：调用没到达客户端。疑 _thread_id("CODO") 找错线程 / SetThreadContext 静默失败。
+
+> **2026-10-27 12:30–13:00【_thread_id 用 FindWindowW("CODO")+GetWindowThreadProcessId；forward exit=0 说明窗口找到，但 0x5BE730 可能在主线程而非窗口消息线程 → 挂起错线程导致哨兵永不触发】**
+>
+> 源码：`hwnd=FindWindowW("CODO",None)`，找不到 raise SystemExit，返回 `GetWindowThreadProcessId`。→ 下一步对比窗口线程 tid 与主线程 tid，若不同则改 invoke_sequence 用主线程。

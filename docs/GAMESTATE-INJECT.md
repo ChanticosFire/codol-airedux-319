@@ -8320,3 +8320,42 @@ ring_bridge.invoke_sequence
 ### 下一步
 
 检查 `_thread_id` 的窗口查找逻辑，确认它返回的 tid 是否正确（对比 `tasklist` / `EnumWindows`）。
+
+## 238. 2026-10-27 12:30–13:00：**`_thread_id` 实现 + 窗口线程 ≠ 主线程的嫌疑**
+
+### 238.1 `_thread_id` 源码
+
+```python
+def _thread_id(self, window: str) -> int:
+    hwnd = user32.FindWindowW(window, None)
+    if not hwnd:
+        raise SystemExit(f"找不到窗口 {window}")
+    return user32.GetWindowThreadProcessId(hwnd, None)
+```
+
+- `FindWindowW("CODO", None)` 找**窗口类名**为 `CODO` 的窗口；
+- 找不到就 **`raise SystemExit`**（会终止 forward，`exit != 0`）；
+- 返回该窗口**所属线程 ID**。
+
+### 238.2 关键推论
+
+`forward` 的 `exit=0`（无报错）→ **`FindWindowW("CODO")` 成功找到了窗口**；
+所以 `_thread_id` 返回了**有效的 tid**。
+
+**但**：`GetWindowThreadProcessId` 返回的是"**窗口消息线程**"，
+而 `0x5BE730`（连接函数）很可能跑在**游戏主线程**（不是窗口消息线程）。
+
+→ **挂起窗口线程、改它的 EIP，但 `0x5BE730` 在另一个线程上** → 哨兵永不触发。
+
+### 238.3 这与观察一致
+
+- `forward` 无报错（窗口找到、线程挂起成功）；
+- 但 `0x5BE730` 从未执行（哨兵未写）；
+- `[0xE54BC48]` 仍被主线程写（`0xE08C4C28`）。
+
+### 下一步
+
+对比"窗口线程 tid"与"主线程 tid"：
+- 用 `GetWindowThreadProcessId` 取窗口线程；
+- 用 `CreateToolhelp32Snapshot`/`Process.Threads` 取所有线程，找启动线程（tid 最小/最早）。
+- 若不同 → 应改 `invoke_sequence` 使用**主线程**。
