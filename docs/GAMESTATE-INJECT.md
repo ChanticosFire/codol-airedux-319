@@ -294,3 +294,26 @@ key 假设可以排除。
 `state=6` 时 gamestate 包已注入（102 B、seq 1、长度前缀正确），但 `0x472D80` 从未被调用。
 下一步应直接观测**网络接收循环**：在 `0x4F8D70`（pump）内或 ring 消费点下断点，
 确认 state 6 时客户端是否把 ring_b 的包交给 netchan 层。
+
+## 14. 2026-10-24 13:18–13:24：challenge 对齐把状态推到 5
+
+用新加的 `--challenge-override 1469978033`（即 `inject_client_gamestate` 注入的 cookie）重跑：
+
+| 观测 | 结果 |
+|---|---|
+| gs 日志 | `challenge_override 1469978033`、`connect`（`effective_challenge=1469978033`） |
+| 客户端 | `state` **4→5**（此前同流程只到 4），`ui=0` |
+| gs 发出 | gamestate（seq 1）+ 20 个 snapshot，dump 25 条均已注入 |
+| 20 秒后 | `state` 复位 0（超时） |
+
+→ **XOR key 对齐确实有意义**（4→5），但 `state 5` 仍不是"gamestate 已接受"；
+5 档稳定 20 秒后超时，说明客户端在 5 档等的是另一条消息/事件，而不是我们发的 gamestate。
+
+注意：上一轮"key 不一致"时反而到过 6，说明 **5/6 不是简单的线性进度**，
+6 很可能是"包被接收但校验失败"的错误态（乱序/重复/解密错误都可能导致），不能把 6 当成功。
+
+### 下一步
+
+1. 读 `0x5C1678`（challengeResponse 分支）之后的状态写入，确认 5→? 的条件；
+2. 在 `0x472D80` 下断点，配合 `--challenge-override` 再跑一次，确认 gamestate 是否终于进入解析器；
+3. 若仍不进，改在 ring 消费点（`0x4F8D70` 内部）下断点，看包交给谁。
