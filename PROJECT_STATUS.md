@@ -18207,3 +18207,7 @@ lobby          = 0x37E19850
 > **2026-10-26 12:00–12:30【找到注入未生效真因：runtime 复用了旧 ff（77,529,365 原版），注入版 76,038,421 从未被加载】**
 >
 > 先排除类型问题：demo 增量 130 → gametype 里 21 个 asset 类型 {44:3,41:4,28:6,11:8}，与注入的 21 个类型**完全一致**。真因：`--reuse-runtime` 复用旧 runtime，`runtime\...\common_mp.ff`=77,529,365（原版）、trace 里 common_mp 请求=0。→ 下一步把注入版 + 其余 23 个自签 ff 复制进 runtime 再启动实测。
+
+> **2026-10-26 12:30–13:00【注入版真正加载后 fatal dialog：asset 内部有跨 zone 引用，不能直接搬运】**
+>
+> 同步 24 个 ff 进 runtime（common_mp=76,038,421 注入版）→ 启动 `stop_reason="fatal_dialog"`、客户端退出。→ 之前"表 1135"是 runtime 旧 ff；真加载注入版则崩，说明 21 个 asset 内部含 asset 索引/zone 偏移引用，指向 gametype 里其它 asset，搬进 common_mp 后索引无效。已恢复 runtime 原版 ff。→ 下一步：递归分析 asset 引用依赖树，或改策略（让客户端加载 common_gametype_mp，现已能改 exe 代码）。

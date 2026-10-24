@@ -4872,3 +4872,39 @@ resources\...\common_mp.ff = 76,038,421  ← 我们注入的版本
 1. 把注入版 `common_mp.ff` 复制进 **runtime 目录**（覆盖原版）；
 2. 其余 23 个 ff 也要复制进 runtime（否则 runtime 里还是原版，验签会对不上自建公钥）；
 3. 重新启动 + run_match，观察表是否 1135 → 1156/1224。
+
+## 143. 2026-10-26 12:30–13:00：**注入版真正加载后 fatal dialog —— asset 有跨 zone 引用**
+
+### 143.1 把注入版同步进 runtime 后启动
+
+```
+runtime 同步 24 个 ff，common_mp.ff = 76,038,421（注入版）✅
+启动结果：
+  pid = （空）
+  stop_reason = "fatal_dialog"
+  child_terminated = true
+```
+
+→ 注入版**确实被加载了**（这次 runtime 里是注入版），但**加载失败**（致命弹窗）。
+
+### 143.2 结论
+
+- 之前"表 1135 不变"是因为 runtime 用旧 ff；
+- 真正加载注入版 → **fatal dialog**；
+- 说明搬运的 21 个 asset **不能被直接搬到另一个 zone**：
+  虽然目录里 `pointer == 0xFFFFFFFF`（无外部指针），但 asset **内部数据**可能包含
+  "asset 索引"或"zone 内偏移"引用，指向 `common_gametype_mp` 里的其它 asset，
+  在 `common_mp` 里这些索引不存在 → 加载崩溃。
+
+### 143.3 已恢复
+
+runtime 的 24 个 ff 已从 `runs/ff-edit/overlay-backup` 恢复为原版
+（`common_mp.ff` = 77,529,365 原版），环境回到可用状态。
+
+### 下一步（两条）
+
+1. **分析 asset 内部引用结构**：找出这 21 个 asset 里指向其它 asset 的字段（可能是相对索引），
+   把引用目标也一起搬（递归依赖树）；
+2. **换策略**：不搬 asset，而是让客户端**加载 `common_gametype_mp.ff`**——
+   回到"谁触发 gametype 包加载"的问题（§110 的 `0x49E540`/`0x49E160`），
+   但这次有了"改 exe 代码"的能力（信任根已打通，可以改代码段并重签 ff）。
