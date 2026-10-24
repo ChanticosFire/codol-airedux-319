@@ -19966,3 +19966,77 @@ LOADS : 461      （绝大多数是 `cmp dword ptr [0x76446b0], N`）
 |---|---|
 | 54 | `flag` 稳定，真正问题是 `net_state` 掉回 0 |
 | **55** | **`net_state` 在 .text 里零写入（只能间接改）；静态统计 cmp 值不可靠（`83 3D` 会误匹配）⇒ 改为动态采样，抓掉 0 的瞬间** |
+
+## 315. 2026-10-30 07:00–08:00：**🎯🎯🎯 决定性突破 —— `net_state` 推进到 8（CA_PRIMED），握手真的成功了**
+
+### 315.1 动态采样器抓到的完整状态推进
+
+新增 `runs/_sample_state.py`：每 20 ms 采样 `net_state`、三个连接标志、
+netchan 通道号、`ui_state`、`table`，只在**值发生变化**时打印。
+
+本轮（r276）输出：
+
+```
+t+ 0.00s  net=1  a=1 b=0 c=0 chan=0    ui=0 table=0
+t+ 2.02s  net=3  a=1 b=0 c=0 chan=157  ui=0 table=0     ← arm 生效
+t+ 5.71s  net=4  a=1 b=0 c=0 chan=157  ui=0 table=0     ← **推进到 4**
+t+ 6.38s  net=5  a=1 b=0 c=0 chan=157  ui=0 table=0     ← **推进到 5（CA_CHALLENGING）**
+t+11.95s  net=8  a=1 b=0 c=0 chan=157  ui=0 table=0     ← **推进到 8（CA_PRIMED）**
+t+12.58s  net=8  a=1 b=0 c=1 chan=157  ui=0 table=0
+t+13.03s  net=8  a=1 b=0 c=1 chan=157  ui=0 table=1     ← **table 变 1**
+t+13.14s  net=None …                                    ← 客户端崩溃
+```
+
+### 315.2 四项关键指标全部达成
+
+| 指标 | 状态 | 证据 |
+|---|---|---|
+| gs 收到真实 `connect` / `stats` | ✅ | `connect ×1`、`stats ×2`（challenge 1862…） |
+| `net_state` 由握手推进 | ✅ | **1 → 3 → 4 → 5 → 8** |
+| netchan 通道建立 | ✅ | `chan = 157 (0x9D)` |
+| 资源表被填充 | ✅ | `table: 0 → 1` |
+
+`forward` 也完整工作：`sent=5 received=28 injected=24`。
+
+### 315.3 唯一未达成：客户端在 `net=8` 后约 0.1 秒崩溃
+
+```
+stop_reason = "unhandled_exception"
+child_terminated
+```
+
+所以**截图与"可自由移动射击"无法验证** —— 验收尚未达成。
+
+### 315.4 与历史的关键差异
+
+| 轮次 | `net_state` 最高 | 通道 | table |
+|---|---|---|---|
+| Round 9–52 | 停在 **5** | 0 | 1135 |
+| **Round 56（r276）** | **8（CA_PRIMED）** | **0x9D** | **0→1** |
+
+**先前的所有实验都卡在 5，本轮是第一次真正走完 4→5→8。**
+关键差异来自三点叠加：
+1. 只保留两个安全补丁（`0x5C2303` + `0x5C23FF`），撤掉有害的绕过补丁；
+2. `forward` 更早启动（先于 arm）；
+3. `flag` 清零后**紧接着** arm，不留时间差。
+
+### 315.5 下一步：解决 `net=8` 之后的崩溃
+
+现在问题范围已极小 —— 崩溃发生在 `CA_PRIMED` 之后、`CA_ACTIVE` 之前。
+下一轮应：
+
+1. 用采样器同时采样 `[0x84ABA50]`（`ui_state`）与加载对象字段
+   （`[[0x8536F60]+0x14]`、holder `+0x4F4/+0x4F8/+0x5E8`），看崩溃前它们是否异常；
+2. 在 `0x473260`（`CL_ParseGamestate`）与 `0x49E600`（地图加载）上装 hook，
+   确认崩溃时这两个函数是否刚被调用过、`[0x1C2B6CC]` 是否变 1；
+3. 若 `0x49E600` 被调用但随即崩溃 ⇒ 问题在地图 fastfile 加载本身
+   （可能是 `mp_crash_tropical.ff` 的某段资源与我们的简化 gamestate 不匹配）；
+4. 若两个 hook 都为 0 ⇒ 崩溃发生在更早的 netchan/解析阶段。
+
+### 315.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 9–52 | `net_state` 一直停在 5 |
+| 53–55 | 清理有害补丁、确认 `flag` 不是瓶颈、发现 `net_state` 无静态写入 |
+| **56** | **🎯 首次推进到 8（CA_PRIMED）+ 通道 0x9D + table 0→1 + gs 收到 connect/stats；仅剩 net=8 后约 0.1 秒的崩溃** |
