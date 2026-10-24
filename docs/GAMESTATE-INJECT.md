@@ -3846,3 +3846,38 @@ writer.raw(b"\x05")                    # close initial state
 1. 写**位级解析器**，从 demo gamestate 精确读出 alias count 与 recipe count（预期非 0）；
 2. 再看每一项的字段格式（可能 `{str alias; u16 weapon_count; u16 alias_count; str refs[]}`）；
 3. 若能构造，就直接把 88 个 gametype 武器写进 alias 表 —— 这是**不依赖加载 fastfile** 的补注册路径。
+
+## 115. 2026-10-25 22:30–23:00：**demo gamestate 的 alias/recipe 表都是 0 —— 88 个武器确实来自 fastfile**
+
+### 115.1 解析器
+
+`tools/parse_gamestate_tables.py`：按 `svc_configstrings(0x04) + u16 count`、
+每项 `1 位连续标志 [14 位索引] + NUL 字符串`、尾部 `10 位 alias + 11 位 recipe` 解析。
+
+### 115.2 demo gamestate（6407）解析结果
+
+```
+svc@ 0x1f   configstring count = 291
+parsed 291 entries, last index 5453, end byte 6395
+alias count = 0   recipe count = 0   at byte 6397   next byte 05
+```
+
+→ **demo 的 gamestate 里两个武器表都是空的（0/0）**。
+
+### 115.3 结论（重要）
+
+- demo 播放注册的 **1266 个武器不是通过 gamestate 的 alias/recipe 表**；
+- 它们来自 **fastfile asset**（`common_gametype_mp.ff` 等被 LoadDemo 加载）；
+- 因此"补 configstring / 补 gamestate 武器表"**都无法补这 88 个**；
+- 之前 §97 的"configstring 可补 42 个复合"也只对 `** ...` 复合串成立，对 asset 名不成立。
+
+### 115.4 解析器的小 bug
+
+第一条 configstring 值多了一个字节（`\xaf` 前缀），说明首个条目的位偏移有 1 字节误差
+（`svc@0x1f` 可能不是 configstring 块起点，而是前一个字段）。不影响"表为 0"的结论。
+
+### 下一步（仅剩两条）
+
+1. **改 fastfile + 重签**（参考文档方案）：把 88 个武器定义写进 `common_mp.ff` 或
+   `common_gametype_mp.ff`，用自建密钥重签；
+2. **hook 主线程**：在主循环函数里插入 `call 0x49E160`（风险高）。
