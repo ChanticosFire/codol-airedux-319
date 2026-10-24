@@ -7111,3 +7111,40 @@ lsg: task_request(service=71 task=4) → candidate_task_reply → raw_session_en
 1. 检查 exe 的 sha256 是否与原始一致；
 2. 检查 runtime 的 ff 是否完整（24 个原始文件）；
 3. 若环境被污染，先恢复到已知良好状态再继续。
+
+## 204. 2026-10-27 19:30–20:00：**🎯 环境干净 + `common_gametype_mp.ff` 存在 → 问题是"客户端不请求它"**
+
+### 204.1 环境校验（全部正常）
+
+```
+exe sha256 = 55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd   （原始）
+exe 备份：codol1649370-offline.exe.orig-backup（11,075,584 B）
+runtime ff：24 个，共 244 MB（与 overlay-backup 完全一致）
+overlay-backup：24 个文件，244 MB
+```
+
+### 204.2 关键：`common_gametype_mp.ff` 就在 runtime 里
+
+```
+common_gametype_mp.ff   34,693,397 B
+localized_common_gametype_mp.ff  41,237 B
+```
+
+**文件存在，但服务端路径从不请求它**（r146 trace：15 个请求全是 `patch_*`，没有 gametype）。
+
+### 204.3 对比 demo 路径
+
+| 路径 | 请求的包 |
+|---|---|
+| demo 播放 | `patch_common_gametype_mp.ff` + `patch_mp_crash_tropical.ff`（同一批次，~1ms 内） |
+| 服务端连接 | `patch_ui_mp`、`patch_common_mp`、`patch_code_*` … **没有 gametype** |
+
+→ **两条路径的"加载包列表"不同**，差异不在文件、而在**加载请求的来源**。
+
+### 204.4 下一步（方向明确）
+
+找"决定加载哪些包"的代码：
+- demo 路径由 `CL_PlayDemo` 内部构造列表（`0x49E540` 已分析过）；
+- 服务端路径由 **gamestate / configstring** 决定（某个字段指定要加载的包名）。
+
+→ 下一个目标：**在 gamestate 里加一条"要求加载 common_gametype_mp"的信息**。

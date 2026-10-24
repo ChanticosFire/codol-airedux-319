@@ -18451,3 +18451,7 @@ lobby          = 0x37E19850
 > **2026-10-27 19:00–19:30【新问题：客户端在 login 期间就崩（unhandled_exception、table=0），而之前多次 login 成功（table=1135）→ 环境疑似被污染；lsg 显示 task_request 后 peer_closed】**
 >
 > r172：round0 table=0，round1-3 读不到（客户端退出）；launch `stop_reason=unhandled_exception`、`engine_init_returned=true`；lsg `task_request(svc71/task4)` → `candidate_task_reply` → `raw_session_end: peer_closed`。→ 需检查 exe sha256 与 runtime ff 完整性，恢复已知良好状态。
+
+> **2026-10-27 19:30–20:00【🎯 环境干净（exe sha256 原始 55f067ac…、24 个 ff 共 244MB 与备份一致）；common_gametype_mp.ff 就在 runtime（34.7MB）但服务端路径从不请求它 → 问题不是文件缺失，而是"加载包列表"不同（demo 请求 patch_common_gametype_mp，服务端不请求）】**
+>
+> 校验：exe sha256=55f067ac24e7d5ea…（原始）、ff 24 个 244MB、overlay-backup 一致。runtime 内有 common_gametype_mp.ff(34,693,397B) 与 localized 版(41,237B)；r146 trace 15 个请求全 patch_*、无 gametype。→ 下一步找"决定加载包列表"的来源（gamestate/configstring 某字段）。
