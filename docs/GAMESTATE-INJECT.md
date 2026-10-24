@@ -2945,3 +2945,43 @@ patch_mp_crash_tropical.ff  caller=0x776F80
 
 参考文档已归档并纳入方案库；当前主线仍是"让服务端路径触发 fastfile 加载"
 （§88–§90），该方案作为**备选路线**记录。
+
+## 92. 2026-10-25 11:10–11:30：Fastfile 解码器接口确认；当前 exe 的 RSA 指纹与 const.ff 不匹配
+
+### 92.1 解码工具位置与接口
+
+- 工具在 `E:\GAME\COD\1649370\src\codol_rebuild\resources\fastfile.py`（**不在 319 项目目录下**）；
+- `inspect_fastfile(path) -> dict`：可用，实测 `mp_crash_tropical_const.ff`：
+
+```
+magic  IWff0100
+version 461
+signed True
+body_size 90112
+body_blocks 11
+sha256 f7f138eb...
+```
+
+- `decode_fastfile(path, client_exe, output=None, *, max_zone_size=...) -> dict`：需要 **client_exe**
+  参数（用来取 RSA 公钥指纹）。
+
+### 92.2 解码失败原因
+
+```
+FastfileError: rsa_material 客户端版本的 RSA 公钥指纹不匹配
+```
+
+→ 当前 `bin\v1649370\codol1649370-offline.exe` 的公钥指纹与
+`mp_crash_tropical_const.ff`（461 签名）**不匹配**。可能原因：
+
+1. 该 exe 是**离线壳**（启动链打过补丁，公钥被替换过）；
+2. ff 来自**另一个构建**（461 但不同 build 的签名密钥）；
+3. `_load_keys` 读取的指纹位置随版本变化。
+
+### 下一步
+
+1. 找**未打补丁的原始 exe**（`E:\GAME\COD\Original Client` 下）再试 `decode_fastfile`；
+2. 若仍不匹配，用 `inspect_fastfile` 的结构信息 + 手工解析（参考《Fastfile校验绕过思路》的
+   IWff0100 布局：明文前缀 → RSA 密文 → AES 头 → 段表 → 数据块）；
+3. 解码成功后，定位 zone 目录中的 weapon 资产，评估"注入 122 个武器定义"的可行性
+   （备选路线 §91）。

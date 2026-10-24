@@ -18003,3 +18003,7 @@ lobby          = 0x37E19850
 > **2026-10-25 10:50–11:10【归档参考《Fastfile校验绕过思路》：IWff0100 结构、验签顺序、替换信任根；与当前 181 问题不同域，作为备选路线】**
 >
 > 要点：明文前缀+RSA密文+AES头+段表+数据块；校验顺序含 RSA 验签（唯一失败点）；绕过=自建密钥覆盖 exe 270B DER 公钥+重签所有 .ff；注意硬链接/幂等/每局重打。结合点：181 不是验签问题；若走"改 fastfile 注入武器定义"路线才需要它（解码→改 weapon 区→重签→服务端加载）。当前主线仍是让服务端路径触发 fastfile 加载。
+
+> **2026-10-25 11:10–11:30【Fastfile 解码器：inspect 可用（461/11 块）；decode 需 client_exe 且当前 exe 指纹不匹配】**
+>
+> 工具在 `E:\GAME\COD\1649370\src\codol_rebuild\resources\fastfile.py`。`inspect_fastfile` 实测 const.ff：IWff0100/461/signed/body 90112/11 块。`decode_fastfile(path, client_exe)` 报 `rsa_material 客户端版本的 RSA 公钥指纹不匹配`——当前离线壳 exe 与 461 签名 ff 指纹不符（可能 exe 被补丁过或 ff 来自不同构建）。→ 下一步换原始 exe 或手工解析（按参考文档布局）。
