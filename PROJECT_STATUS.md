@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Entity payload: changed-bit at 1329 is 1, so the delta decoder never runs]**
+> 0x471E03 reads one changed flag: 1 -> read N bits and copy a 52-byte struct; 0 -> call 0x671700 (delta decoder, which starts with a variable-length MODE selector). Our body has bit 1329 = 1, so it takes the copy branch.
+> Next: clear bit 1329 so the delta decoder runs, and observe whether the client survives.
+> Evidence: [entity payload mode selector](evidence/experiments/20261023-codex-entity-payload-mode-selector.json).
 > **2026-10-23 [One 12-bit id read advances the cursor by 20 bits; the payload starts at 1329]**
 > EntReadDone and EntLoopDone both read bitpos 1329; before the read it was 1309, so an unaligned 12-bit read costs 20 bits because 0x66EC30 reads whole bytes and shifts.
 > So the per-entity payload begins at bit 1329 for this body (id 4048). Next: place a valid first payload field there and see whether the client survives.

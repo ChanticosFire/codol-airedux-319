@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T14:00:00+00:00",
+  "scope": "the per-entity payload: one changed-bit at 1329, which in our body is 1 - so the client takes the struct-copy branch instead of the delta decoder",
+  "the_payload_loop_0x471de3": {
+    "0x471DE3": "index derived from the frame clock; edi = &entityRing[i] with stride 0x34 (52 bytes)",
+    "0x471E03": "call 0x447190 -> READ 1 BIT (the per-entity changed flag)",
+    "0x471E0E": "if the bit is 1: read N bits (N = [ebp+8], the id width) and copy 13 dwords (52 bytes) into the entity ring slot",
+    "0x471E4A": "if the bit is 0: call 0x671700 - the per-entity DELTA decoder",
+    "0x471E59": "test eax,eax ; jne 0x471DDA - loop for the next entity"
+  },
+  "the_delta_decoder_0x671700": {
+    "0x67170A": "[ebp-4] = 3 - an initial MODE value",
+    "0x671714": "cmp eax,3 ; je 0x671722",
+    "0x671719": "cmp eax,4 ; jne 0x671B19",
+    "0x671722": "read 1 bit; if 1 -> read 2 bits, mode = value + 1",
+    "0x67173F": "read 1 bit; if 1 -> read 2 bits, mode = value + 5",
+    "0x67175B": "a third branch reads another bit",
+    "interpretation": "the delta payload begins with a variable-length selector that chooses a delta MODE"
+  },
+  "what_our_body_actually_has": {
+    "body": "runs/snapshot-ent2.bin",
+    "bits_1329_to_1350": "1111000001111111111110",
+    "bit_1329": 1,
+    "consequence": "the changed flag is 1, so the client reads N bits and copies a struct instead of decoding a delta - which is not what a fresh entity should do, and is a plausible cause of the exit"
+  },
+  "the_next_experiment": [
+    "clear bit 1329 to 0 so the changed flag is 0 and the delta decoder 0x671700 runs",
+    "then observe whether the client survives the snapshot and what mode the selector picks from the following bits"
+  ],
+  "artifacts": {
+    "addresses": [
+      "0x471DE3 payload loop",
+      "0x671700 delta decoder"
+    ]
+  }
+}
