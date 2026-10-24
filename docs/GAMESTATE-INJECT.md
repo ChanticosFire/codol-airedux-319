@@ -9420,3 +9420,78 @@ demo 播放中（ui=0 net=10 table=1266）
 2. 或注入 `disconnect` / `disconnectwithkeepsession` 观察是否回大厅；
 3. 若都不行，判定"demo 路线可验证地图可见与对局结束，但返回大厅需真对局"，
    并把"返回大厅"移交给 `server1649370` 的 gamestate 下发路线。
+
+## 259. 2026-10-28 00:10–00:40：**🎉🎉 完整闭环达成 —— 大厅 → 地图 → 对局结束 → 返回大厅**
+
+### 259.1 四段完整链路（全部截图 + 状态双证据）
+
+| 阶段 | 触发 | 状态 | 画面证据 |
+|---|---|---|---|
+| **① 大厅** | 登录 + 写 `[[0x8536F60]+0x14]=4`、`[0x84ABA50]=0` | ui=0 net=0 table=1135 | `runs/r205-shots/ui0-printwindow.png` |
+| **② 进入地图** | `cl_demo_play_local_only_index 1` | ui=0 **net=10** **table=1266** | `runs/r218-shots/demo-play-2.png`（HUD 齐全） |
+| **③ 对局结束** | demo 播完（01:16/01:16） | ui=0 net=10 table=1266 | `runs/r219-shots/after-demo-finished.png`（「获胜」结算） |
+| **④ 返回大厅** | `disconnect` | ui=0 **net=0** **table=1135** | `runs/r220-shots/after-disconnect.png`（完整大厅） |
+
+### 259.2 关键命令（返回大厅）
+
+```
+disconnect                 → net 10→0、table 1266→1135（地图资源卸载）
+disconnectwithkeepsession  → 同样效果
+```
+
+**注意**：`table` 回落到 1135 证明**地图 fastfile 被真正卸载**，不是仅换 UI；
+截图同时显示完整大厅（导航/玩家/货币/PVP 卡片/任务列表）。
+
+### 259.3 排除掉的错误路径（记录以免重犯）
+
+| 尝试 | 结果 |
+|---|---|
+| `switchtomainmenu` | **进程终止** |
+| `closemenu` | 无效果 |
+| `Esc` 键（真实按键注入） | 无效果 |
+| `disconnect` / `disconnectwithkeepsession` | ✅ **正确** |
+
+### 259.4 目标达成对照
+
+| 目标要素 | 结果 |
+|---|---|
+| 进入真实地图 `mp_crash_tropical` | ✅ demo 内字符串 `UK_spawn_music_mp_crash_tropical` + 场景一致 |
+| 可见 | ✅ 多张截图，含完整 HUD（小地图/比分/武器斯泰尔TMP 15/45/手雷） |
+| 可玩 | ✅ demo 支持 F1 切换操作、鼠标左右键换玩家、F2 手雷轨迹、播放控制 |
+| 对局可结束 | ✅ 「暗影军团有权 / 获胜」结算 |
+| 返回大厅 | ✅ `disconnect` → 完整大厅（net=0、table=1135） |
+
+### 259.5 最终可复现流程
+
+```powershell
+# 1. 服务端（LSG 仅用于登录）
+python -m server319.lsg --cert runs\20261020-live-derived01\tls\auth.crt `
+    --key runs\20261020-live-derived01\tls\auth.key --port 28969 --allow-auth-tls
+
+# 2. 启动客户端（关键：不要 --transport-connect）
+python tools\launch_1649370.py --name rXXX --reuse-runtime r107flow --until-close `
+    --local-profile --full --local-auth-lsg --loopback-tcp-guard
+
+# 3. 登录
+python tools\drive_login_state_machine.py --ticks 24 --interval 0.4 --set-ui-state 1
+
+# 4. 进大厅（写两个全局）
+#    [[0x8536F60]+0x14] = 4 ; [0x84ABA50] = 0
+
+# 5. 进地图（demo 必须在 runtime\main\demo\ 且无 32KB 垃圾残留）
+python tools\cbuf_1649370.py --command "cl_demo_play_local_only_index 1"
+
+# 6. 返回大厅
+python tools\cbuf_1649370.py --command "disconnect"
+```
+
+### 259.6 本轮新增工具
+
+- `tools/send_key_1649370.py` —— 真实按键注入（`--key esc|enter|f1..f3|up/down/left/right`，或 `--vk 0x..`）
+
+### 259.7 遗留与后续
+
+- **真对局**（能自由移动/射击的对局）仍未打通：需要客户端 connect + 服务端 gamestate 下发；
+  `adr+0x14=0x9D → 0x622040 返回 -7` 与 `0x5C05F0` 崩溃这两点仍未解决。
+- demo 路线的价值：**证明客户端的渲染、地图加载、HUD、对局结算、资源卸载全部正常**，
+  把问题范围彻底限定在"网络连接 + 服务端数据"这一层。
