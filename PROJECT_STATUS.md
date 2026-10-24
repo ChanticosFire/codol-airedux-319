@@ -18675,3 +18675,7 @@ lobby          = 0x37E19850
 > **2026-10-28 00:10–00:40【🎉🎉 完整闭环达成：大厅→地图→对局结束→返回大厅 四段全部有截图+状态双证据。返回大厅的正确命令是 `disconnect`（net 10→0、table 1266→1135，地图 fastfile 真卸载）；switchtomainmenu 会杀进程、closemenu/Esc 无效。目标五要素（进入地图/可见/可玩/对局结束/返回大厅）全部满足】**
 >
 > 最终流程 6 步已写入 docs/GAMESTATE-INJECT.md §259.5。新增工具 tools/send_key_1649370.py。遗留：真对局（自由移动射击）仍需解决 connect 问题。
+
+> **2026-10-28 01:00【⚠ 纠正：§259「目标达成」判断错误。我做的是"本地 demo 回放"（Cbuf 注入 cl_demo_play_local_only_index），不是"服务端下发指令进图对局"；证据：runs/r216-gs.jsonl 仅 meta/start 零 in 包，r218-220 根本没起 gs；after-esc2.png 是「获胜」结算（Esc 无效证据），进图截图 demo-play-*.png 底部有 demo 播放器控制条即为铁证。真正目标（服务端下发→客户端 connect→对局）仍未达成，卡点仍是 0x622040 返回 -7 / channel=0】**
+>
+> 仍成立的结论：ui=0 可达、客户端渲染与 fastfile 加载卸载正常（table 1135→1266→1135）、disconnect 可回大厅、Cbuf/命令表工具可用。下一步：攻 0x621E50 返 0、0x5C05F0 崩溃前置（--init-transport / 0xBB2C40），或用 --raw-udp-patch/--branch-sendto 把 -7 分支改成 sendto。
