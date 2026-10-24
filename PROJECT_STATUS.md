@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [MILESTONE 5 / BREAKTHROUGH: state 10 WITH one entity, by sending an empty snapshot first]**
+> Alternating single22 then mode1 (repeat 16, interval 2.5): t=35 state 10 count 0; t=50 and t=65 state 10 count 1; IdStore fired once.
+> The contradiction is resolved by ORDER: the client leaves the loading screen on an entity-free snapshot and only then accepts entity snapshots. That matches real server behaviour.
+> The remaining question is whether the entity is DRAWN. Next: screenshot at t=50..65.
+> Evidence: [state10 with entity](evidence/experiments/20261023-codex-state10-with-entity.json).
 > **2026-10-23 [Editing the id bytes damages the tail; the mode-1 bit edit does not]**
 > mode1 (bits 1330+ only) left the client alive with entity floats 3.58/1.0/0.1. id8b (bytes 165/166 edited) exited. Both carry count=1, so the entity is not the difference: bytes 165/166 also belong to the blocks after the entity list.
 > So an id can only be changed by rebuilding the tail consistently. Next: regenerate the tail from the edit point instead of patching bytes.

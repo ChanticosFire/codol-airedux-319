@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T07:00:00+00:00",
+  "scope": "MILESTONE 5 / BREAKTHROUGH: with an empty snapshot first and an entity snapshot afterwards, the client sits in state 10 WITH one entity in its list",
+  "the_timeline": [
+    {
+      "t": 20,
+      "state": 8,
+      "count": 0
+    },
+    {
+      "t": 35,
+      "state": 10,
+      "count": 0
+    },
+    {
+      "t": 50,
+      "state": 10,
+      "count": 1
+    },
+    {
+      "t": 65,
+      "state": 10,
+      "count": 1
+    }
+  ],
+  "the_method": {
+    "server_arguments": "--snapshot-file runs/snapshot-single22.bin,runs/snapshot-mode1.bin --snapshot-repeat 16 --snapshot-interval 2.5",
+    "effect": "the first snapshots carry no entity, later ones carry the mode-1 entity with its position float",
+    "probe": "0x6716AD:IdStore fired once, so the entity was decoded by the client"
+  },
+  "why_this_is_the_breakthrough": [
+    "until now every single body with count = 1 ended at state 9, and every body that reached state 10 had count = 0",
+    "that looked like a contradiction: the client seemed to refuse the in-match state while any entity existed",
+    "the resolution is ORDER: the client leaves the loading screen on a snapshot with no entities, and only then accepts snapshots that add entities",
+    "which is exactly how a real server behaves - the gamestate and first snapshots establish the world, entities appear afterwards"
+  ],
+  "what_this_means_for_the_project": [
+    "the entity pipeline is now demonstrably compatible with the in-match state",
+    "the remaining question is no longer whether the client accepts our entities, but whether it DRAWS them",
+    "and drawing needs a screenshot check, which the next verification step must do"
+  ],
+  "next": [
+    "run the same alternating sequence and take a screenshot at t=50..65 to see whether the entity is visible",
+    "if the frame is still black, the next layer is the render-side state (a view entity / clientNum tie) rather than the snapshot contents"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r230-gs.jsonl",
+    "bodies": [
+      "runs/snapshot-single22.bin",
+      "runs/snapshot-mode1.bin"
+    ]
+  }
+}
