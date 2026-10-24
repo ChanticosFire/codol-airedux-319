@@ -7510,3 +7510,39 @@ gs: ('meta','start') 1 + ('in','inband') 9   —— 无 connect
 ### 214.3 下一步
 
 用**与 r176 完全相同**的 gs 参数重跑（`--snapshot-file ... --snapshot-delay 20 --snapshot-seq 1000`，去掉 repeat/interval），确认 net 到 6，再逐步加变量。
+
+## 215. 2026-10-27 01:00–01:30：**forward 只发 inband，connect 包（400B）未被捕获**
+
+### 215.1 证据
+
+```
+gs 监听：127.0.0.1:28971（UDP，PID 5604）✓
+gs 日志：全部是 'in inband'（206 字节、body 全 0、seq 3..8）
+forward events：
+  t=0.0  dir=connect（调了 CONNECT_FN）
+  t=0.0  dir=state state=4
+  t=2..  dir=keepalive seq=2..8
+  **没有 dir=out length=400 的 connect 包！**
+```
+
+### 215.2 与 r176（成功）的差异
+
+| 项 | r176（成功） | r181（失败） |
+|---|---|---|
+| events | 有 `dir=out length=400`（connect 包） | **没有** |
+| received | 10 | 0 |
+| state | 4→5→6 | 停在 4 |
+
+→ 本次 `forward` 调了 `CONNECT_FN`，但**没有捕获到客户端发出的 connect 包**。
+
+### 215.3 可能原因
+
+1. **时机**：connect 包在 `forward` 的 drain 循环开始前就已发出（被上次 drain 吃掉）；
+2. `--reliable-until-state 0` 影响了 drain 逻辑；
+3. 客户端这次的 connect 包走了别的环（ring_b/ring_c0 都是 0）。
+
+### 下一步
+
+1. 去掉 `--reliable-until-state 0` 试试；
+2. 或在 `forward` 启动后先 drain 一次清空旧包，再调 CONNECT_FN；
+3. 或改用 `--start-challenge`（另一条路径）。
