@@ -40,3 +40,30 @@ gamestate 样本：`runs/gamestate-3426.bin`（2697 抓包重组，3426 字节�
 3. 若客户端始终不发包，检查 `CONNECT_FN` 的返回值与 `connection_state`（0 是否表示未初始化），
    必要时在调用 `CONNECT_FN` 前补 `drain`/`pump`。
 4. 只有 `net_state` 到 9 且 `ui_state` 变化，才算这一层打通；`ui_state` 仍 5 时才回到 `0xBA3xxx` 状态机。
+
+## 4. 2026-10-24 12:42–12:45：load/const 配套性修复后，state 到 6
+
+### 4.1 找到并修掉一个真实的不配套
+
+overlay 里的 `mp_cross_fire_load.ff`（24,853，sha `0b04da67…`）与 `mp_cross_fire_const.ff` 是 **2026-10-22 的旧版**，
+而主 `mp_cross_fire.ff` 已在 12:02 换成 V70 提取的新版（37,331,221）。**主件换新、load/const 仍旧版**，
+客户端加载时报 **"磁盘读取错误"**（IIPS 上下文 `0:0:mp_cross_fire_load-1044`）。
+
+已把 `mp_cross_fire_load.ff`（sha `dd9caec4…`）与 `const.ff` 换成 `runs/ifs-merge/extracted/` 里的同源版本，
+旧件备份为 `runs/ifs-merge/baseline_mp_cross_fire_load_*.ff`。
+
+### 4.2 重跑完整流程的结果
+
+流程：`inject_client_gamestate.py`（注入 3 条消息）→ `ring_bridge connect`（调 CONNECT_FN）→
+`server1649370.gameserver` + `ring_bridge forward` → 连续 `ring_bridge pump`。
+
+| 观测 | 结果 |
+|---|---|
+| 服务端 | `in oob connect` → `out oob`×4 → `in oob stats` → `out fragment`(gamestate) → snapshot×32 → `in oob heartbeat`×3 |
+| 客户端 | `net_state` **1→6**（历史最深，此前 5），`ui_state=0` |
+| 20 s 后 | `net_state` 复位 0 |
+| 错误 | `EXE_ERR_SERVER_TIMEOUT`（不再是"磁盘读取错误"） |
+
+**结论**：load/const 不配套确实是"磁盘读取错误"的原因，已修复；现在卡点前移到
+**客户端在 state 6 等待服务器响应超时**——gamestate 已发出但未被接受（或后续 netchan 确认缺失）。
+下一步应查 gs 的 gamestate 分片 seq/ack 与客户端 netchan 期望，并给 `heartbeat` 补响应。
