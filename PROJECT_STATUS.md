@@ -18175,3 +18175,7 @@ lobby          = 0x37E19850
 > **2026-10-26 08:00–08:30【🎉 zone 空重建逐字节一致（49MB 无损）+ 最小合并成功：向 common_mp 加 1 个 asset，validate_zone 通过（8557→8558）】**
 >
 > 修 header 保留（原 0x38 字节全保留，只覆盖 @0x00/@0x28/@0x30）后：空重建 `identical True`。最小合并 `--add gametype --indices 47` → `base=8557 added=1 total=8558 size=112909241`，`validate_zone` 通过，末项 `{type:5, offset:112909021, size:220, pointer:0xFFFFFFFF}`。→ 合并机制可行。下一步：定位 gametype 里 88 个武器 asset 的索引（名字匹配 + pointer==0xFFFFFFFF 优先），批量加入 common_mp，回填 ff 容器并重签。
+
+> **2026-10-26 08:30–09:00【88 个武器名分布在 21 个 asset（全部 pointer=0xFFFFFFFF 独立）；索引存 runs/weapon-asset-hits.json】**
+>
+> 扫描 gametype zone 的 1400 个 asset：含 88 个武器名的共 **21 个**（type 44/41/28，全部 pointer=0xFFFFFFFF）。样例 idx 3(type44,2228B,ac130_105mm_mp)、idx 53(type41,5789B,littlebird_20mm_mp)。→ 下一步批量合并 21 个 asset 进 common_mp zone，再回填 ff 容器（需扩展 ff_resign 做 body 重打包 + 全哈希链重建）+ 重签 + 实测表 1136→1224。

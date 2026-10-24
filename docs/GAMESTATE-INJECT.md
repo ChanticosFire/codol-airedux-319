@@ -4580,3 +4580,42 @@ last entry = {index: 8557, type: 5, offset: 112909021, size: 220, pointer: 0xFFF
 
 - 被搬运 asset 若引用 gametype zone 内其它 asset（指针非 0xFFFFFFFF），在 common_mp 里会失效；
   需优先选 `pointer == 0xFFFFFFFF` 的独立 asset。
+
+## 135. 2026-10-26 08:30–09:00：88 个武器名分布在 21 个 asset 里（索引已定位）
+
+### 135.1 扫描结果
+
+```
+目标武器名 = 88 个（runs/weapon-diff-sources.json 的 in_gametype）
+含武器名的 asset = 21 个
+其中 2 个 asset 含多个名字
+```
+
+样例：
+
+| index | type | size | pointer | 含有的武器名 |
+|---|---|---|---|---|
+| 3 | 44 | 2228 | 0xFFFFFFFF | ac130_105mm_mp、ac130_105mm_pro_mp |
+| 10 | 44 | 3900 | 0xFFFFFFFF | stealth_bomb_mp |
+| 11 | 44 | 172 | 0xFFFFFFFF | minigun_mp |
+| 53 | 41 | 5789 | 0xFFFFFFFF | littlebird_20mm_mp |
+| 257 | 28 | 5364 | 0xFFFFFFFF | remote_missile |
+| 271 | 28 | 4554 | 0xFFFFFFFF | remote_missile |
+
+→ 全部 `pointer == 0xFFFFFFFF`（**独立 asset，无交叉引用**），非常适合搬运。
+
+### 135.2 产物
+
+`runs/weapon-asset-hits.json`：`{asset_index: [匹配到的武器名]}`（21 项）。
+
+### 下一步（批量合并 + 回填 + 重签 + 实测）
+
+1. `zone_merge.py --base common --add gametype --indices <21 个索引>` → 生成新 zone；
+2. 把新 zone **回填进 `common_mp.ff`**：
+   - 替换 body（zone 数据）；
+   - 重算数据块哈希链（`ff_resign.py` 目前只处理 header，body 变了需要重算 hash tables）；
+   - 重签；
+3. 客户端实测表是否 1136 → 1224。
+
+⚠️ 第 2 步的"body 变了"比"只改 header"复杂：`ff_resign.py` 需要扩展成
+**body 重打包 + 全哈希链重建**，这是下一轮的主要工作。
