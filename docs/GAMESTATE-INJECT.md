@@ -7940,3 +7940,42 @@ ui=5  net=0  stage=5
 
 1. 重跑一次，读 `[[0x849B874]+0xC]`；
 2. 若非 0，则反汇编 `0x621A5E` 之后的路径，看它在 `stage==5` 时到底走了哪个分支。
+
+## 227. 2026-10-27 07:00–07:30：**🎉 `stage` 成功推进到 6（机制验证），但 connect 仍不发（state=0）**
+
+### 227.1 关键成功
+
+```
+before: guardC([[0x849B874]+0xC])=0  obj+0x1F4=1  stage=5
+write obj+0x1F4=2, write guardC=1
+t+0.5s: guardC=1  obj+0x1F4=2  **stage=6**   ← 推进成功！
+（之后 5 秒保持 6）
+```
+
+→ **完全验证了机制**：
+1. `[[0x849B874]+0xC] = 0` 让主循环整段跳过（这就是为什么之前改什么都无效）；
+2. 写成 1 后，`0x621810` 开始执行；
+3. `obj+0x1F4 == 2` 时，`stage` 从 5 → 6。
+
+### 227.2 但 connect 仍不发
+
+```
+forward: sent=12  received=0
+events: connect → state 0（不是 4！）
+status_after: stage=6, state=0, connection_adr 仍 0.0.0.0:0
+after: ui=5  net=0  table=1135  load=2  stage=6
+gs: 12 inband，无 connect
+```
+
+### 227.3 分析
+
+- `stage=6` 满足了 `0x5BE730` 的第一个条件（`[0xE59D20]∈{4,6}`）；
+- 但 `state=0`（net_state 为 0，不是 4）—— 说明客户端**处于"未连接"状态**；
+- `0x5BE730` 后续还要求 `0xB7A670()==2`（应满足，因为 loader 状态未变）。
+
+→ 可能 `stage=6` 之后客户端**重置了** `state`（从 4 变 0），需要重新进入连接状态。
+
+### 下一步
+
+1. 在 `stage=6` 且 `state=4` 时再触发连接（可能需要先让 state 到 4）；
+2. 或查 `0x5BE730` 是否还检查 `state`（反汇编 `0x5BE7FC` 之后）。
