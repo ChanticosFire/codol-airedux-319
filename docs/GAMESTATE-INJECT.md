@@ -11937,3 +11937,66 @@ forward stdout: 0 字节   forward stderr: 0 字节
 |---|---|
 | 30 | 根因锁定：`net_state >= 7` 死锁（`0x5C2303`） |
 | **31** | **patch 已应用（6 字节 nop）；gs 侧实证收到 getchallenge×2 / connect×1 并发下 gamestate×6 + snapshot；但本轮 `forward` 未生效（输出 0 字节、net=0），patch 效果待验** |
+
+## 293. 2026-10-29 08:00–09:00：**前台运行 `forward` 抓到第二个死锁 —— `connect` 之后 `net_state` 立即回 0，注入全被阻塞**
+
+### 293.1 完整事件序列（`forward` 前台输出）
+
+```
+{"sent":3, "received":10, "injected":10}
+  t=0.0        arm  → challenge_armed, state=3
+  t=94717.869  state 3, stage 5
+  t=94722.28   out getchallenge ×2 (38 B)  "getchallenge 0 0cf7ee44e08c4c28"
+  t=94722.342  in  challengeResponse ×2 (32 B)  inject:queued
+  t=94722.349  state 4, stage 5            ← 推进到 4
+  t=94723.21   out connect (409 B)         "connect 0cf7ee44e08c4c28 \name\... "
+  t=94723.21   **state 0**                 ← **同一时刻回 0！**
+  t=94723.27   in  connectResponse (109 B) inject:queued  state:0
+  t=94724.342  in  gamestate index0 (1172 B) inject:queued state:0
+  ...          in  gamestate index1..4 (1172 B each)
+  t=94724.360  in  gamestate index5 (611 B) inject:queued state:0
+  t=94725.431  in  snapshot (259 B)  inject:queued state:0
+  status_after: state=0, stage=5, connection_adr {type:0, ip:0.0.0.0, port:0, channel:0}
+```
+
+关键：`inject` 全部是 **`queued`**，而没有一条真正注入到 ring B
+（`ring_b` 的 read/write 都是 10，但 `state=0`）。
+
+### 293.2 第二个死锁
+
+- `connect` 发出后，客户端状态机立刻把 `net_state` 置 **0**；
+- `forward` 的注入需要 `state >= oob_until_state`，`state=0` 时只是排队；
+- 客户端因此收不到 `connectResponse`；
+- 一直停在 0，后续 `gamestate` 分片更没有意义。
+
+这与 Round 11 的现象完全对得上：**那次加了 `--oob-only`，`stats` 出现了 163 次** ——
+说明 `--oob-only` 能让注入在 `state=0` 时也真正生效。
+
+### 293.3 本轮已验证的部分
+
+| 项 | 状态 |
+|---|---|
+| 死锁门控 patch | ✅ `0x5C2303` = `90 90 90 90 90 90` |
+| `forward` 能跑起来 | ✅ 前台输出完整 JSON（`sent 3 / received 10 / injected 10`） |
+| 真实 UDP 往返 | ✅ getchallenge×2 → challengeResponse×2 → connect(409B) → connectResponse(109B) |
+| gs 下发 gamestate | ✅ 6 分片 + 1 snapshot 全部收到 |
+| `net_state` 推进 | ❌ 3 → 4 → **0**（`connect` 后被清零） |
+| 解析链 | ❌ 三个 hook 仍为 0（因为状态停在 0） |
+
+### 293.4 下一步（唯一动作）
+
+**加 `--oob-only` 重跑**，预期：
+
+1. 注入在 `state=0` 时也生效 → `connectResponse` 真正进入 ring B；
+2. `net_state` 有望从 0 回到 4/5；
+3. 一旦到达 5 且 gamestate 分片流过 `CLpacketEvent`，patch 后的 netchan 分支就会执行；
+4. 进而验证 `0x5AA980`/`0x473A50`/`0x473260` 是否 >0、`net_state` 是否变 8、
+   `[0x1C2B6CC]` 是否变 1、ff 列表是否出现地图。
+
+### 293.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 30 | 死锁 1：`net_state>=7` 才处理 netchan（已 patch） |
+| 31 | patch 已应用，但 `forward` 未生效 |
+| **32** | **前台运行抓到死锁 2：`connect` 后 `net_state` 立即回 0，`forward` 注入全部停在 queued；需用 `--oob-only` 让注入在 `state=0` 时生效** |

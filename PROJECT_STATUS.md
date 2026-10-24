@@ -18807,3 +18807,7 @@ lobby          = 0x37E19850
 > **2026-10-29 07:00–08:00【patch 已应用：0x5C2303 实际是 0F 8C 0A 01 00 00（6 字节长跳转）→ 90×6。gs 侧实证：r251-gs.jsonl 共 19 行、入站 6（getchallenge 2、connect 1、stats 0），下发 gamestate 6 分片 + snapshot 1 个，客户端源端口 57384 —— 连接真实建立。但本轮 forward 的两个输出文件均 0 字节（未正常启动），net=0，三个 hook 全 0，patch 效果无法判定】** 
 >
 > 下一步：①改前台运行 forward 或先确认 gs 在监听再启动，让 forward 可靠工作 ②查 stats 为何为 0（Round11 用 --oob-only 时 stats 有 163 次），若 stats 是 gamestate 阶段前置则需保留 --oob-only。届时再读 0x5AA980/0x473A50/0x473260 与 gate 验证 patch。
+
+> **2026-10-29 08:00–09:00【🎯 前台跑 forward 抓到第二个死锁：事件序列 arm(state=3) → getchallenge×2 → challengeResponse×2 → state=4 → connect(409B) → **state 立刻变 0** → connectResponse/gamestate×6/snapshot 全部 inject:queued（state=0 时不注入）→ 客户端收不到 connectResponse，永远停在 0。这与 Round11 加 --oob-only 时 stats 出现 163 次吻合】** 
+>
+> 下一步：加 --oob-only 重跑，让注入在 state=0 时也生效，看 net_state 能否回到 4/5；一旦到 5 且 gamestate 流过 CLpacketEvent，patch 后的 netchan 分支就会执行，即可验证 0x5AA980/0x473A50/0x473260、net_state 变 8、gate 变 1、ff 列表出现地图。
