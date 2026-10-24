@@ -18455,3 +18455,7 @@ lobby          = 0x37E19850
 > **2026-10-27 19:30–20:00【🎯 环境干净（exe sha256 原始 55f067ac…、24 个 ff 共 244MB 与备份一致）；common_gametype_mp.ff 就在 runtime（34.7MB）但服务端路径从不请求它 → 问题不是文件缺失，而是"加载包列表"不同（demo 请求 patch_common_gametype_mp，服务端不请求）】**
 >
 > 校验：exe sha256=55f067ac24e7d5ea…（原始）、ff 24 个 244MB、overlay-backup 一致。runtime 内有 common_gametype_mp.ff(34,693,397B) 与 localized 版(41,237B)；r146 trace 15 个请求全 patch_*、无 gametype。→ 下一步找"决定加载包列表"的来源（gamestate/configstring 某字段）。
+
+> **2026-10-27 20:00–20:30【负面结论：gamestate 的 291 个 configstring 里没有任何包名/.ff 内容（alias=0/recipe=0）→ 加载包列表由客户端代码决定，往 gamestate 加包名不可行】**
+>
+> `parse_gamestate_tables.py` 结果：count=291、last index 5453、alias=0、recipe=0；sample 全是服务器信息/玩家名/标签。→ 必须从客户端代码入手（对比 demo 的 0x49E540 列表构造与服务端路径的列表来源）。

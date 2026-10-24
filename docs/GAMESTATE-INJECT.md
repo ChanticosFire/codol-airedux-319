@@ -7148,3 +7148,36 @@ localized_common_gametype_mp.ff  41,237 B
 - 服务端路径由 **gamestate / configstring** 决定（某个字段指定要加载的包名）。
 
 → 下一个目标：**在 gamestate 里加一条"要求加载 common_gametype_mp"的信息**。
+
+## 205. 2026-10-27 20:00–20:30：**负面结论 —— gamestate 的 configstring 里没有"包名列表"**
+
+### 205.1 解析结果（`parse_gamestate_tables.py`）
+
+```
+size 6411, svc@0x23, configstring count = 291
+parsed 291 entries, last index 5453, end byte 6399
+alias count = 0   recipe count = 0   at byte 6401
+sample: (0, "\xaf\\2482\\2\\2485\\18\\2490\\214\\2491"),
+        (49, "cod"), (6298, "55")
+tail:   (5451, "\x970 0 0 1"), (5452, "\xf5+1259"), (5453, "\xfb\x05tag_player")
+```
+
+### 205.2 关键：没有"包名列表"
+
+- 291 个 configstring 里**没有任何 `common_gametype_mp` / `.ff` / 包名类**的内容；
+- 只有服务器信息、玩家名、标签、数值等；
+- `alias=0`、`recipe=0`（之前已记录）。
+
+→ **gamestate 本身不携带"要加载哪些 fastfile"的信息**。
+
+### 205.3 结论（重要）
+
+- 加载包列表**由客户端代码决定**（demo 路径 vs 服务端路径走不同分支）；
+- 所以"往 gamestate 里加包名"这条方案**不可行**；
+- 必须从**客户端代码**入手：让服务端路径也走"请求 `common_gametype_mp`"的那条分支。
+
+### 205.4 下一步
+
+对比两条路径的"加载列表构造函数"：
+- demo：`0x49E540`（构造 patch_/patch_localized_/... 四条目）
+- 服务端：需要找它构造列表的位置（可能在 `0x49E160`/`0x49F280` 附近）
