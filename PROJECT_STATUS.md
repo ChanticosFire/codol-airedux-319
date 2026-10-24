@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [HANDOFF for the next session]**
+> The goal objective now carries the whole state: established facts, the exact blocker chain (ui_state 5 <- status 2 <- [sub+0x5E8]==3, with writers and the 8-byte token check at [obj+0x5FC]), the demo/.ifs direction, and a five-step execution order. docs/NEXT-SESSION.md gives the resume phrase, the first offline task (rebuild the known-good 41,648,405-byte mp_cross_fire.ff from its .ifs packages), the two decisive demo-playback outcomes, six things not to repeat, and the single acceptance rule.
+> Goal revised to revision 7 with 512 rounds allowed; blocked on the round limit and disarmed, to be resumed by the next session.
+> Evidence: docs/NEXT-SESSION.md, docs/DEMO-ANALYSIS.md.
 > **2026-10-23 [SESSION CLOSE: handover final, deliverables verified, objective NOT met]**
 > SNAPSHOT-FORMAT-VERIFIED.md §9 states the open problem precisely: the client matched its 8-byte session token and sits in [+0x5E8]==3 ("matched, waiting"), which maps to status 2 and ui_state 5. §10 lists the next three steps and notes the harness has no memory-write breakpoint and no single-step.
 > Verified: selfcheck 8/8; evidence 1304 records, invalid JSON 0; 1436 commits.
