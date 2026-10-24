@@ -4510,3 +4510,37 @@ type_counts = {2:212, 4:102, 5:180, 9:26, 11:538, 25:3, 27:15, 28:85, 30:185, 36
 1. 写 `tools/zone_merge.py`：读两个 zone，按上面的格式合并 + 输出新 zone；
 2. 先做**空合并**（不加 asset，只重建目录）验证格式自洽（`validate_zone` 应受理）；
 3. 再做"加 1 个 asset"的最小合并，最后批量 88 个。
+
+## 133. 2026-10-26 07:30–08:00：zone 重建工具跑通（空重建通过 validate_zone，header 还剩 11 字节差异）
+
+### 133.1 工具
+
+`tools/zone_merge.py`：
+
+- `Zone(blob)`：用 `validate_zone` 解出 `string_count / meta / blobs / block_sizes`；
+- `Zone.rebuild()`：重建 `{size, string_count, asset_count, block_sizes, strings, directory, data}`；
+- `--base/--add/--indices/--out`：可追加另一个 zone 的指定 asset。
+
+### 133.2 空重建结果
+
+```
+base=1400 added=0 total=1400 size=49877939 strings=773
+validate_zone 通过（格式自洽 ✅）
+与原文件对比：diff 从 24 字节 → 11 字节
+剩余差异：@0x24-0x27（原 0x001FE770 → 0）、@0x2C-0x2F（原 0xFFFFFFFF → 0）
+```
+
+→ 说明 header 还有两个字段未保留（`@0x24`、`@0x2C`）。
+
+### 133.3 修复方向
+
+`rebuild()` 目前只写 `@0x00/0x28/0x30` 与 `block_sizes(@0x04-0x24)`；
+改为**保留原 header 全部 0x38 字节**，只覆盖三个字段 → 空重建应做到**逐字节一致**。
+
+### 下一步
+
+1. 修正后验证 `空重建 == 原文件`（逐字节）；
+2. 再做"加 1 个 asset"的最小合并（`--add gametype --indices 47`），验证：
+   - `validate_zone` 通过；
+   - 结构合法（目录/数据偏移自洽）。
+3. 最后批量加 88 个武器 asset 并重签。
