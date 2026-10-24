@@ -3500,3 +3500,42 @@ patch_mp_crash_tropical.ff         caller 0x776F80  time 1792835252.6339579
 
 1. 对比 demo 的 gamestate（6407）与我们下发的（6411）字段差异（尤其 gametype 相关）；
 2. 找客户端"根据 gamestate 构造 fastfile 列表"的代码，确认它为什么不加 gametype。
+
+## 107. 2026-10-25 18:30–19:00：gamestate 只差 4 字节；demo 与 gamestate 都不含 gametype 加载信息
+
+### 107.1 gamestate 对比（demo vs 下发）
+
+```
+demo len 6407, network len(no ack) 6407
+diff count = 4
+diffs = [(27, 0x00, 0x7e), (28, 0x00, 0x6d), (29, 0x00, 0xb5), (30, 0x00, 0xff)]
+```
+
+→ 两份 gamestate **只差 offset 27–30**（registration_checksum：demo 为 0，网络为 0xFFB56D7E）。
+除此之外**完全相同**。
+
+**结论：gamestate 不是"少加载 gametype 包"的原因。**
+
+### 107.2 demo 文件里没有 gametype 字符串
+
+在 7.2 MB 的 demo 里搜索：
+
+```
+b'common_gametype'        0 次
+b'patch_common_gametype'  0 次
+b'gametype'               0 次
+```
+
+→ demo 播放时虽然请求了 `patch_common_gametype_mp.ff`，但**名字不是从 demo 文件读的**，
+而是**运行时拼接/代码里配置的**。
+
+### 107.3 结论
+
+加载列表（含 gametype 项）来自**代码路径**，不是 demo 数据、也不是 gamestate。
+下一步要找"demo 播放时构造该列表的代码"，并让服务端路径复用。
+
+### 下一步
+
+1. 在 `0x49E160` 的 16 个调用者里，找 demo 播放会走的那一个（可用 trace 的 caller 或时序推断）；
+2. 看它如何决定列表内容（是否包含 gametype / 是否读配置）；
+3. 服务端路径若能复用同一构造逻辑，就能补上 gametype 包。
