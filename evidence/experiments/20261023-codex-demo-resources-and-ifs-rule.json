@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-31T04:00:00+00:00",
+  "scope": "demo resources located and the .ifs unpacking rule verified: a map fastfile starts at the first 'IWff' inside the .ifs container",
+  "the_demos": {
+    "path": "E:/GAME/COD/使命召唤OL/main/demo (mirrored at Original Client/main/demo)",
+    "count": 22,
+    "dates": "2021-08-24 .. 2021-08-29 (the shutdown month)",
+    "modes": "21 war, 1 cha",
+    "sample": "0C-2021-8-26[19-26-24]war.demo (7,286,117 bytes)",
+    "map": "mp_crash_tropical",
+    "content_confirmed": [
+      "configstring updates in plaintext: 'd 3635 UK_spawn_music_mp_crash_tropical', 's 0194 \"OBJECTIVES_WAR_HINT\"', 'p 1578', 'w 0 12 0'",
+      "UI events: '\"EXE_MATCHENDED\"', 's ui_match_complete \"1\"'",
+      "dvar updates: 'd 2557 \"mp_crash_tropical\" 1000', 'd 3694 UK_winning_music_mp_crash_tropical'",
+      "a tail asset manifest after 0x6E0000 with 2595 strings"
+    ]
+  },
+  "why_the_demo_cannot_be_played_yet": [
+    "the demo needs mp_crash_tropical.ff",
+    "the client only ships mp_cross_fire.ff (41,648,405) plus its const and load companions",
+    "so replaying this demo requires unpacking the map from the IIPS packages first"
+  ],
+  "where_the_resources_are": {
+    "path": "E:/GAME/COD/使命召唤OL/IIPS/IIPSDownload",
+    "count_ifs": 975,
+    "crash_tropical": [
+      "ff_init_mp_crash_tropical_V73.ifs  32,818,417",
+      "lf_init_mp_crash_tropical_V21.ifs  59,043,616",
+      "lf_hi_init_mp_crash_tropical_V19.ifs 178,639,708"
+    ],
+    "cross_fire": [
+      "ff_init_mp_cross_fire_V70.ifs 37,492,702",
+      "ff_dlc19_clash_addon_mp_cross_fire_V29.ifs 2,410,963"
+    ]
+  },
+  "the_ifs_format": {
+    "magic": "nifs at 0x0000",
+    "header_len": "0xAC (172)",
+    "directory": "contains the target filename (e.g. '...t.ff' at 0x150)",
+    "fastfile_start": "the first 'IWff' + 4 ascii version digits: 0x166 for cross_fire_V70, 0x176 for crash_tropical_V73",
+    "fastfile_end": "the next 'IWff' header in the file",
+    "fastfile_header": "'IWff0100' + u32 0x1CD (461) + u32 1"
+  },
+  "the_verification": {
+    "extracted": "init_mp_cross_fire.ff 37,367,685 bytes, head '49 57 66 66 30 31 30 30 cd 01 00 00 01 00 00 00'",
+    "known_working": "client mp_cross_fire.ff 41,648,405 bytes, identical first 16 bytes",
+    "head_match": true,
+    "sampled_windows_equal": "0/9122",
+    "interpretation": "the rule finds a valid fastfile container, but one playable map is NOT a single ff_* package: 37.4 MB extracted vs 41.6 MB working, and the missing ~4.2 MB matches the lf_* package size, so a playable fastfile is the concatenation of ff_* + lf_* (and possibly lf_hi_*)"
+  },
+  "the_client_demo_reader": {
+    "PlayDemo": {
+      "va": "0x00DC5B98",
+      "code_ref_file_offset": "0x0020967C"
+    },
+    "cl_demo_play": {
+      "va": "0x00DC5BA4",
+      "code_ref_file_offset": "0x002096B1"
+    },
+    "PopulateLocalDemoFileInformation": {
+      "va": "0x00DC5BB8",
+      "code_ref_file_offset": "0x0020977A"
+    },
+    "note": "string positions in the file are FILE OFFSETS while code references use VA; converting one to the other via the section table is mandatory - searching for a file offset as an immediate yields a false 'no references' result"
+  },
+  "connection_state_names_found_next_to_the_demo_commands": [
+    "CA_DISCONNECTED",
+    "CA_CINEMATIC",
+    "CA_LOGO",
+    "CA_CONNECTING",
+    "CA_CHALLENGING",
+    "CA_LOADING",
+    "CA_CONNECTED"
+  ],
+  "why_that_matters": "CA_LOADING is exactly the state our own server leaves the client in, and demo playback walks the same state chain - so the demo is the reference answer for that chain",
+  "artifacts": {
+    "doc": "docs/DEMO-ANALYSIS.md",
+    "script": "runs/_ifs_extract.py",
+    "extracted": [
+      "runs/ifs-extract/init_mp_cross_fire.ff",
+      "runs/ifs-extract/init_mp_crash_tropical.ff"
+    ]
+  }
+}
