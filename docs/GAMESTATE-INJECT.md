@@ -2420,3 +2420,41 @@ python tools/run_match.py --name r107 --runtime r107flow ... --client-breakpoint
 2. 或改 `run_match` 支持"不带 --reuse-runtime 的新 runtime"；
 3. 用 `parse_demo_outer.py` 的 `--registration-checksum` 一键再生 gamestate，
    再做断点实验（避免手工准备文件）。
+
+## 78. 2026-10-25 06:00–06:20：r108 断点实验的 events 仍不可用
+
+### 78.1 r108（就绪 runtime + 断点）
+
+准备好 `r107flow\runtime`（复制 88,580 个文件）后重跑：
+
+```
+[run_match] engine ready
+[run_match] states: [0, 0, 0, 0]
+[run_match] delivery: snapshots_queued=20 ok=True
+```
+
+断点提示仍为 `0x59B560 not in the safe list`；截图 864,741 字节（与 r106 相同的错误弹窗）。
+
+### 78.2 events 路径异常
+
+`r107flow` 下唯一的 events 是：
+
+```
+r107flow\reuse-3b946d9a\events.jsonl  0 字节  2026-10-24 16:03:12
+```
+
+→ 0 字节：本次运行的断点/文件 trace **没有写入**（`--reuse-runtime` 的复用目录机制
+把 events 放到 `reuse-<hash>` 子目录且未刷新），所以 `WeaponIndex` 命中数不可见。
+
+### 结论
+
+- 181 错误已稳定复现（r105/r106/r108 截图一致）；
+- **断点路线在复用 runtime 下不可用**（events 为空），继续调断点性价比低。
+
+### 下一步（改用轮询，不依赖 events）
+
+1. 写 `tools/watch_weapon_count.py`：轮询 `0x1988634`（武器计数），记录每次变化；
+2. 手动跑一次完整连接（LSG + launch + login + gs gamestate + forward + pump），
+   同时轮询该计数，确认它从 0 → 1135 的过程与时机；
+3. 若峰值确实是 1135，则"缺 88 个"的根因在**定义创建路径**（`0x42F2F0` 查找 vs
+   `0x431810` 创建），而不是 configstring 数量。
