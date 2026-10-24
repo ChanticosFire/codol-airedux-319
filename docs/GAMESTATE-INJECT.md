@@ -10804,3 +10804,88 @@ Com_LoadMapFastfile (0x484C10)        地图层，ecx = 名字
 | 12 | `Com_LoadFastfiles` 被调用（5 个 UI ff） |
 | 13 | 14 次 `FS_LoadFastfile` 全是 UI 层 |
 | **14** | **找到地图层入口 `0x484C10`；两个门控实测均为关闭（`[obj+0xC]=0`、`[0x7795818]=NULL`），同步路径不可达，实际被导向 `0x4A02F0`** |
+
+## 277. 2026-10-28 16:00–17:00：**🎯 根因锁定 —— 全局门控 `[0x1C2B6CC] == 0` 让整个 fastfile 加载入口直接返回**
+
+### 277.1 两个 hook 的实测：地图层与真实路径都从未被调用
+
+```
+map layer  0x484C10: count=0  ecx=0x0
+real path  0x4A02F0: count=0  arg0=0x0
+client: ui=5  net=5  table=0        ← 确实在加载态
+```
+
+对照 Round 12/13 的观测：
+
+| 函数 | 调用次数 |
+|---|---|
+| `Com_LoadFastfiles` `0x49E160` | 2 |
+| `FS_LoadFastfile` `0x49ED40` | 14（全是 UI 名字） |
+| **`Com_LoadMapFastfile` `0x484C10`** | **0** |
+| **`0x4A02F0`** | **0** |
+
+### 277.2 静态扫描把调用链补全
+
+`0x484C10` 有 **15 个直接调用者**，全在 `0x484316`–`0x484422`，属于 `0x484370` 这个函数。
+
+`0x4842C0`（"加载一族 4 个变体"）有 **5 个调用者**，全在 `0x4844xx`–`0x4845xx`，
+同样属于 `0x484370`。
+
+`0x484370(name)` 的完整逻辑：
+
+```asm
+0x484370  push ebp / mov ebp,esp / sub esp,0x4c
+0x484380  cmp dword ptr [0x1C2B6CC], 0
+0x48438C  je  0x48470E                    ; ← **门控：为 0 就跳过全部加载**
+0x484392  ecx = 0xDB5DA4                  ; "menu"
+0x4843A0  （内联 strcmp, name vs "menu"）
+0x4843C5  test eax,eax / jne 0x484437
+     equal  → 0x4843C9  push "ui_mp" → 0x49F180
+                0x4843DE..0x484422  加载 patch_ui_mp / ui_mp /
+                                    patch_localized_ui_mp / localized_ui_mp
+     differ → 0x484437  按 gametype 分派：
+                名称匹配 "zm"/" "..." 等 → esi = common_gametype_zm / _survival /
+                _coop / _zombie_arena / _dmz / _zombie_hunter / ...
+                0x4845BB  call 0x4842C0        ; 加载该 gametype 的 4 个变体
+                0x4845E9  sprintf("patch_%s", gametype)  → 0x484C10
+                0x484609  sprintf("%s_const", gametype)  → 0x484C10
+```
+
+### 277.3 实测门控值
+
+```
+[0x1C2B6CC] = 0            ← **整个 fastfile 加载入口被跳过**
+0xDB5DA4   = "menu"        ← 用于区分 menu 与 gametype 分支的常量
+client: ui=5 net=0 table=1135
+```
+
+→ 因为 `[0x1C2B6CC] == 0`，`0x484370` 在 `0x48438C` 就跳到 `0x48470E` **直接返回**，
+**15 个 `call 0x484C10` 和 5 个 `call 0x4842C0` 全部执行不到**。
+
+**这就是"客户端停住不发包、也不加载地图"的最终机械原因。**
+
+### 277.4 完整因果链（已闭合）
+
+```
+[0x1C2B6CC] == 0
+   └─ 0x484370(name) 在 0x48438C 直接返回
+        └─ 0x484C10 从未被调用
+             └─ mp_crash_tropical.ff 从未被请求
+                  └─ table 保持 0（资源表已清空但无新资源）
+                       └─ 永久停在 CA_LOADING(net_state=5)
+```
+
+对比 Round 13 的 14 次 `FS_LoadFastfile`：那是**另一条入口**
+（`Com_LoadFastfiles` → `0x49ED40`，只处理 UI 层），与本函数无关。
+
+### 277.5 下一步（非常具体）
+
+**把 `[0x1C2B6CC]` 从 0 改成 1**，然后正常握手，观察：
+
+1. `0x484370` 是否不再跳过；
+2. `0x484C10` 的 `count` 是否从 0 变成 >0；
+3. 捕获到的 fastfile 名字里是否出现 `mp_crash_tropical`；
+4. `table` 是否从 0 增长（真正加载了资源）。
+
+用户已授权修改程序，所以可以直接写这个全局变量；
+若写入后仍不加载，则需要找"该由谁在何时把 `[0x1C2B6CC]` 置 1"。
