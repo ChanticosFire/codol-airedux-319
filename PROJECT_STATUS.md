@@ -19289,3 +19289,74 @@ gs: stats = 0
 |---|---|
 | 43 | 键 `[conn+0x109260..]` 恒 0；写入者 `0x5BF3E0`；门控是防重复标志 |
 | **44** | **`[0xC7341DB]=0` 是 `stats` 能发出的前置条件（r264 对照 r265 证实）；gs 的 `statResponse` 首发 0.8s 晚于客户端 0.72s 重试窗口 → 已改为立即发送 + 9 份副本** |
+
+## 305. 2026-10-29 20:00–21:00：**找到 `forward` 失败的真正原因 —— 时序倒置（先清标志后启转发）**
+
+### 305.1 本轮结果
+
+```
+flag [0xC7341DB] before = 0        （本次实例本来就是 0）
+cleared -> ok, now = 0
+patch 0x5C2303 / 0x5C23FF 均成功
+armed net = 3  flag = 0
+=== forward === （输出为空，且没有生成 r266-fwd.out / .err）
+CLIENT CRASHED
+
+gs: stats = 2 / statResponse 类 OOB = 17（out 方向 oob 21 + fragment 7）
+```
+
+gs 侧时序：
+```
+getchallenge ×2     1792854886.63 / .68
+connect            1792854887.38
+stats              1792854888.31
+stats              1792854888.41   (+105 ms)
+（共 2 次后客户端 unhandled_exception）
+```
+
+### 305.2 关键修复确实生效了
+
+`out` 方向出现 **21 个 OOB**，其中包含按新节奏（0.0/0.02/0.05/0.1/0.2/0.4/0.8/2.0/4.0）
+发出的多份 `statResponse` —— 说明 `gameserver.py` 的提速补丁（提交 `24b85af`）工作正常。
+
+### 305.3 但 `forward` 没跑起来，原因已查明
+
+手动执行同一条命令得到：
+
+```
+codol1649370-offline.exe 未运行
+exit=1
+```
+
+**这不是参数问题，而是时序问题**：
+
+1. 清了 `[0xC7341DB]` 之后，客户端**立刻开始发 `stats`**（间隔约 105 ms）；
+2. 但 `forward` 是在脚本**最后一步**才启动的；
+3. 客户端在 `forward` 启动前就已重试耗尽并崩溃；
+4. `forward` 启动时进程已消失，于是立即退出（连输出文件都没创建）。
+
+Round 44 的 r264 之所以能看到 7 次 `stats`，是因为那次恰好赶上了窗口；
+本轮把前置条件补齐后，客户端的动作**更快了**，反而让倒置的时序彻底暴露。
+
+### 305.4 下一步（把顺序倒过来）
+
+**必须先启 `forward`，再清标志**：
+
+```
+1. 启动 gs / lsg / 客户端
+2. patch_retry_ms + 两个 CLpacketEvent 补丁
+3. 登录（drive_login_state_machine）
+4. **先启动 forward（后台，长窗口如 60s）**
+5. **再写 [0xC7341DB] = 0**
+6. arm net_state = 3 并使连接成立
+7. 观察 stats / statResponse / ParseServerMsg / gate / ff 列表
+```
+
+这样 `stats` 一发出时就已有转发在监听，`statResponse` 才能及时注入。
+
+### 305.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 44 | `[0xC7341DB]=0` 是 `stats` 的前置条件；gs 的 `statResponse` 首发 0.8s 太晚（已修） |
+| **45** | **gs 修复生效（21 个 OOB）；但 `forward` 因时序倒置（清标志在前、启转发在后）没赶上，客户端重试耗尽崩溃 → 下轮改为"先转发、后清标志"** |
