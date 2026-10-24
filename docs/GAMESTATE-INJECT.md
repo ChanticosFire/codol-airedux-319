@@ -1181,3 +1181,51 @@ overlay 里没有这些 `patch_*.ff`，所以回退到主包也能加载。
 2. 从那个函数往回找"地图名来自哪个全局/dvar"，即可定位 demo 选图字段；
 3. 或用一个更直接的办法：既然加载的是 `patch_<map>.ff`，把 `patch_mp_cross_fire.ff`（内容可用
    `mp_cross_fire.ff` 复制）放进 overlay，再想办法让客户端请求它（需要先知道选图字段）。
+
+## 41. 2026-10-24 19:25–19:40：`patch_%s` 格式化点与地图加载入口
+
+### 41.1 字符串与函数
+
+| 项 | 值 |
+|---|---|
+| `patch_%s` | VA `0xDB5F28`（文件 0x9B5F28） |
+| `localized_%s` | `0xDB5F34` |
+| `patch_localized_%s` | `0xDB5F44` |
+| 引用点 | `0x4842D4 / 0x4845EB / 0x48467E / 0x49E563 / 0x49EAB8 / 0x49EBBC` |
+
+`0x4842C0` 是 **LoadMapFastfiles(mapname)**：
+
+```asm
+0x4842C2  call 0x49F180         ; 地图名有效性检查
+0x4842D2  push esi               ; esi = 地图名
+0x4842D3  push 0xDB5F28          ; "patch_%s"
+0x4842DD  push 0xE9C5B80         ; 输出缓冲
+0x4842E2  call 0x774900          ; sprintf -> patch_<map>
+0x4842E7  push esi / 0xDB5F34    ; localized_<map>
+0x4842FC  push esi / 0xDB5F44    ; patch_localized_<map>
+0x484314  mov ecx, esi
+0x484316  call 0x484C10          ; 逐个加载
+```
+
+调用者（5 处）：`0x4844EC / 0x484538 / 0x484585 / 0x4845A6 / 0x4845BB`。
+
+### 41.2 地图名参数来源
+
+`0x4844BB` 起是一段选择逻辑：
+
+```asm
+0x4844BB  mov esi, ebx            ; ebx = 地图名（函数参数）
+0x4844BD  call 0x775BC0           ; 检查（可能 mp_ 前缀）
+0x4844C6  mov esi, 0xDB5FFC       ; 否则用默认名
+0x4844D6  mov edx, 0xDB468C       ; 与 gametype 比较
+0x4844E7  mov esi, 0xDB6010       ; 某默认名
+0x4844EC  call 0x4842C0           ; LoadMapFastfiles(esi)
+```
+
+→ 地图名来自调用 `0x4844xx` 那个函数的参数 `ebx`，且中间还有"是否 mp_ / 是否与某 gametype 匹配"的兜底。
+
+### 下一步
+
+1. 找 `0x4844xx` 所在函数的入口与调用者，看传入的地图名来自哪个全局/dvar；
+2. 该全局很可能就是 demo/gamestate 设置的地图名——定位后即可把它改成 mp_cross_fire；
+3. 已知客户端会按 `patch_<map>.ff` → `<map>.ff` 顺序加载。

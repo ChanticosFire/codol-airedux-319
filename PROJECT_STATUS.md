@@ -17793,3 +17793,7 @@ lobby          = 0x37E19850
 > **2026-10-24 19:10–19:25【地图加载走 patch_<map>.ff；选图字段仍未知】**
 >
 > 播放 `cf_dvar.demo`（d 2557 已改 cross_fire）时客户端访问的是 **`patch_mp_crash_tropical.ff`** → 说明它先找 `patch_` 补丁包、再回退主包；改 d 2557 不改变选图。`mp_crash_tropical` 独立出现 21 处（首处 0x11FB7 = d 2557 那条）。下一步：反汇编 FS 加载点（trace caller 0xC513D9）上游，找 `patch_<map>.ff` 文件名拼接与地图名来源。
+
+> **2026-10-24 19:25–19:40【patch_%s 与 LoadMapFastfiles 定位】**
+>
+> `patch_%s`=0xDB5F28、`localized_%s`=0xDB5F34、`patch_localized_%s`=0xDB5F44；函数 `0x4842C0` = LoadMapFastfiles(mapname)，内部 sprintf 出 `patch_<map>` / `localized_<map>` / `patch_localized_<map>` 后调 `0x484C10` 逐个加载。调用者 5 处（0x4844EC/0x484538/0x484585/0x4845A6/0x4845BB）；地图名来自 `ebx`（0x4844BB `mov esi,ebx`），中间还有 `0x775BC0` 的 mp_ 前缀检查与 gametype 兜底（0xDB5FFC/0xDB6010）。→ 下一步找 0x4844xx 所在函数入口与调用者，定位地图名来源全局。
