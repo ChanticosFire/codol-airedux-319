@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T03:00:00+00:00",
+  "scope": "EXACT: the id 4048 is a 12-bit read starting at bit 1317, and 1317+12 = 1329 matches the measured bit position exactly - so 8 bits are consumed between the gates and the id",
+  "the_three_way_binding": {
+    "probe": "0x6716AD:IdStore",
+    "eax": 4048,
+    "bl": 0,
+    "bitpos": 1329
+  },
+  "the_brute_force_match": {
+    "method": "scan every 12-bit window in bytes 155..170 of the body for the value 0x0FD0",
+    "matches": [
+      "bit 1284 (byte 160, offset 4)",
+      "bit 1317 (byte 164, offset 5)"
+    ],
+    "which_one_is_right": "bit 1317, because 1317 + 12 = 1329 equals the measured [+0x20] exactly"
+  },
+  "what_that_proves": [
+    "the bit position field [+0x20] really does mean 'next bit to read', and the 12-bit id read is exactly 12 bits",
+    "the id read starts at bit 1317",
+    "the two gate bits are at 1307 and 1308, so after them the position is 1309",
+    "therefore EIGHT bits are consumed between the second gate bit and the id read"
+  ],
+  "where_those_eight_bits_come_from": [
+    "the count is 8 bits wide, and the count value we measured is 1",
+    "the byte reader 0x66ED70 does not advance [+0x20], so it cannot be the source of the consumption",
+    "the simplest explanation consistent with all the data is that the count is ALSO read from the BIT stream as 8 bits, and that 0x66ED70 exists for a different message (or reads the same byte through [+0x1C] as a cross-check)",
+    "under that reading: gates at 1307/1308, count = 8 bits at 1309..1316, id = 12 bits at 1317..1328, position 1329"
+  ],
+  "the_immediate_test": [
+    "set bits 1309..1316 (the 8-bit count window) to 1 and see whether the reported count becomes 1 while the byte at 164 changes",
+    "and set the id window 1317..1328 to a small value like 8, then check the stored id",
+    "if both respond as predicted, the entity list layout is finally exact: gates, count, id"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r228-gs.jsonl",
+    "body": "runs/snapshot-ent2.bin"
+  }
+}

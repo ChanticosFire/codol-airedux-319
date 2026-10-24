@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [EXACT: the id read starts at bit 1317; 1317+12 = 1329 matches the measured position]**
+> IdStore probe: eax 4048, bl 0, bitpos 1329. Brute force over the body found 0x0FD0 as a 12-bit window at bit 1317, which plus 12 equals 1329 exactly. So 8 bits are consumed between the gates (1307/1308) and the id read - most plausibly the count is read as 8 BITS at 1309..1316, not through the byte reader.
+> Next: set bits 1309..1316 and a small id at 1317..1328, then check count and stored id.
+> Evidence: [id read starts at 1317](evidence/experiments/20261023-codex-id-read-starts-at-1317.json).
 > **2026-10-23 [Id static trace: arguments say 8, measurement says 4048]**
 > 0x6716A1..0x6716AD: push 0xC, eax=esi, call 0x66EC30, store ax to word[0] of 0x7859358. Since 0x66ED70 only advances [+0x1C], the read should start at 1309 and return 8. The measured 4048 contradicts that.
 > Next: probe 0x6716AD (once per entity, safe) and log eax, bl and [+0x20] together.

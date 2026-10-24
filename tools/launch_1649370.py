@@ -2872,6 +2872,20 @@ def main(argv=None) -> int:
                 self._ent_count = n + 1
             except (OSError, ValueError, KeyError, struct.error) as error:
                 self.record({"ent_error": f"{label}: {error}"})
+        if label.startswith("IdStore"):
+            try:
+                registers = row.get("registers", {})
+                esi = int(registers["esi"], 0)
+                eax = int(registers.get("eax", "0"), 0)
+                ebx = int(registers.get("ebx", "0"), 0)
+                bitpos = struct.unpack("<I", self.process.read(esi + 0x20, 4))[0] if esi else -1
+                n = getattr(self, "_idstore_count", 0)
+                if n < 8:
+                    self.record({"id_store": {"eax": eax, "bl": ebx & 0xFF,
+                                              "bitpos": bitpos, "n": n}})
+                self._idstore_count = n + 1
+            except (OSError, ValueError, KeyError, struct.error) as error:
+                self.record({"id_store_error": f"{label}: {error}"})
         if label.startswith("Bits"):
             try:
                 registers = row.get("registers", {})
