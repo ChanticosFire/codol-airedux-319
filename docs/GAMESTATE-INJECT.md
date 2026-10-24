@@ -650,3 +650,36 @@ ui=5 时读 `sub=0x2464B8C0`：
 
 1. 找构造函数（哪个函数写 +0x90/+0x530 的非标记值），确认它是否被调用；
 2. 若确实没有，需要在进入匹配前显式调用它（或补一条会触发它的消息）。
+
+## 25. 2026-10-24 15:30–15:45：小包不应分片（真实抓包依据）与"不 connect"死循环
+
+### 25.1 真实服务器的小包不分片
+
+对照 `runs/servercmd-2697-svc.bin`（1139 B < 1162）：首字节就是 `01`（svc 0x01），
+**没有 u16 长度前缀、没有 FRAGMENT_BIT 头**。也就是说：
+
+- `payload > frag_size` → 加分片头（u16 长度 + `seq|0x80000000` + index/count + frag_size/len）；
+- `payload <= frag_size` → **直接发**，前 4 字节就是 ack。
+
+而 `gameserver.py::_send_fragments` 之前对**所有**包都加分片头，90 字节的 native gamestate
+也被包成 102 字节的分片包。已修复：`count <= 1` 时直接 `sendto(payload)`（仅对 svc 数据做 XOR），
+日志里记为 `kind: single`。
+
+### 25.2 但验证不了：客户端在 ui=5 时不 connect
+
+修复后重跑：客户端 `state=4`、`ui=5`，gs 日志只有 **inband**——客户端没有发 connect，
+gs 没有 peer，也就不会发 gamestate，`0x472D80` 仍然是 0 命中。
+
+形成死循环：
+
+```
+ui=5  →  客户端不发 connect  →  gs 无 peer  →  不发 gamestate  →  客户端不离开 ui=5
+```
+
+而 `ui=5` 时直接注入 challengeResponse（+ pump）会让 `state` 回到 0（状态机被挂起），
+说明 **必须先从 ui=5 里出来，网络层才会工作**。
+
+### 下一步
+
+1. 继续找 `ui=5` 的出口（`0xC8=2` 之后没有 3/4 的写入，需要查 `0xBA32A0` 调用的 `0xBA0980` 等子函数）；
+2. 或反向：先让客户端不进入 ui=5（在 LSG 登录完成前注入/连接），再验证小包修复后的 gamestate 是否终于到达 `0x472D80`。

@@ -363,6 +363,22 @@ class GameServer:
         count = (len(payload) + frag_size - 1) // frag_size
         seq_word = seq | 0x80000000
         key = ((peer.get("challenge") or 0) ^ seq) & 0xFF
+        if count <= 1:
+            # Small messages (the 90-byte native gamestate, 1 KiB commands) are
+            # *not* fragmented on the real server: runs/servercmd-2697-svc.bin
+            # is 1139 bytes with no fragment header, and the first four bytes
+            # are already the ack field.  Wrapping them in a fragment header
+            # made the client treat the payload as unknown data and drop it
+            # before 0x472D80 ever ran.
+            data = bytearray(payload)
+            for i in range(4, len(data)):
+                data[i] ^= key
+            self.sock.sendto(bytes(data), addr)
+            self.state.counters["inband_sent"] += 1
+            self.log({"dir": "out", "kind": "single", "message": kind,
+                      "to": f"{addr[0]}:{addr[1]}", "seq": seq,
+                      "length": len(data), "payload_head": payload[:32].hex()})
+            return
         for index in range(count):
             chunk = payload[index * frag_size:(index + 1) * frag_size]
             data = bytearray(chunk)
