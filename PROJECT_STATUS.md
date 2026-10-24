@@ -18423,3 +18423,7 @@ lobby          = 0x37E19850
 > **2026-10-27 15:00–15:30【⚠️ 重大理解修正：ui=5 是"连接/加载中"的正常状态（未 patch 时 net 4→5→7、gs 收到 connect/stats/gamestate、table=1135）；patch 后 ui=4 反而不发 connect（gs 只有 inband）、table=0 → patch 让事情变糟。真正卡点是 net=7 后 gamestate 处理崩溃】**
 >
 > 对照：原始 ui=5 → connect/stats/gamestate 全有、table 1135、net 到 7 后 unhandled_exception；patch 后 ui=4 → 无 connect、table 0。→ patch 应撤销；重点转向 net=7 后崩溃（exit_va=0x6193C8）。
+
+> **2026-10-27 15:30–16:00【🎯 崩溃精确定位：eip=edx=0x4D262236（无效地址）、instruction=b5110000…（数据区）→ call edx 跳进垃圾；寄存器 eax=0x12FF0810/edi=0x12FF0800（栈附近）、parameters[0]=0x8（执行违例）；判定为函数指针/vtable 槽被写成垃圾值】**
+>
+> r170 在 t+1s 崩溃：`{"exception":"0xc0000005","address":"0x4d262236","registers":{"edx":"0x4d262236","eip":"0x4d262236",...},"instruction":"b5110000..."}`。→ 首次拿到精确现场：不是数据解析错误，而是函数指针被破坏。下一步找 `0x4D262236` 来源（是否来自我们下发的数据）。
