@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [DECISIVE: the spinner animates - the client is genuinely still loading]**
+> Two captures 1 s apart at net 10 with one entity: 10752 vs 10690 bytes, not identical. So the spinner is animating, the client is inside its load sequence, and the 'in-map but undrawn' hypothesis is false.
+> The chain that stands: handshake completes, header parses, five blocks entered, count 1 and id stored and mode-1 floats written - and a loading spinner still animates. The missing condition is inside the client's load sequence, not in the snapshot bytes.
+> Evidence: [spinner animates still loading](evidence/experiments/20261023-codex-spinner-animates-still-loading.json).
 > **2026-10-23 [REINTERPRETATION: the loading object is destroyed on unload, not on load completion]**
 > The only writer that clears [0x8269774] is a teardown path at 0x77D043 (guard, destructor, pointer clear, release, more shutdown calls). So a non-null object may be normal while a map is active, and ui_state 5 may not mean 'still loading'.
 > That reopens the 'world not drawn' hypothesis. Decisive cheap test: two screenshots a second apart - a moving spinner means loading, an identical frame means in-map but undrawn.
