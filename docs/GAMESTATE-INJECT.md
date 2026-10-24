@@ -67,3 +67,24 @@ overlay 里的 `mp_cross_fire_load.ff`（24,853，sha `0b04da67…`）与 `mp_cr
 **结论**：load/const 不配套确实是"磁盘读取错误"的原因，已修复；现在卡点前移到
 **客户端在 state 6 等待服务器响应超时**——gamestate 已发出但未被接受（或后续 netchan 确认缺失）。
 下一步应查 gs 的 gamestate 分片 seq/ack 与客户端 netchan 期望，并给 `heartbeat` 补响应。
+
+## 5. 2026-10-24 12:46–12:48：单条注入与状态机顺序
+
+新增 `tools/inject_one.py`：一次只往 loopback 接收环写**一条**消息（challenge / connect / gamestate / raw），
+并可设定 `net_state`，用于把客户端逐步从 3 → 5 → 6 → 9 走过每一档。
+
+实测（客户端已在主菜单）：
+
+| 步骤 | 观测 |
+|---|---|
+| `ring_bridge connect --address 127.0.0.1:29000` | `state=4`，`ring_b=0` |
+| `inject_one --kind challenge --set-state 3` | `state_before=4`，`state_after=3` |
+| `pump` ×3 | **`state` 回到 4** |
+
+解释：`connect` 已经让客户端进入"已发起 connect、等待 connectResponse"的 4 档；
+此时再补 `challengeResponse` 不属于它当前等待的消息，状态机重新评估后回到 4。
+→ **挑战阶段必须在 connect 之前完成**：正确顺序是先 `inject_one challenge`（3→5），
+再注入 `connectResponse`（5→6），最后 `gamestate`（6→9），每步之后 `pump` 并采样。
+
+`inject_client_gamestate.py` 一次性塞 3 条消息、随后又被 `ring_bridge connect` 把状态改成 4，
+正好破坏了这条顺序；这解释了两轮里"注入后 state 只到 4/6"的现象。
