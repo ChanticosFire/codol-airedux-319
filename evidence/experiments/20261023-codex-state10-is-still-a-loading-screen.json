@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T08:00:00+00:00",
+  "scope": "DECISIVE EVIDENCE: at state 10 with count = 1 the frame is still a BLACK SCREEN with a loading spinner in the bottom-right corner",
+  "the_capture": {
+    "file": "runs/codex-r231-shot.png",
+    "width": 1920,
+    "height": 1080,
+    "bytes": 10895,
+    "state_at_capture": 10,
+    "entity_count_at_capture": 1,
+    "method": "tools/capture_screen.ps1 (a real desktop grab, because PrintWindow returns black for this D3D client)"
+  },
+  "what_the_image_shows": [
+    "the frame is uniformly black",
+    "there is a single small circular loading indicator at the bottom-right corner",
+    "that is the same loading-screen presentation the user has been reporting: map loading, waiting for other players, loading player data, black load"
+  ],
+  "why_this_matters_more_than_the_state_number": [
+    "the network state variable reads 10 and the client holds one entity - by the project's long-standing oracle that combination meant 'in match'",
+    "the screenshot shows that it does not: the client is still on a loading screen",
+    "so state 10 is a NETWORK-layer value and does not imply that cgame has entered the world",
+    "and every earlier conclusion that used state 10 as success inherits that limitation - the same class of error as treating state 10 as proof of a parsed snapshot"
+  ],
+  "what_the_spinner_tells_us": [
+    "the client is still waiting on a condition it has not received",
+    "the candidates are the ones already suspected: map-load completion, a clientNum/view-entity tie, or a specific configstring",
+    "the spinner is the real acceptance signal to chase, not the state variable"
+  ],
+  "the_practical_redirect": [
+    "stop using state == 10 as an oracle; use the screenshot (black-with-spinner vs a rendered world)",
+    "and find what the spinner waits on - the most direct probe is the loading-screen text or the condition the frontend checks before switching to the world"
+  ],
+  "artifacts": {
+    "screenshot": "runs/codex-r231-shot.png",
+    "server_log": "runs/codex-r231-gs.jsonl"
+  }
+}

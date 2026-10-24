@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [DECISIVE: state 10 + count 1 still shows a black screen with a loading spinner]**
+> Screenshot runs/codex-r231-shot.png captured at state 10 with count 1: uniformly black with a spinner bottom-right. So state 10 is a network value and does not mean cgame entered the world; the spinner is the real acceptance signal.
+> This invalidates state==10 as an oracle and redirects the work to what the spinner waits on (map load, clientNum/view entity, or a configstring).
+> Evidence: [state10 is still a loading screen](evidence/experiments/20261023-codex-state10-is-still-a-loading-screen.json).
 > **2026-10-23 [MILESTONE 5 / BREAKTHROUGH: state 10 WITH one entity, by sending an empty snapshot first]**
 > Alternating single22 then mode1 (repeat 16, interval 2.5): t=35 state 10 count 0; t=50 and t=65 state 10 count 1; IdStore fired once.
 > The contradiction is resolved by ORDER: the client leaves the loading screen on an entity-free snapshot and only then accepts entity snapshots. That matches real server behaviour.
