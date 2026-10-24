@@ -4059,3 +4059,41 @@ decode_fastfile(dst, Original Client exe) →
    - 用原 IV 重新 AES 加密头部；
 2. 写 `tools/patch_exe_pubkey.py`：把 exe 的 270 字节 DER 公钥换成自建公钥；
 3. 验证：`decode_fastfile(改后 ff, 改后 exe)` 通过。
+
+## 121. 2026-10-26 01:30–02:00：fastfile 模块只有验证没有签发，重签需反向实现
+
+### 121.1 模块能力盘点
+
+`codol_rebuild/resources/fastfile.py` 的函数：
+
+```
+inspect_fastfile / _inspect / _load_keys / _decrypt_material / _ctr
+_signed_payload（验证：header 摘要 + RSA 验签 + 逐块 SHA-256 链）
+_inflate / validate_zone / decode_fastfile / main
+```
+
+→ **全部是读取/验证，没有编码/写入**。
+
+### 121.2 重签需要反向实现（参考文档步骤）
+
+1. 构造新 header 明文（`IWffs100` + 修改后的 zone 名/哈希表区）；
+2. 重算 `hdr[0x0C:0x2C] = sha256(hdr[0x12C:0x1FD0])`；
+3. 用自建私钥签名 → `hdr[0x2C:0x12C]`（RSA-2048/PKCS#1 v1.5/SHA-256）；
+4. 用原 IV（`material[24:40]`）做 AES-192-CTR 加密 → 写回 `0x115` 起 8192 字节；
+5. 重算数据块哈希链：每块 IV = `sha256(明文块)`，写入对应 hash table；
+6. 重新组装：明文前缀 21 B + RSA 密文 256 B + 加密头 8192 B + 段表 + 数据块。
+
+### 121.3 可复用件
+
+- `_ctr(data, key, iv)`：AES-192-CTR（双向）；
+- `_load_keys(exe, version, require_signing)`：能拿到 signing_key（验证用公钥）；
+- `_decrypt_material(encrypted, private_key, version)`：需要私钥解 40 B 材料
+  （**零售私钥没有** → 必须走"替换信任根"，用自建密钥对重造这一段）。
+
+### 下一步
+
+实现 `tools/ff_resign.py` 的**最小版**：
+1. 用自建 RSA-2048 密钥对；
+2. 对 `mp_crash_tropical_const.ff` 做"原样重签"（内容不变、只换签名与公钥）；
+3. 用 `decode_fastfile` 验证（需要 exe 公钥也换成自建）；
+4. 通过后，再谈"改内容"。
