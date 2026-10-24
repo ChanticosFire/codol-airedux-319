@@ -1302,3 +1302,36 @@ refs = 1: 0x813E96 lea esi,[ebx+0x108394]   (modrm 0xB3)
 1. 反汇编 `0xC513D9` 的上游（它所在函数），看 `patch_mp_crash_tropical.ff` 这个文件名由谁提供；
 2. 或直接在 `0xC513D9` 附近下断点，看 demo 播放时栈上的文件名指针；
 3. 拿到指针后改内存即可换图（不必改 demo 文件）。
+
+## 45. 2026-10-24 20:25–20:40：FS 打开点断点可用，文件名需运行时读
+
+### 45.1 `0xC513D9` 是什么
+
+```asm
+0xC513CE  push [ebp-0x14]      ; 共享模式
+0xC513CA  lea eax,[ebp-0x30]
+0xC513CD  push eax
+0xC513C7  push [ebp-0x18]      ; 创建方式
+0xC513BE  push [ebp-0x10]      ; 属性
+0xC513BC  push 0
+0xC513D4  push [ebp+0xC]       ; ← 文件名（第三个参数）
+0xC513D7  call edi             ; [0xCA8208] = CreateFileA
+0xC513D9  mov [ebp-0x20], eax  ; 返回点
+```
+
+→ `0xC513D9` 是 **CreateFileA 的返回点**，文件名在 `[ebp+0xC]`。
+
+### 45.2 新工具
+
+`tools/read_fs_names.py`：从断点事件里取 `ebp`，读 `[ebp+0xC]` 指向的字符串，
+去重后打印前 N 个。第一次跑时 milestone 过滤漏了 `FSOpen`（已修）。
+
+### 45.3 断点结果
+
+`0xC513D9:FSOpen` 命中 **1 次**（`eax=0xFFFFFFFF`，即 CreateFileA 失败），
+但那是启动早期的失败请求；客户端随后被清理，来不及读文件名。
+
+### 下一步
+
+带上修正后的 `read_fs_names.py` 重跑一次（客户端保持运行），
+即可看到 demo 播放实际请求的 `patch_mp_crash_tropical.ff` 文件名及其提供者所在的栈帧。
