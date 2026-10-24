@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-31T05:00:00+00:00",
+  "scope": "the .ifs concatenation hypothesis is DISPROVEN (mathematically impossible); the 41,648,405-byte mp_cross_fire.ff is a repatched 2.6.9.7 (ver 365) binary; swapping in the true 461 fastfile breaks startup unless the whole set is swapped",
+  "corrections_to_earlier_beliefs": [
+    "WRONG: a usable .ff is ff_* + lf_* + lf_hi_* concatenated. A legal fastfile length is always 0x115 + N*0x2000 (277 + N*8192). Concatenating k members gives size mod 0x2000 = (277k) mod 8192, which equals 277 only for k=1 because 277 and 8192 are coprime. So no concatenation of 2..8192 members can ever be a legal fastfile.",
+    "WRONG: the 4.28 MB gap meant missing packages. It is a VERSION gap.",
+    ".ifs is a container: nifs header (172 B) + CRLF name list + 16-byte MD5 of the list + several COMPLETE signed fastfiles stored back to back. lf_* and lf_hi_* contain ZERO IWff occurrences - they are loose-asset packages and never participate in ff construction."
+  ],
+  "the_provenance_finding": {
+    "the_shipped_overlay_file": "E:/GAME/COD/1649370/resources/v1649370/offline-resources/client_shipretail/chinese/mp_cross_fire.ff = 41,648,405 bytes",
+    "what_it_actually_is": "a 2.6.9.7 fastfile (version word 365) with exactly ONE byte patched at 0x8 (0x6D -> 0xCD) so it claims version 461",
+    "evidence": [
+      "CODOL-2.6.9.7-Launcher/runtime/game/server2697/runtime-assets/chinese/mp_cross_fire.ff is 41,648,405, ver 365, sha 19f5b16f..., differing from the overlay copy at 0x8 only",
+      "CODOL-2.6.9.7-Launcher/runtime/game/decoded-resources/.../decoded/.../mp_cross_fire.ff is the same 365 file",
+      "the true 461 extraction from ff_init_mp_cross_fire_V70.ifs is 37,331,221 bytes (0x115 + 4557*0x2000), signature/hash-chain/zlib all pass, zone 75,189,466, 240 assets"
+    ],
+    "implication": "the whole overlay is a 2.6.9.7 (365) resource set masquerading as 461. That is why the client accepts it at all, and it is a plausible reason a map can never finish loading."
+  },
+  "the_experiment_that_failed_and_what_it_taught": {
+    "attempt_1": "replaced BOTH common_gametype_mp.ff (34,783,232 illegal) and mp_cross_fire.ff (41,648,405) with true-461 files -> engine_ready=False, client process never appeared",
+    "attempt_2": "replaced ONLY common_gametype_mp.ff with the legal 34,693,397 file, kept mp_cross_fire.ff at 41,648,405 -> engine_ready=True, then net 8/9/10, ui_state stayed 5, [+0x5E8] stayed 3",
+    "conclusion": [
+      "the illegal common_gametype_mp.ff was NOT the loading blocker (replacing it changes nothing observable)",
+      "but the true-461 mp_cross_fire.ff is incompatible with the rest of this 365-based overlay - mixing one true-461 fastfile into it prevents the client from starting at all",
+      "so mp_cross_fire.ff must stay at 41,648,405 until the whole resource set is coherent"
+    ]
+  },
+  "overlay_state_now": {
+    "common_gametype_mp.ff": "34,693,397 (legal: mod 0x2000 = 277) - this is the corrected file, kept",
+    "mp_cross_fire.ff": "41,648,405 (the 365 repatch) - restored, must stay until a coherent 461 set exists",
+    "mp_crash_tropical.ff": "32,620,821 (mod 277, legal) - present, written by another session at 12:03",
+    "mp_crash_tropical_load.ff": "24,853 (mod 277)",
+    "mp_crash_tropical_const.ff": "90,389 (mod 277)",
+    "all_ff_mod_0x2000": 277,
+    "backup": "runs/overlay-backup-20261024-1210/ holds the original illegal gametype and the 41,648,405 cross_fire"
+  },
+  "the_new_most_promising_next_step": [
+    "mp_crash_tropical is ALREADY a coherent legal set in the overlay (32,620,821 + 24,853 + 90,389, all mod 277), and it is the map the 2021-08 demos were recorded on",
+    "mp_cross_fire, by contrast, is a foreign 365 fastfile and can never be loaded correctly by a 461 client",
+    "so the cheapest decisive test is to point the server at mp_crash_tropical instead of mp_cross_fire and see whether the client leaves ui_state 5",
+    "that requires changing the map name in the gamestate produced by server1649370/native_gamestate.py"
+  ],
+  "second_option": [
+    "extract ALL members of ff_init_mp_cross_fire_V70.ifs (the archives hold the main file plus _load and _const), and swap main+load+const together",
+    "then, if the client still starts, check whether cross_fire loads",
+    "prerequisite: confirm that a swap of all three from the same .ifs keeps the client able to start"
+  ],
+  "artifacts": {
+    "doc": "docs/IFS-MERGE-RESULT.md (produced by the sub-investigation, 21,961 bytes)",
+    "probe": "runs/ifs_merge_probe.py",
+    "checker": "runs/ifs-merge/check_overlay_ff.py",
+    "screenshot": "runs/codex-r242-shot.png"
+  }
+}

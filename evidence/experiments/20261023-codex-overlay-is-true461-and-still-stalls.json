@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-31T05:30:00+00:00",
+  "scope": "the overlay is now an ALL-TRUE-461 resource set and the client still stalls at ui_state 5 - so the blocker is provably NOT in the resource layer",
+  "the_current_overlay_state": {
+    "common_gametype_mp.ff": "34,693,397  sha13E7EC15  written 10-22 17:43  (legal 461)",
+    "mp_cross_fire.ff": "37,331,221  sha45B964B1  written 10-24 12:03  (true 461, extracted from ff_init_mp_cross_fire_V70.ifs)",
+    "mp_crash_tropical.ff": "32,620,821  sha86B55C6A  written 10-24 12:03  (true 461)",
+    "mp_crash_tropical_load.ff": "24,853",
+    "mp_crash_tropical_const.ff": "90,389",
+    "all_ff_mod_0x2000": 277,
+    "note": "the 12:03 writes were made by another session, not by this one; they replaced the earlier 365-repatch of mp_cross_fire.ff"
+  },
+  "the_run_that_used_this_state": {
+    "engine_ready": true,
+    "samples": [
+      {
+        "net": 8,
+        "ui": 5,
+        "count": 0,
+        "sub_5E8": 3
+      },
+      {
+        "net": 9,
+        "ui": 5,
+        "count": 0,
+        "sub_5E8": 3
+      },
+      {
+        "net": 10,
+        "ui": 5,
+        "count": 1,
+        "sub_5E8": 3
+      }
+    ],
+    "screenshot": "runs/codex-r242-shot.png"
+  },
+  "the_clean_conclusions": [
+    "with a coherent true-461 resource set the client starts normally and reaches net_state 10 while holding an entity - so the true-461 fastfiles are ACCEPTED",
+    "and ui_state still stays 5 with [+0x5E8] still 3 - identical to the behaviour with the old 365-repatch",
+    "therefore the loading stall is NOT caused by the fastfile layer; the resource layer can be considered settled",
+    "the earlier report that 'swapping both files prevents startup' was a mis-read: engine_ready=False came from the launcher's 30-second timeout on that attempt, not from a crash - the same file combination starts fine (this run proves it)"
+  ],
+  "what_that_leaves_as_the_only_remaining_layer": [
+    "the frontend connection state: [+0x5E8] == 3 (the 'token matched, waiting' state), which maps to status 2 and then to ui_state 5",
+    "plus the CA_LOADING connection state name that sits next to the demo commands",
+    "both point at a session-level condition rather than at data inside snapshots or at resource files"
+  ],
+  "the_cheapest_decisive_test_available_now": {
+    "what": "play a demo with cl_demo_play",
+    "why": "mp_crash_tropical (the map every 2021-08 demo was recorded on) is already a complete, legal, true-461 set in the overlay, and 22 demos are on disk",
+    "what_it_proves": [
+      "if the world renders, the renderer/map pipeline is fine and everything missing is on the session/data side -> focus entirely on what the server must send",
+      "if it still shows a spinner or errors out, the client cannot render this map at all in this build -> that is a hard limit worth knowing before more work"
+    ],
+    "how": "launch the client as usual but skip the server/bridge steps, then issue cl_demo_play with the demo filename"
+  },
+  "artifacts": {
+    "screenshot": "runs/codex-r242-shot.png",
+    "server_log": "runs/codex-r242-gs.jsonl",
+    "backup": "runs/overlay-backup-20261024-1210/"
+  }
+}
