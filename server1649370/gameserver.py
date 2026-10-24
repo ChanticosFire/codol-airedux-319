@@ -101,7 +101,9 @@ class GameServer:
                  gamestate_repeat: int = 0, gamestate_interval: float = 20.0,
                  gamestate_map: str | None = None,
                  gamestate_gametype: str | None = None,
-                 oob_command: str | None = None, oob_delay: float = 30.0):
+                 oob_command: str | None = None, oob_delay: float = 30.0,
+                 gamestate_file: str | None = None,
+                 snapshot_preserve_time: bool = False):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -113,6 +115,8 @@ class GameServer:
         self.delay_send = delay_send
         self.checksum_feed = checksum_feed
         self.gamestate_source = gamestate_source
+        self.gamestate_file = Path(gamestate_file) if gamestate_file else None
+        self.snapshot_preserve_time = snapshot_preserve_time
         self.gamestate_repeat = int(gamestate_repeat or 0)
         self.gamestate_interval = float(gamestate_interval or 0.0)
         self.gamestate_maps = [(part.strip() or "mp_cross_fire").encode("ascii")
@@ -278,11 +282,15 @@ class GameServer:
                 continue
             peer["gamestate_sent"] = True
             index = min(peer.get("gamestate_count", 0), len(self.gamestate_maps) - 1)
-            payload = (build_native_gamestate(self.registration_checksum,
-                                              configstrings=self.configstrings,
-                                              mapname=self.gamestate_maps[index],
-                                              gametype=self.gamestate_gametype)
-                       if self.gamestate_source == "native" else GAMESTATE_PLAINTEXT)
+            if self.gamestate_source == "native":
+                payload = build_native_gamestate(self.registration_checksum,
+                                                 configstrings=self.configstrings,
+                                                 mapname=self.gamestate_maps[index],
+                                                 gametype=self.gamestate_gametype)
+            elif self.gamestate_source == "file":
+                payload = self.gamestate_file.read_bytes()
+            else:
+                payload = GAMESTATE_PLAINTEXT
             if not payload:
                 self.log({"dir": "meta", "kind": "gamestate_missing"})
                 continue
@@ -418,7 +426,7 @@ class GameServer:
                 self.log({"dir": "meta", "kind": "snapshot_missing", "error": str(error)})
                 continue
             payload = b"\x00\x00\x00\x00" + data
-            if len(payload) >= 9 and payload[4] == 0:
+            if not self.snapshot_preserve_time and len(payload) >= 9 and payload[4] == 0:
                 server_time = 72192 + index * 500
                 payload = payload[:5] + struct.pack("<I", server_time) + payload[9:]
             seq = self.snapshot_seq + index
@@ -550,7 +558,9 @@ def main() -> int:
                         help="seconds after connect before sending gamestate")
     parser.add_argument("--checksum-feed", type=lambda value: int(value, 0),
                         help="experimental uint32 replacement at gamestate offset 26")
-    parser.add_argument("--gamestate-source", choices=("native", "capture"), default="native")
+    parser.add_argument("--gamestate-source", choices=("native", "capture", "file"), default="native")
+    parser.add_argument("--gamestate-file", default=None,
+                        help="complete plaintext payload, including four-byte reliable ack")
     parser.add_argument("--gamestate-repeat", type=int, default=0)
     parser.add_argument("--gamestate-interval", type=float, default=20.0)
     parser.add_argument("--gamestate-map", default=None)
@@ -569,6 +579,8 @@ def main() -> int:
     parser.add_argument("--snapshot-delay", type=float, default=3.0,
                         help="seconds after gamestate before the snapshot is sent")
     parser.add_argument("--snapshot-seq", type=int, default=4)
+    parser.add_argument("--snapshot-preserve-time", action="store_true",
+                        help="keep the snapshot body's recorded serverTime")
     parser.add_argument("--snapshot-repeat", type=int, default=0,
                         help="total snapshot sends; 0 = send once")
     parser.add_argument("--snapshot-interval", type=float, default=0.5,
@@ -597,6 +609,8 @@ def main() -> int:
         for part in args.snapshot_file.split(","):
             if part.strip() and not _Path(part.strip()).exists():
                 parser.error(f"--snapshot-file {part.strip()!r} does not exist")
+    if args.gamestate_source == "file" and (not args.gamestate_file or not Path(args.gamestate_file).is_file()):
+        parser.error("--gamestate-source file requires an existing --gamestate-file")
     if args.delay_send < 0:
         parser.error("--delay-send must be nonnegative")
     if args.checksum_feed is not None and not 0 <= args.checksum_feed <= 0xFFFFFFFF:
@@ -621,7 +635,8 @@ def main() -> int:
                         args.configstring_file, args.command_repeat, args.command_interval,
                         args.gamestate_repeat, args.gamestate_interval, args.gamestate_map,
                         args.gamestate_gametype, args.oob_command,
-                        args.oob_delay if args.match_duration is None else args.match_duration)
+                        args.oob_delay if args.match_duration is None else args.match_duration,
+                        args.gamestate_file, args.snapshot_preserve_time)
     try:
         server.serve()
     except KeyboardInterrupt:

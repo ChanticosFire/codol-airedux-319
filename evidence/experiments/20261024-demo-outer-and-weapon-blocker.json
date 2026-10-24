@@ -1,0 +1,36 @@
+{
+  "build": 1649370,
+  "date": "2026-10-24",
+  "sample": "E:\\GAME\\COD\\使命召唤OL\\main\\demo\\0C-2021-8-26[19-26-24]war.demo",
+  "outer_format": {
+    "start": 32800,
+    "packet_type_2": "u8=2, u32 sequence, u32 payload_length, payload",
+    "aux_type_1": "u8=1, u32 sequence, 52-byte payload",
+    "footer_type": 0,
+    "packet_count": 18366,
+    "aux_count": 52061,
+    "footer_offset": 7216689,
+    "all_demos": "19 of 21 reached a type-0 footer; one stopped on unknown type 179, one had a truncated auxiliary record"
+  },
+  "exact_exports": {
+    "gamestate": "runs/demo-outer-exact/gamestate-stream-6407.bin",
+    "gamestate_decompressed_bytes": 6407,
+    "gamestate_configstrings": 291,
+    "baseline": "runs/demo-outer-exact/baseline-outer17-245.bin",
+    "baseline_delta_distance": 0,
+    "first_p_delta": "runs/demo-outer-exact/p-delta-outer113-259.bin",
+    "first_p_delta_distance": 1,
+    "superseded_candidate": "runs/demo-frames-first/00-443.bin crossed an outer packet boundary"
+  },
+  "natural_gamestate": {
+    "demo_registration_checksum": "0x00000000",
+    "client_value_at_0x4731b0": "0xFFB56D7E",
+    "breakpoint_run": "runs/r102-checksum-local-summary.json",
+    "network_payload": "runs/demo-outer-exact/gamestate-network-ffb56d7e-6411.bin"
+  },
+  "runs": {
+    "r103": "Checksum passes; error 181 with weapon string ** 646 0 0 8738 9321, resolver index 1136 versus expected 1224; no snapshot accepted",
+    "r104": "Filtering configstrings 7184 through 7218 avoided error 181 but caused client access violation at 0x58F3C0 (null weapon definition pointer); forward summary incomplete"
+  },
+  "next": "Recover or remap demo weapon registry ordering before replaying the matching baseline, then adapt to mp_cross_fire."
+}

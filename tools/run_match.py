@@ -193,7 +193,11 @@ def main() -> int:
     parser.add_argument("--match-duration", type=int, default=45,
                         help="seconds until the server sends the end-of-match disconnect")
     parser.add_argument("--snapshot", default="runs/snapshot-hybrid-empty-actors.bin")
+    parser.add_argument("--gamestate-file", default="",
+                        help="captured plaintext gamestate payload, including its ack field")
     parser.add_argument("--snapshot-delay", type=float, default=20.0)
+    parser.add_argument("--snapshot-repeat", type=int, default=120)
+    parser.add_argument("--snapshot-preserve-time", action="store_true")
     parser.add_argument("--snapshot-seq", type=int, default=1000,
                         help="first snapshot sequence; 1000 was accepted after gamestate 3")
     parser.add_argument("--map", default="", help="override the gamestate map name")
@@ -207,6 +211,8 @@ def main() -> int:
                         help="copy the five verified same-build loose packs into this runtime")
     parser.add_argument("--skip-clean", action="store_true",
                         help="leave unrelated project servers running")
+    parser.add_argument("--client-breakpoint", default="",
+                        help="optional launch breakpoint VA:label for a focused parser trace")
     args = parser.parse_args()
 
     RUNS.mkdir(exist_ok=True)
@@ -230,21 +236,28 @@ def main() -> int:
     log("starting game server")
     gs_args = ["-m", "server1649370.gameserver",
                "--port", str(args.gs_port), "--log", f"runs/{name}-gs.jsonl",
-               "--delay-send", "10", "--gamestate-source", "native",
+               "--delay-send", "10", "--gamestate-source", "file" if args.gamestate_file else "native",
                "--snapshot-file", args.snapshot, "--snapshot-delay", str(args.snapshot_delay),
-               "--snapshot-seq", str(args.snapshot_seq), "--snapshot-repeat", "120",
+               "--snapshot-seq", str(args.snapshot_seq), "--snapshot-repeat", str(args.snapshot_repeat),
                "--snapshot-interval", "1.5",
                "--oob-command", "disconnect",
                "--match-duration", str(args.match_duration)]
+    if args.gamestate_file:
+        gs_args += ["--gamestate-file", args.gamestate_file]
+    if args.snapshot_preserve_time:
+        gs_args += ["--snapshot-preserve-time"]
     if args.map:
         gs_args += ["--gamestate-map", args.map]
     start(gs_args, RUNS / f"{name}-gs.out", RUNS / f"{name}-gs.err")
     time.sleep(2)
 
     log("launching client")
-    start(["tools/launch_1649370.py", "--full", "--seconds", "400",
-           "--local-profile", "--loopback-tcp-guard", "--local-auth-lsg",
-           "--reuse-runtime", args.runtime, "--name", name, "--trace-files"],
+    client_args = ["tools/launch_1649370.py", "--full", "--seconds", "400",
+                   "--local-profile", "--loopback-tcp-guard", "--local-auth-lsg",
+                   "--reuse-runtime", args.runtime, "--name", name, "--trace-files"]
+    if args.client_breakpoint:
+        client_args += ["--breakpoint", args.client_breakpoint]
+    start(client_args,
           RUNS / f"{name}-launch.out", RUNS / f"{name}-launch.err")
     ready = wait_for(RUNS / f"{name}-launch.out", "engine-init", 40)
     summary["steps"]["engine_init"] = ready

@@ -1,5 +1,7 @@
 # Phase Status and Evidence
 
+> **2026-10-24 [1649370 demo gamestate and baseline extracted]** Exact outer parsing yielded a 6,407-byte gamestate stream (291 configstrings), a 245-byte full snapshot and 259-byte first delta. Natural connection passes the demo gamestate checksum after replacing its zero with `0xFFB56D7E`, then fails on weapon mapping 1136 vs 1224 (`r103`); removing those configstrings causes a null dereference (`r104`). Target `mp_cross_fire` remains unseen, `ui_state=5`. See `docs/NEXT-SESSION.md`.
+
 > **2026-10-24 [1649370 demo baseline is the next blocker]** Corrected natural gamestate sequence to 3 and restored the verified 10-byte fragment header; server-only control `r96` reaches net state 10 with `ui_state=5`. The first demo `p` frame is a delta (`delta_distance=1`), not a standalone baseline. `r97` ACKed it only after a synthetic predecessor and then crashed at `0x421A73`; a matching demo baseline/gamestate is required. `mp_cross_fire` has not appeared on screen. See `docs/NEXT-SESSION.md` and `docs/DEMO-ANALYSIS.md`.
 
 > **2026-10-23 [RESOURCE LAYER SETTLED: overlay is now all-true-461, and the client still stalls at ui_state 5]**
