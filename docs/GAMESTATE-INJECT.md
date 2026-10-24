@@ -5491,3 +5491,60 @@ stop_reason = "unhandled_exception"
 1. 在服务端路径下复读 `[+0x5E8]`，确认确实是 3；
 2. 找"谁写 3"（`mov [conn+0x5E8], 3` 的代码）与"谁清 0"；
 3. 对比 demo 路径为什么不需要这个字段（可能 demo 走 `CL_PlayDemo` 直接设 state=7 绕过 CA 状态机）。
+
+## 160. 2026-10-26 21:00–21:30：**CA 状态机两端定位（设 3 与清 0）**
+
+### 160.1 `[conn+0x5E8]` 的 6 个写入点
+
+| 地址 | 写入值 | 含义 |
+|---|---|---|
+| `0xBA3252` | 1 | CA_CONNECTING |
+| `0xBA3460` | 0 | 复位 |
+| `0xBA3661` | 0 | 复位 |
+| **`0xBA3C47`** | **3** | **CA_LOADING** |
+| `0xBA3DA3` | 2 | CA_CHALLENGING |
+| `0xBA40AA` | 0 | 复位（`0xBA4080` 函数内） |
+
+读取点：`0x598361`、`0xBA44E8`。
+
+### 160.2 设 3 的上下文（0xBA3C47）
+
+```asm
+0xBA3C05  push 8
+0xBA3C0B  lea eax,[esi+0x5FC]
+0xBA3C12  call 0x7B3FE0          ; 某校验/读取
+0xBA3C1A  test eax,eax
+0xBA3C1C  jne 0xBA3C62           ; 失败分支
+0xBA3C1E  lea ebx,[eax+1]        ; ebx = 1
+0xBA3C21  cmp [esi+0x644],eax
+0xBA3C29  mov ecx,[esi+0x640]
+0xBA3C30  call 0x8435D0
+0xBA3C3B  mov [esi+0x5EC], ebx   ; +0x5EC = 1
+0xBA3C41  mov [esi+0x5F0], ebx   ; +0x5F0 = 1
+0xBA3C47  mov [esi+0x5E8], 3     ; ← CA_LOADING
+0xBA3C5F  ret 0xC
+```
+
+→ 这是一个"**校验成功后进入加载**"的函数（`ret 0xC` 表示 3 个参数）。
+
+### 160.3 清 0 的上下文（0xBA40AA）
+
+```asm
+0xBA4080  push ebp / mov ebp,esp / sub esp,0x20
+0xBA4092  esi = [ebp+8]
+0xBA4097  push edi
+0xBA4098  lea eax,[ebx+0x5F4]
+0xBA40A0  mov [ebx+0xC8], 1
+0xBA40AA  mov [ebx+0x5E8], 0     ; ← 清 0
+0xBA40B4  lea edi,[ebx+0x538]
+0xBA40BA  mov ecx,0x2C / rep movsd   ; 拷贝 0x2C*4 = 0xB0 字节
+0xBA40C2  call 0x6431B0
+0xBA40DA  call 0xBA9970
+```
+
+→ 这是一个"**重置 + 拷贝状态块**"的函数，进入它就会清 0。
+
+### 160.4 结论
+
+- 服务端路径卡在 3，说明**从未调用 `0xBA4080`**（或调用时条件不满足）；
+- 下一步：找 `0xBA4080` 的调用者与触发条件（是"加载完成回调"还是"主动重置"）。
