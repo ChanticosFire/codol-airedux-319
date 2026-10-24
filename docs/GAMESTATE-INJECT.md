@@ -8600,3 +8600,48 @@ stage/B7A670：可设为满足（已验证）
 
 1. 优先尝试 **QueueUserAPC**；
 2. 若不行，找"连接按钮"的 UI 消息（`PostMessage(WM_COMMAND)`）。
+
+## 245. 2026-10-27 16:00–16:30：**`cmd_connect` 也调 `invoke_sequence(CONNECT_FN)` → run_match 的历史成功同样不靠它**
+
+### 245.1 源码（`cmd_connect`）
+
+```python
+def cmd_connect(client, args) -> dict:
+    address = args.address.encode("latin-1") + b"\0"
+    written = client.write(ADDRESS_STRING, address)
+    row = client.invoke_sequence([{"target": CONNECT_FN, "args": []}], settle=args.settle)
+    row["address_written"] = written
+    row["status_after"] = client.status()
+    return row
+```
+
+→ 与 `cmd_forward --connect-address` 的 `elif` 分支**完全相同**：
+写地址 + `invoke_sequence(CONNECT_FN)`。
+
+### 245.2 关键推论
+
+- `run_match.py` 用的 `connect` 子命令**也依赖 `invoke_sequence(CONNECT_FN)`**；
+- 而 `CONNECT_FN`（`0x5BE730`）在主线程、`invoke_sequence` 挂窗口线程 → **执行不到**；
+- 所以 `run_match.py` 的历史成功（`net=10`、`ui=0`）**也不是靠 `CONNECT_FN`**。
+
+### 245.3 那 `net=10` 从哪来？
+
+**唯一可能的区别**：`PUMP_FN`（`0x674F30`）可能**在窗口线程**上执行（网络 pump 由窗口消息驱动），
+而 `CONNECT_FN` 在主线程。所以：
+- `invoke_sequence(PUMP_FN)` → **能执行**（窗口线程）；
+- `invoke_sequence(CONNECT_FN)` → **执行不到**（主线程）。
+
+### 245.4 结论
+
+```
+run_match 的历史成功 = pump 能跑 + 服务端主动发 gamestate + 客户端主循环处理
+  ≠ CONNECT_FN 被调用
+```
+
+→ **连接是"服务端先发、客户端被动接收"**，而不是"客户端主动 connect"。
+
+### 下一步
+
+1. 确认 `PUMP_FN` 的线程归属（窗口线程 vs 主线程）；
+2. 若 PUMP 在窗口线程 → 所有 `invoke_sequence(PUMP_FN)` 都有效；
+3. 那问题就变成"**如何让服务端在客户端未 connect 的情况下发 gamestate**" —— 这可能不可行（协议要求先 connect）。

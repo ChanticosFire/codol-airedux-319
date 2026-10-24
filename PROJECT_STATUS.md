@@ -18615,3 +18615,7 @@ lobby          = 0x37E19850
 > **2026-10-27 15:30–16:00【🎯 确认 r176 是环境假象：彻底清理后单 gs、单 lsg，forward 20s 得 sent=0/received=0，gs 仅收 meta start（无任何包）→ 0x5BE730 至今从未执行，invoke_sequence 从未触发过连接】**
 >
 > 实验：清理全部 python + 端口，启动 1 lsg + 1 gs，stage=6/net=4，前台 forward 20s → sent=0、gs 无 in 包。→ 需要 QueueUserAPC / PostThreadMessage / 找到 UI 连接入口。
+
+> **2026-10-27 16:00–16:30【🎯 cmd_connect 也调 invoke_sequence(CONNECT_FN)（与 forward 相同）→ run_match 的历史成功同样不靠 CONNECT_FN；最可能是 PUMP_FN 在窗口线程（能执行）而 CONNECT_FN 在主线程（执行不到），即"服务端先发、客户端被动接收"】**
+>
+> 源码：`cmd_connect` = 写地址 + `invoke_sequence([CONNECT_FN])`。→ CONNECT_FN 在主线程、执行不到。下一步确认 PUMP_FN 线程归属。
