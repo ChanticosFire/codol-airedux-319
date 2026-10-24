@@ -8972,3 +8972,73 @@ dump  = runs/cmdtable-vid_restart.json
 2. 走**本地房间链**（不依赖匹配服务器）：
    `room.create` → `room.changemap mp_crash_tropical` → `room.startgame`；
 3. 若 `room.*` 也依赖会话，则补 LSG 的匹配端点（`task_request` 之后没有 `candidate_task_reply` 的分支）。
+
+## 252. 2026-10-27 19:40–20:20：**房间链通了壳但控件惰性；`xstartprivatematch` 不经过 LSG**
+
+### 252.1 `room.create` 确实生效（新证据）
+
+```
+注入 room.create（0→14，被消费）
+→ 底部出现「房间」「队伍」两个标签
+→ 聊天频道从「大厅群聊频道加入中…」变成「房间」
+→ ui=0 / stage=5 / net=0 / table=1135
+```
+
+**房间对象被创建**（UI 层可观察到），但主区域仍是大厅布局残留。
+
+### 252.2 后续命令惰性
+
+| 命令 | 注入 | 效果 |
+|---|---|---|
+| `room.changemap mp_crash_tropical` | 成功 | 无变化 |
+| `room.startgame` | 成功 | 无变化 |
+| `preloadmap mp_crash_tropical` | 0→31 | `table` 保持 1135（未加载任何档案） |
+
+→ 与 `launch_1649370.py` 里的注释一致："房间内的准备控件在当前离线版本中是惰性的"。
+
+### 252.3 决定性诊断：`xstartprivatematch` **不经过 LSG**
+
+用 `LSG_T9_MODE=entry` + `LSG_T4_MODE=entry` + `FINDSESS_PORT=8466` 启动 LSG，
+gs 监听 **8466**，客户端就绪后注入 `xstartprivatematch`：
+
+```
+gs kinds: 仅 ('meta','start') 1   —— 零包
+LSG 日志：9 个 task_request，全部在登录阶段：
+  71/4    args=blob,blob,u32(31902622),...
+  28/4    args=tag(0x6c)
+  102/7   args=u32(50),u8(1),u64(0),...
+  102/1   args=u32(0),u32(1),u8(3),u64(0)
+  3/46    args=str_hex,u64,str_hex,u32(10),u32(0)
+  3/48    args=str_hex,u64,str_hex,u32(0),u32(100),u32(0)
+  80/232  args=str_hex
+  9/5     args=u32(100)
+  102/5   args=u32(2),u8(1),u8(2)
+→ **没有 (71,9) FindSessions，`xstartprivatematch` 之后也没有任何新 task**
+→ 815 错误照旧
+```
+
+### 252.4 结论（关键）
+
+1. **`xstartprivatematch` 完全不走 LSG**（不请求 FindSessions/匹配数据）；
+2. 因此 `LSG_T9_MODE=entry`（114 字节 bdMatchMaking）**无效**——客户端根本没来要；
+3. **错误 815 来自客户端的本地会话对象缺失**（XSession 未建立），不是网络请求失败；
+4. 所有 `xstart*` / `room.*` 命令都依赖那个会话对象，所以都是惰性/失败。
+
+### 252.5 对后续路线的意义
+
+| 路线 | 状态 |
+|---|---|
+| 纯本地命令进球（`xstartprivatematch` / `room.startgame` / `preloadmap`） | **不可行**（会话缺失，命令惰性） |
+| LSG 补匹配端点 | **无效**（客户端不来请求） |
+| 服务端主动推进（connect + gamestate + snapshot） | **唯一剩余主线**；且需要解决"让客户端发 connect" |
+
+### 252.6 附：LSG 已实现的 task 清单（本轮实测记录）
+
+`71/4`、`28/4`、`102/7`、`102/1`、`3/46`、`3/48`、`80/232`、`9/5`、`102/5`
+（登录后客户端固定请求这 9 个；`(71,9)` FindSessions 在本流程里**不出现**）
+
+### 252.7 下一步
+
+回到"让客户端发 connect"：现在有了 **Cbuf 注入** 这个新杠杆，
+可以注入 `set` 系列去满足 `0x5BE730` 的前置条件，或注入
+`net_port`/`net_ip` 之类让网络子系统重新初始化。
