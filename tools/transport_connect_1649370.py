@@ -113,6 +113,10 @@ def main() -> int:
     ap.add_argument("--settle", type=float, default=8.0)
     ap.add_argument("--ring", action="store_true",
                     help="loopback-ring mode: adr type=2, no channel creation, only 0x5C05F0")
+    ap.add_argument("--no-state", action="store_true",
+                    help="do not write net_state=3 before the call")
+    ap.add_argument("--send-only", action="store_true",
+                    help="leave adr untouched and only call 0x5C05F0 (use after a live channel exists)")
     ap.add_argument("--dry-run", action="store_true", help="inspect only, do not arm the cave")
     ap.add_argument("--probe", action="store_true")
     args = ap.parse_args()
@@ -232,10 +236,12 @@ def main() -> int:
                 report["gate_after"] = u32(biz + 0x18)
 
             wrote = C.c_size_t()
-            if (not k32.WriteProcessMemory(handle, C.c_void_p(adr),
-                                           C.create_string_buffer(adr_bytes, len(adr_bytes)),
-                                           len(adr_bytes), C.byref(wrote))
-                    or wrote.value != len(adr_bytes)):
+            if args.send_only:
+                report["adr_write"] = "skipped"
+            elif (not k32.WriteProcessMemory(handle, C.c_void_p(adr),
+                                             C.create_string_buffer(adr_bytes, len(adr_bytes)),
+                                             len(adr_bytes), C.byref(wrote))
+                  or wrote.value != len(adr_bytes)):
                 report["status"] = "adr_write_failed"
                 report["error"] = C.get_last_error()
                 raise SystemExit(1)
@@ -243,15 +249,19 @@ def main() -> int:
                                            3, C.byref(wrote)) or wrote.value != 3):
                 report["status"] = "buf_write_failed"
                 raise SystemExit(1)
-            if not w32(NET_STATE, 3):
+            if args.no_state:
+                report["net_state_write"] = "skipped"
+            elif not w32(NET_STATE, 3):
                 report["status"] = "state_write_failed"
                 raise SystemExit(1)
+            else:
+                report["net_state_write"] = 3
 
             def call_rel(target: int, at: int) -> bytes:
                 return b"\xe8" + struct.pack("<I", (target - (at + 5)) & 0xFFFFFFFF)
 
-            code = b"\x60\x6a\x02" if not args.ring else b"\x60"          # pushad [; push 2]
-            if not args.ring:
+            code = b"\x60\x6a\x02" if not (args.ring or args.send_only) else b"\x60"
+            if not (args.ring or args.send_only):
                 code += b"\x68" + struct.pack("<I", buf)                    # push buf
                 code += b"\x68" + struct.pack("<I", adr)                    # push adr
                 code += call_rel(CREATE_CHANNEL, cave + len(code))

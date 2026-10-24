@@ -9562,3 +9562,92 @@ demo 路线的价值仅在于：**证明客户端侧一切正常，问题被彻�
 2. 攻 `0x5C05F0` 崩溃前的必需前置（唯一未试的同族入口是 `--init-transport` → `0xBB2C40` 闸门初始化）；
 3. 或换思路：`0x622040` 的 -7 是"无效通道"分支，`--raw-udp-patch` / `--branch-sendto`
    这套参数正是给这个分支打补丁的（前次会话留的实验），可以在主线程暂停窗口直接改成 `sendto`。
+
+## 261. 2026-10-28 01:00–02:00：**发包链路首次全通 —— guard 被写回证明 `0x7F8E10` 真的执行了**
+
+### 261.1 新工具 `tools/main_call_1649370.py`
+
+把 `launch_1649370.py --main-call` 的机制提取成独立工具：
+主线程暂停 → WoW64 context 劫持（size 716, eip@184, esp@196, ecx@172）→
+cave(`pushad [mov ecx,imm] [push args] call target [add esp] mov [slot],eax popad ret`) → 恢复。
+
+**已用已知返回值函数验证可靠**：
+```
+0x4A6470()            → 0x2
+0x803830()            → 0x5152e6c8（= [0x8269774] holder）✅
+```
+
+### 261.2 `0x5BE730` 三个前置条件首次逐项实测（全部满足）
+
+```
+0xB7A670(holder=0x5152e6c8) = 0x2                  ✅ 需要 ==2
+0xB7A6E0(holder)            = 0x51517910           ✅ 需要 !=0
+0xB9A0F0(auth3=0x513b2fe8)  = 0x513b30c0           ✅ 返回有效指针
+```
+
+（前提：先写 `[[0x849B874]+0xC]=1` + `[[0xE85C68]+0x1F4]=2` 把 stage 5→6）
+
+### 261.3 🎯 找到真正的拦路虎：重复连接保护命中
+
+`0x7F9090` 尾部：
+```asm
+0x7F90C1 mov ecx,[eax+0x20]        ; eax = 0xB9A0F0() = 0x513b30c0
+0x7F90C4 mov eax,[eax+0x24]
+0x7F90CE cmp [0xE54BC48],ecx
+0x7F90D4 jne 0x7F90DE
+0x7F90D6 cmp [0xE54BC4C],eax
+0x7F90DC je  0x7F90EE              ; ← 相同则跳过发包
+```
+
+实测：
+```
+目标地址   = 0xe08c4c28  0x0cf7ee44
+重复保护值 = 0xe08c4c28  0x0cf7ee44     SAME? = True
+```
+
+→ **每一次调用都被"已连接过"保护静默跳过**，这就是"条件全满足却不发包"的终极原因。
+
+### 261.4 清零后 `0x7F8E10` 确实执行了（关键证据）
+
+```
+清 [0xE54BC48]=0、[0xE54BC4C]=0
+main_call 0x5BE730
+→ 调用后 guardA 又变回 0xe08c4c28、guardB 变回 0x0cf7ee44
+```
+
+→ guard 被**写回**说明代码真的走过了 `0x7F90DE → 0x7F8E10`（发包路径）。
+**这是 245 轮来第一次确认"发包函数被执行"。**
+
+### 261.5 patch 已装但包仍未出网
+
+```
+0x6221D8 处字节 = E9 → 0x3f850000     （--raw-udp-branch 的 cave 已就位）
+0x622040 开头    = 55 8b ec 81 ec 0c 05 00  （未被 --raw-udp-patch 改，符合预期）
+gs kinds = {('meta','start'): 1}      （仍是零包）
+```
+
+cave 代码（`_install_raw_udp_branch`）：
+```asm
+pushad
+mov esi,[ebp+0xc]      ; data
+mov edi,[ebp+0x28]     ; length
+push 17,2,2 / call [0xCA8548]        ; socket
+push 16 / push <sockaddr 127.0.0.1:28969> / push 0
+push edi / push esi / push ebx
+call [0xCA8518]                      ; sendto
+popad / xor ebx,ebx / jmp 0x6221DD
+```
+
+**失败候选**（下轮逐个排除）：
+1. `[ebp+0xc]` / `[ebp+0x28]` 未必是 data/length（帧偏移猜错）；
+2. cave+0x100 的 sockaddr 是否真的写入；
+3. `socket(2,2,17)` 每次新建 socket 可能被 guard/防火墙拦；
+4. 包可能根本没走到 `0x622040`（`0x7F8E10` 走别的发送路径）。
+
+### 261.6 下一步（明确）
+
+1. 在 cave 里插入"哨兵写内存"（`mov [0xE54BC50],0xCAFEBABE`）+ 记录 sendto 返回值到 cave+0x200，
+   验证 cave 是否执行、socket/sendto 返回值多少；
+2. 若 sendto 返回 -1，读出 `WSAGetLastError()`；
+3. 或改用 `--raw-udp-patch`（整函数替换）配合正确的参数偏移；
+4. 或换思路：直接在 cave 里用**固定 buffer**（把 data/len 从 `[ebp+8]`、`[ebp+0xc]` 按 `0x622040` 的真实签名重取）。
