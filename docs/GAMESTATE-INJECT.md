@@ -2257,3 +2257,49 @@ r105 的 `gamestateupdate` 有 4 次说明客户端确实收到了 gamestate，�
 2. 缩短采样间隔（run_match 固定 t=20/35/50/65 太疏，state 可能在 1–2 秒内变化）；
 3. 若 r105 的 gamestate 被接受但 state 回 0，检查 `gamestateupdate` 的实际内容
    （gs 日志里有 4 次 update，可能是客户端的 ack 而非状态推进）。
+
+## 74. 2026-10-25 04:30–05:00：**r105 稳定复现武器索引错误 181（用户截图确认）**
+
+### 74.1 复现证据
+
+`runs/r105-screenshot.png` 与用户提供的截图一致，客户端在大厅弹出：
+
+```
+错误
+181 ** 646 0 0 8738 9321 1136 1224
+[退出]
+```
+
+- **181**：错误码；
+- `** 646 0 0 8738 9321`：武器字符串（configstring 7184）；
+- **1136**：`0x42F3E0` 本地解析出的索引；
+- **1224**：demo 数据要求的索引。
+
+→ 用 `run_match.py --gamestate-file runs/demo-outer-exact/gamestate-network-ffb56d7e-6411.bin`
+**稳定复现**了 HANDOFF 的精确阻塞点（此前采样 state=[0,0,0,0] 是因为弹窗后客户端退回大厅）。
+
+### 74.2 武器解析函数（`0x59B560`）
+
+```asm
+0x59B560  push ebp / mov ebp,esp / push esi
+0x59B564  lea esi, [edi + 0x1748]    ; 武器字符串字段
+0x59B56A  call 0x514880              ; 读 configstring
+0x59B57B  cmp dword ptr [ebp+8], 0
+0x59B581  cmp al, 0x2a               ; '*' 复合武器前缀
+0x59B589  push 0 / push esi
+0x59B58C  call 0x42F3E0              ; 解析/创建 → eax = 索引
+0x59B594  cmp eax, edi               ; 与期望比较
+0x59B596  jne 0x59B676               ; 不等 → 错误路径（181）
+```
+
+### 74.3 结论
+
+- 错误稳定可复现，路径确定（`0x59B560` → `0x42F3E0` → `0x42F432` 创建 → 1136）；
+- 与 demo 播放的差异是 **88 个先行注册**；
+- 修复方向不变：先补齐这 88 个注册（或让 configstring 7184 的武器字符串在服务端路径也能命中已有定义）。
+
+### 下一步
+
+1. 用 `--client-breakpoint 0x59B560:WeaponIndex` 跑一次，记录 `eax`（1136）与 `edi`（期望 1224）的现场；
+2. 在 demo 播放路径读 `0x42F2F0`/`0x1988634`，确认 1224 个定义是何时注册的；
+3. 若 88 个来自 demo 早期数据，把它们并入服务端 gamestate 的 configstring 前置段。
