@@ -4619,3 +4619,37 @@ last entry = {index: 8557, type: 5, offset: 112909021, size: 220, pointer: 0xFFF
 
 ⚠️ 第 2 步的"body 变了"比"只改 header"复杂：`ff_resign.py` 需要扩展成
 **body 重打包 + 全哈希链重建**，这是下一轮的主要工作。
+
+## 136. 2026-10-26 09:00–09:30：body 结构确认，重打包步骤明确
+
+### 136.1 decode 流程（源码）
+
+```
+raw[0x15:FF_HEADER]  = RSA 密文（256 B）→ 材料 40 B（AES key + IV）
+raw[FF_HEADER:]      = 加密 body（段表 + 数据块）
+_signed_payload(body, material, signing_key):
+    header = AES-CTR(body[0:8192])           # 验证 IWffs100 + 摘要 + RSA 签名 + 块哈希链
+    for block in body[8192:]:
+        IV = hash_table[entry] 或 header[0x150+...]
+        plain = AES-CTR(block, IV)
+        验证 sha256(plain) == IV
+_inflate(compressed) → zone（zlib + Adler32）
+```
+
+### 136.2 重打包 body 的步骤（已知全部要素）
+
+1. `zone` → `zlib.compress`（保持 Adler32）；
+2. 按 8192 分块；每块明文 `sha256` 作为其 **IV**（也写入 hash table 对应项）；
+3. 每 256 块生成一个 **hash table**（256×32 = 8192 B，本身也是一个块，IV =
+   `header[0x150 + section*32]`）；
+4. 组装：`header(8192) + [hash table + 256 data blocks]...`；
+5. 重算 `header[0x0C:0x2C] = sha256(header[0x12C:0x1FD0])`；
+6. 用自建私钥签 `header[0x2C:0x12C]`；
+7. AES-CTR 加密 header（key/IV 来自材料）。
+
+### 136.3 下一步
+
+写 `tools/ff_rebuild_body.py`：
+- 输入：原 ff + 新 zone；
+- 输出：新 ff（body 重打包 + 重签）；
+- 先用 `validate_zone` + `decode_fastfile` 双验证（本地 exe 已是自建公钥的白名单版本）。
