@@ -18127,3 +18127,7 @@ lobby          = 0x37E19850
 > **2026-10-26 02:00–02:30【重大发现：材料私钥内置在 exe（1191 字节 DER），可解材料/解密 header；重签只剩"换 exe 公钥"一步】**
 >
 > `_load_keys`：从 `MATERIAL_OFFSETS[version]` 读 1191 字节 DER → `RSA.import_key` 得**材料私钥**（解 40B 材料：AES key+IV）；发布者签名只读 270 字节公钥（仅验证）。→ 现在可行：解材料 → 解密 header → 修改 → 重算 sha256 → 替换 exe 公钥（0x698958/扫描 `30 82 01 0A`）→ 自建私钥签 hdr[0x2C:0x12C] → 重加密 → 重算块哈希链。下一步实现 `ff_resign.py` 原样重签并 decode 验证。
+
+> **2026-10-26 02:30–03:00【重签工具跑通：原样重签成功（const-resigned.ff 90389B）】**
+>
+> `tools/ff_resign.py`：`--make-key` 生成 RSA-2048（PEM+270B PKCS#1 DER）；`--source/--output/--key` 走"解材料→解密 header→（可选改 zone 名）→重算 sha256→自建私钥签 hdr[0x2C:0x12C]→重加密→写新文件"。实测生成 const-resigned.ff（90389 字节），并定位 exe 公钥在 **0x698958**。→ 下一步写 `patch_exe_pubkey.py` 换公钥 + decode 验证。

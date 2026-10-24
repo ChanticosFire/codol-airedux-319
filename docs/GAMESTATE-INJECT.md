@@ -4139,3 +4139,32 @@ signing_key = RSA.import_key(public_der)   # 270 字节发布者公钥（仅验�
 
 实现 `tools/ff_resign.py` 的**原样重签**（内容不变、只换公钥与签名），
 验证 `decode_fastfile(改后 ff, 改后 exe)` 通过。这是路线 A 的第一次真正落地。
+
+## 123. 2026-10-26 02:30–03:00：**重签工具跑通 —— 原样重签成功**
+
+### 123.1 工具
+
+`tools/ff_resign.py`：
+- `--make-key`：生成自建 RSA-2048 密钥对（PEM + 270 字节 PKCS#1 DER 公钥）；
+- `--source/--output/--key`：解材料（用 exe 内置私钥）→ 解密 header →（可选改 zone 名）
+  → 重算 sha256 → 用自建私钥签 `hdr[0x2C:0x12C]` → 重加密 header → 写新文件。
+
+### 123.2 实测
+
+```
+python tools/ff_resign.py --make-key runs/ff-edit/self.pem
+  key=runs/ff-edit/self.pem  pub=runs/ff-edit/self.pem.pub  pub_len=270
+
+python tools/ff_resign.py --source .../mp_crash_tropical_const.ff \
+    --output runs/ff-edit/const-resigned.ff --key runs/ff-edit/self.pem --verify
+  wrote runs/ff-edit/const-resigned.ff size=90389
+  verify hint: first PKCS1 DER at 0x698958; pub_len=270
+```
+
+→ **重签管道跑通**（同尺寸、签名已换）。
+
+### 123.3 下一步
+
+1. 写 `tools/patch_exe_pubkey.py`：把 exe 的 270 字节公钥（0x698958）换成自建公钥；
+2. 用 `decode_fastfile(const-resigned.ff, 改后 exe)` 验证通过；
+3. 通过后再做"改内容"（zone 名/asset）。
