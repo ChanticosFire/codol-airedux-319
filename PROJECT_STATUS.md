@@ -1,5 +1,10 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Advancing serverTime does not dismiss the loader; snapshot-side levers are closed]**
+> Eight bodies with serverTime 72200..73950 rotated at 2 s: ui 5 and the loader held at every sample. So the load task is not waiting for time.
+> Negatives now: contents, flags byte, entity ordering, section coverage, time advance. Remaining: the loader object is partially initialised (0xBAADF00D) and needs symbolic or memory-write-breakpoint tooling.
+> selfcheck 8/8; evidence 1295 records, invalid JSON 0.
+> Evidence: [time advance no effect](evidence/experiments/20261023-codex-time-advance-no-effect.json).
 > **2026-10-23 [HANDOVER DOC WRITTEN: docs/SNAPSHOT-FORMAT-VERIFIED.md]**
 > Consolidates only measured/read facts: header byte layout (incl. the 8-bit last_changed), the five content blocks with their single call sites, the entity list (gates 1307/1308, count byte at buffer[164], three-part id skipping byte 164), the mode pipeline with the 13-entry jump table and the demonstrated float write, the position component encoding (scale 5.0), the cursor fields, the acceptance oracle (ui_state 5 = loading screen), everything tried against the loader, and eight falsified statements.
 > Evidence: docs/SNAPSHOT-FORMAT-VERIFIED.md.

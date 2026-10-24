@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T19:00:00+00:00",
+  "scope": "advancing serverTime across snapshots does NOT dismiss the loader - another negative result, and the last cheap lever available",
+  "the_experiment": {
+    "method": "eight copies of the accepted body with serverTime stepping 72200, 72450, ... 73950, rotated by --snapshot-interval 2.0",
+    "samples": [
+      {
+        "s": 1,
+        "net": 8,
+        "ui": 5,
+        "loader": "0x4057DBE8",
+        "count": 0
+      },
+      {
+        "s": 2,
+        "net": 9,
+        "ui": 5,
+        "loader": "0x4057DBE8",
+        "count": 0
+      },
+      {
+        "s": 3,
+        "net": 10,
+        "ui": 5,
+        "loader": "0x4057DBE8",
+        "count": 0
+      }
+    ],
+    "screenshot": "runs/codex-r236-shot.png"
+  },
+  "conclusion": [
+    "the world clock advancing does not satisfy the loader",
+    "so the frontend's load task is not waiting for server time to progress",
+    "together with the earlier negatives (flags byte, section set, entity content, entity ordering) this closes the set of snapshot-side levers that a server can pull"
+  ],
+  "the_full_list_of_negatives": [
+    "core snapshot contents (playerState fields, entity count, id, delta, position): accepted, loader never clears",
+    "flags byte 0x0C -> 0x08 (the exact baseline value cols writes): no change",
+    "an entity-free snapshot followed by entity snapshots: net 10 and count 1 coexist, ui_state stays 5",
+    "all five content blocks covered: already the case",
+    "advancing serverTime across eight snapshots: no change"
+  ],
+  "what_remains": [
+    "the loader object is partially initialised (0xBAADF00D in two slots) and is a C++ instance of at least 0x4F8 bytes with vtable 0xD599DC",
+    "identifying what fills those slots needs symbolic information for this build or a memory-write breakpoint, neither of which the current harness offers (fixed-address int3 only)",
+    "so the remaining work is a tooling problem as much as an investigative one"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r236-gs.jsonl",
+    "screenshot": "runs/codex-r236-shot.png"
+  }
+}
