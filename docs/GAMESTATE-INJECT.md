@@ -2127,3 +2127,35 @@ if payload[4] == 0:                      # svc_snapshot
    资源缺失导致；
 2. 再用"客户端存活时间窗内"下发 demo 快照（把 `--snapshot-delay` 提前到 1–2 秒）；
 3. 若客户端稳定，验证 `Entities=1` 与实体表是否被真实快照填充。
+
+## 71. 2026-10-25 02:50–03:05：去掉断点后客户端 5 秒即崩 —— 是 gs 的 gamestate 触发
+
+### 71.1 对照
+
+| 实验 | 是否有 gs | 客户端存活 |
+|---|---|---|
+| r51（§34） | **无** | ≥ 24 秒（截图动态、state 10） |
+| r82 | 有（delay 1、snapshot-delay 3） | 已退出 |
+| **r83** | 有（delay 0.5、snapshot-delay 1、无断点） | **5 秒即退出** |
+
+r83 的 gs 日志只有：
+
+```
+in oob 2 / connect 1 / out oob 3 / in stats 1 / in inband 1 / meta gamestate_source 1
+```
+
+**没有 snapshot 记录** —— 也就是说客户端是在**收到 gamestate 之后、快照发出之前**就崩了。
+
+### 71.2 结论
+
+- demo 播放本身是稳定的（r51 存活 24 秒+）；
+- 崩溃由**服务端下发的 gamestate** 触发（越早发越早崩：delay 3 → 20 秒，delay 0.5 → 5 秒）；
+- 因此"真实快照"这条链路当前卡在 **gamestate 让客户端崩溃**，与快照内容无关。
+
+### 下一步
+
+1. 定位 gamestate 触发崩溃的具体字节：用断点 `0x472D80`（gamestate 解析入口）和
+   `0x470467`（`state=3` 写入点）观察 gamestate 被解析到哪一步；
+2. 对比 `runs/gamestate-3426.bin`（真实抓包）与 gs 的 `--gamestate-source native`
+   生成内容，检查 client_num / challenge / mapname 等字段；
+3. 修好后重发 demo 快照（`00-62474.bin`），验证 `Entities=1`。

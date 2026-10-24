@@ -17905,3 +17905,7 @@ lobby          = 0x37E19850
 > **2026-10-25 02:35–02:50【demo 真实快照接入 gs（格式完全匹配）；首次实验客户端先崩、snapshot 未发出】**
 >
 > 确认 `send_due_snapshots`：`payload = ack4 + --snapshot-file`，若 `payload[4]==0`（svc_snapshot）则改写 serverTime → **demo 的 p 帧 blob 直接就是 --snapshot-file 需要的格式**。首次拿 `00-62474.bin`（62KB）实验：客户端已退出、Entities=0、gs 只有 connect/stats/inband 无 snapshot 记录 → 客户端在 snapshot 前崩（demo 播放约 20s 退出）。→ 下一步先修 demo 稳定性，再把 snapshot-delay 提前到 1-2s 复验。
+
+> **2026-10-25 02:50–03:05【去断点后客户端 5 秒崩：是 gs 的 gamestate 触发，snapshot 未发出】**
+>
+> 对照：r51（无 gs）demo 播放存活 ≥24s、state 10；r83（gs delay 0.5/snapshot-delay 1/无断点）客户端 **5 秒退出**；gs 日志只有 connect/stats/inband 1 + gamestate_source，**无 snapshot 记录**。→ demo 播放本身稳定，崩溃由服务端 gamestate 触发（越早发越早崩）。→ 下一步用 `0x472D80`/`0x470467` 断点看 gamestate 解析到哪一步，对比 `runs/gamestate-3426.bin` 检查 client_num/challenge/mapname。
