@@ -1712,3 +1712,33 @@ demo 播放触发的地图加载**不经过 FS 层**（CreateFileA）。两种�
    确认播放期间是否还有任何文件 IO；
 3. 若播放期间完全没有文件 IO，则"换图"必须在播放前完成——此时唯一的入口是
    demo 播放器读取地图名的位置（`0x813C20` 内部或 `0x49E600` 的第三个调用者）。
+
+## 58. 2026-10-24 23:40–23:55：**关键时间线 —— 地图包请求发生在 demo 播放后约 17 秒**
+
+r76（原始 demo + trace-files）的完整 ff 时间线（启动 t0=1792822537.6）：
+
+| 相对时间 | 请求 | caller |
+|---|---|---|
+| +1.3 s | patch_code_pre_gfx_mp.ff | 0x776f80 |
+| +2.3 s | patch_ui_mp.ff / ui_mp_const.ff | 0xc513d9 |
+| +13.6 s | patch_common_mp.ff | 0x776f80 |
+| **+30 s** | **patch_mp_crash_tropical.ff** | **0xc513d9** |
+| **+32 s** | **patch_mp_crash_tropical.ff** | **0x776f80** |
+
+demo 播放（cbuf 注入）发生在约 +12 s，所以**地图包请求在 demo 播放后约 17–20 秒**，
+正好对应 `state` 从 8 走向 10 的地图加载阶段。
+
+### 结论
+
+1. demo 播放**确实**加载地图（不是"复用启动数据"）；
+2. 前几轮 `FSOpen` 断点 0 命中是**时序问题**：断点命中/恢复的开销让客户端跑不到 +30 s
+   （或被断点拖慢后 demo 提前崩溃）；
+3. 换图的窗口是 **demo 播放后 ~15 秒内**——只要在此之前改掉地图名字段，就能让加载走 cross_fire。
+
+### 下一步
+
+1. 不用断点（避免拖慢），改为：demo 播放后等 8 秒，直接 poke `connection+0x108394`
+   （此前定位的 demo 地图名字段）为 `mp_cross_fire`，再观察 fastfile 请求变成
+   `patch_mp_cross_fire.ff`；
+2. 若该字段不对，再试 `connection+0x108294`（相邻字段）与 `0x1C2Bxxx` 系列全局；
+3. 成功标志：trace 里出现 `patch_mp_cross_fire.ff` 且截图是 cross_fire。
