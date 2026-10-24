@@ -18695,3 +18695,7 @@ lobby          = 0x37E19850
 > **2026-10-28 04:00–05:00【🎯 发送链路完全解密：0x5C05F0 →(状态跳转表)→ 0x5C070E 构造 `getchallenge 0 "%s"` → 0x675260 → 0x6751F0 →(adr type==2 → 0x6750A0 loopback / 否则 → 0x77FB80 真实网络)→ 0x622040 最终发送。关键常量：0x7F4F10(0x9D)=2（0x9D 是合法 loopback 通道）、[conn+0x14]=adr type 决定路径、[conn+0x30]=上次发送时间(3000ms 超时)、[conn+0x28]=通道号、失败提示 EXE_HOSTUNREACH】**
 >
 > 卡点：配置全对（type=4, chan=0x9D, +0x30=0, net=3, stage=6）后 0x622040 调用次数仍 0 → 怀疑 main_call --arg 传参失效（--arg 0x9d 与 --arg 4 调 0x7F4F10 都返回 0）。下一步：修 main_call 传参或 hook 0x7F4F10 记录真实参数。
+
+> **2026-10-28 05:00–06:00【⚠ 关键：main_call 会因主线程阻塞而静默失效（同一 0x803830：Round1 返回 0x5152e6c8，本轮返回 0x0；hook 计数为 0 证明函数根本没被调用）→ 此前用 main_call 得到的 0x7F4F10(0x9d)=0 等读数不可信，需重验。新工具 remote_call_1649370.py（CreateRemoteThread，纯函数可用：0x803830→0x5152e6c8、0x4A6470→0x2）与 hook_any_1649370.py（任意入口 hook，记录 count/ret/arg0/arg1）。远程线程调线程依赖函数（0x7F4F10 临界区、0x5BE700 socket 检查）会崩客户端】**
+>
+> 下一步：A) PostThreadMessage/QueueUserAPC 唤醒主线程后再劫持；B) 在 0x7EF0D0(Frontend tick)/0x7EEBC0(主循环) 挂一次性注入，保证主线程上下文；C) 重启后趁登录/大厅主线程活跃时立刻 main_call。
