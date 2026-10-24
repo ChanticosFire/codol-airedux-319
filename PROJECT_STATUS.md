@@ -17725,3 +17725,7 @@ lobby          = 0x37E19850
 > **2026-10-24 15:00–15:15【T4 entry 生效但无效；trace 显示 UI 音乐循环缺失】**
 >
 > ① `LSG_T4_MODE=entry` 实测生效（`mode=entry payload=140`，上一轮把总长 194 误判为 zero）；但客户端仍 state=4/ui=5，gs 只收 inband。② `--trace-files` 跑到 ui=5：5178 条文件事件，尾部循环 `CreateFileA error=3 .\hires\sound\music\ui\ui_sp_hz_t_menumusic.mp3`（文件存在于 overlay 的 `main\...`，但客户端只在 `hires\` 下找）。→ 下一步把 UI 音乐放进 `offline-resources\hires\sound\music\ui\` 消掉重试再观察。
+
+> **2026-10-24 15:15–15:30【UI 音乐补齐；加载对象含 0xBAADF000 未初始化标记】**
+>
+> ① 把 `ui_sp_hz_t_menumusic.mp3`、`ui_sp_hz_af_caves_loud*` 复制到 `offline-resources\hires\sound\music\ui\`：`file_missing` 5178→**2353**，音乐缺失消失；剩余为 config_mp.cfg、LoginQ.dat、patch_ui_mp.ff（IIPS 无对应包）与少量特效贴图。② ui=5 时加载对象 `+0x90=0xBAAD0001`、`+0x530=0xBAADF000`（debug 未初始化标记），`+0xCC` 指向单例、`+0x5FC` 令牌非零；把 +0x90/+0x530 写 0 后 ui/state 不变 → 不是直接开关，但说明对象只被部分构造。下一步找写这两个字段的构造函数，确认是否被调用。

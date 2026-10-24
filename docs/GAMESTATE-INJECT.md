@@ -610,3 +610,43 @@ caller: 0xc513d9
 **判断**：这是加载屏期间的**音频循环重试**，很可能是"转圈"噪声的一部分，
 但不一定是 ui=5 的根因（音乐加载失败不应阻塞 UI 状态机）。下一步可把这几首 UI 音乐放进
 `offline-resources\hires\sound\music\ui\`，消掉这条重试再看状态是否变化。
+
+## 24. 2026-10-24 15:15–15:30：补齐 UI 音乐；加载对象含未初始化标记
+
+### 24.1 音乐补齐生效
+
+把 `ui_sp_hz_t_menumusic.mp3`、`ui_sp_hz_af_caves_loud*` 复制到
+`offline-resources\hires\sound\music\ui\` 后重跑（`--trace-files`）：
+
+| 指标 | 补齐前 | 补齐后 |
+|---|---|---|
+| `file_missing` 条数 | 5178 | **2353** |
+| UI 音乐缺失 | 循环出现 | **消失** |
+
+剩余缺失（都是每轮 3–5 次，属"可选/回退"类）：
+`main_shared/config_mp.cfg`、`hires/config_mp.cfg`、`main/config_mp.cfg`、
+`TCLS/config/LoginQ.dat`、`client_shipRetail/chinese/patch_ui_mp.ff`，以及少量 `hires/images/*.iwi` 特效贴图。
+`patch_ui_mp.ff` 在 IIPS 里没有对应包（搜索 `ui_mp|patch` 无结果），暂不作为主因。
+
+### 24.2 加载对象含 debug 未初始化标记
+
+ui=5 时读 `sub=0x2464B8C0`：
+
+| 偏移 | 值 | 说明 |
+|---|---|---|
+| +0x90 | **0xBAAD0001** | debug heap 未初始化标记 |
+| +0x530 | **0xBAADF000** | 同上 |
+| +0xCC | 0x43CE6CB0 | 指向单例自身（非空） |
+| +0x5FC | 0xFD3EF65A | 8 字节令牌的低半 |
+| +0x644 | 0 | |
+
+`0xBA2E4F` 读的正是 `[ebx+0x530]`（`movzx eax, byte [ebx+0x530]`），
+而 `0xBA3315` 读 `[esi+0x90]`——这两个字段**从未被正式初始化**。
+
+把两者都写成 0 后：`ui=5`、`state=0` 不变 → 它们不是 ui=5 的直接开关，
+但说明这个加载对象只被**部分构造**，完整初始化路径还没走到。
+
+### 下一步
+
+1. 找构造函数（哪个函数写 +0x90/+0x530 的非标记值），确认它是否被调用；
+2. 若确实没有，需要在进入匹配前显式调用它（或补一条会触发它的消息）。
