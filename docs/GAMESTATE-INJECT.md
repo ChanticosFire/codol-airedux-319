@@ -4263,3 +4263,38 @@ python tools/patch_exe_pubkey.py --exe <shell exe> --pub runs/ff-edit/self.pem.p
 3. 启动客户端，观察是否报"磁盘读取错误"；
 4. 若通过，说明**信任根替换成功**，再谈改内容（写入 88 个武器定义）。
 5. 实验结束后必须 `--restore` 恢复 exe 与 ff（否则所有原版 ff 都会验证失败）。
+
+## 127. 2026-10-26 04:30–05:00：**launch 有 exe 指纹检查 —— 改公钥后拒绝启动，已全部恢复**
+
+### 127.1 实验步骤与结果
+
+1. 全量备份 overlay 24 个 ff（244 MB）→ `runs/ff-edit/overlay-backup`；
+2. 批量重签 24 个 ff（含 `mp_cross_fire.ff`）→ **24/24 ok**；
+3. 启动客户端（--trace-files）→ **失败**：
+
+```json
+"error": "离线 UI 预览基底指纹不符"
+"child_terminated": true
+```
+
+→ `launch_1649370.py` 对**离线壳 exe 做指纹校验**，改了公钥（270 字节）就拒绝启动。
+
+### 127.2 恢复
+
+```
+python tools/patch_exe_pubkey.py --exe <shell> --restore
+  restored ... key sha 9ac28dd6（与原版一致）
+restore 24 ff from backup → const.ff sha f7f138eb（与原版一致）
+```
+
+→ 环境已回到安全状态。
+
+### 127.3 结论与下一步
+
+- **改 exe 公钥会被 launch 的指纹检查拦住**；
+- 要推进路线 A，必须先解决这个检查：
+  1. 找 `launch_1649370.py` 的指纹校验逻辑（关键词"离线 UI 预览基底"），
+     看它校验什么（整个 exe sha256？还是特定区段？）；
+  2. 若校验整文件 sha256，需要同时更新它的期望值（改 launch 的配置/常量）；
+  3. 或者绕开 launch，直接启动 exe（手动拼参数）。
+- 注意：**改 launch 的校验值**比改 exe 更"干净"（不动客户端二进制）。
