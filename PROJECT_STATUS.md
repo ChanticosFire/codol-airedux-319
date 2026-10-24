@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The loading object is partially initialised (0xBAADF00D gaps)]**
+> Dump of 0x42426CD8: a repeated 16-byte record {4, float 0.75, 3, pointer} at +0x0C..+0x1B and +0x24..+0x33, with 0xBAADF00D (debug-heap uninitialised marker) at +0x1C and +0x34. So an init sequence started and did not finish - matching the loader that never proceeds.
+> Next: find the writer of +0x0C/+0x10/+0x14 to identify the subsystem.
+> Evidence: [loading object partially init](evidence/experiments/20261023-codex-loading-object-partially-init.json).
 > **2026-10-23 [1649370 has FIVE content blocks, not fourteen]**
 > Whole-.text scan: each of 0x471D80, 0x471980, 0x471010, 0x471560, 0x4475F0 has exactly one call site, all in the 0x4723DD..0x4724A0 dispatcher. So the cols '14 sections' does not apply, and the section set is not the blocker.
 > Remaining blocker: the frontend map-load completion, tracked by the loader object at [0x8269774] which never clears. Proven: header format, five blocks, entity list layout with id control, the mode pipeline with real float writes, and state 10 with an entity by sending an entity-free snapshot first. Not proven: any rendered world.

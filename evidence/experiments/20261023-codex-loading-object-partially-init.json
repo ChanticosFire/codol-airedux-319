@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T16:00:00+00:00",
+  "scope": "the loading object is PARTIALLY INITIALISED: it contains 0xBAADF00D (the Microsoft uninitialised heap marker) and a repeated {4, 0.75, 3, pointer} record",
+  "the_dump": {
+    "address": "0x42426CD8",
+    "ui_state": 5,
+    "bytes": [
+      "+00: dc 99 d5 00 b8 c4 69 24 00 00 00 00 04 00 00 00",
+      "+10: 00 00 40 3f 03 00 00 00 d0 2e 5d 24 0d f0 ad ba",
+      "+20: 00 00 00 00 04 00 00 00 00 00 40 3f 03 00 00 00",
+      "+30: b8 a4 69 24 0d f0 ad ba 00 00 00 00 d8 dc 65 5a",
+      "+40: 00 00 00 00 00 00 00 00 a8 ff 46 42 00 00 00 00",
+      "+50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+    ]
+  },
+  "what_the_fields_look_like": {
+    "+0x00": "0x00D599DC - a code pointer (vtable or callback)",
+    "+0x04": "0x2469C4B8 - a pointer",
+    "+0x0C": "4",
+    "+0x10": "float 0.75 (bytes 00 00 40 3F)",
+    "+0x14": "3",
+    "+0x18": "0x245D2ED0 - a pointer",
+    "+0x1C": "0xBAADF00D - UNINITIALISED HEAP MARKER",
+    "+0x24 / +0x28 / +0x2C": "the same 4 / 0.75 / 3 pattern repeats",
+    "+0x34": "0xBAADF00D again",
+    "+0x3C": "0x5A65DCD8 - a pointer"
+  },
+  "why_this_matters": [
+    "0xBAADF00D is what the Microsoft debug heap fills freshly allocated memory with, so any field still holding it was never written",
+    "the object therefore has a repeated 16-byte record shape ({int 4, float 0.75, int 3, pointer}) that was written at least once, and adjacent slots that were not",
+    "that is direct evidence of an initialisation sequence that started and did not finish",
+    "which matches the observed behaviour exactly: the loader is alive, holds this object, and never proceeds"
+  ],
+  "what_it_is_not": [
+    "this is not the map fastfile loader itself (no filename strings appear in the object)",
+    "the repeated 4 / 0.75 / 3 record with 0xBAADF00D gaps looks more like a partially filled table of slots than a single load task",
+    "so the object may be a queue or a slot array whose remaining entries were never filled"
+  ],
+  "the_next_step": [
+    "find what writes the fields that ARE set (+0x0C = 4, +0x10 = 0.75, +0x14 = 3) by watching for a write to that address range",
+    "the writer's identity will say what kind of subsystem the object belongs to, and what the missing entries were supposed to be"
+  ],
+  "artifacts": {
+    "globals": {
+      "loading_object": "0x8269774",
+      "ui_state": "0x84ABA50"
+    },
+    "server_log": "runs/codex-r235-gs.jsonl"
+  }
+}
