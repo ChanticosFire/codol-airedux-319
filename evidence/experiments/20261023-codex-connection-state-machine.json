@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-31T00:00:00+00:00",
+  "scope": "THE CONNECTION STATE MACHINE: status is a mapping of [netobj+0xC8] and two flags; status 2 (which selects ui_state 5) is reached by two different paths",
+  "the_function_0xba0780": {
+    "0xBA0780": "cmp [ecx+0x644], 0",
+    "0xBA0787": "eax = [ecx+0xC8]  - the raw connection state",
+    "0xBA078D": "je 0xBA079F  - flag 0x644 == 0 takes the second path",
+    "0xBA078F": "path A: if [0xC8] == 2 or [0xC8] == 1 -> return 2; otherwise return [0xC8]",
+    "0xBA079F": "path B: if [0xC8] != 2 -> return [0xC8]",
+    "0xBA07A4": "path B with [0xC8] == 2: eax = 0; if [0x5E8] == 3 then eax = 1; then eax += 1",
+    "result": "path B returns 1 when [0x5E8] == 3, and 2 otherwise"
+  },
+  "how_status_2_is_reached": [
+    "path A: [0x644] != 0 and [0xC8] is 1 or 2",
+    "path B: [0x644] == 0, [0xC8] == 2 and [0x5E8] != 3",
+    "we measured status 2, so one of those holds"
+  ],
+  "what_would_leave_ui_state_5": [
+    "the ui-5 branch at 0x8037D6 is taken when the mapped status equals 2",
+    "so the client leaves that screen when the status becomes anything else",
+    "concretely: either [0xC8] moves out of {1,2} (path A) or out of {2} (path B), or [0x5E8] becomes 3 while [0xC8] stays 2 (path B returns 1)",
+    "so [0x5E8] == 3 is the most specific single condition that would flip the screen"
+  ],
+  "what_0x5e8_likely_is": [
+    "a sub-state of the connection: in this protocol family the client distinguishes between being connected to the server and having the session/server-browser handshake finished",
+    "[0x5E8] == 3 would then mean the deeper handshake completed, which is exactly the layer that net_state 10 does not cover"
+  ],
+  "the_next_measurement_if_work_continues": [
+    "read [netobj+0x644], [netobj+0xC8] and [netobj+0x5E8] directly in the live client",
+    "those three values pin down which path is taken and therefore which one has to move"
+  ],
+  "artifacts": {
+    "addresses": {
+      "state_fn": "0xBA0780",
+      "raw_state": "+0xC8",
+      "flag": "+0x644",
+      "sub_state": "+0x5E8",
+      "ui_check": "0x8037D6"
+    }
+  }
+}

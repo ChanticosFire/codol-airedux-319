@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The connection state machine: status maps [netobj+0xC8] plus two flags]**
+> 0xBA0780: path A ([0x644]!=0) returns 2 for [0xC8] in {1,2}; path B ([0x644]==0) with [0xC8]==2 returns ([0x5E8]==3)+1, i.e. 1 if [0x5E8]==3 else 2. Status 2 selects ui_state 5.
+> So [0x5E8] == 3 is the most specific condition that would flip the screen - a deeper session sub-state that net_state 10 does not cover. Next: read [0x644], [0xC8], [0x5E8].
+> Evidence: [connection state machine](evidence/experiments/20261023-codex-connection-state-machine.json).
 > **2026-10-23 [MAJOR REINTERPRETATION: the object is the CONNECTION object (holds 127.0.0.1, status 2)]**
 > Object 0x424EDBE8: [+0x4F4] sub-object 0x42425E70, [+0x4F8]=1. Sub-object holds vtable 0xD5A4F4, status 2, IP 127.0.0.1, and 0xBAADF00D. Status logic: with [+0x4F8]=1 the status passes through as 2, and 0x8037D6 takes the ui-5 branch.
 > So ui_state 5 is most plausibly the CONNECTING screen, and the client is stuck at 'connected to 127.0.0.1 but session not established' rather than loading the map. Net state 10 vs connection status 2 is the mismatch to explain.
