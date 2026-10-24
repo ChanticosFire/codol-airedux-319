@@ -7455,3 +7455,32 @@ after: ui=0  net=6  table=0  load=0
 
 加回 `--snapshot-file`（`baseline-outer17-245.bin`）+ `--snapshot-delay 20`，
 观察 `net` 是否到 7、`table` 是否加载。
+
+## 213. 2026-10-27 00:00–00:30：**关键发现 —— 后台 `Start-Process` 启动 forward 会失败**
+
+### 213.1 对照
+
+| 启动方式 | 结果 |
+|---|---|
+| `& python ... forward --connect-address ...`（**前台**） | net 4→5→6、gamestate 分包接收、ui=0 ✅ |
+| `Start-Process python ... forward ...`（**后台**） | net 停 4、gs 只有 inband、ui=5 ❌ |
+
+### 213.2 本轮数据（后台启动，失败）
+
+```
+table_before = 1135
+t+5/12/20s: ui=5  net=4  table=1135  load=2
+gs: ('meta','start') 1 + ('in','inband') 10  —— 无 connect
+alive_final = True
+```
+
+### 213.3 结论
+
+- **forward 必须在当前控制台前台运行**（或用 `-NoNewWindow -Wait`）；
+- `Start-Process -WindowStyle Hidden` 会让它**无法访问客户端共享内存/环**（或 stdin/stdout 绑定问题）；
+- 这解释了为什么过去多轮"后台 forward"从未真正生效。
+
+### 下一步
+
+用前台 forward（`& python ...` + 合适的 `--seconds`）重跑完整流程，
+验证 `net` 到 7 后 `table` 是否从 0/1135 涨到 1223。
