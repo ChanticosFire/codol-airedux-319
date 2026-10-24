@@ -12139,3 +12139,64 @@ Round 33 我根据"`call 0x5C241C` = 0、dword 引用 = 0"判定该段是死代�
 |---|---|
 | 33 | 误判 `CL_ParseServerMessage` 为死代码（只扫了 `call`） |
 | **34** | **纠正：`0x5C241C` 由 `0x5C240B jge` 到达，是活代码；解析路径的门是"netchan 序列号窗口检查"（`[ebx+0x144] >= [ebx+0x140]-0x200`）** |
+
+## 296. 2026-10-29 11:00–12:00：**🎯 `stats` 首次出现（连接链完整），但客户端 `unhandled_exception` 崩溃**
+
+### 296.1 两个 patch 都成功应用
+
+```
+gate1: net_state>=7 check
+  0x5c2303 before=0f8c0a010000 match=True  →  after=909090909090 ok=1
+gate2: serial-window check
+  0x5c240b before=7d0f         match=True  →  after=eb0f         ok=1
+```
+
+（`0x5C240B` 是 `jge 0x5C241C` 的 **short 形式 `7D 0F`**，
+改成 `EB 0F` 即 `jmp short`，无条件进入解析路径。）
+
+### 296.2 gs 日志：完整握手 + **stats 第一次出现**
+
+```
+52 行日志，入站 8 条：
+  getchallenge ×2   from 127.0.0.1:53677
+  connect           uid=0cf7ee44e08c4c28
+  stats             ← **35 轮以来第一次！challenge: 1851176345**
+```
+
+Round 11 之后 `stats` 再没出现过；本轮双 patch 让客户端走到了这一步。
+
+### 296.3 但客户端崩溃
+
+```
+"stop_reason": "unhandled_exception"
+"child_terminated": true
+forward: sent=10  received=31  injected=12
+```
+（注入了 12 个包，比之前的 10 多，说明 gamestate 数据确实进了 ring。）
+
+### 296.4 崩溃原因需要隔离
+
+两个 patch 同时生效，无法判断是哪个引起的：
+
+- **`0x5C240B`（无条件跳）的嫌疑最大**：它绕过了"netchan 序列号窗口"检查，
+  于是重复或过期的 gamestate 分片也会被送去解析，很可能在解析器里读到非法长度；
+- **`0x5C2303`（`net_state>=7` 门控）**相对温和：它只是让分支继续走，
+  `Netchan_Process` 本身仍会检查返回值。
+
+### 296.5 下一步（隔离 + 温和化）
+
+1. **只打 `0x5C2303`** 跑一次，看是否崩；
+2. **只打 `0x5C240B`** 跑一次，看是否崩；
+3. 对崩溃的那个改成温和方案：
+   - 若 `0x5C240B` 是元凶：不改成无条件跳，而是**在注入前把
+     `[conn+0x144]`（接收序列号）调成落在 `[conn+0x140]-0x200` 之后**，
+     让原生的 `jge` 自然通过；
+   - 若 `0x5C2303` 是元凶：改为"仅当 `net_state == 5` 时放行"。
+
+### 296.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 33 | 误判死代码（只扫 `call`） |
+| 34 | 纠正：`0x5C241C` 由 `jge` 到达；门是序列号窗口检查 |
+| **35** | **双 patch 后 `stats` 首次出现、`injected` 增到 12 —— 连接链跑通了；但客户端 `unhandled_exception`，需隔离是哪个 patch 引起** |

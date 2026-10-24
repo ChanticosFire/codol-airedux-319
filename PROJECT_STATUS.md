@@ -18819,3 +18819,7 @@ lobby          = 0x37E19850
 > **2026-10-29 10:00–11:00【⚠ 纠正 Round33：0x5C241C 不是死代码，它由 0x5C240B jge 到达（我上轮只扫 E8 call，漏了条件跳转）。实际控制流 0x5C23A8→Netchan 返回值检查→0x66EE10 读序列号两次→0x5C2405 cmp [ebx+0x144],[ebx+0x140]-0x200→0x5C240B jge 0x5C241C（满足则进入解析）→0x5C242B call 0x470A60→0x5C2434 call 0x473A50 CL_ParseServerMessage。所以 CL_ParseServerMessage 确实在活路径上，门是"netchan 序列号窗口检查"。教训：判断死代码必须同时扫 E8/E9/0F 8x】** 
 >
 > 下一步：用完整跳转扫描重新统计 0x5AA980/0x5C241C/0x473A50 引用；hook 0x5C241C 与 0x473A50，不加 --oob-only 跑一次，命中则说明序列号检查通过；不命中则读 [ebx+0x144] 与 [ebx+0x140]-0x200 实际值判断是否序列号不在窗口内。
+
+> **2026-10-29 11:00–12:00【🎯 双 patch 生效：0x5C2303 (0F 8C..→90×6)、0x5C240B (7D 0F → EB 0F 无条件跳，注意是 short jge)。gs 日志首次出现 stats（getchallenge×2 → connect → stats，challenge 1851176345），injected 从 10 增到 12。但客户端 unhandled_exception 崩溃。嫌疑最大是 0x5C240B 无条件跳绕过了序列号窗口检查，让重复/过期分片也进解析器】** 
+>
+> 下一步：隔离测试（只打 0x5C2303 / 只打 0x5C240B）；若 0x5C240B 是元凶则改温和方案：注入前把 [conn+0x144] 调到 [conn+0x140]-0x200 之后让原生 jge 自然通过，而非无条件跳。
