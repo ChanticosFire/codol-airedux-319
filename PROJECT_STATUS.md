@@ -17673,3 +17673,7 @@ lobby          = 0x37E19850
 > **2026-10-24 12:58–13:05【真实抓包对照：补上分片长度前缀】**
 >
 > 解析 `runs/codex-2697-stats-packets2.bin` 确认真实分片头 = **u16 长度(10+chunk) + 10 字节 netchan 头 + chunk**，`count` 字段是末片索引；gs 唯独缺 u16 长度前缀，已在 `_send_fragments` 补上。副作用：`ring_bridge` 用 `u32(data[0:4])` 检测 FRAGMENT_BIT 失效，加 `--reliable-until-state 0` 绕过（dump 4→11 条，gamestate+快照均注入）。客户端仍 `state=6`/`ui=0`；下一步逐字段对齐 gamestate payload（2697 用 `mp` gametype 与 `7b f1 e8 36` checksum，gs 用 `war` 与默认 checksum）。
+
+> **2026-10-24 13:05–13:10【断点证明 gamestate 从未到解析器】**
+>
+> 用 `--gamestate-source capture`（2697 真实 3426 B gamestate）结果与 native 完全相同（state 6/ui 0）；断点 `0x472D80:GamestateParse` **一次未命中**，而 `0x5C1678:ChallengeBranch` 命中。→ 不是 gamestate 内容问题，gamestate 在**网络层**就被丢弃，未到解析器；challenge 之后（connectResponse / netchan 可靠包）这一段有问题。下一步：找 0x472D80 的调用方与条件；对比真实 2697 connectResponse 之后紧邻的 `svc 0x01 MP_CONNECTED`（`snapshot-2697-seq5.bin` 里有明文 `MP_CONNECTED`），很可能是客户端在等的消息。

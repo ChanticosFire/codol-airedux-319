@@ -226,3 +226,27 @@ gamestate 是 inband（带 `svc 0x03`），客户端要用 **netchan 序号** �
 `00 00 00 00 03 00 00 00 00 "mp_cross_fire\\0" "mp\\0" 7b f1 e8 36 04 …`；
 gs 的 native 是 `… "mp_cross_fire\\0" "war\\0" <checksum> 04 …`。差异点：gametype（`mp` vs `war`）、
 registration checksum、以及 configstring 数量/内容。下一轮应逐字段对齐后再发。
+
+## 11. 2026-10-24 13:05–13:10：断点证明 gamestate 从未到达解析器
+
+两组实锤：
+
+| 实验 | 结果 |
+|---|---|
+| `--gamestate-source capture`（3426 B 的 2697 真实 gamestate） | `state=6`、`ui=0`（与 native 90 B 完全相同） |
+| 断点 `0x472D80:GamestateParse` + `0x5C1678:ChallengeBranch` | **ChallengeBranch 命中**；**GamestateParse 一次都没命中** |
+
+结论：
+1. **不是 gamestate 内容问题**——换成 2697 真实 3426 B gamestate 结果一样；
+2. 客户端**从没进入 gamestate 解析器**，也就是说 gamestate 包在**网络层**就被丢弃了，
+   根本没到 `0x472D80`；
+3. challengeResponse 分支正常（`0x5C1678` 命中），所以问题在 challenge 之后的
+   **connectResponse / netchan 可靠包**这一段。
+
+### 下一步
+
+1. 找 `0x472D80` 的调用方（`call 0x472D80`），看它在什么条件下被调用（svc 类型？netchan seq？）；
+2. 对比真实 2697 的 **connectResponse 字节**与 gs 的 `connectResponse \\mapname…`（真实包里有
+   `snapshot-2697-seq5.bin` 等含 `MP_CONNECTED` 的 svc 0x01 数据，很可能 connectResponse 之后还有
+   一条 `svc 0x01` 的 `MP_CONNECTED` 服务端命令，客户端正是等它）；
+3. 若是，gs 应通过 `--command-file` 在 connect 后补发这条 svc 命令，而不是只靠 gamestate。
