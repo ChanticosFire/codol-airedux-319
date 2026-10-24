@@ -7050,3 +7050,30 @@ edi = ([0x76638F4] ^ 0x6891D1C7) + 0xC
 
 扫描 `lea reg, [0x76638F4]`（`8D 05/0D/15/1D/35/3D <addr>`），
 找谁用间接方式写入它。
+
+## 202. 2026-10-27 18:30–19:00：队列注入 + hook 在 login 后立刻崩溃；`table_before=0`（异常）
+
+### 202.1 实验
+
+```
+table_before = 0                 ← 异常！之前多次测得 1135
+inject_load_queue common_gametype_mp -> ok
+hook_queue_processor 0x7EF0D0 -> ok
+3 秒后：alive = False            ← 崩溃
+```
+
+### 202.2 两个异常
+
+1. **`table_before = 0`** —— 武器表为空，说明 `common_mp` 没有加载（或 login 流程未完成）；
+2. **hook 后 3 秒内崩溃** —— 而之前（r154）是 6 秒后崩，r142 是 8 秒。
+
+### 202.3 可能原因
+
+- 本次 `drive_login_state_machine` 可能没走完（`--ticks 26` 不够，或 server319 未就绪）；
+- `table=0` 意味着客户端根本没加载 `common_mp`，此时 hook `0x7EF0D0`（Frontend tick）
+  可能在"前端还没初始化"时就执行，cave 里的 `cmp [0x239B11C],0` 读到未映射页 → 崩。
+
+### 下一步
+
+1. 先确认 login 确实完成（`ui`、`state`、`table` 三者都到位）再注入；
+2. 或者在 `table >= 1000` 之后才装 hook。
