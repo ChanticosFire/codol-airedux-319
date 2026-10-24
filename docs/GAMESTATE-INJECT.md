@@ -1742,3 +1742,39 @@ demo 播放（cbuf 注入）发生在约 +12 s，所以**地图包请求在 demo
    `patch_mp_cross_fire.ff`；
 2. 若该字段不对，再试 `connection+0x108294`（相邻字段）与 `0x1C2Bxxx` 系列全局；
 3. 成功标志：trace 里出现 `patch_mp_cross_fire.ff` 且截图是 cross_fire。
+
+## 59. 2026-10-24 23:55–00:10：poke `connection+0x108394` 无效；请求表在播放 9 秒时还是 marketplace 包
+
+### 59.1 poke 地图名字段
+
+新增 `tools/poke_map_name.py`：读 `[0x331C0C8] ^ 0xD362501F` 得到 connection，再写
+`connection+0x108394`。demo 播放后 8 秒执行：
+
+```
+connection = 0x133faf68
+before = ""              ← 该字段当时是空的
+after  = "mp_cross_fire"
+```
+
+结果：地图包请求**仍是 `patch_mp_crash_tropical.ff`**。
+
+→ `connection+0x108394` 不是当前有效的地图名字段（或写入后被重建的连接对象覆盖）。
+
+### 59.2 请求表 0x1D06440 的内容（demo 播放后 9 秒）
+
+| 项 | 名字 | flags |
+|---|---|---|
+| 0 | `patch_common_marketplace_lite` | 1 |
+| 1 | `common_marketplace_lite` | 1 |
+| 2 | `patch_common_marketplace_lite1` | 1 |
+| 3 | `common_marketplace_lite1` | 1 |
+
+→ 表里此时是 marketplace 包；地图包（+30 秒请求的 `patch_mp_crash_tropical`）还没进表。
+
+### 下一步
+
+1. 把读表时间推到 +25 秒（crash 请求前），看地图包项是否在表里、名字是什么；
+2. 若在表里，就在下一次读取时（demo 播放前无法预知）提前把它改成 `patch_mp_cross_fire`；
+   但更实际的是：表项只是**加载请求**，改它要抢在 `0x49F280` 遍历之前；
+3. 另一个更根本的办法：找"谁把 `patch_mp_crash_tropical` 写进表"（`0x49DE70` 的调用者
+   `0x49E3BE` 上游 `0x49E160` 的 16 个调用者），在 demo 播放时定位那一次调用。
