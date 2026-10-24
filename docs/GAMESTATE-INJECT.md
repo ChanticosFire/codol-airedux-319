@@ -2380,3 +2380,43 @@ python tools/run_match.py --name r106 ^
    观察 1136 何时产生、1224 是否出现过；
 3. 若断点确实不可用，则退回静态路径：`0x454A30` 循环 + `0x42F3E0` 返回值的
    计算方式（引用编号 vs 定义索引）已经明确，重点是"demo 播放为何多 88 个定义"。
+
+## 77. 2026-10-25 05:40–06:00：r107 新 runtime 失败；gamestate 结构定位
+
+### 77.1 r107（新 runtime 断点实验）
+
+```powershell
+python tools/run_match.py --name r107 --runtime r107flow ... --client-breakpoint 0x59B560:WeaponIndex
+```
+
+结果：`[run_match] engine never initialised`（exit 1）。
+
+原因：`run_match` 固定给 launch 传 `--reuse-runtime <runtime>`，而 `r107flow` 这个 runtime
+不存在（launch 的 reuse 语义要求目录已存在），所以客户端没有起来。
+
+→ 需要先准备好 runtime（复制已验证的 `20261023-codex-delay-a2\runtime`），
+或改 `run_match` 让它不带 `--reuse-runtime` 重建。
+
+### 77.2 gamestate stream 结构（离线解析）
+
+`runs/demo-outer-exact/gamestate-stream-6407.bin` 开头：
+
+```
+00: 03                       svc_gamestate
+01: 01 00 00 00              某字段（=1）
+05: "mp_crash_tropical\0"    mapname
+17: "war\0"                  gametype
+1B: 00 00 00 00
+1F: 00
+20: 04 23 01 af
+24: \2482\2\2485\18\2490\214\2491\0\3056\2\g_gametype\war\g_hardcore\0\mapname\...
+```
+
+→ configstring 从 `0x24` 附近开始，第一条是 `\2482\2\2485\18...`（含 dvar 键值对）。
+
+### 下一步
+
+1. 复制 runtime 到新目录后重跑 r107（断点实验）；
+2. 或改 `run_match` 支持"不带 --reuse-runtime 的新 runtime"；
+3. 用 `parse_demo_outer.py` 的 `--registration-checksum` 一键再生 gamestate，
+   再做断点实验（避免手工准备文件）。
