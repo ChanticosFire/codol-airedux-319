@@ -3315,3 +3315,36 @@ load_fastfile: status=null  returned_eip="timeout"  state=0  alive=false
    并行调用 `load_fastfile common_gametype_mp`；
 2. 或把手动流程补上 run_match 的 ring-a-drain + refresh hook 两步，等表到 1135 再调用；
 3. 成功判据：表从 1135 涨到 1223+，且 `0x59B560` 的 1224 比较通过（181 消失）。
+
+## 102. 2026-10-25 16:00–16:30：load_fastfile 在 gamestate 处理窗口调用仍崩（时机不对）
+
+### 102.1 r133（run_match + 并行 load_fastfile）
+
+```
+gamestate_source at 18:06:03
+table_now   = 0        ← gs 日志出现时表还没重建
+load_fastfile → returned_eip="timeout"、state=0、alive=false
+```
+
+→ 在 `gamestate_source` 日志出现时调用仍然崩。原因：gs 日志是**发送前**记录，
+此时客户端还没开始处理 gamestate（表为 0），而 `0x49E160` 依赖表已初始化。
+
+### 102.2 正确的调用时机
+
+已知表初始化的两个状态点：
+
+| 阶段 | 表大小 |
+|---|---|
+| 启动后（未登录） | 0 |
+| login 完成（run_match 的 18s + ring-drain + hook 之后） | **1135** |
+| gamestate 处理中 | 0 → 676 → 1136（重建） |
+
+→ `load_fastfile` 必须插在 **"login 完成、connect 之前"** 的窗口（表=1135 且客户端空闲）。
+
+### 下一步
+
+1. 监控 `runs/<name>-run.out` 的 `[run_match] driving login state machine` 之后、
+   `[run_match] blocking ring-a` 之前，此时调 `load_fastfile common_gametype_mp`；
+2. 若成功，表应从 1135 涨到 1223+，再让 run_match 继续 connect + gamestate，
+   观察 181 是否消失；
+3. 若该窗口仍崩，改在 demo 播放路径做对照（demo 播放到 state 10 后、地图加载前调用）。
