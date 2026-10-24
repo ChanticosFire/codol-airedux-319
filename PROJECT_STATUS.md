@@ -17769,3 +17769,7 @@ lobby          = 0x37E19850
 > **2026-10-24 17:40–17:55【里程碑：demo 播放成功，真实地图画面出现】**
 >
 > 关键方法：`tools/fake_dvar.py` 在客户端内存里伪造 `g_gametype` dvar（name="g_gametype"、+0xC→"war"）并改写 `[0x32AA908]`，**不改代码**。随后 `cl_demo_play 0C-2021-8-26[19-26-24]war.demo`：`net_state` 1→**8**（t=15）→**10**（t=18+），`ui_state=0`；截图 `runs/r51-demo-state10.png` 显示**真实 mp_crash_tropical 对局**（地图、士兵、小地图、比分 0-0、计时 30:45、玩家列表），3 秒后第二帧 hash 不同 → **画面在动**。→ 渲染/地图资源/demo 播放全部正常；且 demo 把 state 推到 7→8→10（正好是处理 inband 包的门槛）。下一步：在这条路径上抓 demo 的 gamestate/首帧快照字节，或推进 mp_cross_fire 可见可玩。
+
+> **2026-10-24 17:55–18:10【关键链路打通：state>=7 时 gamestate 被分发/解析】**
+>
+> ① 22 个 demo 的地图只有 crash_tropical/afghan/ambush/bog/boomtown/abandon，**无 mp_cross_fire**；② 把 demo 里 27 处地图名替换成 mp_cross_fire 后，state 到 8 即退出（资产名被破坏）；③ **决定性实验**：假 dvar + cl_demo_play 把 state 推到 7/8/10，再接入 gs(gamestate)+forward+pump，断点 `Dispatch=1`、`GamestateParse=1`、state=10 —— **第一次让包分发与 gamestate 解析真正执行**。之前 0 命中全因 `net_state<7`（§29）。→ 门槛已破：state>=7 时服务端 gamestate 会被正常处理；下一步把 snapshot 送进同一链路并逐步脱离 demo。

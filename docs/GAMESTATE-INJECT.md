@@ -1013,3 +1013,38 @@ CLConnectFail=0
 1. 用这条路径（假 dvar + demo）在 state 10 时抓 demo 的 gamestate/首帧快照字节（路线 B）；
 2. 或先把 `mp_cross_fire` 的 demo/对局跑起来：`cl_demo_play` 只认地图名，可尝试把 demo 的地图名换成 mp_cross_fire（或直接用服务端 + 已进入 7 的状态）；
 3. 目标仍是"mp_cross_fire 可见可玩 + 对局结束回大厅"：现在至少证明了客户端能渲染真实地图。
+
+## 35. 2026-10-24 17:55–18:10：**关键链路打通 —— state>=7 时 gamestate 被分发/解析**
+
+### 35.1 22 个 demo 都不含 mp_cross_fire
+
+逐文件扫描 `mp_*` 字符串：地图只有 `mp_crash_tropical`、`mp_afghan`、`mp_ambush_sh`、`mp_bog_sh`、
+`mp_boomtown`、`mp_abandon` 等，**没有 mp_cross_fire**。
+
+### 35.2 篡改地图名失败
+
+把 demo 里 27 处 `mp_crash_tropical` 替换为 `mp_cross_fire\0\0\0\0`（保持 17 字节）后播放：
+`state` 到 8 后客户端在 21 秒内退出（资产名 `mp_crash_tropical_tp` 等被破坏，地图资产不匹配）。
+
+### 35.3 决定性实验：demo 播放期间注入 gamestate
+
+流程：假 dvar → `cl_demo_play`（demo 播放把 state 推到 7/8/10）→ 在 state 10 时接入
+`ring_bridge connect` + `server1649370.gameserver`（native gamestate）+ `forward` + `pump`。
+
+结果（断点计数）：
+
+```
+Dispatch=1
+GamestateParse=1
+state=10
+```
+
+**这是第一次让 `0x473420`（包分发）和 `0x472D80`（gamestate 解析）真正被调用**。
+之前的 0 命中完全是因为 `net_state < 7`（见 §29）。
+
+### 结论
+
+- **门槛已破**：只要客户端在 state >= 7，服务端下发的 gamestate 就会被正常分发和解析；
+- demo 播放是进入 state 7+ 的可靠手段；
+- 下一步可以把 snapshot 也送进同一条链（`0x471D80` 实体循环），并让服务端在 state 7+ 后接管，
+  逐步脱离 demo（先 demo 起状态，再让服务端 gamestate 覆盖地图信息）。
