@@ -3539,3 +3539,50 @@ b'gametype'               0 次
 1. 在 `0x49E160` 的 16 个调用者里，找 demo 播放会走的那一个（可用 trace 的 caller 或时序推断）；
 2. 看它如何决定列表内容（是否包含 gametype / 是否读配置）；
 3. 服务端路径若能复用同一构造逻辑，就能补上 gametype 包。
+
+## 108. 2026-10-25 19:00–19:30：0x49E160 的 16 个调用者；CL_PlayDemo 内是空列表调用
+
+### 108.1 调用者清单
+
+```
+0x49E67B  0x49EC93
+0x4FCC7C  0x4FCD32  0x4FCE4F      ← 启动加载（code_pre_gfx 等）
+0x4FE76C  0x4FE951                ← CL_Init 区域
+0x515ED5
+0x59B212
+0x5BFBF9  0x5BFCBB
+0x5C2C23  0x5C8448
+0x5CB441  0x5CB451
+0x813D09                          ← CL_PlayDemo 内部
+```
+
+### 108.2 CL_PlayDemo 内是一个空列表调用
+
+```asm
+0x813CF3  xor eax, eax
+0x813CF5  push eax
+0x813CF6  lea edx, [ebp-0x10]
+0x813CF9  push 1
+0x813CFB  push edx
+0x813CFC  mov [ebp-0x10], eax
+0x813CFF  mov [ebp-0xC], eax
+0x813D02  mov [ebp-8], 6
+0x813D09  call 0x49E160          ; 列表为空（[ebp-0x10]=0）
+0x813D11  call 0x5C8A70          ; CL_Shutdown
+0x813D25  call 0x5C83D0          ; CL_Init
+0x813D34  mov [0x76446B0], 7     ; state = 7
+```
+
+→ CL_PlayDemo 里的 `0x49E160` 是**空列表**调用（只是初始化/清场），
+**不是**加载 gametype 包的地方。
+
+### 108.3 结论
+
+gametype 包（`patch_common_gametype_mp.ff`）的加载在**另一个调用者**里，
+可能在 `0x5C8448`（CL_Init 后）或 `0x5C2C23`（CL 层）附近。
+
+### 下一步
+
+1. 反汇编 `0x5C8448` / `0x5C2C23` / `0x5CB441` 三个调用点的上下文，找"含 gametype 名字的列表构造"；
+2. 重点看它们的列表内容从哪个全局/配置读（是否与 demo 播放模式相关）；
+3. 找到后在服务端路径复刻。
