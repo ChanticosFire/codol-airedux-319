@@ -18815,3 +18815,7 @@ lobby          = 0x37E19850
 > **2026-10-29 09:00–10:00【⚠ 重大纠正：引用统计证明 CL_ParseServerMessage(0x473A50) 是死代码 —— 它的两个调用者 0x5AAB40 和 0x5C2434 分别位于 0x5AA980、0x5C241C 这两段"零引用"代码里；0x5AA980 自身也无 call/dword 引用。Round26-31 追错了方向。真正解析路径在 CLpacketEvent(0x5C2260，由接收泵 0x4F8CD6/0x4F8D60/0x4F8ED8 调用) 的 netchan 分支：0x5C2380 call 0x674EB0（真正 netchan 处理）、0x5C23A0 call 0x674740（解包）。另：--oob-only 实测 injected=3、CLpacketEvent=3，但它丢弃所有非 OOB 包；--oob-until-state 默认就是 0，所以不加该开关时全部包都会注入】** 
 >
 > 下一步：hook 0x674EB0/0x674740（活路径），不加 --oob-only 跑一次看是否命中；命中但 net_state 仍 0 则记录返回值（解包失败会直接 return）；若连 0x674EB0 都不命中，则查 0x5C2315 cmp eax,4 的长度前置条件。
+
+> **2026-10-29 10:00–11:00【⚠ 纠正 Round33：0x5C241C 不是死代码，它由 0x5C240B jge 到达（我上轮只扫 E8 call，漏了条件跳转）。实际控制流 0x5C23A8→Netchan 返回值检查→0x66EE10 读序列号两次→0x5C2405 cmp [ebx+0x144],[ebx+0x140]-0x200→0x5C240B jge 0x5C241C（满足则进入解析）→0x5C242B call 0x470A60→0x5C2434 call 0x473A50 CL_ParseServerMessage。所以 CL_ParseServerMessage 确实在活路径上，门是"netchan 序列号窗口检查"。教训：判断死代码必须同时扫 E8/E9/0F 8x】** 
+>
+> 下一步：用完整跳转扫描重新统计 0x5AA980/0x5C241C/0x473A50 引用；hook 0x5C241C 与 0x473A50，不加 --oob-only 跑一次，命中则说明序列号检查通过；不命中则读 [ebx+0x144] 与 [ebx+0x140]-0x200 实际值判断是否序列号不在窗口内。

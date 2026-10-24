@@ -12072,3 +12072,70 @@ Round 26–31 我一直把它当作"真正的消息解析入口"来追，方向�
 | 28–31 | 追 `CL_ParseServerMessage` / `CL_ParseGamestate` 链 |
 | 32 | 发现 `connect` 后 `net_state` 回 0，注入被阻塞 |
 | 33 | `--oob-only` 让注入生效（`CLpacketEvent=3`）；**引用统计证明 `CL_ParseServerMessage` 是死代码 —— 前几轮方向需要纠正，改追 `0x674EB0`/`0x674740`** |
+
+## 295. 2026-10-29 10:00–11:00：**⚠ 纠正上一轮 —— `0x5C241C` 不是死代码，它通过 `jge` 到达**
+
+### 295.1 上一轮的结论有误
+
+Round 33 我根据"`call 0x5C241C` = 0、dword 引用 = 0"判定该段是死代码。
+**这是错的**：它由 **`jge`** 到达，而我只扫了 `call`（`E8`）指令，漏了条件跳转。
+
+### 295.2 实际控制流（`0x5C23A8`–`0x5C241C`）
+
+```asm
+0x5C23A8  test eax, eax / je 0x5C2413     ; Netchan_Process 返回值
+0x5C23AC  eax = [ebx+0x109258]
+0x5C23B2  [ebx+0x10] += eax
+0x5C23B5  ecx = [ebx+0x80148]
+0x5C23BB  edx = [ebx+0x144]
+0x5C23C9  [esi+0x1C] = 0
+0x5C23D0  call 0x66EE10                    ; 读压缩整数（序列号）
+0x5C23D5  [ebx+0x80148] = eax
+0x5C23E0  call 0x66EE10                    ; 再读一个
+0x5C23E5  ecx = eax & 0x7FFFFFFF
+0x5C23ED  eax >>= 31
+0x5C23F0  [ebx+0x144] = ecx
+0x5C23F6  [esi+0x2C] = eax
+0x5C23F9  eax = [ebx+0x140]
+0x5C23FF  edx = eax - 0x200
+0x5C2405  cmp dword ptr [ebx+0x144], edx
+0x5C240B  jge 0x5C241C                     ; ← **满足则进入解析**
+0x5C240D  mov dword ptr [ebx+0x144], eax
+0x5C2413  xor al, al                       ; 不满足 → 返回 false
+0x5C2415  pop edi / pop esi / pop ebx / mov esp,ebp / pop ebp
+0x5C241B  ret
+0x5C241C  eax = [esi+0x1C]                 ; ← **解析路径**
+0x5C241F  ecx = [esi+0x14]
+0x5C2422  edx = [esi+8]
+0x5C2425  ecx -= eax
+0x5C2427  push ecx / push edx
+0x5C242B  call 0x470A60
+0x5C2434  call 0x473A50                    ; CL_ParseServerMessage
+```
+
+所以 `CL_ParseServerMessage`（`0x473A50`）**确实位于活路径上**，
+只要 `[ebx+0x144] >= [ebx+0x140] - 0x200` 这条"序列号在窗口内"的检查通过。
+
+### 295.3 另一处纠正：`0x5AA980` 也未必是死的
+
+`0x5AA980` 同样只扫到"零 call 引用"。它可能也是通过 `jmp`/`jcc` 到达的
+（`0x5AAEB3`/`0x5AAEBC` 那两处 `call 0x5AA980` 在函数内部，
+说明它至少是**可以被递归调用**的，入口必定在外部）。
+
+**教训：判断"死代码"不能只扫 `E8 call`，必须同时扫 `E9 jmp` 与 `0F 8x jcc`。**
+
+### 295.4 下一步
+
+1. 用**完整跳转扫描**（`E8`/`E9`/`0F 8x`）重新统计 `0x5AA980`、`0x5C241C`、`0x473A50` 的引用；
+2. hook `0x5C241C`（解析路径入口）与 `0x473A50`，加 `--oob-only` 之外的方式
+   （不加 `--oob-only`，默认注入全部包）跑一次，确认：
+   - `0x5C241C` 是否命中 → 若命中说明序列号检查通过、已进入解析；
+   - 若不命中，读 `[ebx+0x144]` 与 `[ebx+0x140]-0x200` 的**实际值**，
+     判断是否是"序列号不在窗口内"导致被拒。
+
+### 295.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 33 | 误判 `CL_ParseServerMessage` 为死代码（只扫了 `call`） |
+| **34** | **纠正：`0x5C241C` 由 `0x5C240B jge` 到达，是活代码；解析路径的门是"netchan 序列号窗口检查"（`[ebx+0x144] >= [ebx+0x140]-0x200`）** |
