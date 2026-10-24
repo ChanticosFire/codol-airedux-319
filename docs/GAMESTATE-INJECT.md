@@ -3421,3 +3421,46 @@ build_native_gamestate(registration_checksum, *,
 2. 若 demo 也没加载 gametype 包，则 88 个武器可能来自 `common_mp.ff`（启动已加载）的
    另一种注册方式（如 zone 内的 asset 引用）；
 3. 重新检查 `0x42F2F0` 表的填充路径，确认 88 个是否真的来自 asset 注册。
+
+## 105. 2026-10-25 17:30–18:00：**demo 播放请求 patch_common_gametype_mp.ff；服务端路径没有 → 88 差异根源**
+
+### 105.1 demo 播放的 fastfile 请求统计（r120 trace）
+
+```
+ff requests = 14016
+其中：
+  m4a1techcommon_mp.ff  1676
+  m21ebr_mp.ff          976
+  aks74u_mp.ff          906
+  ...（每把武器一个独立 ff，共 40+ 种）
+  patch_common_gametype_mp.ff            4 次   ← gametype 的 patch 包
+  patch_localized_common_gametype_mp.ff  4 次
+```
+
+### 105.2 武器独立 ff 全部缺失（但不影响播放）
+
+全盘搜索 `ac130*_mp.ff` / `airstrike*_mp.ff`：**0 个**；
+`Original Client\client_shipRetail\chinese` 下 `*_mp.ff`：**0 个**；
+overlay：**12 个**（基础包）。
+
+→ demo 播放请求的 14,016 个武器 ff 全部是"缺失回退"，**不影响 demo 播放**
+（demo 的帧数据只需要 asset 名，不需要实际实现）。
+
+### 105.3 关键差异
+
+| 路径 | 请求 `patch_common_gametype_mp.ff` | 结果 |
+|---|---|---|
+| demo 播放 | ✅ 4 次 | 回退加载 `common_gametype_mp.ff` → 表 1266 |
+| 服务端路径 | ❌ 没有 | 表 1136（少 88 个 gametype 武器） |
+
+### 结论
+
+88 个 gametype 武器来自 `common_gametype_mp.ff`，而 demo 播放**主动请求**了它的 patch 包
+（`patch_common_gametype_mp.ff`），触发加载；服务端路径**没有触发**这次请求。
+
+### 下一步
+
+1. 找出 demo 播放时"谁发起 `patch_common_gametype_mp.ff` 请求"（在 trace 里看它的 caller
+   与时间点，对照 demo 播放阶段）；
+2. 在服务端路径复刻该触发（例如向客户端注入对应 configstring/命令）；
+3. 或直接把 `common_gametype_mp.ff` 放进 overlay 并让它被启动加载（启动列表加一项）。

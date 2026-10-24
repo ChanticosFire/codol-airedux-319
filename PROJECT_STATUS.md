@@ -18055,3 +18055,7 @@ lobby          = 0x37E19850
 > **2026-10-25 17:00–17:30【补 configstring 只能补 42 个复合；88 个 asset 仍需 gametype fastfile】**
 >
 > `build_native_gamestate(registration_checksum, *, checksum_feed, client_number, configstrings, mapname, gametype)`；默认 configstrings 仅 3 条。关键区分：42 个 `** ...` 复合是 configstring 值（可补），88 个 `ac130_mp` 是 fastfile asset（`0x1988B50` 表项，configstring 补不了）。→ 补 configstring 最多到 1178，到不了 1224；要消除 181 必须找到客户端自己触发 gametype fastfile 加载的路径。
+
+> **2026-10-25 18:00【关键发现：demo 播放请求 patch_common_gametype_mp.ff（4 次）；服务端路径没有 → 88 差异根源】**
+>
+> r120 trace：ff 请求 14,016 次（每把武器一个独立 ff，全缺失但不影响播放），其中 **`patch_common_gametype_mp.ff` 4 次**、`patch_localized_common_gametype_mp.ff` 4 次。全盘搜索 `ac130*_mp.ff`/`airstrike*_mp.ff` 为 0；Original Client 的 `*_mp.ff` 为 0；overlay 12 个。→ demo 播放主动请求 gametype patch 包触发加载（表 1266），服务端路径没触发（表 1136）。下一步：找 demo 里该请求的 caller 与时间点，在服务端路径复刻触发。
