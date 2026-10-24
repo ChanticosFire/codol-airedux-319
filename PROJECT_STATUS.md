@@ -18547,3 +18547,7 @@ lobby          = 0x37E19850
 > **2026-10-27 07:00–07:30【🎉 stage 推进成功（5→6）：先写 [[0x849B874]+0xC]=1 解锁主循环，再写 [0xE85C68]+0x1F4=2，stage 在 0.5s 内变 6 并保持；但 connect 仍不发（state=0、sent=12/received=0）】**
 >
 > 验证机制：`guardC=0` 导致主循环跳过（此前所有修改无效的真因）；写 1 后 0x621810 执行，+0x1F4==2 触发 stage=6。但 state 从 4 变 0、connect 仍不发。→ 下一步在 state=4 时触发，或查 0x5BE7FC 之后是否检查 state。
+
+> **2026-10-27 07:30–08:00【0xB7A6E0 再调 0xB7A670()（holder 对象），!=2 返回 0；我改的 [0xE85C68]+0x1F4 是 gamestate 单例，不影响 holder；stage=6 下需重查 holder 的加载器字段】**
+>
+> 0xB7A6E0：`call 0xB7A670 / cmp eax,2 / je continue / eax=0 ret`；继续后查 `[esi+0x38]`。对象区分：holder=[0x8269774]（0xB7A670 用 +0x4F4）、gamestate 单例=[0xE85C68]（0xBAC370 用 +0x1F4）。→ 下一步在 stage=6 下重算 B7A670()。
