@@ -743,3 +743,45 @@ DispatchLoop hits=0
 1. 找调用 `0x473A80` 所在函数的入口（上游网络帧处理），确认它在 state=5 时是否被调度；
 2. 若未被调度，查它的触发条件（可能是 `PUMP_FN 0x4F8D70` 内部的一个子步骤，需要额外参数/标志）；
 3. 这也是为什么 `inject_client_gamestate` 的 3 条消息能到 challenge 分支（`0x5C1678`）却不进 gamestate 解析——两条路径的上游不同。
+
+## 28. 2026-10-24 16:15–16:30：定位网络接收函数与 seq 窗口
+
+### 28.1 接收链（静态）
+
+`0x473A50`（分发入口）的调用者之一 `0x5C2434` 位于网络接收函数内：
+
+```asm
+0x5C23E0  call 0x66EE10          ; 从 stream 读 4 字节（seq_word）
+0x5C23E5  ecx = eax & 0x7FFFFFFF ; seq
+0x5C23ED  eax >>= 31             ; bit31 = FRAGMENT/加密标志
+0x5C23F0  mov [ebx+0x144], ecx
+0x5C23F6  mov [esi+0x2C], eax    ; ← 0x473A80 判断的就是这个
+0x5C23F9  mov eax, [ebx+0x140]
+0x5C23FF  lea edx, [eax-0x200]
+0x5C2405  cmp [ebx+0x144], edx
+0x5C240B  jge 0x5C241C           ; seq 必须 >= max_seq-0x200，否则丢弃
+0x5C240D  mov [ebx+0x144], eax
+0x5C2413  xor al,al; ret
+0x5C241C  ...
+0x5C242B  call 0x470A60
+0x5C2434  call 0x473A50           ; 分发
+```
+
+两个结论：
+1. `[esi+0x2C]` 就是**包头 bit31**（分片/加密标志），与 `runs/servercmd-2697-svc.bin` 的明文小包吻合；
+2. 客户端有 **seq 窗口检查**：`seq >= [ebx+0x140] - 0x200`，否则丢弃。
+
+### 28.2 改大 seq 无效
+
+把 gamestate 的 seq 从 1 改成 **100000**（snapshot 也配 100001 起）重跑：
+
+```
+state=5  ui=0  Dispatch=0  GamestateParse=0
+```
+
+→ 仍 0 命中。说明包**没有进入这个接收函数**（不是窗口问题，也不是格式问题）。
+
+### 下一步
+
+找 `0x5C23E0` 所在函数的入口与调用者（上游帧调度），确认它在 state=5 时是否被调度；
+若没有，用 `--main-call` 直接调用它（必要时先写 stream 缓冲），把 ring 里的包推进分发链。

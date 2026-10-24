@@ -299,10 +299,11 @@ class GameServer:
                                         for index, value in self.configstrings][:8],
                       "configstring_count": len(self.configstrings),
                       "payload_head": payload[:96].hex()})
-            # The client's first reliable packet from the server is expected at
-            # seq 1; starting at 3 made the gamestate look like a duplicate of
-            # the connect exchange and it was dropped before parsing.
-            seq = 1 + peer.get("gamestate_count", 0)
+            # The client drops packets whose seq is older than max_seq - 0x200
+            # (0x5C2405 cmp [ebx+0x144], [ebx+0x140]-0x200), and its max_seq is
+            # already large by the time the match starts.  Start high so the
+            # window check passes; one packet per count keeps them monotonic.
+            seq = 100000 + peer.get("gamestate_count", 0)
             peer["gamestate_count"] = peer.get("gamestate_count", 0) + 1
             peer["last_server_seq"] = seq
             self._send_fragments(addr, peer, payload, seq, "gamestate")
