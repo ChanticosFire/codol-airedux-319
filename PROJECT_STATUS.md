@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ID control verified (4048 -> 8 exactly); the id is not what blocks state 10]**
+> snapshot-id8b.bin with bytes 163/164/165/166 = 18/01/01/1E produced eax = 8 at the store, exactly as predicted. So the assembly rule is confirmed and ids are now settable.
+> With id 8 the client still ends at state 9 and exits, so round 228's 'out of range id' hypothesis is falsified. Remaining candidates: the delta path corrupting the stream, a required eType/actor identity, or a clientNum/configstring gate.
+> Evidence: [id control verified](evidence/experiments/20261023-codex-id-control-verified.json).
 > **2026-10-23 [EXACT AND VERIFIED: the id skips byte 164 because 0x66EC30 resumes from the byte cursor]**
 > id = (byte163 bits 5-7) | (byte165 << 3) | (byte166 bit0 << 11). With bytes 18/01/FA/1F that gives 0x0FD0 = 4048, matching the measurement exactly. The count occupies byte 164 and the bit reader skips it.
 > Recipe: count at byte 164; id low 3 bits in byte163 bits 5-7, bits 3..10 in byte165, bit 11 in byte166 bit0. Next: build id = 8 and check the stored id and the state.

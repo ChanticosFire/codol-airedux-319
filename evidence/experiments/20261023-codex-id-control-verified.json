@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T05:00:00+00:00",
+  "scope": "ID CONTROL ACHIEVED and the 'id out of range' hypothesis FALSIFIED: id 8 is stored exactly as built, yet the client still ends at state 9 and exits",
+  "the_verification": {
+    "body": "runs/snapshot-id8b.bin",
+    "bytes": {
+      "163": "0x18",
+      "164": "0x01",
+      "165": "0x01",
+      "166": "0x1E"
+    },
+    "predicted_id": 8,
+    "measured": {
+      "eax": 8,
+      "bl": 0,
+      "bitpos": 1329
+    },
+    "verdict": "EXACT - the assembly rule (byte163 bits 5-7 | byte165 << 3 | byte166 bit0 << 11) is confirmed and the id is now fully controllable"
+  },
+  "why_the_earlier_hypothesis_is_dead": [
+    "round 228 proposed that id 4048 was out of range for the map and that a small id would let the client reach state 10",
+    "with id 8 - a value that is certainly in range for any map - the client still ends at state 9 and the process still exits",
+    "so the entity id is NOT what keeps the client on the loading screen"
+  ],
+  "what_that_leaves_as_candidates": [
+    "the entity block's own completion: with count > 0 the decoder reads an id and then a delta, and something in that path may leave the stream in a state the rest of the snapshot parser rejects",
+    "the client may require the entity to be a recognised player/actor (a valid eType) rather than merely present in the list",
+    "or the loading screen is waiting on a different message entirely (a clientNum/configstring tie) and the entity list is a red herring"
+  ],
+  "what_is_now_solid": [
+    "the entity list layout is exact: gates at bits 1307/1308, count as a byte at buffer[164], id as (byte163 bits 5-7 | byte165 << 3 | byte166 bit0 << 11)",
+    "and the id can be set to any 12-bit value deliberately - demonstrated by 4048 -> 8"
+  ],
+  "next": [
+    "use the now-working id control to test the 'recognised entity' idea: build an entity with a small id AND a mode-1 delta, and watch whether the client survives",
+    "in parallel, check whether the loading screen is gated on a clientNum or on a configstring the server is not setting"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r229-gs.jsonl",
+    "body": "runs/snapshot-id8b.bin"
+  }
+}
