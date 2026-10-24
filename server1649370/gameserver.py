@@ -370,10 +370,11 @@ class GameServer:
             # are already the ack field.  Wrapping them in a fragment header
             # made the client treat the payload as unknown data and drop it
             # before 0x472D80 ever ran.
-            data = bytearray(payload)
-            for i in range(4, len(data)):
-                data[i] ^= key
-            self.sock.sendto(bytes(data), addr)
+            # Real small packets are plaintext: runs/servercmd-2697-svc.bin
+            # (1139 B) reads as `01 01 00 00 00 66 20 22 4d 50 5f 43 ...`
+            # i.e. svc + seq + `f "MP_CONNECTED..."` with no XOR and no header.
+            # Only fragmented payloads are XOR-scrambled after the ack field.
+            self.sock.sendto(bytes(payload), addr)
             self.state.counters["inband_sent"] += 1
             self.log({"dir": "out", "kind": "single", "message": kind,
                       "to": f"{addr[0]}:{addr[1]}", "seq": seq,
