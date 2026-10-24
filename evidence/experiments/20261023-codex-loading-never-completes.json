@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T11:00:00+00:00",
+  "scope": "DECISIVE: the loading object [0x8269774] stays non-null and ui_state stays 5 from net 8 through net 10 with an entity - the frontend never finishes loading",
+  "the_samples": [
+    {
+      "s": 1,
+      "net": 8,
+      "ui": 5,
+      "loadobj": "0x424C6CD8",
+      "count": 0
+    },
+    {
+      "s": 2,
+      "net": 9,
+      "ui": 5,
+      "loadobj": "0x424C6CD8",
+      "count": 0
+    },
+    {
+      "s": 3,
+      "net": 10,
+      "ui": 5,
+      "loadobj": "0x424C6CD8",
+      "count": 1
+    },
+    {
+      "s": 4,
+      "net": 10,
+      "ui": 5,
+      "loadobj": "0x424C6CD8",
+      "count": 1
+    },
+    {
+      "s": 5,
+      "net": 10,
+      "ui": 5,
+      "loadobj": "0x424C6CD8",
+      "count": 1
+    }
+  ],
+  "what_this_settles": [
+    "the frontend is NOT in the 'loading finished but the world is not drawn' state - the loader is still active",
+    "the same heap object is held across every sample, so it is one long-running load that never completes",
+    "and it does not complete even after the client has accepted an entity (count 1), which means entity data is not one of the things the loader waits for"
+  ],
+  "what_the_loader_is_probably_waiting_for": [
+    "in this protocol family a map's initial state comes from the server as BASELINE entity snapshots, not only from incremental snapshots",
+    "the server in this project sends a gamestate and then snapshots, but I have never verified that a baseline message is sent at all",
+    "without baselines the client has no initial entity states to build the world from, which would leave a loader waiting forever - exactly what is observed",
+    "other candidates are a map-restart command or a specific configstring, but the baseline is the most structural omission"
+  ],
+  "the_immediate_check": [
+    "grep the game server for baseline handling and look at the server log for any message kind other than gamestate and snapshot",
+    "and check whether the client's message dispatch (0x672xxx) has a baseline handler that our server never triggers"
+  ],
+  "artifacts": {
+    "globals": {
+      "net": "0x76446B0",
+      "ui": "0x84ABA50",
+      "loading_object": "0x8269774",
+      "count": "0x7859558"
+    },
+    "server_log": "runs/codex-r233-gs.jsonl"
+  }
+}

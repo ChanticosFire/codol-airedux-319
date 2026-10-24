@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [Loading never completes: the loader object is held across every sample]**
+> Samples: net 8/9/10 all show ui 5 and loading object 0x424C6CD8, count 0 then 1. So the frontend is still loading, not finished-but-black, and entity data does not satisfy it.
+> Most structural candidate: the server never sends BASELINE entity snapshots, which this protocol family uses to build the initial world. Next: check the server for baseline handling and the client dispatch for a baseline handler.
+> Evidence: [loading never completes](evidence/experiments/20261023-codex-loading-never-completes.json).
 > **2026-10-23 [ui_state is driven by a loading object at [0x8269774]]**
 > 0x803780: esi = [0x8269774]; non-null -> run the object's update and keep ui_state 5; null -> clear ui_state to 0 and install a callback. So loading is dismissed when that object goes away.
 > Next: read [0x8269774] at the capture moment and watch whether ui_state ever reaches 0.
