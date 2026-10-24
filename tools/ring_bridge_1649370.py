@@ -197,12 +197,48 @@ class Client:
             row["connection_state"] = self.u32(connection + 0x100260)
         return row
 
-    # ---- window-thread invocation -------------------------------------
+    # ---- main-thread invocation ---------------------------------------
     def _thread_id(self, window: str) -> int:
+        """Return the game's MAIN thread, not the window-message thread.
+
+        The connect entry 0x5BE730 runs on the WinMain thread; suspending the
+        window-message thread and rewriting its EIP never reaches it (proven by
+        the 0x5BE740 sentinel experiment).  The main thread is the first entry
+        returned by CreateToolhelp32Snapshot.
+        """
         hwnd = user32.FindWindowW(window, None)
         if not hwnd:
             raise SystemExit(f"找不到窗口类 {window}")
+        threads = self._process_thread_ids()
+        if threads:
+            return threads[0]
         return user32.GetWindowThreadProcessId(hwnd, None)
+
+    def _process_thread_ids(self) -> list[int]:
+        TH32CS_SNAPTHREAD = 0x00000004
+
+        class THREADENTRY32(C.Structure):
+            _fields_ = [("dwSize", W.DWORD), ("cntUsage", W.DWORD),
+                        ("th32ThreadID", W.DWORD), ("th32OwnerProcessID", W.DWORD),
+                        ("tpBasePri", C.c_long), ("tpDeltaPri", C.c_long),
+                        ("dwFlags", W.DWORD)]
+
+        snapshot = k32.CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0)
+        if snapshot in (0, -1):
+            return []
+        found: list[int] = []
+        entry = THREADENTRY32()
+        entry.dwSize = C.sizeof(THREADENTRY32)
+        try:
+            if k32.Thread32First(snapshot, C.byref(entry)):
+                while True:
+                    if entry.th32OwnerProcessID == self.pid:
+                        found.append(int(entry.th32ThreadID))
+                    if not k32.Thread32Next(snapshot, C.byref(entry)):
+                        break
+        finally:
+            k32.CloseHandle(snapshot)
+        return found
 
     def invoke_sequence(self, calls: list[dict], window: str = "CODO", settle: float = 1.5,
                         timeout: float = 20.0) -> dict:

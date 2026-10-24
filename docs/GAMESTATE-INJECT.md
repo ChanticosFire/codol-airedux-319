@@ -8395,3 +8395,41 @@ FindWindowW("CODO") = 0xAB063C
 - 方法 A：`Process.Threads` 的第一个（`29192`）；
 - 方法 B：`NtQueryInformationThread` 的 `ThreadQuerySetWin32StartAddress` 等于 exe 入口的线程；
 - 方法 C：测试所有线程（哨兵实验里逐个试）。
+
+## 240. 2026-10-27 13:30–14:00：主线程修复后 `sent: 0`（更糟）—— 挂起/恢复主线程有副作用
+
+### 240.1 修复内容
+
+- `_thread_id` 改为返回 `CreateToolhelp32Snapshot` 的**第一个线程**（主线程）；
+- 修了 `ctypes` → `C` 的引用错误（`NameError`）。
+
+### 240.2 结果
+
+```
+forward: exit=0（运行正常）
+  sent=0  received=0  injected=0
+  events: 只有 connect 一条（没有 keepalive、没有 out）
+  status_after: stage=6 state=4
+SENTINEL = 0x0  → ENTRY NOT EXECUTED
+ui=5 net=4 table=1135
+```
+
+### 240.3 判读
+
+- 修复前（挂窗口线程）：`sent=7..12`（keepalive 有发）但 `0x5BE730` 没执行；
+- 修复后（挂主线程）：**`sent=0`**（连 keepalive 都没了）—— 反而更糟；
+- 说明**挂起主线程**导致 `forward` 自己的 `drain_ring_a` 也读不到包
+  （主线程是网络 pump 的宿主，挂起它就等于停了整个网络循环）。
+
+### 240.4 结论
+
+- 主线程**不能长时间挂起**（会停掉一切）；
+- `invoke_sequence` 这种"挂起 → 改 EIP → 恢复"的方式**不适合主线程**；
+- 需要另一种方式在主线程上执行 `0x5BE730`：
+  - **QueueUserAPC**（对主线程投递 APC，需 alertable 状态）；
+  - **CreateRemoteThread + 等待**（但 `0x5BE730` 依赖主线程状态）；
+  - **在主线程的消息循环里插入一次调用**（用 `PostThreadMessage` + 自定义消息）。
+
+### 240.5 下一步
+
+改为"投递 APC"或"消息注入"，让 `0x5BE730` 在主线程上**短暂**执行而不长时间挂起。
