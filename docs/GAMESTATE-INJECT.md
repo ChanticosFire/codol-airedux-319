@@ -3074,3 +3074,38 @@ weapon-like asset names = 0
 2. 或对比 demo 播放时 `0x1988B50` 表里的字符串（运行时快照），直接拿到 1224 个名字，
    不必从 ff 里逆推；
 3. 拿到 1224 个名字后，与 `common_mp.ff` 的 1723 个 weapon 字符串做差集，补进 gamestate。
+
+## 95. 2026-10-25 12:30–13:00：**导出 demo 路径的完整 1266 个武器定义名**
+
+### 95.1 表结构修正（双重指针）
+
+`0x42F2F0` 的表项是**指针的指针**：
+
+```asm
+0x42F32E  mov edx, [esi*4 + 0x1988B50]   ; 表项 = char**
+0x42F335  mov edx, [edx]                 ; 再解引用 → char*
+0x42F33D  call 0x7745E0                  ; strcmp
+```
+
+第一次 dump 忘了第二层解引用（拿到乱码），修正后：
+
+```
+count = 1266
+names = 1266
+sample: ["defaultweapon_mp", "aa12_mp", "aa12anniversarya_mp",
+         "aa12anniversaryb_mp", "aa12battlepass_mp", "aa12btf_mp"]
+```
+
+→ **demo 播放路径注册的 1266 个武器定义名全部拿到**（`runs\r126-weapon-table.json`）。
+
+### 95.2 新工具
+
+`tools/dump_weapon_table.py`：读 `0x827F738`（表大小）+ `0x1988B50`（双重指针表），
+输出 JSON（count/names/entries）。
+
+### 下一步
+
+1. 用同样方法在**服务端路径**（connect + gamestate）在表重建到 1136、弹 181 **之前** dump，
+   得到服务端路径的武器名列表；
+2. 两份列表做差集：`1266 - 1136 ≈ 130`，即"服务端 gamestate 缺的武器名"；
+3. 把这些名字补进 gamestate 的 configstring（或构造 `d <idx> <name>` 命令），使表达到 1266+。

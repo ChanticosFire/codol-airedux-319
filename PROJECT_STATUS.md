@@ -18015,3 +18015,7 @@ lobby          = 0x37E19850
 > **2026-10-25 12:00–12:30【common_mp.ff：228 个唯一 weapon 字符串；asset 名不在数据开头（weapon-like asset names=0）】**
 >
 > 从 `runs/ff-decoded/common` 提取：唯一 `weapon/...`+`mp_weapon*` = **228**（219 个 fx 特效 + 9 个武器名）；asset 数据开头无名字（type 30 props 是特例）。→ 武器名位置未定位；下一步读 fastfile.py 的 zone 解析，或直接从运行时的 `0x1988B50` 表快照 1224 个名字（更直接）。
+
+> **2026-10-25 12:30–13:00【重大成果：导出 demo 路径完整 1266 个武器定义名】**
+>
+> 修正表结构（`0x1988B50` 是 char**，需两次解引用）后 dump 成功：count=1266、names=1266，样例 `defaultweapon_mp/aa12_mp/aa12anniversarya_mp/...`，存 `runs\r126-weapon-table.json`。新工具 `tools/dump_weapon_table.py`。→ 下一步在服务端路径（弹 181 前）dump 1136 个，做差集得缺失名单，补进 gamestate。
