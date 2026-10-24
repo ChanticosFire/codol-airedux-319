@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [The 12-bit id overlaps the count byte - the entity block must be byte-aligned]**
+> ent3 (id=1 at bit 1309) destroyed the count byte at 164 because the id bits span bytes 163-165. A byte-aligned whole-byte field cannot live inside a continuing bit stream, so the entity block must start at a multiple of 8; 1307 is not, so our header is 5 bits too long.
+> Revised target: entity gates at 1312/1313 and count at byte 164, which is self-consistent. Next: build that body.
+> Evidence: [id overlaps count byte](evidence/experiments/20261023-codex-id-overlaps-count-byte.json).
 > **2026-10-23 [MILESTONE: entity count is 1 for the first time]**
 > Probe at 0x67169D on snapshot-ent2.bin: bitpos 1309, count 1, ids still zero (the 12-bit id loop starts right after the store). So the count store executed and read 0x01 from buffer[164].
 > Two fixes were needed: bit 1307 = 1 (the gate) and the count byte at buffer[164]. The entity path is open; the next work is the 12-bit id at bit 1309 and the payload after it. The client still exits afterwards.

@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-29T09:00:00+00:00",
+  "scope": "the 12-bit id at bit 1309 OVERLAPS the count byte at 164 - which proves the bit position should be byte-aligned and the 1307 offset is a symptom of a mis-sized header",
+  "the_experiment": {
+    "body": "runs/snapshot-ent3.bin = ent2 + a 12-bit id (value 1) written at bit 1309",
+    "result": {
+      "bitpos": 1309,
+      "count": 0,
+      "ids": "all zero"
+    },
+    "why_the_count_went_back_to_zero": "the 12-bit id spans bits 1309..1320, which covers byte 163 bits 5-7 and ALL of byte 164 bits 0-7; writing id = 1 cleared byte 164 to 0x00, so the count byte was destroyed by the very field that follows it"
+  },
+  "the_arithmetic_that_exposes_the_problem": {
+    "bit_1309": "byte 163, bit 5",
+    "count_byte": "byte 164 (read whole by 0x66ED70)",
+    "id_bits": "1309..1320 = byte 163 bits 5-7 + byte 164 bits 0-7 + byte 165 bit 0",
+    "conclusion": "the id region and the count byte OVERLAP by a full byte"
+  },
+  "what_that_proves": [
+    "a format cannot have a byte-aligned whole-byte field inside a bit stream that continues over the same bytes",
+    "so the bit position at the entity block must be BYTE-ALIGNED in a real snapshot, i.e. a multiple of 8",
+    "1307 is not a multiple of 8, so a correct snapshot would reach the entity block at a byte boundary - which means OUR HEADER IS 5 BITS TOO LONG (or the preceding blocks are 5 bits short)",
+    "and that also explains why the count could be read at all in ent2: the count read used the BYTE cursor 164 while the bit cursor sat at 163.4, i.e. the two pointers were describing different places and the format was inconsistent"
+  ],
+  "the_revised_target": [
+    "make the bit position at the entity block equal to a multiple of 8 (ideally 1312 = byte 164)",
+    "then the gates would be bits 1312 and 1313, and the count byte would be byte 164 - read by the byte cursor AFTER the bit cursor has consumed exactly 2 bits from byte 164, i.e. consistent",
+    "the header is therefore 5 bits too long: shortening it by 5 bits (or moving the entity block 5 bits earlier) aligns everything"
+  ],
+  "next": [
+    "verify the hypothesis by building a body whose entity gates sit at a byte boundary: reduce the hybrid header from 1307 to 1304 or extend the ps/entity layout so that the entity block starts at 1312",
+    "the simplest test is to move the two gate bits to 1312/1313 and set the count byte at 164, keeping everything else, and see whether count = 1 AND the id reads back cleanly without overlap"
+  ],
+  "artifacts": {
+    "server_log": "runs/codex-r219-gs.jsonl",
+    "body": "runs/snapshot-ent3.bin"
+  }
+}
