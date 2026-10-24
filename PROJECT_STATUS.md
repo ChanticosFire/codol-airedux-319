@@ -18767,3 +18767,7 @@ lobby          = 0x37E19850
 > **2026-10-28 21:00–22:00【⚠ 证伪：按"先改后连"执行后，ui_mapname 已是 mp_crash_tropical（连接前写入，全程未被覆盖），net_state 顺利到 5，但 table 从头到尾都是 0、loader5E8 恒 3 —— "UI 层看到地图名就加载地图"的假设不成立。另注：flags 本轮读到 0x7 而非 Round18 的 0x107，该字段运行期会变，只有 +0x00==0xDB2F98 稳定】** 
 >
 > 下一步：在 0x49ED40 里 sprintf("%s.ff") 之后的位置（0x49ED71 后）记录 [ebp-0x108] 缓冲区，直接列出所有被请求的 .ff 文件名，一举判定 mp_crash_tropical 有没有被请求过；另可把 hook_any 的 capture 改成收集数组以看到全部 14 次名字。
+
+> **2026-10-28 22:00–23:00【🎯 决定性证据：在 0x49ED76（sprintf("%s.ff") 之后）挂钩收集到 10 个 fastfile 名字：patch_localized_common_marketplace_lite / localized_common_marketplace_lite / patch_common_mp / common_mp / patch_localized_common_mp / localized_common_mp / patch_ui_mp / ui_mp / patch_localized_ui_mp / localized_ui_mp。mp_crash_tropical.ff 与 common_gametype_mp.ff 都不在其中 → 客户端加载完 marketplace_lite→common_mp→ui_mp 三族后彻底停住，与 Round15 的 [0x1C2B6CC]==0 使 0x484370 直接返回完全吻合，因果链闭环】**
+>
+> 下一步：①扫描 call 0x484370 找调用者、搜 mov [0x1C2B6CC],1 的指令模式 ②登录后立刻（forward 之前）写 [0x1C2B6CC]=1，用本轮收集器验证 count 是否从 10 增加、是否出现 common_gametype_mp.ff 与 mp_crash_tropical.ff。

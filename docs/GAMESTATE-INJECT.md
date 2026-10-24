@@ -11269,3 +11269,68 @@ Round 18 读到 `flags = 0x107`（含 `DVAR_ROM`），本轮读到 `flags = 0x7`
 | 17 | 指向 UI 层 `ui_mapname` |
 | 18/19 | 拿到 dvar 地址与写法 |
 | **20** | **证伪：改写 `ui_mapname` 不触发加载（table 仍 0）；排除清单再添一项，方向转为"直接列出被请求的 .ff 文件名"** |
+
+## 283. 2026-10-28 22:00–23:00：**🎯 决定性证据 —— 客户端只请求了 10 个 ff，地图与 gametype 一个都没有**
+
+### 283.1 观测手法
+
+在 `0x49ED76`（`add esp,0x10 ; mov esi,ebx`，恰好 5 字节）下钩，
+此时 `sprintf(buf,"%s.ff",name)` 已在 `0x49ED71` 完成，`[ebp-0x108]` 就是完整文件名。
+cave 把名字**收集成数组**（`0xE54E100`，每条 64 字节，计数在 `0xE54E000`）。
+
+### 283.2 实测结果（`count = 10`）
+
+```
+[ 0] patch_localized_common_marketplace_lite.ff
+[ 1] localized_common_marketplace_lite.ff
+[ 2] patch_common_mp.ff
+[ 3] common_mp.ff
+[ 4] patch_localized_common_mp.ff
+[ 5] localized_common_mp.ff
+[ 6] patch_ui_mp.ff
+[ 7] ui_mp.ff
+[ 8] patch_localized_ui_mp.ff
+[ 9] localized_ui_mp.ff
+```
+
+### 283.3 三条硬结论
+
+1. **`mp_crash_tropical.ff` 从未被请求**；
+2. **`common_gametype_mp.ff`（gametype 层）也从未被请求**；
+3. 客户端加载完 **marketplace_lite → common_mp → ui_mp** 这三族 10 个文件后，
+   **彻底停住**，再没有任何 `.ff` 请求。
+
+这与 Round 15 的发现完全吻合：`0x484370(name)` 负责加载 gametype 族，
+而它在 `0x48438C` 因 **`[0x1C2B6CC] == 0`** 直接返回 —— 所以
+`common_gametype_mp` 和它后面的地图**永远排不上队**。
+
+### 283.4 因果链（现在每一环都有直接证据）
+
+```
+[0x1C2B6CC] == 0
+  → 0x484370(name) 在 0x48438C 直接跳到 0x48470E 返回
+  → 从不调用 0x4842C0 / 0x484C10
+  → common_gametype_mp.ff 未被请求   ← 本轮实测（不在 10 个里）
+  → mp_crash_tropical.ff 更不会被请求 ← 本轮实测
+  → table 保持 0、CA_LOADING 永久卡住
+```
+
+### 283.5 下一步（收窄到"谁该把 [0x1C2B6CC] 置 1"）
+
+两条并行：
+
+1. **静态**：扫描 `call 0x484370` 找调用者；再看谁写 `[0x1C2B6CC]`
+   （搜 `mov dword ptr [0x1C2B6CC], 1` 的指令模式 `C7 05 CC B6 C2 01 01 00 00 00`）；
+2. **动态**：在登录后、`forward` 之前写 `[0x1C2B6CC] = 1`，并用本轮的收集器
+   验证 `count` 是否从 10 增加到 14 以上、名字里是否出现
+   `common_gametype_mp.ff` 与 `mp_crash_tropical.ff`。
+   （Round 16 的 `--prewrite` 时机太早被重置；本轮改为"登录后立刻写"。）
+
+### 283.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 13 | 14 次 `FS_LoadFastfile` 全是 UI 名字（只记录了最后一个） |
+| 15 | `[0x1C2B6CC]==0` 使 `0x484370` 直接返回 |
+| 20 | 证伪 `ui_mapname` 路线 |
+| **21** | **收集到完整 10 个 ff 名字，实证"地图与 gametype 一个都没请求" —— 因果链闭环** |
