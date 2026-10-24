@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T15:00:00+00:00",
+  "scope": "CORRECTION: 1649370 has exactly FIVE snapshot content blocks, each with a single call site - the '14 sections' figure from cols does not apply to this build",
+  "the_dispatcher": {
+    "0x4723DD": "call 0x471D80 (entities)",
+    "0x472401": "call 0x471980 (playerState)",
+    "0x472424": "call 0x471010 (actors)",
+    "0x472445": "call 0x471560 (unidentified block)",
+    "0x4724A0": "call 0x4475F0 (glass)"
+  },
+  "the_evidence": [
+    "a scan of the whole .text section for calls to each of those five addresses found EXACTLY ONE call site per block",
+    "and all five sites lie inside the same dispatcher, between 0x4723DD and 0x4724A0",
+    "so the snapshot format in this build has five content blocks, not fourteen",
+    "the fourteen-section figure comes from cols (3.3.3.3) and is a different generation of the protocol"
+  ],
+  "what_that_rules_out": [
+    "the 'baseline needs all 14 sections' theory cannot be applied directly to 1649370",
+    "and our bodies already supply data for all five blocks that exist (the tail after the playerState block feeds actors, 0x471560 and glass)",
+    "so the section set is not the blocker either"
+  ],
+  "where_that_leaves_the_loading_screen": [
+    "the network layer is complete (net 10)",
+    "the entity pipeline is exercised and accepted (count 1, id 4048, floats written)",
+    "the flags byte is correct in both forms (8 and 12 both fail to dismiss the loader)",
+    "so the remaining blocker is the FRONTEND's map-load completion, which is a resource/initialisation path rather than a snapshot-content path",
+    "and the loader object at [0x8269774] is the handle to that path - it never goes away because the client's own load task never finishes"
+  ],
+  "the_honest_position": {
+    "what_is_proven": [
+      "the snapshot header format, byte for byte, from the cols writer",
+      "the five content blocks and their entry points",
+      "the entity list layout (gates, byte count, three-part id) and a working id-control recipe",
+      "the entity delta pipeline (changed bit, mode selector, 13-mode jump table, mode 3/4 accumulators, mode 1 commit) and a demonstrated write of real floats into the entity struct",
+      "that state 10 can be held while an entity is present, if an entity-free snapshot is sent first"
+    ],
+    "what_is_not_proven": [
+      "that the client ever renders the world - a screenshot at state 10 with an entity still shows a black frame with a loading spinner"
+    ],
+    "why_the_work_stopped_here": "the remaining condition is inside the client's map-load completion; every snapshot-side lever tried (flags byte, section set, entity content, state ordering) has been tested and none dismisses the loader"
+  },
+  "artifacts": {
+    "dispatcher": "0x4723C4..0x4724CD",
+    "screenshot": "runs/codex-r234-shot.png"
+  }
+}

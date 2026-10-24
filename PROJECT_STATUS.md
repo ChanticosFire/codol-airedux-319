@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [1649370 has FIVE content blocks, not fourteen]**
+> Whole-.text scan: each of 0x471D80, 0x471980, 0x471010, 0x471560, 0x4475F0 has exactly one call site, all in the 0x4723DD..0x4724A0 dispatcher. So the cols '14 sections' does not apply, and the section set is not the blocker.
+> Remaining blocker: the frontend map-load completion, tracked by the loader object at [0x8269774] which never clears. Proven: header format, five blocks, entity list layout with id control, the mode pipeline with real float writes, and state 10 with an entity by sending an entity-free snapshot first. Not proven: any rendered world.
+> Evidence: [five blocks not fourteen](evidence/experiments/20261023-codex-five-blocks-not-fourteen.json).
 > **2026-10-23 [flags = 8 does not dismiss the loader; the section set is the remaining candidate]**
 > byte6 0x0C -> 0x08 in both bodies: still ui 5, loader held, count 1. So the extra flag bit was not the blocker.
 > Remaining candidate per cols: a baseline must carry ALL 14 sections. Our bodies carry only a few. Next: enumerate the 14 section entry points from the 0x4723xx dispatch and emit all of them.
