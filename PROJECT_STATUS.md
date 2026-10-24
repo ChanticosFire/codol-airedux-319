@@ -17677,3 +17677,7 @@ lobby          = 0x37E19850
 > **2026-10-24 13:05–13:10【断点证明 gamestate 从未到解析器】**
 >
 > 用 `--gamestate-source capture`（2697 真实 3426 B gamestate）结果与 native 完全相同（state 6/ui 0）；断点 `0x472D80:GamestateParse` **一次未命中**，而 `0x5C1678:ChallengeBranch` 命中。→ 不是 gamestate 内容问题，gamestate 在**网络层**就被丢弃，未到解析器；challenge 之后（connectResponse / netchan 可靠包）这一段有问题。下一步：找 0x472D80 的调用方与条件；对比真实 2697 connectResponse 之后紧邻的 `svc 0x01 MP_CONNECTED`（`snapshot-2697-seq5.bin` 里有明文 `MP_CONNECTED`），很可能是客户端在等的消息。
+
+> **2026-10-24 13:05–13:12【真实 gamestate + 真实 MP_CONNECTED 都被拒】**
+>
+> `--gamestate-source capture`（2697 真实 3426 B）与 `--command-file runs/servercmd-2697-svc.bin`（真实 `svc 0x01`，明文 `f "MP_CONNECTED…`）两轮都仍是 `state=6`/`ui=0`；断点 `0x472D80` 一次未命中。→ 与包内容无关，客户端在 6 档**没把 bridge 注入的可靠包交给上层**；最可能是 netchan 接收上下文未建立/ack 不匹配（我们一直发 ack=0）。下一步：读 `[conn+0x30]` 等字段确认期望 ack，再让 gs 写该 ack 重试。

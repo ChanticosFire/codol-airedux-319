@@ -250,3 +250,25 @@ registration checksum、以及 configstring 数量/内容。下一轮应逐字�
    `snapshot-2697-seq5.bin` 等含 `MP_CONNECTED` 的 svc 0x01 数据，很可能 connectResponse 之后还有
    一条 `svc 0x01` 的 `MP_CONNECTED` 服务端命令，客户端正是等它）；
 3. 若是，gs 应通过 `--command-file` 在 connect 后补发这条 svc 命令，而不是只靠 gamestate。
+
+## 12. 2026-10-24 13:05–13:12：真实 gamestate + 真实 MP_CONNECTED 都被拒
+
+| 实验 | 结果 |
+|---|---|
+| `--gamestate-source capture`（3426 B，2697 真实 gamestate） | `state=6`、`ui=0` |
+| `--command-file runs/servercmd-2697-svc.bin`（真实 `svc 0x01`，明文 `f "MP_CONNECTED…`） | `state=6`、`ui=0` |
+| 断点 `0x472D80` | **一次未命中**（gamestate 从未到解析器） |
+
+三条合起来说明：**客户端在 state 6 时没有把 bridge 注入的可靠包交给上层**，
+与包内容无关。最可能的原因在 **netchan 接收路径的初始化/校验**：
+
+- 客户端在 6 档可能还没建立"可靠接收"上下文（例如 waiting for server ack 或
+  `[connection+0x30]` 的 seq 窗口）；
+- 真实 2697 包的 data 前 4 字节是 **ack**（`00 00 00 00`），我们一直发 0；
+  若客户端要求 ack 覆盖它已发的 seq（3 左右），我们的包会被当"未确认"丢弃。
+
+### 下一步（下一轮首选）
+
+1. 在客户端 state 6 时读 `connection` 对象的 seq/ack 字段（`[conn+0x30]` 等），确认它期望的 ack；
+2. 让 gs 的 `_send_fragments` 把 payload 前 4 字节的 ack 写成该值（可加 `--ack` 参数）；
+3. 若仍不通，再查 netchan 接收上下文的建立条件（`0x5C05F0` 调用前后写了哪些字段）。
