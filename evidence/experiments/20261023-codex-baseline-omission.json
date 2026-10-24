@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T12:00:00+00:00",
+  "scope": "THE STRUCTURAL OMISSION: the protocol requires a full BASELINE snapshot with all 14 sections present, ACKed by the client, before deltas are accepted - and our server has never sent one",
+  "what_cols_documents": {
+    "cols:164": "/// A full baseline with command time and health, no entities/clients/weapons.",
+    "cols:165": "/// All 14 target array sections are present; this is not a playable spawn.",
+    "cols:166": "pub fn bootstrap(server_time) -> full baseline snapshot",
+    "cols:177": "/// After a baseline ACK, delta-distance zero with flags0 selects the cached",
+    "cols:178": "/// full baseline for section histories; playerState still selects no base.",
+    "cols:182": "establish_baseline: bool - the frame function has an explicit baseline-establishing mode"
+  },
+  "the_protocol_it_implies": [
+    "step 1: the server sends a full baseline snapshot in which ALL 14 sections are present in full, not delta-compressed",
+    "step 2: the client acknowledges that baseline",
+    "step 3: only afterwards do delta snapshots (distance 0 with flags 0) resolve against the cached baseline",
+    "and the playerState section still selects no base even after the ACK, which matches the playerState behaviour measured in earlier rounds"
+  ],
+  "what_our_server_does_instead": [
+    "grep over server1649370/*.py for 'baseline' returns NOTHING",
+    "the server sends a gamestate and then only delta-style snapshots",
+    "so the client never receives a baseline to cache, and every delta it gets references a base that does not exist",
+    "which is exactly why the loader object at [0x8269774] never clears and why the frame stays black with a spinner"
+  ],
+  "why_this_explains_the_whole_investigation": [
+    "the project spent dozens of rounds perfecting the CONTENT of delta snapshots (playerState fields, entity counts, entity deltas, positions) while the prerequisite message was never sent",
+    "that is why every advance in snapshot content changed numbers but never the picture",
+    "and it is the same class of error as the state-10 oracle: the work was correct in form but aimed at a layer above the missing one"
+  ],
+  "the_concrete_next_step": [
+    "build a full baseline snapshot: all 14 sections present in full form, with no entities and no clients",
+    "the client's own parser already has the section-presence flags (the 0x471xxx block dispatch and the per-section entry points are known), so the baseline can be constructed by setting every section flag to 'present in full' and emitting each section's full form",
+    "and the snapshot sequence must start with that baseline before any delta"
+  ],
+  "artifacts": {
+    "cols": "E:/GAME/COD/codol-airedux/cols/crates/protocol/src/game/snapshot/mod.rs:164-186",
+    "server": "server1649370 (no baseline support)"
+  }
+}

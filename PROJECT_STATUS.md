@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [THE STRUCTURAL OMISSION: no baseline snapshot was ever sent]**
+> cols documents it: a full baseline with all 14 sections present, ACKed by the client, after which deltas resolve against the cached baseline (playerState still selects no base). grep over server1649370 finds no baseline support at all.
+> So every delta we send references a base that does not exist - which is why the loader never clears and the frame stays black. Next: construct the full baseline (all 14 sections present in full, no entities/clients).
+> Evidence: [baseline omission](evidence/experiments/20261023-codex-baseline-omission.json).
 > **2026-10-23 [Loading never completes: the loader object is held across every sample]**
 > Samples: net 8/9/10 all show ui 5 and loading object 0x424C6CD8, count 0 then 1. So the frontend is still loading, not finished-but-black, and entity data does not satisfy it.
 > Most structural candidate: the server never sends BASELINE entity snapshots, which this protocol family uses to build the initial world. Next: check the server for baseline handling and the client dispatch for a baseline handler.
