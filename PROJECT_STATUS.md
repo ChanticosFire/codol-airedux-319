@@ -17813,3 +17813,7 @@ lobby          = 0x37E19850
 > **2026-10-24 20:25–20:40【FS 打开点断点可用；新工具 read_fs_names.py】**
 >
 > `0xC513D9` 是 CreateFileA 返回点，文件名 = `[ebp+0xC]`（`0xC513D4 push [ebp+0xC]; 0xC513D7 call [0xCA8208]`）。新增 `tools/read_fs_names.py`：从断点事件取 ebp → 读 [ebp+0xC] → 字符串去重。首次跑 milestone 过滤漏了 `FSOpen`（已修）；断点命中 1 次（eax=-1，早期失败请求），客户端随后被清理未读到文件名。→ 下一步带修正脚本重跑，观察 demo 播放请求的 `patch_mp_crash_tropical.ff` 来源栈帧。
+
+> **2026-10-24 20:40–20:55【FS 断点参数读不出文件名；trace 时序需对齐】**
+>
+> `0xC513D9:FSOpen` 仅命中 1 次，`[ebp+0xC]` 读出乱码（参数非文件名/帧不对）。r64 带 trace-files 跑 demo 播放 12 秒后 grep `patch_mp_crash_tropical|mp_crash_tropical.ff` 为 **0**，而 r58 的 trace 里有该请求 → 地图包请求在更早阶段或 events 未 flush。→ 下一步用 r58 的 events 反查 caller/时机；换图应在 demo 播放前改字段；或另找 state 7 入口。

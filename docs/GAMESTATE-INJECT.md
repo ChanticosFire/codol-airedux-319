@@ -1335,3 +1335,30 @@ refs = 1: 0x813E96 lea esi,[ebx+0x108394]   (modrm 0xB3)
 
 带上修正后的 `read_fs_names.py` 重跑一次（客户端保持运行），
 即可看到 demo 播放实际请求的 `patch_mp_crash_tropical.ff` 文件名及其提供者所在的栈帧。
+
+## 46. 2026-10-24 20:40–20:55：FS 断点参数读不出文件名；trace 的请求时序需对齐
+
+### 46.1 `0xC513D9` 断点
+
+`0xC513D9:FSOpen` 只命中 **1 次**，用 `[ebp+0xC]` 读出的字符串是乱码
+（`\x01 \x010\x01@\x01P\x01`）。可能原因：
+
+1. 那次 `CreateFileA` 的"文件名"本来就是二进制/非文本；
+2. 断点命中时 `ebp` 不是期望的帧（0xC513D9 可能被多处代码共用）；
+3. 参数位置不是 `[ebp+0xC]`。
+
+### 46.2 trace 时序
+
+在 r64 里带 `--trace-files` 跑完整 demo 播放，12 秒后 grep `patch_mp_crash_tropical|mp_crash_tropical.ff`：
+**matches=0**。而 r58（同样播 crash_tropical demo）的 trace 里**有** `patch_mp_crash_tropical.ff`。
+
+→ 说明地图包的请求发生在**更早的阶段**（demo 播放前的地图加载），或 events 还没 flush 完。
+
+### 下一步
+
+1. 直接用 r58 的 `events.jsonl`（已知含 `patch_mp_crash_tropical.ff`）反查它记录的 caller 与 path，
+   确认请求时机；
+2. 若要抢在加载前换图，应该在 demo 播放**之前**（state 1 时）就改 `connection+0x108394` 或
+   对应全局，而不是等 demo 播放中途；
+3. 更稳的路线：放弃"改 demo 选图"，改为"先入 state 7，再由 gamestate 选图"——
+   但 state 7 的唯一可靠写入点是 demo 路径，形成循环，需要另找入口。
