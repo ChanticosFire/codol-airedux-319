@@ -10564,3 +10564,70 @@ gs: {('out','oob'):1804, ('in','stats'):616, ('out','fragment'):7,
 | 7 | connect + stats 到达（阶段 3 完成） |
 | 9 | net_state→5、table 清零（阶段 4 启动） |
 | **11** | **确认"无错误卡在 CA_LOADING"，把问题收敛到单一函数调用（Com_LoadFastfiles 未触发）** |
+
+## 274. 2026-10-28 13:00–14:00：**🎯 `Com_LoadFastfiles` 真的被调用了 —— 加载请求为 5 个 fastfile**
+
+### 274.1 函数身份确认
+
+`0x49E160` 反汇编（prologue）：
+
+```asm
+0x49E160  push ebp
+0x49E161  mov ebp,esp
+0x49E163  and esp,0xfffffff8          ; 16-byte alignment
+0x49E166  sub esp,0x1c
+0x49E169  push ebx / esi / edi
+0x49E16C  call dword ptr [0xca8164]   ; __security_check_cookie
+0x49E172  cmp eax,[0x7886e6c]
+0x49E184  call 0x49E130
+0x49E189  cmp dword ptr [ebp+0x10],2  ; ← 第三个参数与 2 比较
+```
+
+带 `/GS` cookie 保护 + `loadType == 2` 判断，签名与 `Com_LoadFastfiles(files, count, loadType)` 一致。
+
+### 274.2 实测：它被调用了 2 次，请求 5 个 fastfile
+
+hook 在登录前装好（`--slot 0xE54C000`），跑完 50 秒握手后读计数：
+
+```
+Com_LoadFastfiles: count=2   arg0=0x1AF208   arg1=0x5
+state: ui=5  net=0  table=1135        ← 加载后又回滚
+gs: {('in','getchallenge'):2, ('in','connect'):1,
+     ('meta','gamestate_source'):1, ('out','fragment'):7, ('meta','snapshot_source'):1}
+```
+
+- **`count=2`**：该函数确实被调用了两次；
+- **`arg1=0x5`**：请求加载 **5 个 fastfile**；
+- **`arg0=0x1AF208`**：指向 fastfile 名称数组的**栈地址**。
+
+### 274.3 为什么没拿到文件列表
+
+`0x1AF208` 是**栈上临时数组**，函数返回后内容即失效。
+事后读取得到全 0（已验证：5 个条目指针都是 `0x0`）。
+
+→ **必须在调用瞬间把参数指向的内容复制出来**，事后再读是拿不到的。
+
+### 274.4 这改变了问题的性质
+
+之前（Round 11）的结论是"`Com_LoadFastfiles` 没被触发"；本轮实测证明：
+
+> **它被触发了，而且明确请求加载 5 个 fastfile，但加载失败并把 `table` 回滚到 1135。**
+
+所以问题从"谁来调用"变成 **"为什么这 5 个 fastfile 加载失败"**。
+
+### 274.5 下一步（两条并行）
+
+1. **改造 `hook_any_1649370.py`**：新增 `--capture N` ——
+   在 cave 里把 `[esp+0x24]`（arg0）指向的前 N 字节复制到固定槽，
+   这样就能在调用瞬间拿到 fastfile 名称（通常是指针数组，需再解引用）；
+2. **hook `FS_LoadFastfile`**（每个 ff 单独调用一次，参数直接是文件名字符串），
+   并同时 hook `Com_Error`，捕获加载失败时的错误码/错误文本。
+
+### 274.6 里程碑
+
+| Round | 结论演进 |
+|---|---|
+| 7 | connect + stats 到达 |
+| 9 | net_state→5、table 清零 |
+| 11 | 无错误卡在 CA_LOADING，问题收敛到 Com_LoadFastfiles |
+| **12** | **Com_LoadFastfiles 确实被调用（2 次，请求 5 个 ff），失败后回滚 → 问题收敛到"5 个 ff 为什么加载失败"** |

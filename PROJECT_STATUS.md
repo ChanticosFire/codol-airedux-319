@@ -18731,3 +18731,7 @@ lobby          = 0x37E19850
 > **2026-10-28 12:00–13:00【🎯 决定性诊断：hooks 证明 Com_Error count=0（无任何错误，EXE_CONFIGSTRINGMISMATCH 未发生）、CLpacketEvent=1808（arg0=2，包全部进入分发）、recvPump=32451，且 net=5/table=0 稳定维持 90 秒。结论：客户端完整收到 gamestate+snapshot、正常解析不报错、主动清空资源表，但没有东西触发 Com_LoadFastfiles，永久停在 CA_LOADING(3)】**
 >
 > 排除清单：地图文件缺失❌/渲染能力❌/loadingnewmap可注入❌/网络送达重组❌/configstring校验失败❌/连接中断回滚❌。下一步唯一方向：hook Com_LoadFastfiles(0x49E160) 看是否被调用；未调用则找 CA_LOADING 里应调用它的地方并用 main_call/补丁强制触发。
+
+> **2026-10-28 13:00–14:00【🎯 Com_LoadFastfiles(0x49E160) 实测被调用 2 次、arg1=5（请求加载 5 个 fastfile）、arg0=0x1AF208 是栈上临时数组（事后读取全 0，必须在调用瞬间捕获），加载失败后 table 回滚到 1135】**
+>
+> 问题性质改变：不是"未触发"，而是"触发了但 5 个 ff 加载失败"。下一步：①改 hook_any 加 --capture N 在 cave 里复制 arg0 指向内容 ②hook FS_LoadFastfile（参数直接是文件名）+ Com_Error 抓失败错误码。
