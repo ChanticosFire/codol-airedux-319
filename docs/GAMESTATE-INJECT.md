@@ -978,3 +978,38 @@ CLConnectFail=0
    `0x32AA908` 指过去——两处解引用都会安全通过，不需要改代码；
 2. 然后再 `cl_demo_play`，验证 `net_state` 是否到 7；
 3. state=7 后立刻接 gamestate/snapshot，验证 `Dispatch/0x472D80` 是否终于命中。
+
+## 34. 2026-10-24 17:40–17:55：**里程碑 —— demo 播放成功，真实地图画面出现**
+
+### 34.1 关键方法：伪造 g_gametype dvar
+
+`tools/fake_dvar.py`：在客户端进程内 `VirtualAllocEx` 一小块内存，构造
+`dvar_t{ name="g_gametype", flags=0, type=0, +0xC -> "war" }`，并把 `[0x32AA908]` 指过去。
+**不改任何代码**，两处 `[dvar+0xC]` 解引用都安全通过。
+
+### 34.2 结果
+
+`cl_demo_play 0C-2021-8-26[19-26-24]war.demo` 之后：
+
+| 时间 | net_state | ui_state |
+|---|---|---|
+| t=3..12 | 1 | 0 |
+| **t=15** | **8** | 0 |
+| **t=18+** | **10** | 0 |
+
+**画面**：`runs/r51-demo-state10.png`（4.9 MB PNG）——
+真实的 `mp_crash_tropical` 对局：地图建筑、士兵模型、小地图、比分 0-0、计时 30:45、
+"消灭所有敌人！"目标提示、玩家列表（地角靓仔/亚呀亚/柠檬荔枝/天生长的酷/冰火绣气…）。
+3 秒后再截一帧（`r51-demo-state10-b.png`）**hash 不同 → 画面在动**，demo 确实在实时播放。
+
+### 34.3 意义
+
+1. **渲染链路、地图资源、UI、demo 播放全部正常**——"黑屏+转圈"从此可以排除渲染问题；
+2. demo 播放会把 `net_state` 推到 **7→8→10**，这正好是处理 inband 包的门槛；
+3. 之前所有网络尝试卡在 state 5/6，现在有了"进入 state 7+"的可靠方法。
+
+### 下一步
+
+1. 用这条路径（假 dvar + demo）在 state 10 时抓 demo 的 gamestate/首帧快照字节（路线 B）；
+2. 或先把 `mp_cross_fire` 的 demo/对局跑起来：`cl_demo_play` 只认地图名，可尝试把 demo 的地图名换成 mp_cross_fire（或直接用服务端 + 已进入 7 的状态）；
+3. 目标仍是"mp_cross_fire 可见可玩 + 对局结束回大厅"：现在至少证明了客户端能渲染真实地图。
