@@ -3216,3 +3216,40 @@ briefcase_bomb_defuse_mp, ...
 - `runs/weapon-diff.json`（130 个缺失）
 - `runs/weapon-diff-sources.json`（88 in gametype / 42 nowhere）
 - `runs/ff-decoded/gametype`（1400 asset 的 zone 数据）
+
+## 99. 2026-10-25 14:30–15:00：0x49E160 参数确认（第三参数是模式），调用点反汇编待重定位
+
+### 99.1 0x49E160 入口
+
+```asm
+0x49E160  push ebp / mov ebp,esp / and esp,-8 / sub esp,0x1C
+0x49E169  push ebx/esi/edi
+0x49E16C  call [0xCA8164]
+0x49E172  cmp eax, [0x7886E6C]
+0x49E178  je 0x49E184
+0x49E17A  call 0xBEAA80
+0x49E17F  call 0xC04BD0
+0x49E184  call 0x49E130
+0x49E189  cmp dword ptr [ebp+0x10], 2     ; ← 第三参数是"模式"
+0x49E18D  jne 0x49E1A0
+0x49E18F  mov dword ptr [0x82C488C], 1
+0x49E199  mov dword ptr [ebp+0x10], 0
+```
+
+→ `[ebp+0x10]`（第三个参数）= **模式**（2 = 特殊模式，会置 `0x82C488C=1`）。
+
+### 99.2 调用点定位受阻
+
+之前记录的调用者 `0x4FE76C` 反汇编（0x4FE730 起）无输出/不符，
+说明 0x49E160 的调用者列表或入口边界需要重新确认。
+
+### 下一步
+
+直接用 `call_fn` 调用 `0x49E160`：
+1. `VirtualAllocEx` 一块内存，写入 `"common_gametype_mp"` 字符串 + 数组
+   （`{char* name, u32 flags}` 每项 8 字节，count=1）；
+2. 调 `0x49E160(list_ptr, 1, 0)`（第三参数 0 = 普通模式）；
+3. 观察 `0x827F738`（表大小）是否从 1136 涨到 1224+。
+
+风险：该函数内部有 `[0x7886E6C]` 比较与 `0xBEAA80/0xC04BD0` 调用，可能需要合法上下文；
+先用 `call_fn` 试一次，失败则改在 connect 后（state 5）调用。
