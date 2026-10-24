@@ -8359,3 +8359,39 @@ def _thread_id(self, window: str) -> int:
 - 用 `GetWindowThreadProcessId` 取窗口线程；
 - 用 `CreateToolhelp32Snapshot`/`Process.Threads` 取所有线程，找启动线程（tid 最小/最早）。
 - 若不同 → 应改 `invoke_sequence` 使用**主线程**。
+
+## 239. 2026-10-27 13:00–13:30：**🎯 确证 —— 窗口线程（7676）≠ 主线程（29192）**
+
+### 239.1 实测
+
+```
+FindWindowW("CODO") = 0xAB063C
+  window_tid = 7676
+  wnd_pid    = 25932（正确）
+进程线程列表（59 个）: [29192, 11468, 24380, 25616, ..., 7676, ...]
+  first (主线程) = 29192
+  window_tid 在列表里，但**不是第一个**
+```
+
+### 239.2 结论（确证）
+
+- `invoke_sequence` 用 `GetWindowThreadProcessId` → 拿到**窗口消息线程 7676**；
+- 而游戏主线程是 **29192**（第一个线程，通常是 `WinMain` 所在的线程）；
+- `0x5BE730`（连接函数）跑在**主线程**上；
+- 所以 `invoke_sequence` **挂起错了线程** → 改 EIP 后主线程继续跑 → `0x5BE730` 从未执行 → 哨兵未写。
+
+### 239.3 这与全部观察一致
+
+| 观察 | 解释 |
+|---|---|
+| `forward` 无报错 | 窗口找到、7676 挂起成功 |
+| `0x5BE730` 从未执行 | 主线程（29192）没被挂起 |
+| `[0xE54BC48]` 被写 `0xE08C4C28` | 主线程正常跑自己的逻辑 |
+| `NET`/`stage` 等状态可写 | 那些全局不依赖线程 |
+
+### 239.4 修复方向
+
+把 `invoke_sequence` 的线程来源从 `GetWindowThreadProcessId` 改为**主线程**：
+- 方法 A：`Process.Threads` 的第一个（`29192`）；
+- 方法 B：`NtQueryInformationThread` 的 `ThreadQuerySetWin32StartAddress` 等于 exe 入口的线程；
+- 方法 C：测试所有线程（哨兵实验里逐个试）。
