@@ -17757,3 +17757,7 @@ lobby          = 0x37E19850
 > **2026-10-24 17:00–17:10【CL_Connect 需要服务器列表，否则跳过 state=7】**
 >
 > 新工具 `tools/call_fn_1649370.py`（ring_bridge 的 invoke_sequence）调用 `0x813C20` 成功返回，但 `net_state` 仍 1。反汇编：`0x813C80 call 0x4F4A90`（GetServerList）→ `0x813C98 cmp eax,0; je 0x813F51` 失败即跳过 `CL_Shutdown/CL_Init`，也就不会写 state=7；`0x4F4A90` 内部 `0x4F49E0` 读服务器列表，失败返回 `-3`。→ 下一步反汇编 `0x4F49E0` 确认列表来源（dwauth.ini/.cfg/注册表），构造最小列表（指向 127.0.0.1:28971）后再调用。
+
+> **2026-10-24 17:10–17:25【CL_Connect 分支未走到：eax/ecx 参数缺失】**
+>
+> 修正误读：`0x4F49E0` 是路径规范化函数（非服务器列表），`[0x76446A1]` 数组启动后已为 1。断点 `0x813C98`/`0x813D11` 在调用 `0x813C20` 后**均 0 命中** → 函数在更早处返回；原因是 `0x813C2D mov [0x826A9F0], eax` 把 eax 当 server 索引，而 `invoke_sequence(args=[])` 不设 eax/ecx。→ 下一步给 invoke_sequence 增加寄存器参数（eax=索引、ecx=上下文）后再调用。
