@@ -18135,3 +18135,7 @@ lobby          = 0x37E19850
 > **2026-10-26 03:00–03:30【验证策略调整：改后 exe 会让 decode 工具的指纹白名单失败，但客户端只做标准 RSA 验签】**
 >
 > `_load_keys` 校验 `_sha(public_der)==SIGNING_PUBLIC_SHA256`（白名单）→ 换公钥后本地 decode 工具直接拒绝。但**客户端只做标准 PKCS#1 v1.5 验签、不校验指纹**。→ 最终判据必须是客户端实测（启动加载重签 ff 看是否报"磁盘读取错误"）。下一步写 `patch_exe_pubkey.py`（0x698958 换 270 字节）+ 客户端实测。
+
+> **2026-10-26 03:30–04:00【两个 exe 公钥位置：原版 0x698958、离线壳 0x9AC958，同一把密钥（sha256 9ac28dd6）】**
+>
+> 定位：`codoMP_client_shipRetail.exe` 公钥在 0x698958；`codol1649370-offline.exe` 在 0x9AC958；两者 DER 相同。launch 用离线壳 → 实测必须改 0x9AC958（全局共享，需备份）。→ 下一步写 `patch_exe_pubkey.py`（偏移可配/不校验指纹/幂等）+ 备份 + 客户端实测。

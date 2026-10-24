@@ -4198,3 +4198,34 @@ if _sha(public_der) != SIGNING_PUBLIC_SHA256:
 2. **客户端实测**：把重签的 `mp_crash_tropical_const.ff` 放进 overlay（备份原件），
    启动客户端看是否报错；
 3. 若通过，再把 88 个武器定义写进 `common_gametype_mp.ff` 并重签。
+
+## 125. 2026-10-26 03:30–04:00：两个 exe 的公钥位置与同一性
+
+### 125.1 定位
+
+| 文件 | 大小 | `30 82 01 0A` 首次出现 | 公钥 sha256 |
+|---|---|---|---|
+| `Original Client\codoMP_client_shipRetail.exe`（原版） | 7,841,344 | **0x698958** | `9ac28dd6…` |
+| `bin\v1649370\codol1649370-offline.exe`（离线壳，launch 用） | 11,075,584 | **0x9AC958** | `9ac28dd6…`（同一把） |
+
+→ 两个 exe 内嵌的发布者公钥**完全相同**，只是文件偏移不同
+（原版 0x698958，离线壳 0x9AC958）。
+
+### 125.2 要改哪个
+
+- `launch_1649370.py --image` 用的是**离线壳**（`codol1649370-offline.exe`）；
+- 所以客户端实测必须改**离线壳**的 `0x9AC958`；
+- 原版 exe（`codoMP_client_shipRetail.exe`）用于 `decode_fastfile` 等工具验证，可改 `0x698958`。
+
+### 125.3 注意
+
+- `bin\v1649370\codol1649370-offline.exe` 是**全局共享**（所有 runtime 都从它复制），
+  改它会影响所有实验 → **必须先备份**，并在实验后恢复；
+- 更安全的做法：复制一份到 `runs/ff-edit/`，用 `--image` 指向副本
+  （需确认 launch 支持任意路径的 image）。
+
+### 下一步
+
+1. 写 `tools/patch_exe_pubkey.py`（偏移可配、不校验指纹、幂等）；
+2. 备份离线壳 → 换公钥 → 用 `--image` 指向改后副本做客户端实测；
+3. 若客户端接受自签 ff，路线 A 打通。
