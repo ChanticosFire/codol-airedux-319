@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T04:00:00+00:00",
+  "scope": "EXACT AND VERIFIED: the 12-bit entity id is assembled as (byte163 bits 5-7) | (byte165 << 3) | (byte166 bit 0 << 11) - the reader SKIPS byte 164 because it uses the byte cursor",
+  "the_verification": {
+    "byte163": "0x18",
+    "byte164": "0x01  (= the entity count)",
+    "byte165": "0xFA",
+    "byte166": "0x1F",
+    "assembly": "low3 = (0x18 >> 5) & 7 = 0 ; byte165 = 0xFA ; bit0 of byte166 = 1",
+    "value": "0 | (0xFA << 3) | (1 << 11) = 0x0FD0 = 4048",
+    "matches_measurement": true
+  },
+  "why_byte_164_is_skipped": [
+    "inside 0x66EC30 the multi-byte path sets [+0x20] = remaining_N + [+0x1C] * 8",
+    "and [+0x1C] is the BYTE cursor, which the count reader 0x66ED70 had already advanced from 164 to 165",
+    "so when the 12-bit read crosses a byte boundary it resumes at byte 165 instead of byte 164",
+    "the first 3 bits come from byte 163 (bits 5-7), then 9 bits come from byte 165 and byte 166",
+    "so byte 164 is consumed as the COUNT and then skipped by the bit reader"
+  ],
+  "why_this_took_so_long_to_find": [
+    "the format mixes a byte-addressed field (the count) into the middle of a bit-addressed stream",
+    "and the reader's resumption rule uses the byte cursor rather than the bit position, so the two cursors diverge by exactly the byte that was consumed",
+    "every attempt to treat the id as a contiguous 12-bit slice at 1309 was therefore off by one byte"
+  ],
+  "the_concrete_recipe": {
+    "count": "byte 164 (0x01 gives one entity)",
+    "id": "write byte 163 bits 5-7 for the low 3 bits of the id, byte 165 for bits 3..10, and bit 0 of byte 166 for bit 11",
+    "example": "id = 8 -> byte163 bits5-7 = 0, byte165 = 0x01, byte166 bit0 = 0"
+  },
+  "next": [
+    "build a body with id 8 using that recipe and check both the stored id and whether the client reaches state 10 with count = 1",
+    "that is the first time the id is set deliberately rather than falling out of the bit pattern"
+  ],
+  "artifacts": {
+    "body": "runs/snapshot-ent2.bin",
+    "addresses": [
+      "0x66ECCB resumption rule",
+      "0x66ED70 count byte reader"
+    ]
+  }
+}

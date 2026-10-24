@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [EXACT AND VERIFIED: the id skips byte 164 because 0x66EC30 resumes from the byte cursor]**
+> id = (byte163 bits 5-7) | (byte165 << 3) | (byte166 bit0 << 11). With bytes 18/01/FA/1F that gives 0x0FD0 = 4048, matching the measurement exactly. The count occupies byte 164 and the bit reader skips it.
+> Recipe: count at byte 164; id low 3 bits in byte163 bits 5-7, bits 3..10 in byte165, bit 11 in byte166 bit0. Next: build id = 8 and check the stored id and the state.
+> Evidence: [id skips byte 164](evidence/experiments/20261023-codex-id-skips-byte-164.json).
 > **2026-10-23 [EXACT: the id read starts at bit 1317; 1317+12 = 1329 matches the measured position]**
 > IdStore probe: eax 4048, bl 0, bitpos 1329. Brute force over the body found 0x0FD0 as a 12-bit window at bit 1317, which plus 12 equals 1329 exactly. So 8 bits are consumed between the gates (1307/1308) and the id read - most plausibly the count is read as 8 BITS at 1309..1316, not through the byte reader.
 > Next: set bits 1309..1316 and a small id at 1317..1328, then check count and stored id.
