@@ -12000,3 +12000,75 @@ forward stdout: 0 字节   forward stderr: 0 字节
 | 30 | 死锁 1：`net_state>=7` 才处理 netchan（已 patch） |
 | 31 | patch 已应用，但 `forward` 未生效 |
 | **32** | **前台运行抓到死锁 2：`connect` 后 `net_state` 立即回 0，`forward` 注入全部停在 queued；需用 `--oob-only` 让注入在 `state=0` 时生效** |
+
+## 294. 2026-10-29 09:00–10:00：**⚠ 重大纠正 —— `CL_ParseServerMessage` 是死代码，前几轮追错了路径**
+
+### 294.1 `--oob-only` 的实测：注入生效了，但只注入 OOB
+
+```
+sent=3  received=10  injected=3
+CLpacketEvent  0x5C2260 = 3      ← 终于有计数了
+CL dispatcher  0x5AA980 = 0
+state: ui=5 net=0 table=1135
+ff 列表 14 个（含 marketplace_lite/common_mp/ui_mp，仍无地图）
+```
+
+`--oob-only` 让注入在 `state=0` 时也生效，但它**丢弃所有非 OOB 包**：
+
+```python
+if not data.startswith(b"\xff\xff\xff\xff") and (
+        args.oob_only or state_now < args.oob_until_state):
+    events.append({"dir": "drop", ...});  continue
+```
+
+而 `--oob-until-state` 的默认值本来就是 **0**，所以**不加 `--oob-only` 时所有包都会注入**
+（Round 32 的 `injected=10` 即证明）。
+
+### 294.2 但 Round 32 已注入 10 个包、`CL dispatcher` 仍是 0 —— 引出决定性检查
+
+对三个关键地址做引用统计：
+
+```
+0x5AA980  dword refs=0    call refs=0（只有它自己内部的 0x5AAEB3/0x5AAEBC）
+0x473A50  dword refs=0
+0x5AAB40  dword refs=0
+
+call 0x5C2260 (CLpacketEvent): 3 -> 0x4F8CD6, 0x4F8D60, 0x4F8ED8   ← 接收泵
+call 0x674EB0:                 3 -> 0x47A215, 0x47A385, 0x5C2380
+```
+
+**结论：`CL_ParseServerMessage`（`0x473A50`）的两个调用者 `0x5AAB40` 与 `0x5C2434`
+分别位于 `0x5AA980` 和 `0x5C241C` 这两段"零引用"的代码里 —— 整条
+`CL_ParseServerMessage → CL_ParseGamestate` 路径在这份客户端里是死代码。**
+
+Round 26–31 我一直把它当作"真正的消息解析入口"来追，方向错了。
+
+### 294.3 真正的解析路径在 `CLpacketEvent` 的 netchan 分支里
+
+```asm
+0x5C2260  CLpacketEvent  ← 由接收泵 0x4F8CD6 / 0x4F8D60 / 0x4F8ED8 调用
+  ├─ OOB 分支：cmp dword ptr [ecx], -1 → 0x5C1EE0（文本命令）
+  └─ netchan 分支（0x5C22FC）
+       0x5C2303  jl（已在 Round 31/32 patch 成 nop×6）
+       0x5C2380  call 0x674EB0     ← **真正的 netchan 处理**
+       0x5C23A0  call 0x674740     ← 解包
+       0x5C241C  （死代码段）
+```
+
+所以后续观测要以 **`0x674EB0` / `0x674740`** 为准，而不是 `0x473A50`。
+
+### 294.4 下一轮的做法
+
+1. hook `0x674EB0`、`0x674740`（这两个才是活路径上的函数）；
+2. 不加 `--oob-only`（默认就会注入全部包）跑一次，看这两个函数是否命中；
+3. 若命中但 `net_state` 仍为 0，则记录它们的返回值 —— netchan 解包失败会直接 return；
+4. 若连 `0x674EB0` 都不命中，说明 `CLpacketEvent` 的 netchan 分支还有前置条件
+   （`0x5C2315 cmp eax,4 / jl 0x5C24BC`，即包长度 < 4 会被丢）。
+
+### 294.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 28–31 | 追 `CL_ParseServerMessage` / `CL_ParseGamestate` 链 |
+| 32 | 发现 `connect` 后 `net_state` 回 0，注入被阻塞 |
+| 33 | `--oob-only` 让注入生效（`CLpacketEvent=3`）；**引用统计证明 `CL_ParseServerMessage` 是死代码 —— 前几轮方向需要纠正，改追 `0x674EB0`/`0x674740`** |
