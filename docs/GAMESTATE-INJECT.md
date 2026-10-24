@@ -6476,3 +6476,38 @@ after login:        flag[0x849B5B0] = 0   ui = 5   load = 2   state = 0
 
 找 `0x7F2880` 所在函数的入口与 `esi` 的来源（很可能是"设置 ui 状态"的公共函数，
 调用者传入 5 就会让 ui=5）。
+
+## 186. 2026-10-27 10:00–10:30：`0x7F2600` 的两个调用点（`esi` 来源待查）
+
+### 186.1 调用链
+
+```
+0x7F2600（含 0x7F264F 写 1、0x7F28B5 写 esi）
+  ← 0x7EF1AE：在 0x7EF18A 之后
+       0x7EF18A  cmp byte [0x849B61F], 0
+       0x7EF191  je 0x7EF41B
+       0x7EF197  eax = [0x849B874]
+       0x7EF19E  je 0x7EF41B
+       0x7EF1A4  cmp dword [eax+0xC], 0
+       0x7EF1A8  je 0x7EF41B
+       0x7EF1AE  call 0x7F2600
+       0x7EF1B3  call 0x7EEBC0
+       0x7EF1B8  [0x849BA34] = 1
+  ← 0x7EF31B：
+       0x7EF2F9  push esi / [0x84ABA48]=esi / [0x82C4A7C]=esi
+       0x7EF306  call 0x7FB180
+       0x7EF30E  [0x84ABA7C] = esi
+       0x7EF314  byte [0xE5735B] = 1
+       0x7EF31B  call 0x7F2600
+       0x7EF325  [0x849BA34] = 7
+```
+
+### 186.2 观察
+
+- 两处调用前都**没有显式设置 `esi`**，说明 `esi` 来自上层（调用者函数的寄存器状态）；
+- 第二处把 `[0x84ABA7C]`（load_status）设为 `esi`，与 `0x7F28B5` 的 `ui=esi` 相呼应；
+- `[0x849BA34]` 被设为 1 或 7 —— 这看起来像"**游戏状态机**"的切换（1/7）。
+
+### 下一步
+
+反汇编 `0x7F2600` 开头，确认 `esi` 是参数（`[ebp+8]`）还是寄存器上下文。
