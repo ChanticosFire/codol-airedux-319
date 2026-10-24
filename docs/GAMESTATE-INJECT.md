@@ -7620,3 +7620,45 @@ if (not data.startswith(b"\xff\xff\xff\xff") and not fragment
 
 在调 `CONNECT_FN` 之前，先确认 `0xB7A670()` 的返回值（通过读 `[conn+0x4F4]` 与 `[conn+0xC8]`/`[conn+0x644]`），
 只有它为 2 时才触发连接，否则先推进到该状态。
+
+## 218. 2026-10-27 02:30–03:00：**🎯 关键修正 —— `0x803830` 返回 holder（`[0x8269774]`），不是 conn**
+
+### 218.1 反汇编 `0x803830`
+
+```asm
+0x803830  eax = [0x8269774]        ; ← holder
+0x803835  test eax,eax
+0x803837  jne 0x8038A7             ; 已存在 → 返回
+0x803839  push 0x1618 / call 0xB74220   ; 分配（0x1618 字节）
+0x80384C  call 0xB82130             ; 构造对象
+0x803851  [0x8269774] = eax         ; 保存
+0x803861  call 0xB7A400
+...
+0x8038A7  ...（返回 eax = holder）
+```
+
+### 218.2 修正
+
+`0x5BE730` 里的 `esi = 0x803830()` = **holder**（`[0x8269774]`），
+所以 `0x5BE7A8 call 0xB7A670` 的 `[esi+0x4F4]` 是 **`holder+0x4F4`**（加载单例），
+**不是** `conn+0x4F4`。
+
+→ 我此前读 `conn+0x4F4 = 0` 并据此判断"没有加载器"是**错的**。
+真正的加载器在 `holder+0x4F4`（此前实测过 `0x4EE184A8` / `0x4D1BCF28` 等非 NULL 值）。
+
+### 218.3 重算判定
+
+用正确地址：
+```
+holder = [0x8269774]
+loader = [holder+0x4F4]
+flag   = [holder+0x4F8]
+state  = [holder+0xC8] / [holder+0x644] / [holder+0x5E8]
+B7A670() = 0                      if loader == NULL
+         = (flag==0 && BA0780()==2) ? 1 : BA0780()
+```
+
+### 下一步
+
+用 `holder+0x4F4` 重测，确认 `0xB7A670()` 是否为 2；
+若是，则 `forward --connect-address` 应能触发连接；若不是，先推进到该状态。
