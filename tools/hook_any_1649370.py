@@ -122,6 +122,7 @@ def main() -> int:
     slot_arg0 = args.slot + 8
     slot_arg1 = args.slot + 12
     slot_ecx = args.slot + 0x10
+    slot_eax = args.slot + 0x14
     slot_capture = args.slot + 0x40
     _head = read(args.target, 16) or b""
     if _head:
@@ -135,9 +136,9 @@ def main() -> int:
         "is_hooked": bool(entry and entry[0] == 0xE9),
         "counters": {"count": u32(slot_count), "ret": u32(slot_ret),
                      "arg0": u32(slot_arg0), "arg1": u32(slot_arg1),
-                     "ecx": u32(slot_ecx)},
+                     "ecx": u32(slot_ecx), "eax": u32(slot_eax)},
     }
-    for key in ("ret", "arg0", "arg1", "ecx"):
+    for key in ("ret", "arg0", "arg1", "ecx", "eax"):
         if isinstance(report["counters"].get(key), int):
             report["counters"][key] = hex(report["counters"][key])
     if args.capture:
@@ -191,6 +192,11 @@ def main() -> int:
     # argument in ECX only, so it must be recorded explicitly.
     code += b"\x8B\x44\x24\x18"                              # mov eax,[esp+0x18] ecx
     code += b"\xA3" + struct.pack("<I", slot_ecx)
+    # pushad layout: [esp+0x18]=ECX, [esp+0x1C]=EAX -- the latter is the
+    # callee entry EAX, which is how a return value is observed when the
+    # hook sits right after a call (e.g. 0x5C2388 after Netchan_Process).
+    code += b"\x8B\x44\x24\x1C"                              # mov eax,[esp+0x1c] eax
+    code += b"\xA3" + struct.pack("<I", slot_eax)
     if args.capture and args.capture >= 4:
         # Copy the buffer `source` points at, *while the call is still live*.
         # Stack-passed name arrays die as soon as the function returns, so
