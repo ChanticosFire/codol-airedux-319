@@ -4738,3 +4738,38 @@ body identical (>=0x2115): False
 1. 用 `decode_fastfile` 验证 `const-rebuilt.ff` 能解出**相同 zone**（证明重打包逻辑正确）；
 2. 若通过，就用它作为"改内容"的基座：塞入 21 个武器 asset 后重打包 + 重签；
 3. 注意本地 exe 已是自建公钥（`_load_keys` 白名单已被我们改过），`decode_fastfile` 应能验过。
+
+## 139. 2026-10-26 10:30–11:00：**🎉 重打包流水线验证通过（哈希链 + zone 内容完全一致）**
+
+### 139.1 验证方法
+
+`decode_fastfile` 需要"自建公钥在 exe 里"（我们已恢复原版），所以改用**跳过 RSA、只验哈希链**的方式：
+
+```
+header = AES-CTR(body[0:8192], iv16)          → magic IWffs100 ✅
+hdr digest: sha256(header[0x12C:0x1FD0]) == header[0x0C:0x2C]  ✅
+逐块：AES-CTR(block, IV) → sha256 == IV       → blocks ok 9 ✅
+zlib 解压 → zone len 100407，与原 zone 完全一致 ✅
+```
+
+### 139.2 结论
+
+**整条流水线已验证**：
+
+| 环节 | 状态 |
+|---|---|
+| 解包（材料 → header → 哈希链 → zlib → zone） | ✅ |
+| zone 修改（合并 asset） | ✅（§134 最小合并） |
+| zone 重打包（逐字节无损） | ✅（§134） |
+| body 重打包（哈希链 + zlib） | ✅（本轮） |
+| header 重签（自建私钥） | ✅（§123） |
+| 客户端接受自签 ff | ✅（§129） |
+
+→ **现在可以真正修改 ff 内容了**。
+
+### 下一步（首次真实修改）
+
+1. 把 21 个武器 asset（`runs/weapon-asset-hits.json`）合并进 `common_mp` zone；
+2. `ff_rebuild_body.py` 重打包 `common_mp.ff`（body 会变大，注意 sections 数量）；
+3. 替换 overlay 里的 `common_mp.ff`；
+4. 启动客户端 + run_match，观察武器表是否 1136 → 1224、181 是否消失。
