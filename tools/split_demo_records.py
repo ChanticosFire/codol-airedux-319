@@ -3,8 +3,9 @@
     python tools/split_demo_records.py <demo> --output split.json --limit 8
 
 The u32 is a record sequence number, not a length. Record boundaries come from
-the next text header. Everything between the NUL and that header is the binary
-payload carried with the command; for `p <n>` it begins with a snapshot body.
+the next text header. Everything between the NUL and that header is a candidate
+binary payload; for `p <n>` it can begin with a delta snapshot body. Boundaries
+remain heuristic, and the body requires its matching predecessor.
 """
 from __future__ import annotations
 

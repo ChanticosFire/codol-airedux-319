@@ -4,8 +4,9 @@
 
 Each selected `p <frame>` record's trailing blob starts with svc_snapshot
 (0x00). The u32 after the record marker is a sequence number, not a length.
-The exported blobs are candidate snapshot bodies; validate their boundaries
-and the client's parser before replaying them as templates.
+These are delta snapshots: the sampled demo's 725 candidate p bodies all have
+delta_distance=1. They require a compatible predecessor and are not standalone
+first snapshots. Record boundaries are still heuristic.
 """
 from __future__ import annotations
 
@@ -24,6 +25,8 @@ def main() -> int:
     ap.add_argument("--out", required=True)
     ap.add_argument("--min", type=int, default=100)
     ap.add_argument("--top", type=int, default=5)
+    ap.add_argument("--order", choices=("size", "file"), default="size",
+                    help="largest candidates first, or first snapshots in demo order")
     args = ap.parse_args()
     data = Path(args.demo).read_bytes()
     pos = 0
@@ -50,7 +53,8 @@ def main() -> int:
         blob = data[offset + 5 + text_len:end]
         if len(blob) >= args.min and blob[0] == 0:
             frames.append((blob, offset, end, sequence, command))
-    frames.sort(key=lambda item: len(item[0]), reverse=True)
+    if args.order == "size":
+        frames.sort(key=lambda item: len(item[0]), reverse=True)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     rows = []
@@ -58,6 +62,7 @@ def main() -> int:
         path = out / f"{i:02d}-{len(blob)}.bin"
         path.write_bytes(blob)
         rows.append({"file": path.name, "size": len(blob), "head": blob[:16].hex(),
+                     "delta_distance": blob[5] if len(blob) > 5 else None,
                      "sequence": sequence, "record_offset": offset,
                      "record_end": end, "command": command[:-1].decode("latin-1")})
     print(json.dumps({"frames": len(frames), "exported": rows}, ensure_ascii=True, indent=1))

@@ -1,5 +1,7 @@
 # Phase Status and Evidence
 
+> **2026-10-24 [1649370 demo baseline is the next blocker]** Corrected natural gamestate sequence to 3 and restored the verified 10-byte fragment header; server-only control `r96` reaches net state 10 with `ui_state=5`. The first demo `p` frame is a delta (`delta_distance=1`), not a standalone baseline. `r97` ACKed it only after a synthetic predecessor and then crashed at `0x421A73`; a matching demo baseline/gamestate is required. `mp_cross_fire` has not appeared on screen. See `docs/NEXT-SESSION.md` and `docs/DEMO-ANALYSIS.md`.
+
 > **2026-10-23 [RESOURCE LAYER SETTLED: overlay is now all-true-461, and the client still stalls at ui_state 5]**
 > The .ifs concatenation idea was disproven (legal fastfile length is always 0x115 + N*0x2000; k-member concat gives (277k) mod 8192 which is 277 only for k=1). The old 41,648,405 mp_cross_fire.ff was a 2.6.9.7 ver-365 binary with one byte patched at 0x8.
 > Fixed the overlay: illegal common_gametype_mp.ff (34,783,232, mod=0) -> 34,693,397; mp_cross_fire.ff -> true-461 37,331,221. All 23 ff now mod 0x2000 == 277.

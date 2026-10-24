@@ -1,5 +1,7 @@
 # 新对话启动指引
 
+> **2026-10-24 15:18 更新，供 DeepSeek 接手**：本轮定位并修复了两个把自然连接卡在 `net_state=7` 的回归：gamestate 必须从序号 **3** 开始，单分片 gamestate/快照的头是 **10 字节**，不可加 2 字节长度前缀。修复后 `r96-hybrid-control` 用已验证的 167 字节快照体恢复 `net_state=10`，但 `ui_state=5`、黑屏，目标未达。`r95-firstsnap-delay20` 单发 demo 443 字节首个候选停在状态 9；扫描样本中 **725 个候选 `p` 帧全部 `delta_distance=1`**，没有独立基帧。`r97-hybrid-then-demo` 先发本地基帧再发 demo 帧，客户端确认序号 1001，随即在 `0x421A73` 访问冲突。这只证明 demo 帧是可解析的增量，**不证明它可接在 `mp_cross_fire` 基线上**。不要再单独重放该帧，也不要把确认序号当成可玩。下一步要从成功播放的 demo 解析路径拿到**匹配的初始 gamestate/基帧**，确认记录边界，然后在 `mp_crash_tropical` 上验证配套回放，再将字段适配到 `mp_cross_fire`。保留 `server1649370` 的 `snap_trace`、configstring、command 日志。证据：`runs/r94-wire10-firstsnap-*`、`runs/r95-firstsnap-delay20-*`、`runs/r96-hybrid-control-*`、`runs/r97-hybrid-then-demo-*`。
+
 > **2026-10-24 14:48 补记**：本文件早段的“第一件事播 demo”已经完成。`r51` 和本轮 `r88` 均显示 `mp_crash_tropical` 实景；`r88` 截图 `runs/r88-shot.png`，实测 `ui_state=0`。这只验证 demo 路径，**不是 server1649370 驱动的 mp_cross_fire 成功**。播放前须装配五包 loose 资源并运行 `tools/fake_dvar.py --name g_gametype --value war`；缺前者会报 `images/wavy_nml.iwi`，缺后者会在 `0x43204F` 空指针崩溃。服务端在 `r88` 发出 capture gamestate 和 62 KB 候选快照，demo 同时自行推进 state 10，因此尚未证明网络快照被客户端采用。下一步离线确定 demo gamestate/快照的**真实记录边界和顺序**，再单独走服务端路径。demo 记录 `01` 后的 `u32` 是**序号**（样本 22→5784，多数相邻 +1），不是长度；旧 `DEMO-ANALYSIS.md`/旧解析器的“len”说法已过时。
 
 > 给**下一次会话**用。`docs/GOAL.md` 是目标全文；本文件只讲"第一件事"和"别踩的坑"。

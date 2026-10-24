@@ -299,16 +299,18 @@ class GameServer:
                                         for index, value in self.configstrings][:8],
                       "configstring_count": len(self.configstrings),
                       "payload_head": payload[:96].hex()})
-            # The client drops packets whose seq is older than max_seq - 0x200
-            # (0x5C2405 cmp [ebx+0x144], [ebx+0x140]-0x200), and its max_seq is
-            # already large by the time the match starts.  Start high so the
-            # window check passes; one packet per count keeps them monotonic.
-            seq = 100000 + peer.get("gamestate_count", 0)
+            # A fresh natural connection starts near sequence 1. The verified
+            # regression run accepted gamestate sequence 3 and acknowledged it;
+            # starting at 100000 left the client at state 7 with ack 1.
+            seq = 3 + peer.get("gamestate_count", 0)
             peer["gamestate_count"] = peer.get("gamestate_count", 0) + 1
             peer["last_server_seq"] = seq
             self._send_fragments(addr, peer, payload, seq, "gamestate")
             if self.snapshot_path:
-                peer["snapshot_due"] = time.monotonic() + max(self.snapshot_delay, 15.0)
+                # Honour the configured delay so trials can separate early
+                # delivery from payload validity. The known hybrid control
+                # reaches state 10 with a 20-second delay.
+                peer["snapshot_due"] = time.monotonic() + self.snapshot_delay
                 peer["snapshot_sent"] = False
                 peer["snapshot_index"] = 0
             if self.command_path:
@@ -364,17 +366,11 @@ class GameServer:
         count = (len(payload) + frag_size - 1) // frag_size
         seq_word = seq | 0x80000000
         key = ((peer.get("challenge") or 0) ^ seq) & 0xFF
-        if count <= 1:
-            # Small messages (the 90-byte native gamestate, 1 KiB commands) are
-            # *not* fragmented on the real server: runs/servercmd-2697-svc.bin
-            # is 1139 bytes with no fragment header, and the first four bytes
-            # are already the ack field.  Wrapping them in a fragment header
-            # made the client treat the payload as unknown data and drop it
-            # before 0x472D80 ever ran.
-            # Real small packets are plaintext: runs/servercmd-2697-svc.bin
-            # (1139 B) reads as `01 01 00 00 00 66 20 22 4d 50 5f 43 ...`
-            # i.e. svc + seq + `f "MP_CONNECTED..."` with no XOR and no header.
-            # Only fragmented payloads are XOR-scrambled after the ack field.
+        if count <= 1 and kind == "command":
+            # Captured small reliable commands use a bare plaintext payload.
+            # Gamestate and snapshot remain single-fragment netchan messages:
+            # regression-gs.jsonl reached state 10 with a 89-byte gamestate
+            # wrapped in one fragment. Sending it bare stalled at state 7.
             self.sock.sendto(bytes(payload), addr)
             self.state.counters["inband_sent"] += 1
             self.log({"dir": "out", "kind": "single", "message": kind,
@@ -386,12 +382,11 @@ class GameServer:
             data = bytearray(chunk)
             for i in range(4 if index == 0 else 0, len(data)):
                 data[i] ^= key
-            # Real 2697 packets (runs/codex-2697-stats-packets2.bin) carry a
-            # u16 length prefix that covers the 10-byte netchan header plus the
-            # chunk, i.e. 1172 = 10 + 1162 for a full fragment.  Without it the
-            # client drops the packet before parsing.
-            header = (struct.pack("<H", 10 + len(chunk)) + struct.pack("<I", seq_word)
-                      + bytes([index, count - 1]) + struct.pack("<HH", frag_size, len(chunk)))
+            # The verified 1649370 regression packet starts directly with the
+            # 10-byte fragment header (gamestate seq 3, 89-byte chunk, 99 bytes
+            # total). A prepended u16 length made the client ignore it at state 7.
+            header = (struct.pack("<I", seq_word) + bytes([index, count - 1])
+                      + struct.pack("<HH", frag_size, len(chunk)))
             packet = header + data
             self.sock.sendto(packet, addr)
             self.state.counters["inband_sent"] += 1

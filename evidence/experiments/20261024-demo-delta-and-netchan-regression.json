@@ -1,0 +1,35 @@
+{
+  "build": 1649370,
+  "date": "2026-10-24",
+  "acceptance": "ui_state != 5 and screenshot shows mp_cross_fire; playable match ends in lobby",
+  "netchan_regression": {
+    "successful_reference": "runs/regression-gs.jsonl",
+    "reference_gamestate_seq": 3,
+    "reference_single_fragment_header_bytes": 10,
+    "failed_variant": "gamestate seq 100000 and 2-byte length prefix stayed at net_state 7",
+    "restored_control": "runs/r96-hybrid-control-summary.json",
+    "restored_control_states": [8, 10, 10, 10],
+    "restored_control_ui_state": 5
+  },
+  "demo_sample": "E:\\GAME\\COD\\使命召唤OL\\main\\demo\\0C-2021-8-26[19-26-24]war.demo",
+  "first_candidate": {
+    "record_offset": 56911,
+    "record_sequence": 43,
+    "command": "p 1578",
+    "body_path": "runs/demo-frames-first/00-443.bin",
+    "body_bytes": 443,
+    "delta_distance": 1
+  },
+  "candidate_scan": {
+    "p_bodies_with_svc_snapshot_0": 725,
+    "delta_distance_1": 725,
+    "delta_distance_0": 0,
+    "boundary_caveat": "candidate records are delimited heuristically by the next text header"
+  },
+  "server_only_runs": {
+    "r95_first_candidate_alone": "net_state 9 and ui_state 5 at all samples; snapshots queued; no ACK 1000",
+    "r96_known_hybrid_control": "net_state 10 and ui_state 5; black screenshot",
+    "r97_hybrid_then_demo": "client ACKed snapshot sequences 1000 and 1001, then unhandled access violation at 0x421A73 immediately after demo delta"
+  },
+  "next": "Extract the demo's matching initial gamestate and baseline from the actual client playback parser; validate them on mp_crash_tropical before adapting to mp_cross_fire."
+}

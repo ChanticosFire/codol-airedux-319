@@ -193,6 +193,9 @@ def main() -> int:
     parser.add_argument("--match-duration", type=int, default=45,
                         help="seconds until the server sends the end-of-match disconnect")
     parser.add_argument("--snapshot", default="runs/snapshot-hybrid-empty-actors.bin")
+    parser.add_argument("--snapshot-delay", type=float, default=20.0)
+    parser.add_argument("--snapshot-seq", type=int, default=1000,
+                        help="first snapshot sequence; 1000 was accepted after gamestate 3")
     parser.add_argument("--map", default="", help="override the gamestate map name")
     parser.add_argument("--runtime", default="20261023-codex-delay-a2")
     parser.add_argument("--lsg-port", type=int, default=28969)
@@ -200,6 +203,10 @@ def main() -> int:
     parser.add_argument("--bind-port", type=int, default=29000)
     parser.add_argument("--screenshot-at", default="",
                         help="comma separated seconds at which to capture a frame")
+    parser.add_argument("--stage-loose", action="store_true",
+                        help="copy the five verified same-build loose packs into this runtime")
+    parser.add_argument("--skip-clean", action="store_true",
+                        help="leave unrelated project servers running")
     args = parser.parse_args()
 
     RUNS.mkdir(exist_ok=True)
@@ -207,8 +214,9 @@ def main() -> int:
     shoot_at = {int(x) for x in args.screenshot_at.split(",") if x.strip().isdigit()}
     summary: dict = {"name": name, "steps": {}}
 
-    log("cleaning stale processes")
-    kill_stale()
+    if not args.skip_clean:
+        log("cleaning stale processes")
+        kill_stale()
 
     log("starting lobby/auth")
     start(["-m", "server319.lsg",
@@ -223,8 +231,8 @@ def main() -> int:
     gs_args = ["-m", "server1649370.gameserver",
                "--port", str(args.gs_port), "--log", f"runs/{name}-gs.jsonl",
                "--delay-send", "10", "--gamestate-source", "native",
-               "--snapshot-file", args.snapshot, "--snapshot-delay", "20",
-               "--snapshot-seq", "1000", "--snapshot-repeat", "120",
+               "--snapshot-file", args.snapshot, "--snapshot-delay", str(args.snapshot_delay),
+               "--snapshot-seq", str(args.snapshot_seq), "--snapshot-repeat", "120",
                "--snapshot-interval", "1.5",
                "--oob-command", "disconnect",
                "--match-duration", str(args.match_duration)]
@@ -245,6 +253,25 @@ def main() -> int:
         (RUNS / f"{name}-summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
         return 1
     log("engine ready")
+
+    if args.stage_loose:
+        runtime = Path(r"E:\GAME\COD\1649370\workspaces\offline-runs") / args.runtime / "runtime"
+        destination = runtime / "devraw_shared"
+        staged = 0
+        for pack in ("crash-tropical", "crossfire", "gametype", "dmz", "survival"):
+            source = RUNS / f"20261022-{pack}-loose-v461" / "main"
+            if not source.is_dir():
+                raise FileNotFoundError(source)
+            for item in source.rglob("*"):
+                if not item.is_file():
+                    continue
+                target = destination / item.relative_to(source)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if not target.exists() or target.stat().st_size != item.stat().st_size:
+                    shutil.copy2(item, target)
+                    staged += 1
+        summary["steps"]["loose_staged"] = staged
+        log(f"staged {staged} loose files")
 
     log("driving login state machine")
     code, out = run_tool(["tools/drive_login_state_machine.py", "--set-ui-state", "1",
