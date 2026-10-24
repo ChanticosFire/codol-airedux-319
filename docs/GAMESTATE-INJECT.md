@@ -5793,3 +5793,61 @@ in inband 14 / in connect 1 / in stats 1 / out oob 4 / gamestate_source 1
 1. 从 events 里取崩溃地址（`exit_va=0x6193C8` 只是退出点）；
 2. 对比 r105（弹 181）与 r159（崩溃）的差异（gamestate 分包方式/时序）；
 3. 确认 `ui=5` 的推进条件（哪个事件会把 ui 从 5 变成别的值）。
+
+## 167. 2026-10-27 00:30–01:00：**`ui=5` 的完整条件链（加载单例 → 状态查询 → UI 切换）**
+
+### 167.1 UI 状态切换（0x8037D1）
+
+```asm
+0x8037BF  call 0xB7A670            ; 查状态
+0x8037C9  esi = eax
+0x8037D1  eax = [0x84ABA50]        ; 当前 ui_state
+0x8037D6  cmp esi, 2
+0x8037D9  je 0x8037FA              ; 状态==2 → 走 5 分支
+0x8037DB  test eax, eax
+0x8037DD  je 0x8037A9              ; 已是 0 → 返回
+0x8037DF  [0x84ABA54] = eax
+0x8037E4  [0x84ABA50] = 0          ; ← 回主菜单
+0x8037EE  [0xE4EA3C] = 0xDE16F0    ; UI 脚本 A
+
+0x8037FA  cmp eax, 5
+0x8037FD  je 0x803818
+0x8037FF  [0x84ABA54] = eax
+0x803804  [0x84ABA50] = 5          ; ← 进加载屏
+0x80380E  [0xE4EA3C] = 0xDE170C    ; UI 脚本 B
+```
+
+→ **`0xB7A670` 返回 2 → ui=5；返回非 2 → ui=0**。
+
+### 167.2 状态查询（0xB7A670）
+
+```asm
+0xB7A673  ecx = [esi+0x4F4]        ; 加载单例
+0xB7A679  test ecx, ecx
+0xB7A67B  jne 0xB7A681
+0xB7A67D  eax = 0                  ; ← 单例为 NULL → 返回 0
+0xB7A680  ret
+
+0xB7A681  call 0xBA0780            ; 查加载器状态
+0xB7A686  cmp byte [esi+0x4F8], 0
+0xB7A68D  jne 0xB7A699
+0xB7A68F  cmp eax, 2
+0xB7A692  jne 0xB7A699
+0xB7A694  eax = 1                  ; 加载器==2 且 [+0x4F8]==0 → 返回 1
+0xB7A699  ret
+```
+
+### 167.3 条件链总结
+
+```
+ui = 5  ⇔  [+0x4F4] != NULL  ∧  0xBA0780() == 2  ∧  ([+0x4F8] != 0 ∨ 0xBA0780() != 2 → 保持 2)
+ui = 0  ⇔  [+0x4F4] == NULL  ∨  0xBA0780() != 2
+```
+
+→ **`[+0x4F4]`（加载单例）是 ui 状态的总开关**：
+- 为 NULL → 回主菜单（ui=0）；
+- 非 NULL 且加载器状态为 2 → 加载屏（ui=5）。
+
+### 下一步
+
+实测 demo 与服务端路径下 `[+0x4F4]` 与 `0xBA0780()` 的返回值，确认差异。
