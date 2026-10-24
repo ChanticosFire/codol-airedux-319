@@ -8079,3 +8079,40 @@ gs: 12 inband，无 connect
 ### 230.3 下一步
 
 读 `[holder+0x38]`；若为 0，考虑直接写一个非 0 值（或反汇编 `0xB7A757` 之后）。
+
+## 231. 2026-10-27 09:00–09:30：**所有条件都满足（`0xB7A6E0` 返回非 0），但 connect 仍不发 → 疑 `0x5BE730` 未被调用**
+
+### 231.1 `0xB7A6E0` 的返回
+
+```asm
+0xB7A757  eax = [esi+0x38]           ; eax = 1441105936
+0xB7A75A..0xB7A769  恢复 SEH、ret     ; 返回 [esi+0x38]
+```
+
+而 `0x5BE7B4 call 0xB7A6E0` 之后：
+```asm
+0x5BE7B9  cmp eax, ebx（ebx=0）
+0x5BE7BB  je 0x5BE7FC                ; 返回 0 才跳过
+0x5BE7BD  call 0x7F9090              ; ← 应该执行！
+```
+
+### 231.2 完整条件链（全部满足）
+
+```
+[0xE59D20] = 6        ✅（stage）
+0x803830() != NULL    ✅（holder=0x4CE4EBE8）
+0xB7A670() == 2       ✅（loader/c8/c644/c5e8 均符合）
+0xB7A6E0() = 1441105936 != 0  ✅
+→ 应 call 0x7F9090（发包）
+```
+
+**但 connect 仍不发**（`sent=12 received=0`）。
+
+### 231.3 唯一剩下的解释
+
+**`0x5BE730` 根本没有被调用**（`invoke_sequence([CONNECT_FN])` 失败或没执行）。
+`forward` 的 `connect` 事件 `result: null` 也支持这一点。
+
+### 下一步
+
+检查 `invoke_sequence` 的实现（第 207 行）—— 它可能要求窗口焦点或特定状态才执行。

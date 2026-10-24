@@ -18559,3 +18559,7 @@ lobby          = 0x37E19850
 > **2026-10-27 08:30–09:00【net=4 + stage=6 + B7A670()=2 三条件全满足，connect 仍不发（sent=12/received=0、state=4）；怀疑点转向 0xB7A6E0 里的 [holder+0x38] 检查（为 0 时分配新对象）】**
 >
 > 实测：写 net_state=4 保持；forward state=4、stage=6、received=0。→ 下一个检查 `[holder+0x38]`，若非 0 跳 0xB7A757，为 0 则 0xB74220 分配。
+
+> **2026-10-27 09:00–09:30【完整条件链全满足（stage=6、holder 非空、B7A670()=2、B7A6E0()=1441105936≠0）但 connect 仍不发 → 唯一解释是 0x5BE730 未被调用（invoke_sequence 失败，result:null）】**
+>
+> 0xB7A6E0 返回 [esi+0x38]=1441105936；0x5BE7BB je 0x5BE7FC 不跳 → 应到 0x5BE7BD call 0x7F9090。实测 sent=12/received=0。→ 下一步查 invoke_sequence（第 207 行）实现。
