@@ -46,11 +46,27 @@ k32.VirtualProtectEx.restype = W.BOOL
 k32.FlushInstructionCache.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t]
 k32.FlushInstructionCache.restype = W.BOOL
 
-SLOT_BASE = 0xE54BD00
-SLOT_COUNT = SLOT_BASE
-SLOT_RET = SLOT_BASE + 4
-SLOT_ARG0 = SLOT_BASE + 8
-SLOT_ARG1 = SLOT_BASE + 12
+SLOT_BASE_DEFAULT = 0xE54BD00
+
+
+
+def aligned_length(blob: bytes, start_va: int, minimum: int = 5) -> int:
+    """Smallest instruction boundary >= `minimum` bytes.
+
+    Stealing a fixed 5 bytes corrupts any function whose prologue crosses an
+    instruction boundary.  `0x7F4F10` starts `55 8b ec 53 8b` where that final
+    `8b` is only the first byte of `mov ebx,[ebp+8]`; replaying five bytes and
+    jumping to target+5 resumes in the middle of an instruction and crashes.
+    Disassemble from the entry and take the first boundary at or past `minimum`.
+    """
+    import capstone
+    md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_32)
+    total = 0
+    for ins in md.disasm(blob, start_va):
+        total += ins.size
+        if total >= minimum:
+            return total
+    return minimum
 
 
 def find_pid() -> int:
@@ -67,6 +83,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--target", type=lambda v: int(v, 0), required=True)
     ap.add_argument("--len", type=int, default=5)
+    ap.add_argument("--slot", type=lambda v: int(v, 0), default=SLOT_BASE_DEFAULT,
+                    help="base address of the four result slots")
     ap.add_argument("--pid", type=int, default=0)
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--read", action="store_true")
@@ -95,6 +113,13 @@ def main() -> int:
                                           C.create_string_buffer(blob, len(blob)),
                                           len(blob), C.byref(got))) and got.value == len(blob)
 
+    slot_count = args.slot
+    slot_ret = args.slot + 4
+    slot_arg0 = args.slot + 8
+    slot_arg1 = args.slot + 12
+    _head = read(args.target, 16) or b""
+    if _head:
+        args.len = aligned_length(_head, args.target, args.len)
     original = read(args.target, args.len)
     entry = read(args.target, 5)
     report: dict = {
@@ -102,8 +127,8 @@ def main() -> int:
         "original": original.hex() if original else None,
         "entry": entry.hex() if entry else None,
         "is_hooked": bool(entry and entry[0] == 0xE9),
-        "counters": {"count": u32(SLOT_COUNT), "ret": u32(SLOT_RET),
-                     "arg0": u32(SLOT_ARG0), "arg1": u32(SLOT_ARG1)},
+        "counters": {"count": u32(slot_count), "ret": u32(slot_ret),
+                     "arg0": u32(slot_arg0), "arg1": u32(slot_arg1)},
     }
     for key in ("ret", "arg0", "arg1"):
         if isinstance(report["counters"].get(key), int):
@@ -138,12 +163,12 @@ def main() -> int:
     code = bytearray()
     code += b"\x60"                                          # pushad
     code += b"\x8B\x44\x24\x20"                              # mov eax,[esp+0x20] ret
-    code += b"\xA3" + struct.pack("<I", SLOT_RET)
+    code += b"\xA3" + struct.pack("<I", slot_ret)
     code += b"\x8B\x44\x24\x24"                              # mov eax,[esp+0x24] arg0
-    code += b"\xA3" + struct.pack("<I", SLOT_ARG0)
+    code += b"\xA3" + struct.pack("<I", slot_arg0)
     code += b"\x8B\x44\x24\x28"                              # mov eax,[esp+0x28] arg1
-    code += b"\xA3" + struct.pack("<I", SLOT_ARG1)
-    code += b"\xFF\x05" + struct.pack("<I", SLOT_COUNT)
+    code += b"\xA3" + struct.pack("<I", slot_arg1)
+    code += b"\xFF\x05" + struct.pack("<I", slot_count)
     code += b"\x61"                                          # popad
     code += original                                         # replay stolen bytes
     rel = (args.target + args.len - (cave + len(code) + 5)) & 0xFFFFFFFF
@@ -161,7 +186,7 @@ def main() -> int:
     k32.VirtualProtectEx(handle, C.c_void_p(args.target), args.len, old.value, C.byref(old))
     k32.FlushInstructionCache(handle, C.c_void_p(args.target), args.len)
 
-    for slot in (SLOT_COUNT, SLOT_RET, SLOT_ARG0, SLOT_ARG1):
+    for slot in (slot_count, slot_ret, slot_arg0, slot_arg1):
         write(slot, b"\x00\x00\x00\x00")
 
     report.update(hooked=hooked, cave=hex(cave), code=bytes(code).hex(),

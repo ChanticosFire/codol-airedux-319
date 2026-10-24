@@ -18703,3 +18703,7 @@ lobby          = 0x37E19850
 > **2026-10-28 06:00【社区六阶段路标已记录进 docs/GAMESTATE-INJECT.md §266：①房间准备 ②开局通知 ③建立连接 ④加载地图(loadingnewmap) ⑤初始化对局(资源注册校验/配置字符串/玩家槽号/校验种子) ⑥首份有效快照。两个关键：初始状态第 2 个字符串必须是模式名(不是 zone_name)——本地 gamestate 已验证 @9=mp_crash_tropical、@27=war 正确；资源校验不匹配会报 EXE_CONFIGSTRINGMISMATCH，回放未验证该项】**
 >
 > 社区指出"仅回复 connectResponse 不足以进入地图"，但我的卡点更靠前（客户端连 getchallenge 都不发）。下一步仍聚焦：主线程窗口内让 0x5C05F0 走到 0x622040 送出 getchallenge。
+
+> **2026-10-28 06:00–07:00【🎉 里程碑：客户端首次真正发出 getchallenge！gs 收到 8 个 38 字节包（参数 0cf7ee44e08c4c28 = [0xE54BC48/4C]），服务端已回 challengeResponse。打通依赖三点：①main_call 只在登录后几秒窗口有效 ②hook 必须按指令边界切片（0x7F4F10 取7/0x675260 取9/0x622040 取9）③patch 0x5C06B8 的 jl→nop 去掉 3000ms 等待。新问题：客户端每次 socket() 新建端口（54869/54871/50480…）导致收不到响应】** 
+>
+> 下一步：改走 loopback 环 —— 恢复 0x622040，设 adr type=2 + chan=0x9D + net=3，保留 nodelay，用 ring_bridge 观察 ring_a 并用 forward --pump 桥接收发。
