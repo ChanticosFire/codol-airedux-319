@@ -11538,3 +11538,70 @@ ff 收集器 count = 10（仍无地图/gametype）
 | 22/23 | 找到 `0x5156BF` → `0x49E600` 与三个门控 |
 | 24 | patch `ebx` 门控无效 → 跳过点更早 |
 | **25** | **hook 实测 `0x515680` 命中 0 次 → 函数在到达加载分支前就退出；区间已收窄到 `0x51553A`–`0x515680`** |
+
+## 287. 2026-10-29 02:00–03:00：**🎯 找到 `CL_ParseGamestate`（`0x473260`），它会把 `net_state` 设为 8 —— 但实测一直是 5**
+
+### 287.1 调用链终于接上了
+
+```
+CL_ParseGamestate (0x473260)
+  ├─ 0x473292  eax = [0x331C0C8] ^ 0xD362501F      decode connection
+  ├─ 0x47329C  [eax+0x34] = 0                      清重试计数
+  ├─ 0x4732AB  cmp dword ptr [eax+0x76446B0], 5    net_state == 5 ?
+  ├─ 0x4732B8  jne 0x4732E5                        != 5 → 跳过日志分支
+  ├─ 0x4732EA  mov dword ptr [esi], 8              **net_state = 8**
+  ├─ 0x4732F0  call 0x473200
+  ├─ 0x4732F6  call 0x5BEB50
+  └─ 0x473523  call 0x5C0310                       systeminfo 处理
+                  └─ 0x5C0553  call 0x515340       另一份 systeminfo 处理
+                        └─ 0x5156BF  call 0x49E600 → [0x1C2B6CC]=1 → 加载 gametype/地图族
+```
+
+静态关系全部接通：`0x473260` → `0x5C0310`（唯一调用者 `0x473523`）
+→ `0x515340`（唯一调用者 `0x5C004D`/`0x5C0553`）→ `0x49E600`（唯一写门控者之一）。
+
+### 287.2 决定性矛盾：`net_state` 从未变成 8
+
+`0x4732EA` 是**无条件**执行（无论 `0x4732B8` 是否跳过）：
+```asm
+0x4732E5  mov ecx, 1
+0x4732EA  mov dword ptr [esi], 8
+```
+
+而所有实验里 `net_state` **始终停在 5**（Round 9/11/20/21/25/26 反复实测）。
+
+⇒ **`0x473260`（`CL_ParseGamestate`）从未被执行到 `0x4732EA` 之后**
+⇒ 也就解释了为什么 `0x5C0310`、`0x515340`、`0x49E600` 全部 count=0。
+
+### 287.3 已有的旁证全部一致
+
+| 观测 | 与"`CL_ParseGamestate` 未执行"是否自洽 |
+|---|---|
+| `0x515340` count=0 | ✅ |
+| `0x515680` count=0 | ✅ |
+| `[0x1C2B6CC]` 恒为 0 | ✅ |
+| ff 收集器只有 10 个（无 gametype/地图） | ✅ |
+| `net_state` 恒为 5 | ✅（若执行过必然变 8） |
+| `Com_Error` count=0 | ✅（不是出错，是根本没进这条路径） |
+| `CLpacketEvent` 1808 次 | ✅（包被接收，但没有被当作 gamestate 解析） |
+
+### 287.4 下一步（唯一方向：gamestate 为什么没被送进 `CL_ParseGamestate`）
+
+`0x473260` 的调用者还没查。下一轮：
+
+1. 扫 `call 0x473260`（以及可能的 vtable 引用），找到 gamestate 的**分发点**；
+2. 在该分发点与 `0x473260` 各装 hook，跑一次完整握手，判定：
+   - 若分发点命中而 `0x473260` 不命中 → 分发逻辑里有条件把它挡掉了；
+   - 若两者都不命中 → **gamestate 分片根本没有被组装成完整包**
+     （这与 gs 那边 `out/fragment 7` 的记录对照：分片发出去了，
+     但客户端可能没有正确重组）。
+3. 特别检查 `0x4F8D70`（接收泵）→ `0x5C2260`（CL packet event）→
+   之后的分派表里，gamestate 对应哪个分支。
+
+### 287.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 21 | 只请求 10 个 ff，地图/gametype 没有 |
+| 25 | `0x515680` 命中 0 次 |
+| **26/27** | **`CL_SystemInfoChanged`（`0x515340`）命中 0 次；找到 `CL_ParseGamestate`（`0x473260`），它无条件把 `net_state` 置 8，而实测恒为 5 ⇒ gamestate 从未进入解析** |
