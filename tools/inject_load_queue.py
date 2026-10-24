@@ -73,8 +73,16 @@ def main() -> int:
     struct.pack_into("<I", entry, FLAGS_OFF, args.flags)
 
     before = read_u32(COUNT)
-    ok = write(name_addr, args.name.encode() + b"\0") and write(QUEUE, bytes(entry)) and write(COUNT, struct.pack("<I", 1))
-    print(json.dumps({"pid": pid, "name": args.name, "name_addr": hex(name_addr),
+    # The engine passes the entry address itself to sprintf("%s.ff", name), so the
+    # name must be INLINE at entry+0x00 (not a pointer).  flags live at +0x40.
+    text = args.name.encode() + b"\0"
+    if len(text) > FLAGS_OFF:
+        raise SystemExit(f"name too long: {len(text)} > {FLAGS_OFF}")
+    entry = bytearray(ENTRY_SIZE)
+    entry[NAME_OFF:NAME_OFF + len(text)] = text
+    struct.pack_into("<I", entry, FLAGS_OFF, args.flags)
+    ok = write(QUEUE, bytes(entry)) and write(COUNT, struct.pack("<I", 1))
+    print(json.dumps({"pid": pid, "name": args.name, "inline_bytes": len(text),
                       "queue_before": before, "written": ok}, ensure_ascii=True, indent=2))
     return 0 if ok else 1
 

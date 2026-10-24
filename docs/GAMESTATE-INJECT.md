@@ -5322,3 +5322,46 @@ queue[0x00..] = "common_gametype_mp\0"（内联）
 ### 修复
 
 `inject_load_queue.py` 改为**把名字直接写进队列项**（`+0x00` 起），flags 仍在 `+0x40`。
+
+## 155. 2026-10-26 18:30–19:00：**内联字符串修复生效 —— 客户端开始加载 gametype 包，但随即崩溃**
+
+### 155.1 修复
+
+`inject_load_queue.py` 改为**把名字内联写进队列项**：
+
+```
+entry[+0x00 ..] = "common_gametype_mp\0"   （19 字节）
+entry[+0x40]    = flags（0 = 普通路径）
+[0x239B11C]     = 1
+```
+
+### 155.2 结果
+
+```
+inline_bytes = 19, queue_before = 0, written = true
+hook_queue_processor patched = true
+8s later: alive = False      ← 崩溃
+```
+
+→ **注入格式正确**（这次引擎真的去加载了），但加载 `common_gametype_mp` 导致客户端崩溃。
+
+### 155.3 与之前对比
+
+| 版本 | 队列项格式 | 结果 |
+|---|---|---|
+| v1（指针） | `+0x00 = name_addr` | 消费但不加载（文件名的乱码） |
+| v2（内联） | `+0x00 = "common_gametype_mp"` | **真的去加载 → 崩溃** |
+
+→ 说明"队列注入"这条路**格式已对**，剩下的问题是"加载 `common_gametype_mp` 为什么崩"。
+
+### 155.4 可能原因
+
+1. `common_gametype_mp.ff` 与当前 zone 状态冲突（它依赖 pre_gfx/code_post_gfx 的某些 asset）；
+2. 加载过程中 asset 注册失败（缺依赖）；
+3. flags=0 走的路径与预期不同（例如需要 flags=1 的 patch 语义）。
+
+### 下一步
+
+1. 用 `--flags 1` 再试（patch 路径，可能会找 `patch_common_gametype_mp.ff` 并回退）；
+2. 检查崩溃地址（launch 的 `exit_va` 或 events）；
+3. 若确定是"资源依赖"，考虑把 `common_gametype_mp` 的依赖也一起注入（转到 asset 合并路线）。
