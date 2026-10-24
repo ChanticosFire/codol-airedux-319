@@ -18083,3 +18083,7 @@ lobby          = 0x37E19850
 > **2026-10-25 20:30–21:00【gametype 包加载发生在 LoadDemo（0x49E600）内部】**
 >
 > 入口列表（0x49E070/0x49E130/0x49E160/0x49E410/0x49E540/0x49E600）；含 `0x49EC93 call 0x49E160` 的大函数入口 = **0x49E600（LoadDemo）**。流程：0x49E8E9 按 gametype 名 strncmp → 0x49E97D 选 `common_gametype_mp` → 0x49E982 调 0x49E540 构造 4 项（patch_/localized_/patch_localized_）→ 0x49EC93 调 0x49E160 批量加载。→ 这解释了 demo 有 88 个武器、服务端路径没有：差在加载路径不在数据。下一步：手动构造同样 4 项列表后直接调 0x49E160（格式已知，每项 `{char*; u32 4; u32 0}`）。
+
+> **2026-10-25 21:00–21:30【正确 4 项列表仍 timeout：0x49E160 的 cave 调用不可行】**
+>
+> `tools/load_gametype.py` 按 `0x49E540` 布局构造 4 项列表（patch_/原/ patch_localized_/localized_）后调 `0x49E160(list,4,0)`，在表=1135 窗口仍 `returned_eip="timeout"` + 客户端退出。→ `0x49E160` 内部依赖主循环/线程上下文，cave 机制不适配。下一步改用 CreateRemoteThread 注入远线程调用，或 hook 主循环。

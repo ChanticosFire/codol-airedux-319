@@ -3727,3 +3727,38 @@ common_gametype_clash / common_gametype_spy
    - 或写一个小 cave 脚本：手动构造列表（`0x49E540` 的格式）后直接调 `0x49E160`。
 3. 推荐后者：列表格式已知（每项 `{char* name; u32 flags=4; u32 0}`，4 项分别是
    `patch_<name>`、`<name>`、`patch_localized_<name>`、`localized_<name>`）。
+
+## 112. 2026-10-25 21:00–21:30：正确格式的 4 项列表仍 timeout —— 0x49E160 的 cave 调用不可行
+
+### 112.1 工具
+
+`tools/load_gametype.py`：按 `0x49E540` 的布局构造 4 项列表（`{u32 count=4;
+{char*;u32 4;u32 0}×4}`，名字分别是 `patch_<name>` / `<name>` /
+`patch_localized_<name>` / `localized_<name>`），然后调 `0x49E160(list, 4, 0)`。
+
+### 112.2 结果（表=1135 的窗口）
+
+```
+table_now = 0x46F = 1135
+names = [patch_common_gametype_mp, common_gametype_mp,
+         patch_localized_common_gametype_mp, localized_common_gametype_mp]
+status = null
+returned_eip = "timeout"
+客户端退出（alive=false）
+```
+
+→ **列表格式正确也没用**：`0x49E160` 在当前 `invoke_sequence` 的 cave 机制下
+无法完成（内部 `call [0xCA8164]`、`cmp [0x7886E6C]`、`call 0xBEAA80/0xC04BD0`
+依赖游戏主循环/线程上下文）。
+
+### 112.3 结论
+
+- cave 方式（挂起窗口线程 + 跳板）**不适配** `0x49E160` 这类重初始化函数；
+- 已两次验证（空列表、正确 4 项列表）→ **放弃 cave 调用 0x49E160**。
+
+### 下一步
+
+1. 改用**注入远线程**（`CreateRemoteThread` 直接以 `0x49E160` 为入口，参数通过栈/寄存器传入），
+   让它在自然线程里执行；
+2. 或改用"**hook 游戏主循环的某个点**"，让游戏自己在正常上下文里调 `0x49E160`；
+3. 或退回"补 configstring"方案（只能补 42 个复合，已知到不了 1224）。
