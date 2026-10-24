@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T20:00:00+00:00",
+  "scope": "REINTERPRETATION: the loading object is destroyed on UNLOAD/shutdown, not when loading completes - so its being non-null may be normal and ui_state 5 may not mean 'still loading'",
+  "the_teardown_at_0x77d043": {
+    "0x77D043": "cmp [0x8269774], ebx ; je 0x77D092   - if already null, skip",
+    "0x77D050": "[0x84ABB04] = 1                       - a flag set before teardown",
+    "0x77D05A": "call [0xCA819C]                       - acquire a guard",
+    "0x77D06A": "call 0xB82100                         - a method on the object",
+    "0x77D079": "edx = [ecx] ; eax = [edx] ; push 1 ; call eax   - the DELETING destructor (vtable slot 0)",
+    "0x77D086": "mov [0x8269774], 0                    - clear the global pointer",
+    "0x77D08C": "call [0xCA8190]                       - release the guard",
+    "0x77D092": "call 0x808940 ; call 0x66B360         - further teardown"
+  },
+  "what_this_changes": [
+    "I had been treating 'the object is non-null' as 'the frontend is still loading'",
+    "but the only code that clears it is a teardown path (destructor, guard acquire/release, followed by more shutdown calls)",
+    "so while a map is active the object is EXPECTED to be non-null, and its presence is not evidence of loading",
+    "which means ui_state = 5 is also not proven to mean 'still loading' - it may simply be the UI state used for both the loading screen and an in-game frame that has nothing to draw"
+  ],
+  "what_that_reopens": [
+    "the 'world not drawn' hypothesis returns: the client may be in the map with a valid UI state, and the black frame with a spinner may be the absence of scene content rather than an unfinished load",
+    "and the spinner could be a UI element that is drawn whenever the renderer has no valid view, rather than a load indicator"
+  ],
+  "how_to_distinguish_the_two": [
+    "if the client is in the map, then a screenshot after a delay large enough for the frontend to settle should not change, and forcing a screen resize or a dvar change should redraw the same black frame",
+    "conversely if it is still loading, the spinner should animate - and capturing two screenshots a second apart and comparing them will show whether the spinner moved",
+    "that is a cheap and decisive test: two captures, one second apart, compared pixel-wise"
+  ],
+  "artifacts": {
+    "addresses": {
+      "teardown": "0x77D043..0x77D092",
+      "global": "0x8269774",
+      "flag": "0x84ABB04"
+    }
+  }
+}

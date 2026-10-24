@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [REINTERPRETATION: the loading object is destroyed on unload, not on load completion]**
+> The only writer that clears [0x8269774] is a teardown path at 0x77D043 (guard, destructor, pointer clear, release, more shutdown calls). So a non-null object may be normal while a map is active, and ui_state 5 may not mean 'still loading'.
+> That reopens the 'world not drawn' hypothesis. Decisive cheap test: two screenshots a second apart - a moving spinner means loading, an identical frame means in-map but undrawn.
+> Evidence: [loader is torn down not completed](evidence/experiments/20261023-codex-loader-is-torn-down-not-completed.json).
 > **2026-10-23 [Advancing serverTime does not dismiss the loader; snapshot-side levers are closed]**
 > Eight bodies with serverTime 72200..73950 rotated at 2 s: ui 5 and the loader held at every sample. So the load task is not waiting for time.
 > Negatives now: contents, flags byte, entity ordering, section coverage, time advance. Remaining: the loader object is partially initialised (0xBAADF00D) and needs symbolic or memory-write-breakpoint tooling.
