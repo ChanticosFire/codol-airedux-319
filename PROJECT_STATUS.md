@@ -17608,3 +17608,13 @@ lobby          = 0x37E19850
 **这是一份可以让人从第 212 节接着做下去的交接。**> **2026-10-22 阶段性交接**：完整交接文档 [`1649370-HANDOFF-CODEX.md`](1649370-HANDOFF-CODEX.md)。核心结论：启动链路（overlay+登录+大厅）已打通；进图卡在 ① state=3 效果待确认 ② ff 双层保护（365 vs 461 + RSA 验签） ③ 缺 461 版资源 ④ 缺资源注册表（12761 槽 Registration + game_initial_state）。关键地址：公钥 `0xDAC958`、验签函数 `0x4836CE`（失败路径 `0x483681`/`0x4836BC`）、资源注册表初始化 `0x661A7C`（checksum `[0x77D8240]`、组 `[0xE5701C]`）。
 
 
+
+---
+
+> **2026-10-24 12:00–12:15【.ifs 规则收口 + overlay 坏件修复 + demo 播放链路实测】**
+>
+> 1. **`.ifs` 不存在"合并规则"**：`ff_*.ifs` 的每个 `IWff` 成员就是一份完整签名 fastfile，真实长度只能靠块哈希链确定（`0x115 + N*0x2000`，N=首个失败块索引）。`lf_*`/`lf_hi_*` 是散装 `.iwi/.mp3`，`IWff` 命中 0。完整证据见 `docs/IFS-MERGE-RESULT.md`（含 14 组拼接对比、k=1/2/3 穷举为 0、模运算证明 k≡1 mod 8192）。
+> 2. **overlay 两个坏件已替换并复核**：`common_gametype_mp.ff` 34,783,232（结构非法）→ **34,693,397**（4235 块/1400 asset）；`mp_cross_fire.ff` 41,648,405（2.6.9.7 365 原件+1 字节补丁）→ **37,331,221**（4557 块/240 asset）；补 `localized_common_gametype_mp.ff` 41,237（V69 成员 1，5 块/892 asset）。`runs/ifs-merge/check_overlay_ff.py` 现报 23/23 结构合法，旧件备份在 `runs/ifs-merge/baseline_*.ff`。
+> 3. **demo 播放链路已实测**：客户端可正常进主菜单（`runs/demo-run4-t0.png`）；Cbuf 注入 `cl_demo_play 0C-2021-8-26[19-26-24]war.demo` 成功（stage=5），客户端开始加载 `mp_crash_tropical` 资源，并按顺序报缺 `images/loadscreen_mp_crash_tropical.iwi` → `images/dpad_ks_uav.iwi` → `localized_common_gametype_mp.ff`。前两个用 5 个 loose 包（3,301 文件/336 MB）并入 `runtime/devraw_shared` 解决，第三个用 V69 成员 1 解决。详见 `docs/DEMO-PLAY-TEST.md`。
+> 4. **待验证**：替换 overlay 后重跑 demo 播放，观察是否越过 `WIN_ZONE_ERROR` 并出现真实地图画面（唯一验收：截图里有地图）。
+> 5. **并发提示**：12:11 起另有执行体在跑 `runs/codex-r242-*` 联机实验（客户端 PID 24080），两个客户端会争窗口；demo 最终判定安排在其结束后。
