@@ -17777,3 +17777,7 @@ lobby          = 0x37E19850
 > **2026-10-24 18:10–18:25【快照三个内容块全部被解析】**
 >
 > 在 demo 起状态（state 7/8/10）后接入 gs 的 gamestate + 12 个 snapshot，断点：**Entities=2**（0x471D80）、**PlayerState=1**（0x471980）、**Actors=1**（0x471010），state=10。→ gamestate 与快照都能被客户端完整解析，"实体循环必然拒绝快照"的旧结论在 state>=7 路径上未复现。剩余问题：让地图变成 mp_cross_fire。下一步：gs 的 gamestate mapname 设为 mp_cross_fire，在 demo 起状态后立刻发送，看客户端是否加载 mp_cross_fire.ff。
+
+> **2026-10-24 18:25–18:40【cross_fire gamestate 被解析但地图不切换】**
+>
+> demo 起状态后把 gs 的 `--gamestate-map mp_cross_fire`：`Dispatch=1`、`GamestateParse=1`、state=8，但截图 `runs/r56-crossfire.png` 仍是 crash_tropical（灰度画面）→ demo 播放器已锁定地图，后到的 mapname 不换图。另：`cl_demo_play doesnotexist` 不会到 state 7（`0x4F4A90` 资源检查失败 → 跳过 CL_Init，`State7=0`）。下一步：改 demo 头部/首条 gamestate 的地图名，或让 net_state 稳定在 7 后由 gamestate 选图。

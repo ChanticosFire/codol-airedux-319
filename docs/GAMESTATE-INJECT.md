@@ -1077,3 +1077,30 @@ state=10
 2. 若 demo 播放器锁死地图，则改为"假 dvar → 手工进入 state 7（不走 demo）→ gs gamestate"，
    再验证实体表是否仍被解析；
 3. 验收仍是 `ui_state != 5` + 截图里出现 **mp_cross_fire**。
+
+## 37. 2026-10-24 18:25–18:40：cross_fire gamestate 被解析但地图不切换
+
+在 demo 起状态后把 gs 的 `--gamestate-map` 设为 `mp_cross_fire` 并立刻发送：
+
+| 观测 | 结果 |
+|---|---|
+| `Dispatch` | 1 |
+| `GamestateParse` | 1 |
+| `state` | 8 |
+| 截图 | `runs/r56-crossfire.png`：**灰度**的对局画面，仍是 crash_tropical 的建筑 |
+
+→ gamestate 本身被解析了，但 **demo 播放器已经锁定了 crash_tropical 的地图**，
+后到的 mapname 不会触发换图。
+
+补充：`cl_demo_play doesnotexist` **不会**进入 state 7 —— `0x813C20` 里
+`0x4F4A90`（按路径加载资源）失败后直接跳 `0x813F51`，跳过 `CL_Shutdown/CL_Init`，
+`0x813D34` 不执行（断点 `State7=0`）。
+
+### 下一步
+
+1. 只有"先进入 state 7、再由 gamestate 选图"才可能拿到 mp_cross_fire；
+   demo 路径会锁图，需要在 `CL_Init` 之后、demo 真正加载地图之前注入；
+2. 更实际的替代：把 demo 头部/首条 gamestate 里的地图名改成 `mp_cross_fire`
+   （只改地图名字段，不动资产名），让 demo 播放器自己去加载 cross_fire；
+3. 或接受"demo 只用于证明渲染"，回到纯服务端路径：想办法让 `net_state` 稳定在 7
+   （`0x813D34` 是唯一可靠写入点，需要先通过 `0x4F4A90` 的资源检查）。
