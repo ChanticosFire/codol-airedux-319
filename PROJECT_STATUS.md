@@ -17845,3 +17845,7 @@ lobby          = 0x37E19850
 > **2026-10-24 22:25–22:40【demo 头逐字节 + 矛盾点：demo 地图加载不走 0x49E160 链】**
 >
 > demo 头：0x00=29(版本)、0x04=1(协议)、0x08=0xD6、0x10=8 字节时间戳、0x1C=5、0x53=0x55(可能头长)、0x63=0xC8；**头内无 mapname 明文**（首次出现在 0x11FB7 的 `d 2557` 消息）。矛盾：r58 trace 有 `patch_mp_crash_tropical.ff` 请求，但 r67 `0x49ED40` 0 命中、r68 `0x49E160` 仅启动 1 命中 → demo 地图加载不走该链，而是另一条 FileExists 路径。→ 下一步在 `0x776F00`（FileExists）入口下断点，用 read_call_arg 读 `[ebp+8]` 字符串。
+
+> **2026-10-24 22:40–22:55【demo 播放期间 FileExists 也只 1 命中】**
+>
+> 断点 `0x776F00:FileExists` 在 fake_dvar + cl_demo_play 中 **hits=1**（启动阶段，无 crash）→ demo 播放既不经过 Com_LoadFastfiles 链，也不经过 FileExists；r58 的两条 `patch_mp_crash_tropical.ff` 请求发生在播放前/外（可能启动时扫 main/demo 目录预加载）。三条换图路线全部关闭。→ 下一步反汇编 `0x4FCC81`（启动唯一加载点）的 list，确认启动加载列表是否含地图包。
