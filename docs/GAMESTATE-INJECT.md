@@ -170,3 +170,26 @@ gamestate 是 inband（带 `svc 0x03`），客户端要用 **netchan 序号** �
 2. 静态：从 `0x5C1678`（challengeResponse 分支）向前找 `mov [0x76446B0], reg` 的 5/6 写入；
 3. 服务端侧同时把 gamestate 的 netchan seq 从 3 改成 1（`_send_fragments` 的 `seq = 3 + count` 写死），
    因为客户端第一个可靠包通常期望 seq=1。
+
+## 9. 2026-10-24 12:55–12:58：gamestate seq 改 1 仍被拒
+
+改动：`server1649370/gameserver.py` 的 gamestate netchan seq 由 `3 + count` 改为 `1 + count`
+（注释：客户端第一个可靠包期望 seq=1，从 3 开始会被当重复包丢弃）。
+
+重跑结果：
+
+| 观测 | 结果 |
+|---|---|
+| gs 日志 | `fragment seq=1 message=gamestate chunk=90`，snapshot seq 1..11 |
+| bridge dump | gamestate 包**确实注入**了：`01000080 00 00 8a04 5a00 0000…`（seq_word `0x80000001`、index 0、count-1 0、frag_size 1162、len 90） |
+| 客户端 | `state=6` 稳定 **24 秒**，随后复位 0（服务器超时） |
+
+→ **不是 seq 问题**。客户端收到了带正确 seq 的 gamestate 分片，但没有接受。
+剩下的差异只可能在 **fragment 头字段语义**（`count` 是"总数"还是"末片索引"、`frag_size`/`len` 的顺序）
+或 gamestate 负载本身的格式。
+
+### 下一步（最有把握）
+
+用 2697 真实服务器的抓包做对照：`runs/snapshot-2697-*.bin`、`runs/servercmd-2697-*.bin` 是抓到的真实包，
+直接比较它们的分片头字节与 gs 生成的 `01000080 0000 8a04 5a00…`，找出字段顺序/语义差异，
+再让 gs 按真实头输出。

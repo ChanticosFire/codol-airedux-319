@@ -290,7 +290,10 @@ class GameServer:
                                         for index, value in self.configstrings][:8],
                       "configstring_count": len(self.configstrings),
                       "payload_head": payload[:96].hex()})
-            seq = 3 + peer.get("gamestate_count", 0)
+            # The client's first reliable packet from the server is expected at
+            # seq 1; starting at 3 made the gamestate look like a duplicate of
+            # the connect exchange and it was dropped before parsing.
+            seq = 1 + peer.get("gamestate_count", 0)
             peer["gamestate_count"] = peer.get("gamestate_count", 0) + 1
             peer["last_server_seq"] = seq
             self._send_fragments(addr, peer, payload, seq, "gamestate")
