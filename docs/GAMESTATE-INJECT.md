@@ -3384,3 +3384,40 @@ load_fastfile common_gametype_mp →
 1. 从 demo 的 1266 个武器名里取出 88 个 gametype 武器名 + 42 个复合字符串；
 2. 用 `build_native_gamestate` 构造含这些 configstring 的 gamestate（索引 7184 起）；
 3. 下发后观察表是否从 1136 涨到 1224+，181 是否消失。
+
+## 104. 2026-10-25 17:00–17:30：补 configstring 只能补 42 个复合，88 个 asset 仍需 fastfile
+
+### 104.1 构造器接口
+
+```python
+build_native_gamestate(registration_checksum, *,
+    checksum_feed=23368560, client_number=0, configstrings=None,
+    mapname=b'mp_cross_fire', gametype=b'mp') -> bytes
+```
+
+`DEFAULT_CONFIGSTRINGS` 只有 3 条（configstring 0/1/2），而 `--gamestate-source file`
+用的是 `gamestate-network-ffb56d7e-6411.bin` 里的 291 条。
+
+### 104.2 关键区分
+
+| 缺失项 | 本质 | 能否用 configstring 补 |
+|---|---|---|
+| 42 个 `** <idx> 0 0 ...` 复合字符串 | **configstring 值**（`0x431810` 的输入） | ✅ 可以 |
+| 88 个 `ac130_mp` 等 gametype 武器名 | **fastfile asset**（`0x1988B50` 表项） | ❌ 不行（表是 asset 注册的） |
+
+→ 补 configstring 最多让表 +42（1136 → 1178），**到不了 1224**；
+88 个 asset 必须通过加载 `common_gametype_mp.ff` 才能注册。
+
+### 104.3 结论
+
+- 手工调用 `0x49E160` 不可行（§103）；
+- 补 configstring 只能补 42 个；
+- **要消除 181，必须找到"客户端自己触发 gametype fastfile 加载"的路径**。
+
+### 下一步
+
+1. 回到 demo 播放：观察 demo 播放时 `common_gametype_mp.ff` 是**何时、由谁**加载的
+   （r58/r120 trace 里有 `patch_mp_crash_tropical.ff`，但没看到 gametype 包）；
+2. 若 demo 也没加载 gametype 包，则 88 个武器可能来自 `common_mp.ff`（启动已加载）的
+   另一种注册方式（如 zone 内的 asset 引用）；
+3. 重新检查 `0x42F2F0` 表的填充路径，确认 88 个是否真的来自 asset 注册。
