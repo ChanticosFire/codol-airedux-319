@@ -18515,3 +18515,7 @@ lobby          = 0x37E19850
 > **2026-10-27 03:00–03:30【🎯 连接不发的原因：0x5BE730 要求 `[0xE59D20] ∈ {4,6}`，而当前 stage=5 → 在 0x5BE799 就跳走，从未走到 call 0x7F9090；B7A670()==2 已满足（loader 非 NULL、c8=2、c644=0、5E8=3）】**
 >
 > 验证：holder=0x4C9CEBD0、loader=0x4C9BDE30、flag=3131961345、c8=2/c644=0/c5e8=3 → BA0780=2 → B7A670=2，但 forward sent=9/received=0、net 停 4。→ 缺 `[0xE59D20]∈{4,6}`（当前 stage=5）。下一步把该全局改成 4/6 再触发。
+
+> **2026-10-27 04:00–04:30【改 [0xE59D20]=4 导致状态重置（stage 5→4、state 4→0、net 4→0），连接仍失败 → 该全局不能静态改，必须让客户端自然进入 4/6 阶段】**
+>
+> 实验：write 4 成功，但 after 显示 `[0xE59D20]=4、state=0、stage=4、net=0`；forward sent=9/received=0、address_string 已写但 connection_adr 仍 0。→ 静态改全局会触发状态重置。下一步找该全局的写入点/自然进入方式。
