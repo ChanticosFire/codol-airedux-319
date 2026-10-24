@@ -863,3 +863,44 @@ launch_1649370.py: error: unrecognized arguments: -- +set 2439 0 ...
 1. 用 `ring_bridge` 的 `Client.invoke_sequence` 在主线程调用 `0x813C20`（不依赖 launcher 参数）；
 2. 调用后立即 inject + connect + gs + pump，验证 `net_state` 是否保持 7、`Dispatch` 是否命中；
 3. 若 CL_Init 重置了连接对象，则在 CL_Init 之后重新执行 inject/connect。
+
+## 31. 2026-10-24 17:00–17:10：CL_Connect 需要"服务器列表"，否则跳过 state=7
+
+用新工具 `tools/call_fn_1649370.py 0x813C20`（走 `ring_bridge` 的
+`Client.invoke_sequence` 在主线程调用）实测：调用成功返回（`returned_eip` 正常、进程存活），
+但 `net_state` 仍是 **1**，`ui=0`。
+
+反汇编 `0x813C20`（CL_Connect）：
+
+```asm
+0x813C2B  edi = ecx                     ; 上下文
+0x813C2D  mov [0x826A9F0], eax          ; 服务器索引/句柄
+0x813C54  call 0xBEAA80
+0x813C59  cmp [0x826A9F0], 0
+0x813C68  call 0xBEC980
+0x813C80  call 0x4F4A90                 ; ← GetServerList
+0x813C8D  mov eax,[ebp-4]
+0x813C98  cmp eax, ebx
+0x813C9A  je 0x813F51                   ; 失败 → 跳过 CL_Init/state=7
+0x813D11  call 0x5C8A70                 ; CL_Shutdown
+0x813D25  call 0x5C83D0                 ; CL_Init
+0x813D34  mov [0x76446B0], 7
+```
+
+`0x4F4A90`（GetServerList）：
+
+```asm
+0x4F4AB8  call 0x4F49E0                 ; 读服务器列表（文件/配置）
+0x4F4AC0  test al,al
+0x4F4AC2  jne 0x4F4AE4
+0x4F4ACE  mov eax, 0xFFFFFFFD           ; -3：没有服务器列表
+```
+
+→ **CL_Connect 在"没有服务器列表"时直接返回 -3**，不会执行 CL_Init，也不会写 state=7。
+这与离线客户端 `[0x76446A1..0x76446C1]` 的 server 数组全 0 一致（CONNECT_FN 开头也有同样的空表提前返回）。
+
+### 下一步
+
+1. 反汇编 `0x4F49E0`，确认服务器列表来自哪个文件/配置（dwauth.ini？某个 .cfg/注册表？）；
+2. 构造一份最小服务器列表（指向 127.0.0.1:28971），让 `0x4F4A90` 返回成功；
+3. 再调用 `0x813C20`，验证 `net_state` 是否保持 7、`Dispatch` 是否命中。
