@@ -8514,3 +8514,47 @@ t+1..12s: ui=5  net=4  table=1135  stage=6   （**完全无变化**）
 
 改用 **QueueUserAPC**（向主线程投递 APC）：APC 在主线程进入 alertable 等待时执行，
 无需挂起线程，也不会停网络。
+
+## 243. 2026-10-27 15:00–15:30：**🎯 r176 的日志矛盾 —— gs 没收到 connect，但 forward 收到了 connectResponse**
+
+### 243.1 证据
+
+```
+r176-gs.jsonl：('meta','start') 1 + ('in','inband') 16    —— **没有 connect**
+r176-fwd.out：0 字节（前台运行，输出未落盘）
+但当时的终端输出显示：
+  t=0.033 dir=in length=105  "\xff\xff\xff\xffconnectResponse \mapname\mp_cross_fire\gametype\war\..."
+  source: 127.0.0.1:28971
+```
+
+→ **connectResponse 确实来自 28971**，但 `r176-gs.jsonl` 没有 connect 记录。
+
+### 243.2 唯一合理解释
+
+**当时有两个 gs 进程**（或旧进程残留）：
+- 一个在 28971 上响应了 connect（发 connectResponse），但它的日志没写到 `r176-gs.jsonl`；
+- 另一个（`r176-gs.jsonl` 对应的）只收到 inband。
+
+### 243.3 这意味着什么
+
+- **r176 的"成功"可能是环境假象**（旧 gs 进程 + 新 gs 进程共存）；
+- 而不是"`invoke_sequence` 正确执行了 `0x5BE730`"；
+- 这与"哨兵实验证明 `0x5BE730` 从未执行"**一致**。
+
+### 243.4 结论（修正）
+
+```
+r176 的 net=6 / ui=0 / connectResponse
+  ↓
+很可能来自"残留的旧 gs 进程"（它的日志没进 r176-gs.jsonl）
+  ↓
+而不是 invoke_sequence 成功
+```
+
+→ **`0x5BE730` 从未被成功调用**（至今所有实验）；
+→ 需要 **APC / 消息注入**才能真正触发它。
+
+### 下一步
+
+1. 检查是否有残留 gs 进程（`Get-Process python` + 端口）；
+2. 清理后用**单一 gs** 重跑，确认 connectResponse 是否出现。
