@@ -3253,3 +3253,38 @@ briefcase_bomb_defuse_mp, ...
 
 风险：该函数内部有 `[0x7886E6C]` 比较与 `0xBEAA80/0xC04BD0` 调用，可能需要合法上下文；
 先用 `call_fn` 试一次，失败则改在 connect 后（state 5）调用。
+
+## 100. 2026-10-25 15:00–15:30：load_fastfile 工具就绪；首次调用成功但表未变（时机过早）
+
+### 100.1 工具
+
+`tools/load_fastfile.py <name>`：
+
+1. `VirtualAllocEx` 分配 0x1000；
+2. 写名字字符串 + 列表项（`{u32 header[2]; char* name; u32 flags; u32 pad}`，每项 0xC）；
+3. 主线程调用 `0x49E160(list, 1, 0)`。
+
+### 100.2 首次调用（启动后、未登录）
+
+```
+status = null（调用完成）
+returned_eip = 0x77D9826C
+alive = true
+table_before = 0
+table_after  = 0
+```
+
+→ 调用**成功返回**（没有崩），但 `0x827F738` 仍是 0 —— 因为**表在 login 之前根本没初始化**
+（此前 r113 也测到启动后表为 0）。
+
+### 100.3 第二次尝试
+
+在已启动的客户端上先 login 再 `load_fastfile`：客户端在 login 流程中已退出（`client gone`），
+本轮没有拿到"login 后表=1135 再加载"的数据。
+
+### 下一步
+
+1. 重跑：launch → login（到 ui=5/表=1135）→ **立即** `load_fastfile common_gametype_mp` → 读表；
+2. 若表从 1135 涨到 1223+，则 88 个 gametype 武器的来源确认，181 应消失；
+3. 若表不变，检查列表结构（`add [ebp+8], 8` 的 header 布局可能不同）或改调
+   `0x49E3B6` 附近的内部函数。
