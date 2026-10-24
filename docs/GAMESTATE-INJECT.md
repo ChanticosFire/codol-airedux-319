@@ -5756,3 +5756,40 @@ launch 客户端 → login → 启动 forward（此时客户端已运行）→ c
 ### 下一步
 
 按正确顺序重跑分阶段采样，拿到 net 0→4→5→7→8 全过程的字段变化。
+
+## 166. 2026-10-27 00:00–00:30：**完整时间线 —— 协议全通、net 到 7，但客户端在 gamestate 处理时崩溃**
+
+### 166.1 采样时间线（r159，forward 正常）
+
+```
+t=0.00   net=0  ui=5  load=2  table=1135  conn_5E8=0
+t=1.10   net=4  ui=5  load=2  table=1135  conn_5E8=0   ← connect 发出
+t=25.30  net=5  ui=5  load=2  table=1135  conn_5E8=0
+t=26.10  net=7  ui=5  load=2  table=1135  conn_5E8=0   ← 越过 inband 门槛
+t=26.21  （全部 null）                                  ← 客户端崩溃
+```
+
+### 166.2 服务端日志（协议正常）
+
+```
+in inband 14 / in connect 1 / in stats 1 / out oob 4 / gamestate_source 1
+```
+
+→ connect → stats → gamestate 全部走通。
+
+### 166.3 两个关键认识（修正之前的判断）
+
+1. **`ui_state = 5` 从"登录后"就一直是 5**（net=0 时就是 5），
+   不是"gamestate 处理失败导致的" —— `ui=5` 是**加载屏的初始状态**，
+   需要某个事件把它推进；
+2. **`net=7` 后客户端直接崩溃**（`unhandled_exception`），
+   而不是像 r105 那样"弹 181 后回大厅"。
+
+→ 两次实验（run_match 与手动流程）在 gamestate 处理阶段出现了**不同表现**
+（弹窗 vs 崩溃），说明该阶段的状态很敏感，可能取决于传输细节（分片/时序）。
+
+### 下一步
+
+1. 从 events 里取崩溃地址（`exit_va=0x6193C8` 只是退出点）；
+2. 对比 r105（弹 181）与 r159（崩溃）的差异（gamestate 分包方式/时序）；
+3. 确认 `ui=5` 的推进条件（哪个事件会把 ui 从 5 变成别的值）。

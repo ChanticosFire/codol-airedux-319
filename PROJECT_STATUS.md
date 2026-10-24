@@ -18299,3 +18299,7 @@ lobby          = 0x37E19850
 > **2026-10-26 23:30–00:00【分阶段采样：net 卡 4；根因是 forward 启动顺序错误（客户端未运行时启动 → fwd.err "codol1649370-offline.exe 未运行"）】**
 >
 > 采样：`t=0 net=0/ui5/load2/table1135`，`t=1.12 net=4` 后 30 秒无变化。gs 日志只有 meta start，fwd.err 报客户端未运行。→ 我把 forward 放在 launch 之前启动，导致其自检失败退出。修正顺序：launch→login→forward→connect→pump。下一步按正确顺序重跑采样。
+
+> **2026-10-27 00:00–00:30【完整时间线：net 0→4→5→7（协议全通），但 net=7 后客户端崩（unhandled_exception）；两个关键修正】**
+>
+> 采样：t=0 net0/ui5/load2/表1135、t=1.1 net4、t=25.3 net5、t=26.1 net7、t=26.21 全 null（崩）。gs 日志 connect/stats/gamestate 全有。→ 修正 1：**`ui=5` 从登录后就是 5**，不是 gamestate 失败导致（是加载屏初始态，需事件推进）；修正 2：net=7 后**直接崩**（r105 是弹 181 回大厅，表现不同）。下一步取 events 崩溃地址、对比两次传输差异、确认 ui 推进条件。
