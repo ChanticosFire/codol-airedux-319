@@ -18751,3 +18751,7 @@ lobby          = 0x37E19850
 > **2026-10-28 17:00–18:00【⚠ 纠正：0x484C10 是 UI 层加载器不是地图加载器 —— prewrite 0x1C2B6CC=01000000 写入后被客户端重置为 0；窗口期内 0x484370 被调用 1 次（走 name=="menu" 分支），0x484C10 被调用 65543 次但 ecx 始终是 "ui_mp"。说明 0x484C10 只接收 ui_mp/patch_ui_mp/localized_ui_mp/common_gametype_*/<gt>_const，从不接收地图名】**
 >
 > 下一步：①扫 "mapname" 字符串引用定位真正的 configstring 解析/地图加载器 ②或直接把 "mp_crash_tropical" 写进 0xC7AF590 再用 main_call 0x484C10 --ecx 0xC7AF590 强制调用，若 table 不变即可证伪并钉死"该由谁加载地图"。
+
+> **2026-10-28 18:00–19:00【🎯 梳理完 "mapname" 全部 13 个引用：0x515470/0x51548D 是 Info_ValueForKey 解析、0x5154FE 是 Dvar_SetString("mapname")、0x456636 是另一处 dvar 写入；三个 C++ 处理函数都确认不是地图加载器（0x514E70=gametype 分类写 [edi+0x180C1C]=1..12；0x515130=只加载 mp/coScaleCompassMap.csv 罗盘缩放）。真正线索：0x456674 写 ui_mapname dvar → 与 Round12 的"loadingnewmap 是 UI 脚本事件名(零代码引用)"对上：地图装载由 UI 脚本层通过 ui_mapname 发起】**
+>
+> 下一步：读 ui_mapname dvar 当前值（Dvar_FindVar=0x76F190）；为空则直接 Dvar_SetString("ui_mapname","mp_crash_tropical")，观察 table 是否从 0 增长、0x484C10 是否收到地图名、Com_Error 是否报错。

@@ -10954,3 +10954,97 @@ Round 14/15 我曾把 `0x484C10` 当作 `Com_LoadMapFastfile`。
 | 14 | 找到 `0x484C10`，两个门控关闭 |
 | 15 | 根因锁定 `[0x1C2B6CC]==0` |
 | **16** | **实测：`0x484370` 被调用 1 次、`0x484C10` 被调用 65543 次但名字全是 `ui_mp` → 纠正：它是 UI 层加载器，地图加载器另有其人** |
+
+## 279. 2026-10-28 18:00–19:00：**找到 `CL_SystemInfoChanged` 全貌，并锁定 `ui_mapname` 这条 UI 链**
+
+### 279.1 `"mapname"` 的 13 个引用全部梳理完毕
+
+| 引用地址 | 所属函数 | 作用 |
+|---|---|---|
+| `0x515470` | `CL_SystemInfoChanged` 主体 | `Info_ValueForKey(info, "mapname")` |
+| `0x51548D` | 同上 | `Info_ValueForKey(info, "g_gametype")` |
+| `0x5154FE` | 同上 | `Dvar_FindVar("mapname")` + `Dvar_SetString` |
+| `0x51552D` | 同上 | 注册 `mapname` dvar |
+| `0x456636` | 另一处 systeminfo 处理 | `Dvar_SetString("mapname", …)` |
+| `0x456667` | 同上 | 注册 |
+| `0x43E12C` | — | 未展开 |
+
+### 279.2 三个关键函数都不是地图加载器
+
+**① `0x514E70(gametype)` —— gametype 分类器**
+```asm
+0x514E79  ebx = [ebp+8]                 ; gametype
+0x514E7E  edi = [[0x82C3B58]*4 + 0x1C1D188]
+0x514E85  edi ^= 0xFBB2C97A             ; 解密对象指针
+0x514E8B  strncmp(gametype, "…", 4)
+0x514EC0  mov byte [edi+0x180C1C], 1    ; 分类 1
+0x514EE3  mov byte [edi+0x180C1C], 2    ; 分类 2
+0x514F1A  mov byte [edi+0x180C1C], 3
+0x514F42  mov byte [edi+0x180C1C], 4
+0x514F65  mov byte [edi+0x180C1C], 9
+0x514F88  mov byte [edi+0x180C1C], 0xC
+0x514FAB  mov byte [edi+0x180C1C], 0xA
+0x514FC2  mov byte [edi+0x180C1C], 0xB
+0x514FD6  mov byte [edi+0x180C1C], 8
+0x514FE8  mov byte [edi+0x180C1C], 5
+```
+→ 只是把 gametype 归类成 1..12 写进对象字段，**不加载任何 ff**。
+
+**② `0x515130(mapname)` —— 加载罗盘缩放表**
+```asm
+0x515146  push 0xDBE4C0          ; "mp/coScaleCompassMap.csv"
+0x515151  call 0x76B7A0          ; 打开/定位 CSV
+0x515160  call 0x76B350          ; 查表
+0x51517B  mov byte [edi+0x193804], 1
+0x5151AB  fstp dword [edi+0x193808]
+```
+→ 只加载 `mp/coScaleCompassMap.csv`（罗盘缩放），**不加载地图 ff**。
+
+**③ `0x456636` 处** —— 只写 dvar：
+```asm
+0x456636  "mapname"     → Dvar_FindVar / Dvar_SetString
+0x456674  "ui_mapname"  → Dvar_FindVar / Dvar_SetString
+```
+
+### 279.3 🎯 真正的线索：`ui_mapname`
+
+`0xDB2F98` = `"ui_mapname"`。
+
+Round 12 已经确认：`loadingnewmap`（VxA `0xDBF0F0`）是 **UI 脚本层的事件名**
+（`.rdata` 里存在，但 dword/lea 引用都是 0）。
+
+把两条线索接起来：
+
+```
+服务器 gamestate → configstring 0 里 "\mapname\mp_crash_tropical"
+   → CL_SystemInfoChanged 解析
+        ├─ 0x514E70(gametype)        分类，不加载
+        ├─ 0x515130(mapname)         只读罗盘 CSV
+        └─ Dvar_SetString("ui_mapname", "mp_crash_tropical")
+             └─ **UI 脚本按名字读取 ui_mapname → 触发 loadingnewmap 事件
+                  → 加载 mp_crash_tropical.ff**
+```
+
+**这解释了为什么 C++ 侧的加载函数（`0x484C10` 等）都观测不到地图加载：
+地图装载是由 UI 脚本层发起的，走的是 `ui_mapname` dvar。**
+
+### 279.4 下一步（非常具体，且可立即验证）
+
+1. **读 `ui_mapname` dvar 当前值**：用 `Dvar_FindVar("ui_mapname")`（`0x76F190`）
+   + 读 dvar 的 string 字段，确认它到底有没有被设成 `mp_crash_tropical`；
+   - 若为**空或旧值** → 说明 `CL_SystemInfoChanged` 没把 gamestate 里的 mapname 传下去，
+     需要直接 `Dvar_SetString("ui_mapname", "mp_crash_tropical")`；
+2. **直接写 dvar 后观察**：写入 `ui_mapname` 后看 `table` 是否从 0 增长、
+   `0x484C10` 是否收到地图名、`Com_Error` 是否报错；
+3. 若 dvar 写成功但 UI 不响应 → 再找 UI 层读取 `ui_mapname` 的脚本事件，
+   用 Cbuf 注入 `ui_mapname` 相关命令触发。
+
+### 279.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 13 | 14 次 ff 加载全是 UI 层 |
+| 14 | `0x484C10` 两个门控关闭 |
+| 15 | `[0x1C2B6CC]==0` |
+| 16 | 纠正：`0x484C10` 是 UI 层加载器 |
+| **17** | **梳理完 `mapname` 13 个引用；三个 C++ 处理函数都不加载地图 → 地图装载由 UI 脚本层通过 `ui_mapname` dvar 发起** |
