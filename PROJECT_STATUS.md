@@ -18415,3 +18415,7 @@ lobby          = 0x37E19850
 > **2026-10-27 14:00–14:30【ui=4 稳定保持（不回 5）✅；但 net 只到 4、table=0，说明连接未走完、资源未加载；ui=4 疑为主菜单/连接中界面，需截图确认】**
 >
 > patch 0x7F2808 → login（ui=4/load2/state1）→ connect → t+4/9/13s 均 ui=4、net=4、load=2、table=0、alive。→ 自锁被绕过（ui 不再变 5），但连接停在 net=4、资源表 0。下一步确认 ui=4 的界面含义并推进连接。
+
+> **2026-10-27 14:30–15:00【ui=4 时客户端不发 connect：gs 只收到 17 个 inband、无 connect；forward 正常、客户端未崩 → net 停 4，进不了 gamestate；判定 ui=4 不是游戏内（table=0、无连接）】**
+>
+> 日志：`('meta','start')1`、`('in','inband')17`、**无 ('in','connect')**；fwd.err 空、launch 无 stop_reason。→ ui!=5 已达成，但地图可见可玩未达成。下一步确认 ui=4 界面含义、找进入连接的入口，或改用已验证的 demo 路径作证明。
