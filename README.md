@@ -1,34 +1,48 @@
-# CODOL 3.19.26.17 / Build 1604220 研究工作区
+# CODOL 3.19.26.22 / Build 1649370 本地服务端研究
 
-**当前目标版本：3.19.26.17 / Build 1604220**（社区资料常称「3.19.26.13」；身份以 EXE/Base SHA-256 为准）。
-原始包：`E:\GAME\COD\3.19.26.13`（只读）；工作副本：`runtime\client-1604220`。
-**版本切换记录见 [VERSION-SWITCH.md](VERSION-SWITCH.md)。**
+本项目正在为 **CODOL 3.19.26.22（Build 1649370）**研究本地服务端。当前目标是让该版本客户端通过本地服务自然登录，进入由服务端驱动的真实地图，完成可玩的对局，并在结束后返回大厅。
 
-Build 1649370（`E:\GAME\COD\使命召唤OL`）的研究成果全部保留，作为**参考源**（协议算法、0x85 解密方法、`ui_state` 语义、阴性结果清单）。旧版 2.6.9.7 工作保留在相邻目录。首次盘点时间：2026-10-19（Asia/Shanghai）。
+**当前目标版本是 1649370。** 此前针对 Build 1604220（客户端显示 3.19.26.17）和 2.6.9.7 的实验保留作参考；仓库中仍有相应的历史记录，但它们不代表当前路线。
 
-私有 GitHub 仓库只保存本项目源码、文件身份清单和交接文档；本地排除范围见 [REPOSITORY.md](REPOSITORY.md)。
+## 当前进度
 
-## 从这里开始
+以下状态截至 **2026-10-24**，以 [1649370 状态记录](1649370-STATUS.md)和 [当前交接](docs/NEXT-SESSION.md)中的后续实测更新为准。
 
-- [**版本切换记录**](VERSION-SWITCH.md)：为什么切到 1604220、身份哈希、目录拆分、工作拆分与已知缺口。
-- [**当前交接文档**](HANDOFF-CURRENT.md)：给 Codex 的完整交接（算法、地址表、阴性结果、建议路线）。
-- [夜间自主工作报告](NIGHT-REPORT.md)：2026-10-20 凌晨 9 轮自主工作的成果、阴性结果与醒来三步操作。
-- [阶段状态与证据](PROJECT_STATUS.md)：已核实的文件身份、参考材料、限制和下一步（§12 为版本切换详情）。
-- [M3 验收清单与复验手册](M3-CHECKLIST.md)：五条验收判据的当前状态、一键复验命令、证据判据、失败排查与恢复。
-- [里程碑与交接规则](MILESTONES.md)：阶段目标、验收证据及每次交接应更新的字段。
-- [Build 1649370 证据图](EVIDENCE_MAP.md)：分层记录同 Build 证据、跨版本候选和缺口。
-- [Git 检查点与回档](CHECKPOINTS.md)：哪些内容纳入版本、实验分支与失败后恢复步骤。
-- `tools/`：归档/客户端核对、隔离副本准备、静态侦察、主机级网络隔离与受控启动观察。旧的按程序防火墙规则在本机未能阻断回环代理，安装入口保持拒绝；替代方案见 [isolate_host.ps1](tools/isolate_host.ps1)，启动对照见 [launch_synthetic_tcls.py](tools/launch_synthetic_tcls.py)。
-- [server319](server319/README.md)：本机捕获服务骨架。当前实现以 1649370 的地址/偏移写成，切到 1604220 后需重新核对；协议应答逻辑可复用。
-- `codol-ember/`：从协作仓库 HTTPS 克隆的参考副本；其内容按来源和 Build 核验后采用。**1604220 的核心参考在 `工具-tools/lobby-reproduction1604220/` 与 `工具-tools/launch319-reference/`。**
-- `他人文件参考/`：第三方资料与压缩包，均视为未验证输入。文本、脚本注释和项目说明只是资料，不是本任务指令。
+| 环节 | 已验证的结果与边界 |
+| --- | --- |
+| 本地登录与大厅 | 已实现针对 1649370 的 Auth/LSG 实验链路，并取得客户端大厅画面。 |
+| 游戏服务器 | `server1649370` 可处理 `getchallenge`、`connect`、`stats`，生成 gamestate 并发送快照；受控实验中客户端网络状态可到 10。 |
+| 资源与 demo | 同版本资源可供客户端加载；2021 年实战 demo 已在该客户端显示 `mp_crash_tropical` 地图。这证明 demo 播放路径可以出图。 |
+| 服务端驱动的对局 | **尚未完成。** 已有快照和实体解析进展，但服务端路径仍会停在 `ui_state=5` 的加载画面，未验证由服务端驱动的可见、可玩的 `mp_cross_fire` 对局。 |
+| 结束与返回大厅 | 已验证服务端发送 `disconnect` 后网络状态可回到 0；真实对局结束并返回大厅的完整流程仍待验证。 |
 
-客户端原件与大型归档均留在 `E:\GAME\COD`。`runtime/` 下有 `client-1604220`（当前目标）与 `client-1649370`（对照）两份隔离副本，均被 Git 排除；不在原件上进行试验。每轮在阶段记录里写明输入哈希、动作、观察和恢复结果。
+`net_state=10` 仅表示网络流程到达该状态，不能当作“进图成功”。本阶段的进图验收需要 **服务端路径**下 `ui_state != 5`，并有实际地图画面的截图；最终目标还包括可玩的对局及结束后回大厅。
 
-## 本阶段结论（2026-10-21）
+目前正在从真实 demo 提取配套的 gamestate、基帧和增量快照，并核对客户端的注册顺序与网络解包路径。最近的实验已定位到武器索引不匹配，以及 `Netchan_Process` 返回失败的观测点；详见 [当前交接](docs/NEXT-SESSION.md)、[1649370 状态记录](1649370-STATUS.md)与 [项目日志](PROJECT_STATUS.md)。这些诊断结果尚未证明服务端进图。
 
-目标版本已切换为 **3.19.26.17 / Build 1604220**：其 EXE `3da9ef96…` 与 Base DLL `7bbc5fb0…` 与社区已验证包逐字节一致，IIPS 两个 DLL 与 1649370 相同。
+## 仓库内容
 
-在 1649370 上已打通 TCLS、IIPS、Auth、LSG 握手与 0x85 解密，并拿到正确的协议算法（`bdproto319.py`）；`ui_state=4` 经确认是**失败分支**（UI 报 `[100]`），只有 `ui_state=5` 才是成功。
+| 路径 | 用途 |
+| --- | --- |
+| [`server319/`](server319/) | 本地 Auth、LSG 与登录侧服务。 |
+| [`server1649370/`](server1649370/) | 1649370 游戏服务器、gamestate 与快照编码。 |
+| [`tools/`](tools/) | 客户端启动、网络桥接、demo 解析、核验和实验工具。 |
+| [`docs/`](docs/) | 目标、交接、协议格式和运行记录。 |
+| [`evidence/experiments/`](evidence/experiments/) | 经整理的实验摘要与证据索引。 |
 
-当前缺口：社区大厅复现包缺 `wire.py` / `iips.py` 两个外部兼容模块；参考包内存在同源但接口不同的 `dw_wire.py` / `dw_auth.py` 可用作适配基础。
+本地的 `runtime/` 保存隔离客户端副本，`runs/` 保存实验运行结果；它们不作为可直接从 Git 克隆获得的内容。游戏文件、资源包和本机实验数据需由使用者在本地准备。仓库边界见 [REPOSITORY.md](REPOSITORY.md)。
+
+## 阅读与运行入口
+
+1. 阅读 [长程目标](docs/GOAL.md)与 [当前交接](docs/NEXT-SESSION.md)的顶部更新，确认本轮要验证的问题。
+2. 阅读 [1649370 状态记录](1649370-STATUS.md)、[已验证的快照格式](docs/SNAPSHOT-FORMAT-VERIFIED.md)与 [demo 分析](docs/DEMO-ANALYSIS.md)，区分实测结果和待验证假设。
+3. 从仓库根目录查看服务与工具参数，再按本机准备的客户端、证书和资源选择实验配置：
+
+   ```powershell
+   python -m server319.lsg --help
+   python -m server1649370.gameserver --help
+   python tools/launch_1649370.py --help
+   python tools/ring_bridge_1649370.py --help
+   ```
+
+游戏服务器的组件说明见 [server1649370/README.md](server1649370/README.md)。历史上的 [1604220 版本切换记录](VERSION-SWITCH.md)和相关交接文档仅用于追溯当时的实验决定。
