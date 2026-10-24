@@ -17797,3 +17797,7 @@ lobby          = 0x37E19850
 > **2026-10-24 19:25–19:40【patch_%s 与 LoadMapFastfiles 定位】**
 >
 > `patch_%s`=0xDB5F28、`localized_%s`=0xDB5F34、`patch_localized_%s`=0xDB5F44；函数 `0x4842C0` = LoadMapFastfiles(mapname)，内部 sprintf 出 `patch_<map>` / `localized_<map>` / `patch_localized_<map>` 后调 `0x484C10` 逐个加载。调用者 5 处（0x4844EC/0x484538/0x484585/0x4845A6/0x4845BB）；地图名来自 `ebx`（0x4844BB `mov esi,ebx`），中间还有 `0x775BC0` 的 mp_ 前缀检查与 gametype 兜底（0xDB5FFC/0xDB6010）。→ 下一步找 0x4844xx 所在函数入口与调用者，定位地图名来源全局。
+
+> **2026-10-24 19:40–19:55【demo 地图名来自 connection+0x108394】**
+>
+> `0x484370`（LoadMapFastfiles）的两个调用者：`0x4FE7B6`（前端 `"menu"` 地图，字符串 0xDB5DA4）与 **`0x49E63E`**（`0x49E600` 内部，参数 ecx）；`0x49E600` 的调用者之一是 **`0x813ECC`（CL_PlayDemo 内部）**：`lea esi,[ebx+0x108394]; push esi; call 0x49E600` → **demo 播放的地图名存在 `connection+0x108394`**。→ 下一步找写该字段的代码（demo 解析地图名处），或抢在 0x813ECC 前改写该字段为 mp_cross_fire。

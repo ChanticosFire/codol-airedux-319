@@ -1229,3 +1229,31 @@ overlay 里没有这些 `patch_*.ff`，所以回退到主包也能加载。
 1. 找 `0x4844xx` 所在函数的入口与调用者，看传入的地图名来自哪个全局/dvar；
 2. 该全局很可能就是 demo/gamestate 设置的地图名——定位后即可把它改成 mp_cross_fire；
 3. 已知客户端会按 `patch_<map>.ff` → `<map>.ff` 顺序加载。
+
+## 42. 2026-10-24 19:40–19:55：demo 播放时的地图名来自 `connection+0x108394`
+
+### 42.1 调用链
+
+`0x484370` 只有两个调用者：
+
+| 调用点 | 上下文 |
+|---|---|
+| `0x4FE7B6` | 前端菜单地图：`push 0xDB5DA4`（字符串 **"menu"**）→ `LoadMapFastfiles("menu")`，前面有 `CL_Shutdown(0x5C8A70)` + `CL_Init(0x5C83D0)` |
+| **`0x49E63E`** | `0x49E600` 地图加载函数内部，参数来自 `ecx` |
+
+`0x49E600` 的调用者有三个，其中 **`0x813ECC` 就在 CL_PlayDemo（0x813C20）内部**：
+
+```asm
+0x813E90  lea edi, [ebx + 0x108294]
+0x813E96  lea esi, [ebx + 0x108394]   ; esi = connection + 0x108394
+0x813EC9  push esi
+0x813ECC  call 0x49E600               ; LoadMap(connection + 0x108394)
+```
+
+→ **demo 播放时的地图名就存在 `connection+0x108394`**（ebx = connection 对象）。
+
+### 42.2 下一步
+
+1. 找写 `connection+0x108394` 的代码（demo 播放器解析 demo 头/首包后写入），确认它从 demo 的哪个字节读地图名；
+2. 或抢在 `0x813ECC` 之前把 `connection+0x108394` 改成 `"mp_cross_fire"`（需要精确时序，或 hook `0x813E96`）；
+3. 找到写入点后，改 demo 对应字节即可让 demo 加载 mp_cross_fire，同时不破坏资产名。
