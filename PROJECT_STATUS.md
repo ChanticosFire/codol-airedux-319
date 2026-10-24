@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [flags = 8 does not dismiss the loader; the section set is the remaining candidate]**
+> byte6 0x0C -> 0x08 in both bodies: still ui 5, loader held, count 1. So the extra flag bit was not the blocker.
+> Remaining candidate per cols: a baseline must carry ALL 14 sections. Our bodies carry only a few. Next: enumerate the 14 section entry points from the 0x4723xx dispatch and emit all of them.
+> Evidence: [flags8 not the blocker](evidence/experiments/20261023-codex-flags8-not-the-blocker.json).
 > **2026-10-23 [The header format is exact from the cols writer; our flags byte is 12, not the 8 that a baseline requires]**
 > cols: byte0 svc, bytes1-4 serverTime, byte5 delta_distance, byte6 FLAGS = 8 for a baseline else 0, then bits (1+1+8 last_changed+1+1+1) and 4 bytes commandTime.
 > Our body: 00 08 1a 01 00 | 00 | 0c -> flags = 12 = 8|4. The baseline bit is set but bit 4 is extra and cols never sets it.

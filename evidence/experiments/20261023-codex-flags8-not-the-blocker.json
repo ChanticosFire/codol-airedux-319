@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "utc": "2026-10-30T14:00:00+00:00",
+  "scope": "flags = 8 does NOT dismiss the loader: the extra bit 4 was not the blocker, so the remaining candidate is the SECTION SET (the baseline requires all 14 sections present)",
+  "the_change": {
+    "from": "byte 6 = 0x0C (flags 12 = 8 | 4)",
+    "to": "byte 6 = 0x08 (flags 8, exactly what cols writes for a baseline)",
+    "bodies": [
+      "runs/snapshot-f8.bin",
+      "runs/snapshot-f8mode1.bin"
+    ]
+  },
+  "the_result": [
+    {
+      "s": 1,
+      "net": 8,
+      "ui": 5,
+      "loadobj": "0x4057DBE8",
+      "count": 0
+    },
+    {
+      "s": 2,
+      "net": 9,
+      "ui": 5,
+      "loadobj": "0x4057DBE8",
+      "count": 0
+    },
+    {
+      "s": 3,
+      "net": 10,
+      "ui": 5,
+      "loadobj": "0x4057DBE8",
+      "count": 1
+    }
+  ],
+  "conclusion": [
+    "the loader object is still held and ui_state is still 5",
+    "so bit 4 of the flags byte was not what kept the client loading",
+    "and the baseline declaration (bit 8) was already present before this change",
+    "so the flags byte is not the blocker"
+  ],
+  "what_that_leaves": [
+    "cols states that a full baseline has ALL 14 target array sections present, and that this is what makes it a baseline rather than a playable spawn",
+    "our bodies carry only a handful of sections (entities, playerState, actors, glass were the identified ones)",
+    "if the client refuses to finish loading until all 14 sections have been seen at least once, then the baseline must include every one of them",
+    "that would also explain why the contents of the sections we do send never changed the picture"
+  ],
+  "the_next_concrete_step": [
+    "enumerate the 14 sections from the client parser: the block-dispatch sequence at 0x4723xx calls one entry point per section, and each has a known address (0x471D80 entities, 0x471980 playerState, 0x471010 actors, 0x4475F0 glass, ...)",
+    "walk that call sequence and list all 14 with their addresses",
+    "then emit a body where each section's presence flag is set and each section's full form is written"
+  ],
+  "artifacts": {
+    "bodies": [
+      "runs/snapshot-f8.bin",
+      "runs/snapshot-f8mode1.bin"
+    ],
+    "screenshot": "runs/codex-r234-shot.png",
+    "server_log": "runs/codex-r234-gs.jsonl"
+  }
+}
