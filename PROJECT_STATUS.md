@@ -17837,3 +17837,7 @@ lobby          = 0x37E19850
 > **2026-10-24 21:55–22:10【mp_crash_tropical 是 preloadmap 参数；改写不换启动加载】**
 >
 > exe 里 `mp_crash_tropical` 仅一处（0x9C6670，`.rdata`，紧邻 `g_difficulty %d; preloadmap`）。用 `--prewrite 0x9C6670="mp_cross_fire"+5×NUL` 后启动（trace-files）：state=1、ui=0、fastfile 请求 11 个（全基础包，无 cross_fire/crash）→ 改写该常量不影响启动加载。→ 地图包由 `preloadmap` 在 demo/对局流程中加载。下一步：找 preloadmap 实现，在 demo 播放**之前** prewrite 该常量，再结合 fake_dvar + cl_demo_play 重跑。
+
+> **2026-10-24 22:10–22:25【prewrite 地图名常量后 demo 仍加载 crash_tropical】**
+>
+> `--prewrite 0x9C6670="mp_cross_fire"` + fake_dvar + cl_demo_play：state 1→8，21 秒后进程退出；fastfile 请求 15 个，地图包**仍是 `patch_mp_crash_tropical.ff`**。→ 该常量不是 demo 选图来源，改写还可能引发崩溃。三条换图路（d 2557、常量、资产名）均已排除；demo 地图名只能来自 demo 文件本身。下一步：逐字段解析 demo 头，或 hook 0x4FCC81 所在函数看它读哪个名字。

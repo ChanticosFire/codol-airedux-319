@@ -1518,3 +1518,29 @@ demo 播放期间**不再加载任何 fastfile**。
 2. 若 demo 播放会调 `preloadmap mp_crash_tropical`，那么在播放**之前**把该常量改成
    `mp_cross_fire`（prewrite 已证明可行）就能让 demo 预加载 cross_fire；
 3. 结合 `fake_dvar` + `cl_demo_play` 重跑，这次在 demo 播放前执行 prewrite。
+
+## 52. 2026-10-24 22:10–22:25：prewrite 地图名常量后 demo 仍加载 crash_tropical
+
+用 `--prewrite 0x9C6670="mp_cross_fire"+5×NUL` 启动，然后 `fake_dvar` + `cl_demo_play`：
+
+| 观测 | 结果 |
+|---|---|
+| `net_state` | 1 → 8（t=15）→ **21 秒时进程退出** |
+| fastfile 请求数 | 15 |
+| 地图包 | **仍是 `patch_mp_crash_tropical.ff`** |
+
+→ **`0x9C6670` 那个常量不是 demo 选图来源**（改了也没用），而且改写它可能破坏了别的逻辑导致 21 秒崩溃。
+
+### 结论
+
+demo 的地图名来自 **demo 文件本身**（头部或首包），不是 exe 里的常量，也不是 dvar `d 2557`。
+之前"改 d 2557 / 改常量 / 改资产名"三条路都已被实验排除。
+
+### 下一步
+
+1. 逐字段解析 demo 头（0x100 字节），找出地图名所在字段——虽然头里没有明文字符串，
+   但 demo 播放器可能用 `demo 头的某个 u32 → 内部 map id 表 → 名字`；
+2. 或在 `0x49E160`（唯一一次启动加载之后的第二次调用）与 `0x484370` 都 0 命中的情况下，
+   直接 hook `LoadFastfiles("patch_mp_crash_tropical")` 的调用点（0x4FCC81 所在函数），
+   看它在 demo 播放时传入的地图名从哪里读；
+3. 若 demo 头确实是唯一来源，则改 demo 头字段（而不是消息流）即可换图。
