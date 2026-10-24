@@ -18583,3 +18583,7 @@ lobby          = 0x37E19850
 > **2026-10-27 11:30–12:00【🎯 决定性证据：patch 0x5BE7B4 打哨兵（0xDEADBEEF）后跑 forward，哨兵从未写入 → 0x5BE7B4 从未执行 → 0x5BE730 没走到该处或根本没被调用；[0xE54BC48] 被客户端改回 0xE08C4C28（非地址，疑哈希）】**
 >
 > 实验：cave = pushad + mov [0xE54BC48],0xDEADBEEF + popad + call 0xB7A6E0 + jmp 0x5BE7B9；清空 [0xE54BC48] 后 forward 15s，读回 0xE08C4C28（非哨兵）。→ 下一步在 0x5BE730 入口打哨兵，区分"没调用"vs"提前返回"。
+
+> **2026-10-27 12:00–12:30【🎯 确定性结论：0x5BE730 从未被调用（0x5BE740 入口哨兵 0xCAFEBABE 未写）→ 问题在 ring_bridge.invoke_sequence（应用层），不在客户端；[0xE54BC48] 被别处写成 0xE08C4C28】**
+>
+> 实验：patch 0x5BE740 → cave 写哨兵 → forward 15s → 读回 0xE08C4C28（非哨兵）。→ 225 轮来首个"确定断点"：调用没到达客户端。疑 _thread_id("CODO") 找错线程 / SetThreadContext 静默失败。

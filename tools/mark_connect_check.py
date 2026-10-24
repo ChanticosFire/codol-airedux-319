@@ -28,11 +28,11 @@ k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, 
 k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
 k32.VirtualProtectEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, C.POINTER(W.DWORD)]
 
-TARGET = 0x5BE7B4          # call 0xB7A6E0
-RETURN_TO = 0x5BE7B9       # original return address
-CALLEE = 0xB7A6E0
+TARGET = 0x5BE740          # call 0xC42DE0 (inside 0x5BE730, the connect entry)
+RETURN_TO = 0x5BE745       # original return address
+CALLEE = 0xC42DE0
 SENTINEL_ADDR = 0xE54BC48
-SENTINEL = 0xDEADBEEF
+SENTINEL = 0xCAFEBABE
 PATCH_LEN = 5
 
 

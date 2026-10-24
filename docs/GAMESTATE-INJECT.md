@@ -8282,3 +8282,41 @@ B. `0x5BE730` 被调用，但在 `0x5BE7AD`（`cmp eax,2 / jne 0x5BE7FC`）就�
 
 在 `0x5BE730` 入口（`0x5BE730` 或 `0x5BE740`）也打一个哨兵，
 区分"没调用"与"调用了但提前返回"。
+
+## 237. 2026-10-27 12:00–12:30：**🎯 决定性结论 —— `0x5BE730` 从未被调用（入口哨兵未写）**
+
+### 237.1 实验
+
+```
+patch 0x5BE740（0x5BE730 内的 call 0xC42DE0）→ jmp cave
+cave: pushad / mov [0xE54BC48], 0xCAFEBABE / popad / call 0xC42DE0 / jmp 0x5BE745
+清空 [0xE54BC48]=0 → forward 15s → 读回 **0xE08C4C28**（不是 0xCAFEBABE）
+```
+
+### 237.2 结论（确定）
+
+1. **`0x5BE730` 从未执行**（入口哨兵未写）；
+2. 所以 `forward --connect-address` 的 `invoke_sequence([CONNECT_FN])` **没有真正调用到 `0x5BE730`**；
+3. 问题在 **`ring_bridge_1649370.py` 的 `invoke_sequence`**（应用层），
+   **不在客户端内部**；
+4. `[0xE54BC48]` 被客户端**别处**写成 `0xE08C4C28`（与本次实验无关，是哈希/种子）。
+
+### 237.3 这是 225 轮来第一个"确定断点"
+
+```
+ring_bridge.invoke_sequence
+  → SuspendThread(window_thread)
+  → SetThreadContext(EIP=cave)
+  → ResumeThread
+  → cave: call 0x5BE730
+       ↑ **这里没发生**
+```
+
+可能原因：
+- `_thread_id("CODO")` 返回了错误线程（或 0）；
+- `SuspendThread` 成功但 `SetThreadContext` 静默失败；
+- 客户端窗口类名不是 "CODO"。
+
+### 下一步
+
+检查 `_thread_id` 的窗口查找逻辑，确认它返回的 tid 是否正确（对比 `tasklist` / `EnumWindows`）。
