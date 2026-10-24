@@ -4809,3 +4809,37 @@ ff_rebuild_body --source common_mp.ff --zone common-weapons.zone --out common_mp
 ### 下一步
 
 执行上面的 A1 流程并实测：观察武器表是否 1136 → 1224、181 是否消失。
+
+## 141. 2026-10-26 11:30–12:00：注入版被接受，但武器表仍是 1135（未生效）
+
+### 141.1 A1 状态重做 + 替换
+
+```
+exe 公钥: already patched at 0x9AC958
+IMAGE_SHA256 -> 26362b540a3cd70698c71931118c3f39725eef1e3b8c125b360492cce5a97058
+common_mp.ff 替换为注入版: 76,038,421 字节
+其余 23 个 ff 重签: 23/23 ok
+```
+
+### 141.2 启动与实测
+
+```
+pid=23300  engine-init 5.905s  error=（空）   ← 注入版被接受
+after login:   table=0x46F=1135  state=0
+after connect: state=4  table=1135
+```
+
+→ **注入的 21 个 asset 没有让武器表增长**（期望 1135+21=1156，实际仍 1135）。
+
+### 141.3 可能原因
+
+1. 这些 asset 只是"**数据**"，需要被其它 asset **引用**才会注册（zone 的引用表/asset 指针）；
+2. type 44/41/28 可能不是"武器定义"类型，真正注册武器的是别的类型；
+3. `common_mp.ff` 在启动时的 1135 是**预注册基线**，注入的 asset 需在"gamestate 重建"阶段才被扫到，
+   而重建路径不遍历新增 asset。
+
+### 下一步（对比分析）
+
+1. 找出 demo 播放时 131 个增量（1266−1135）对应的 **asset 类型分布**；
+2. 对比我们注入的 21 个（type 44/41/28），确认类型是否匹配；
+3. 若不匹配，在 `common_gametype_mp.ff` 里找**类型正确**的 asset 再试。
