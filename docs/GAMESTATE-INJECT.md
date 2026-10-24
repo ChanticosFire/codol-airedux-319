@@ -2207,3 +2207,53 @@ demo 播放采样：`0x1988634` 全程 **0**（从启动到播放 24 秒），`n
 2. 对比服务端 gamestate 路径（`0x42F3E0` 返回 miss → 创建 → 1136）；
 3. 用 `run_match.py` 复现 Codex 的 r103（`--gamestate-file runs/demo-outer-exact/gamestate-network-ffb56d7e-6411.bin`），
    确认武器错误可稳定复现后，再找 88 个缺失注册。
+
+## 73. 2026-10-25 04:00–04:30：r105 复跑（run_match + 精确 gamestate 文件）
+
+### 73.1 命令
+
+```powershell
+python tools/run_match.py --name r105 ^
+  --gamestate-file runs/demo-outer-exact/gamestate-network-ffb56d7e-6411.bin ^
+  --snapshot runs/demo-outer-exact/baseline-outer17-245.bin ^
+  --snapshot-delay 20 --seconds 70 --match-duration 45 ^
+  --stage-loose --map mp_crash_tropical
+```
+
+### 73.2 gamestate 文件已确认格式正确
+
+```
+00 00 00 00 | 03 | 01 00 00 00 | "mp_crash_tropical\0" | "war\0" | 7e 6d b5 ff ...
+ack(4)       svc  长度1
+```
+
+`registration_checksum=0xffb56d7e`（客户端本地值），configstring[0] =
+`\g_gametype\war\mapname\mp_crash_tropical`。
+
+### 73.3 服务端日志（r105-gs.jsonl）
+
+```
+in connect 1 / in stats 1 / in inband 53
+out fragment gamestate 6
+in gamestateupdate 4          ← 客户端回应了 gamestate
+out fragment snapshot 31      ← 快照已排队并发送
+```
+
+### 73.4 结果与差异
+
+| 项 | r105 |
+|---|---|
+| 采样 states | **[0, 0, 0, 0]**（t=20/35/50/65） |
+| ui_state | 5 |
+| snapshots_queued | 26 |
+| 武器错误（0x59B560） | **未观察到**（events.jsonl 是 10-23 的旧文件，runtime 复用未刷新） |
+
+→ 与 Codex 的 r103 不同：r103 到了 state 8+ 并在 `0x59B560` 报武器错误；
+r105 的 `gamestateupdate` 有 4 次说明客户端确实收到了 gamestate，但采样 state 全 0。
+
+### 下一步
+
+1. 用 `--client-breakpoint 0x59B560:WeaponError` 复跑，直接确认是否触发武器错误；
+2. 缩短采样间隔（run_match 固定 t=20/35/50/65 太疏，state 可能在 1–2 秒内变化）；
+3. 若 r105 的 gamestate 被接受但 state 回 0，检查 `gamestateupdate` 的实际内容
+   （gs 日志里有 4 次 update，可能是客户端的 ack 而非状态推进）。
