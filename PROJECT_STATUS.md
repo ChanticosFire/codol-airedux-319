@@ -17909,3 +17909,7 @@ lobby          = 0x37E19850
 > **2026-10-25 02:50–03:05【去断点后客户端 5 秒崩：是 gs 的 gamestate 触发，snapshot 未发出】**
 >
 > 对照：r51（无 gs）demo 播放存活 ≥24s、state 10；r83（gs delay 0.5/snapshot-delay 1/无断点）客户端 **5 秒退出**；gs 日志只有 connect/stats/inband 1 + gamestate_source，**无 snapshot 记录**。→ demo 播放本身稳定，崩溃由服务端 gamestate 触发（越早发越早崩）。→ 下一步用 `0x472D80`/`0x470467` 断点看 gamestate 解析到哪一步，对比 `runs/gamestate-3426.bin` 检查 client_num/challenge/mapname。
+
+> **2026-10-25 03:05–03:30【评估：服务端可打包；已产出社区报告与预览包】**
+>
+> 打包评估：`server1649370/` **零第三方依赖**（纯标准库），demo 解析四件套同样零依赖；`tools/` 其余工具与 launcher 依赖 capstone/pycryptodome/Pillow 与本地 `codol_rebuild` + 客户端，不适合分发。已产出：`docs/COMMUNITY-REPORT.md`（协议成果/数据管道/三大卡点/社区可帮忙项）、`runs/codol-1649370-server-community.zip`（195KB：游戏服 4 文件 + 4 个 demo 解析器 + 5 个真实快照模板 + 报告 + README）。包内 `gameserver --help` 与 demo 提取器均已验证可运行。
