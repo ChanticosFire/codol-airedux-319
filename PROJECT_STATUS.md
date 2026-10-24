@@ -18019,3 +18019,7 @@ lobby          = 0x37E19850
 > **2026-10-25 12:30–13:00【重大成果：导出 demo 路径完整 1266 个武器定义名】**
 >
 > 修正表结构（`0x1988B50` 是 char**，需两次解引用）后 dump 成功：count=1266、names=1266，样例 `defaultweapon_mp/aa12_mp/aa12anniversarya_mp/...`，存 `runs\r126-weapon-table.json`。新工具 `tools/dump_weapon_table.py`。→ 下一步在服务端路径（弹 181 前）dump 1136 个，做差集得缺失名单，补进 gamestate。
+
+> **2026-10-25 13:00–13:30【服务端路径表导出时机未抓到：r127 被 kill_stale 杀、r128 表 36s 仍未到 1100】**
+>
+> `dump_weapon_table.py`（双重指针）可用，已导出 demo 的 1266 个名字。服务端路径：r127 启动即被 run_match 的 kill_stale 杀掉；r128 等 24s 后轮询 12s，表始终 <1100（客户端存活）→ 重建窗口比预期晚。→ 下一步延长轮询到 60s 或改读 gs 日志触发 dump；兜底用 1266 名字 vs common_mp.ff 的 1723 字符串做离线差集。

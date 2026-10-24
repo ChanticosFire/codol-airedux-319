@@ -3109,3 +3109,26 @@ sample: ["defaultweapon_mp", "aa12_mp", "aa12anniversarya_mp",
    得到服务端路径的武器名列表；
 2. 两份列表做差集：`1266 - 1136 ≈ 130`，即"服务端 gamestate 缺的武器名"；
 3. 把这些名字补进 gamestate 的 configstring（或构造 `d <idx> <name>` 命令），使表达到 1266+。
+
+## 96. 2026-10-25 13:00–13:30：服务端路径表导出时机未抓到（表 36 秒仍未到 1100）
+
+### 96.1 工具状态
+
+`tools/dump_weapon_table.py`（双重指针修正版）已可用，能导出 demo 路径的 1266 个名字
+（`runs\r126-weapon-table.json`）。
+
+### 96.2 服务端路径尝试
+
+- r127：run_match 启动后立即轮询 → `client gone at 1s`（和 run_match 的 kill_stale 冲突）；
+- r128：等 24 秒后轮询 40 次（约 12 秒）→ 表**始终 < 1100**，客户端存活但未到重建完成阶段。
+
+→ 服务端路径的"表重建到 1136"窗口**比预期晚**（run_match 的 login 18s + connect 等步骤），
+需要更长的轮询窗口（或直接等 run_match 输出 state 8 后再抓）。
+
+### 下一步
+
+1. 延长轮询到 60 秒，并记录表值随时间的变化（找 1136 的确切时刻）；
+2. 或用 run_match 的 `--client-breakpoint` 不可靠，改在 gs 日志出现 `gamestate_source`
+   后立即 dump（gs 日志可实时读）；
+3. 若仍抓不到，改用"demo 路径 1266 个名字 vs common_mp.ff 的 1723 个 weapon 字符串"
+   的离线差集（不依赖运行时快照）。
