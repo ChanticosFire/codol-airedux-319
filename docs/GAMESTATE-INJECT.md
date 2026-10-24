@@ -10489,3 +10489,78 @@ gs: {('in','getchallenge'):2, ('out','oob'):3, ('in','connect'):1,
 3. **保持连接不中断**：让 gs/forward 与客户端同寿命运行（`--match-duration 600`、
    `forward --seconds 600`），并在 `table=0` 出现的瞬间连续采样，
    确认它是"短暂加载中"还是"永久卡住"。
+
+## 273. 2026-10-28 12:00–13:00：**🎯 客户端"无错误地卡在 CA_LOADING" —— 排除最后一批假设**
+
+### 273.1 实验装置
+
+三个 hook 在登录前装好（指令边界对齐）：
+
+| hook | 地址 | 切片长度 | 用途 |
+|---|---|---|---|
+| `Com_Error` | `0x4F82E0` | 6 | 客户端是否报错 |
+| `CL packet event` | `0x5C2260` | 9 | 收包分发入口 |
+| 接收泵 | `0x4F8D70` | 6 | ring B → CL 包处理 |
+
+gs：`--match-duration 600 --snapshot-delay 2`；`forward --seconds 90`（前台）。
+
+### 273.2 结果（决定性）
+
+```
+forward: sent=619  received=1808  injected=1808
+
+Com_Error      : count=0     arg0=0x0        ret=0x0
+CLpacketEvent  : count=1808  arg0=0x2        ret=0x4F8EDD
+recvPump       : count=32451 arg0=0x1        ret=0x4F942D
+
+state: ui=5  net=5  table=0  stage=5
+gs: {('out','oob'):1804, ('in','stats'):616, ('out','fragment'):7,
+     ('meta','gamestate_source'):1, ('meta','snapshot_source'):1, ('meta','stop'):1}
+```
+
+**四条硬结论**：
+
+1. **`Com_Error` 一次都没被调用** → 客户端**没有报任何错误**，
+   社区提到的 `EXE_CONFIGSTRINGMISMATCH` **没有发生**；
+2. **`CLpacketEvent` 被调用 1808 次**，`arg0=0x2` → 每个注入包都进入了包分发；
+3. **接收泵 32451 次** → 接收路径完全正常；
+4. **`net=5` + `table=0` 稳定维持 90 秒**（不是短暂的中间态）。
+
+### 273.3 这意味着什么
+
+客户端**完整收到了** gamestate（6 分片）+ snapshot，**正常解析、不报错**，
+并主动把资源表清空（`table: 1135 → 0`）—— **它已经准备好加载地图**，
+但**没有任何东西触发实际的 fastfile 装载**，于是永久停在 `CA_LOADING(3)`。
+
+这把问题彻底收敛为一句：
+> **"谁负责在 CA_LOADING 状态下调用 `Com_LoadFastfiles`？为什么没被调用？"**
+
+### 273.4 排除清单（现已非常干净）
+
+| 假设 | 结论 |
+|---|---|
+| 地图文件缺失 | ❌ 排除（三个 ff 都在） |
+| 客户端渲染/加载能力 | ❌ 排除（demo 已证） |
+| `loadingnewmap` 可注入命令 | ❌ 排除（UI 脚本字符串，零代码引用） |
+| 网络包送达/重组 | ❌ 排除（1808 包全部进入 CL 事件） |
+| configstring 校验失败 | ❌ 排除（`Com_Error` 零调用） |
+| 连接中断导致回滚 | ❌ 排除（90 秒稳定保持 net=5/table=0） |
+
+### 273.5 下一步（唯一方向）
+
+**hook `Com_LoadFastfiles`（`0x49E160`）**，确认它是否被调用：
+
+- 若**从未调用** → 查找应该在 `CA_LOADING` 里调用它的调用者
+  （`0x621810` 阶段机、`0xBAC370`、`0x643300` 是已知相关地址），
+  用 `main_call` / 补丁在窗口内强制调用一次；
+- 若**被调用但失败** → 读它的返回值/错误，检查 fastfile 搜索路径
+  （`fs_basepath`/`fs_homepath` 指向 `runtime`，而地图在
+  `runtime\client_shipretail\chinese\`，可能需要额外注册该子目录）。
+
+### 273.6 里程碑
+
+| Round | 成果 |
+|---|---|
+| 7 | connect + stats 到达（阶段 3 完成） |
+| 9 | net_state→5、table 清零（阶段 4 启动） |
+| **11** | **确认"无错误卡在 CA_LOADING"，把问题收敛到单一函数调用（Com_LoadFastfiles 未触发）** |
