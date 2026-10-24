@@ -17849,3 +17849,7 @@ lobby          = 0x37E19850
 > **2026-10-24 22:40–22:55【demo 播放期间 FileExists 也只 1 命中】**
 >
 > 断点 `0x776F00:FileExists` 在 fake_dvar + cl_demo_play 中 **hits=1**（启动阶段，无 crash）→ demo 播放既不经过 Com_LoadFastfiles 链，也不经过 FileExists；r58 的两条 `patch_mp_crash_tropical.ff` 请求发生在播放前/外（可能启动时扫 main/demo 目录预加载）。三条换图路线全部关闭。→ 下一步反汇编 `0x4FCC81`（启动唯一加载点）的 list，确认启动加载列表是否含地图包。
+
+> **2026-10-24 22:55–23:10【启动加载列表只有 4 个基础包；demo 地图请求走快速通道】**
+>
+> `0x4FCC81` 函数在栈上构造 4 项列表（`patch_code_pre_gfx_mp`/`code_pre_gfx_mp`/`patch_localized_code_pre_gfx_mp`/`localized_code_pre_gfx_mp`）调 `0x49E160` → **启动只加载 4 个基础包，不含地图**。r58 有 `patch_mp_crash_tropical.ff` 请求而 r67/r68/r72 三断点只在启动命中 → demo 播放确实触发地图请求，但走**直接拼路径 + CreateFile** 的快速通道（不经 FileExists/Com_LoadFastfiles）。→ 下一步以 `0xC513D9`（CreateFileA 返回点）为唯一权威断点，播放 demo 后读 `[ebp+0xC]` 文件名。

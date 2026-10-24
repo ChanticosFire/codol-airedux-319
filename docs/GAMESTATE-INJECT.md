@@ -1617,3 +1617,43 @@ r58 trace 里那两条 `patch_mp_crash_tropical.ff` 请求（caller 0xC513D9 / 0
 2. 若包含，则"启动时加载列表"就是地图名的真正来源——改 list 里的名字即可；
 3. 若不包含，则 demo 播放前必有一条独立的"地图预加载"路径，需要从 r58 的
    `patch_mp_crash_tropical.ff` 请求时间戳反推它发生在哪个会话阶段。
+
+## 55. 2026-10-24 22:55–23:10：启动加载列表只有 4 个基础包
+
+`0x4FCC81` 所在的启动函数（`0x4FCC3C`–`0x4FCC7C`）在栈上构造 4 项列表后调用 `0x49E160`：
+
+```asm
+0x4FCC3C  [ebp-0xA10] = 0xDBD6E0   ; "patch_code_pre_gfx_mp"
+0x4FCC4C  [ebp-0xA04] = 0xDBD6F8   ; "code_pre_gfx_mp"（或 localized 变体）
+0x4FCC5C  [ebp-0x9F8] = 0xDBD708   ; "patch_localized_code_pre_gfx_mp"
+0x4FCC6C  [ebp-0x9EC] = 0xDBD728   ; "localized_code_pre_gfx_mp"
+0x4FCC7C  call 0x49E160            ; LoadFastfiles(list, 4)
+```
+
+读字符串确认：
+
+```
+patch_code_pre_gfx_mp
+code_pre_gfx_mp
+patch_localized_code_pre_gfx_mp
+localized_code_pre_gfx_mp
+```
+
+→ **启动只加载这 4 个基础包**，不含地图。
+
+### 与 r58 的矛盾
+
+- r58（play cf_dvar.demo）trace 里有 `patch_mp_crash_tropical.ff`；
+- r70（只启动、不播 demo）fastfile 请求 11 个，**不含** crash_tropical；
+- r67/r68/r72 在 `0x49ED40`/`0x49E160`/`0x776F00` 下断点、播放 demo，却都只有启动阶段的命中。
+
+→ 结论：demo 播放**确实**触发地图包请求（r58 为证），但**不经过**我们下的三个断点，
+说明它走了一条**直接拼路径并 CreateFile** 的快速通道（不是 FileExists/Com_LoadFastfiles）。
+
+### 下一步
+
+1. 在 r58 那样的配置下（play demo + trace-files）重新定位 `patch_mp_crash_tropical.ff`
+   请求的精确时间，并对照 demo 播放（cbuf 注入）的时刻，确认请求发生在播放后多久；
+2. 用 `0xC513D9`（CreateFileA 返回点）作为唯一权威断点，在**播放 demo 后**读该时刻的
+   `[ebp+0xC]` 文件名（需要让客户端在命中时保持运行，用后台读脚本）；
+3. 一旦读到文件名，回溯调用栈（`[ebp]` 链）即可找到地图名的最终来源。
