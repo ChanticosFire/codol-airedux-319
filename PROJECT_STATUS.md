@@ -18503,3 +18503,7 @@ lobby          = 0x37E19850
 > **2026-10-27 01:30–02:00【排除 --reliable-until-state（只丢 inbound 快照）；r181 的 ring_a read5/write5 但 events 无 out（r176 有 out 400B）→ 可能是客户端未发 connect 包，ring_a 里只有 keepalive】**
 >
 > 源码：`reliable_until_state` 只作用于 incoming 且 `dir=drop_snapshot`。对照：r176 ring_a 1/1 且有 out 400B；r181 ring_a 5/5 但无 out。→ 下一步查 CONNECT_FN(0x5BE730) 真实作用（是否只设状态不发包）。
+
+> **2026-10-27 02:00–02:30【🎯 连接发起依赖加载器状态：0x5BE730 在 0x5BE7BD 才 call 0x7F9090（真正发起），前置条件含 `0xB7A670()==2`（加载中）；非 2 则静默跳过 → 解释了 r176 成功与后续失败】**
+>
+> 反汇编：`cmp [0xE59D20],4/6` → `call 0x803830` → `call 0xB7A670 / cmp eax,2 / jne 0x5BE7FC` → `call 0x7F9090`。而 `0xB7A670()==2` ⇔ `[+0x4F4]!=NULL ∧ 0xBA0780()==2`（§167）。→ 下一步在 CONNECT_FN 前先确认加载器状态为 2。
