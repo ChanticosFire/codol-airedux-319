@@ -9179,3 +9179,65 @@ stage=5  ui=5  net=0
 → **下一轮**：把 `_transport_connect_injector` 提取成独立工具
 （`tools/transport_connect_1649370.py`，参照 `cbuf_1649370.py` 的独立运行模式），
 对已登录的客户端执行，并用 `adr+0x14 != 0` + gs 收到 getchallenge 双重验证。
+
+## 255. 2026-10-27 21:40–22:30：**独立注入工具建成；`0x621E50` 返回 0、`0x5C05F0` 直接崩溃（两条路都断）**
+
+### 255.1 新工具 `tools/transport_connect_1649370.py`
+
+把 `launch_1649370.py` 的两个注入器提取成独立工具，支持两种模式：
+
+| 模式 | adr | 调用序列 |
+|---|---|---|
+| `--port P`（transport） | `{type:4, 127.0.0.1, htons(P), …, 0x9D}` | `push 2/push buf/push adr; call 0x621E50; call 0x5C05F0` |
+| `--ring`（loopback 环） | `{type:2, 0.0.0.0, htons(P), …, 0x9D}` | `mov ecx,connection; call 0x5C05F0` |
+
+两者都先写 `[0x76446B0] = 3`，都用主线程暂停 + WoW64 context（size 716, eip@184, esp@196, ecx@172）。
+
+### 255.2 实测 1：transport 模式（建真实通道）
+
+```
+before: stage=5 net=0 connection=0x130104B4 adr_14=0x0 channel_28=0x0
+gate_before=0 → gate_after=1（写成功）
+adr_bytes = 04 000000 7f000001 7129 0000 00000000 00000000 9d000000
+原代码 = 60 6a02 68<buf> 68<adr> e8→0x621E50 83c40c a3<slot> b9<conn> e8→0x5C05F0 61 c3
+结果: status=done  result_eax=0x0   after: **stage=null（客户端崩溃）**
+```
+
+→ **`0x621E50` 返回 0（建通道失败），随后 `0x5C05F0` 调用使客户端崩溃。**
+
+### 255.3 实测 2：ring 模式（不建通道，只发）
+
+```
+before: ring_a read=0 write=0 stage=5 net=0 connection=0x...（有效）
+代码 = 60 b9<connection> e8→0x5C05F0 61 c3
+结果: status=done  result_eax=0x0   after: **stage=null（同样崩溃）**
+```
+
+→ **即使不建通道、只调 `0x5C05F0`，客户端也崩溃。**
+
+### 255.4 与 `--transport-connect` 启动期崩溃一致
+
+| 尝试 | 结果 |
+|---|---|
+| launch `--transport-connect`（启动期，r209） | `unhandled_exception`，`main_menu_verified=false` |
+| 独立工具 transport 模式（stage=5） | 崩溃 |
+| 独立工具 ring 模式（stage=5） | 崩溃 |
+
+→ **两个注入器（`_transport_connect_injector`、`_ring_probe_injector`）都是前次会话的未完成实验，
+在当前状态下都不可用。它们是"注释里的希望"，不是已验证的路径。**
+
+### 255.5 关键约束（本轮确定）
+
+1. `--local-auth-lsg` 强制 `--loopback-tcp-guard`；guard 只支持 **28969**；
+2. → LSG（TCP 28969）与 gs（UDP 28969）必须同端口不同协议共存；
+3. **不能杀 launch 的 python 进程**（`--until-close` 会连带终止客户端）；
+4. `0x621E50` / `0x5C05F0` 在 `stage=5`（加载态）调用必崩。
+
+### 255.6 下一步（唯一有价值的剩余变量）
+
+崩溃可能与**调用时机/UI 状态**有关：
+- 现在注入时 `ui=5`（登录后的加载屏）且 `net_state` 刚被写成 3；
+- 试试**先进入 `ui=0`（大厅）**、`net_state` 保持 0，**再**注入 ring 模式；
+- 若仍崩，说明 `0x5C05F0` 需要更完整的会话初始化（`0xBB2C40` 传输闸门等，对应 `--init-transport`）。
+
+工具已就绪（`tools/transport_connect_1649370.py`），下一轮只需换状态重试。
