@@ -17833,3 +17833,7 @@ lobby          = 0x37E19850
 > **2026-10-24 21:40–21:55【0x49E160 只在启动加载时命中一次（返回 0x4FCC81）】**
 >
 > 断点 `0x49E160` 全程 **hits=1**（返回地址 0x4FCC81，启动初始化区），demo 播放期间不加载任何 fastfile。→ `patch_mp_crash_tropical.ff` 的请求发生在启动阶段，与 demo 播放无关；地图在启动时已确定并加载，demo 只是回放数据。因此"改地图名让 demo 换图"不成立，换图必须在启动阶段介入，或走服务端 gamestate 选图。下一步：读 0x4FCC81 的启动加载列表与 0x49ED40 那次命中的参数。
+
+> **2026-10-24 21:55–22:10【mp_crash_tropical 是 preloadmap 参数；改写不换启动加载】**
+>
+> exe 里 `mp_crash_tropical` 仅一处（0x9C6670，`.rdata`，紧邻 `g_difficulty %d; preloadmap`）。用 `--prewrite 0x9C6670="mp_cross_fire"+5×NUL` 后启动（trace-files）：state=1、ui=0、fastfile 请求 11 个（全基础包，无 cross_fire/crash）→ 改写该常量不影响启动加载。→ 地图包由 `preloadmap` 在 demo/对局流程中加载。下一步：找 preloadmap 实现，在 demo 播放**之前** prewrite 该常量，再结合 fake_dvar + cl_demo_play 重跑。

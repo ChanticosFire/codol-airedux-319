@@ -1484,3 +1484,37 @@ demo 播放期间**不再加载任何 fastfile**。
 2. 如果地图名在启动表里是常量（如 "patch_ui_mp"），则 demo 的地图来自 demo 文件头的首次读取——
    需要找"启动时读 demo 目录"的代码；
 3. 或在 `0x49ED40` 的 1 次命中里读参数（`read_call_arg`，不过滤 crash），确认它加载的包名。
+
+## 51. 2026-10-24 21:55–22:10：`mp_crash_tropical` 是 `preloadmap` 参数，改写后启动不换图
+
+### 51.1 常量位置
+
+整个 exe 里 `mp_crash_tropical` 只出现一次：
+
+```
+0x9C6670: "mp_crash_tropical\0"   ; 前后是 "2930\0" "2931\0" 与 "g_difficulty %d; preloadmap"
+```
+
+`.rdata` 段，附近是 `preloadmap` 相关字符串 → 它是 **preloadmap 命令的参数**，
+不是"启动时决定地图"的字段。
+
+### 51.2 prewrite 实验
+
+用 launcher 的 `--prewrite 0x9C6670=6d705f63726f73735f66697265000000000000`
+（把常量改成 `mp_cross_fire` + 5×NUL）后启动（带 `--trace-files`）：
+
+| 观测 | 结果 |
+|---|---|
+| `net_state` | 1 |
+| `ui_state` | 0 |
+| fastfile 请求数 | 11（全部是基础包，无 cross_fire / crash） |
+
+→ 改写这个常量**不影响启动加载**：启动只加载 11 个基础包，地图包是之后由 demo/对局流程
+用 `preloadmap` 加载的。
+
+### 下一步
+
+1. 找 `preloadmap` 命令的实现（注册点 + 其参数来源），确认它是 demo 播放时被调用的；
+2. 若 demo 播放会调 `preloadmap mp_crash_tropical`，那么在播放**之前**把该常量改成
+   `mp_cross_fire`（prewrite 已证明可行）就能让 demo 预加载 cross_fire；
+3. 结合 `fake_dvar` + `cl_demo_play` 重跑，这次在 demo 播放前执行 prewrite。
