@@ -8558,3 +8558,45 @@ r176 的 net=6 / ui=0 / connectResponse
 
 1. 检查是否有残留 gs 进程（`Get-Process python` + 端口）；
 2. 清理后用**单一 gs** 重跑，确认 connectResponse 是否出现。
+
+## 244. 2026-10-27 15:30–16:00：**🎯 确认 r176 是环境假象 —— 单 gs 时 sent=0、gs 无任何包**
+
+### 244.1 实验（彻底清理后单 gs）
+
+```
+清理：所有 python 进程已终止、28969/28971/29000 无占用
+启动：1 × lsg（28969）、1 × gs（28971）
+客户端：stage=6 net=4 ui=5 table=1135
+forward 20s: sent=0 received=0 injected=0（只有 connect 事件，无包）
+gs kinds: 仅 ('meta','start') 1 —— **没有任何 in 包**
+```
+
+### 244.2 结论（确定）
+
+1. **r176 的"成功"（connectResponse / net=6 / ui=0）来自残留的旧 gs 进程**；
+2. 在干净环境下，`forward --connect-address` **完全发不出包**（`sent=0`）；
+3. 所以 **`0x5BE730` 至今从未被真正执行过**（所有实验）；
+4. 之前"invoke_sequence 能触发连接"的假设**从未成立**。
+
+### 244.3 当前的真实状态
+
+```
+协议层：全通（有历史证据，但与当前客户端实例无关）
+连接触发：**从未成功**（invoke_sequence 挂窗口线程执行不到、挂主线程停网络）
+stage/B7A670：可设为满足（已验证）
+地址写入：可写（已验证）
+主循环自发连接：不会（12 秒无变化，已验证）
+```
+
+### 244.4 结论
+
+要真正触发连接，必须解决"**在主线程上安全执行 0x5BE730**"这个问题：
+- `QueueUserAPC`（需主线程 alertable）；
+- `PostThreadMessage` + 消息处理；
+- `SetWindowsHookEx`（全局钩子）；
+- 或**找到客户端自己的"连接"UI 入口**（点击菜单项）。
+
+### 下一步
+
+1. 优先尝试 **QueueUserAPC**；
+2. 若不行，找"连接按钮"的 UI 消息（`PostMessage(WM_COMMAND)`）。
