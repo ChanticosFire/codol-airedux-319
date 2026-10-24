@@ -1927,3 +1927,42 @@ offset 36760  len=25  "d 2533 \xfeTTBuc3Rlcg==\xfe\0" + ...
 2. 从 `d` 里取 mapname/gametype/configstring 索引值，生成 `configstring` 模板；
 3. 从 `p` 里取实体帧字节（`p <idx>` 之后的内联数据），作为 snapshot 模板；
 4. 把模板接到 `server1649370` 的下发路径上验证。
+
+## 64. 2026-10-25 01:25–01:40：demo 命令全量提取成功（2887 条）
+
+新增 `tools/extract_demo_cmds.py`（按文本 + NUL 提取，不依赖 len 语义），对样本 demo：
+
+```
+total = 2887
+  d: 540    dvar / configstring（idx + value）
+  s: 14     字符串 configstring
+  r: 62
+  v: 20
+  w: 526
+  p: 1725   packetentities（实体帧）
+```
+
+样例：
+
+```
+d 2557 "mp_crash_tropical" 1000      ← mapname
+d 3635 UK_spawn_music_mp_crash_tropical
+s 0194 "OBJECTIVES_WAR_HINT"
+s 0195 "UK_M2_"
+r 2 / r 3 / r 1
+v 18
+p <idx>                                （1725 条实体帧）
+```
+
+### 意义
+
+- demo 可以**完全离线**解析（不需要客户端、不需要播放）；
+- 2887 条命令就是真实服务器下发的完整内容；
+- `d` 540 条即 configstring/dvar 模板，`p` 1725 条即每帧实体数据。
+
+### 下一步
+
+1. 解析 `p <idx>` 之后的内联二进制（实体增量字节），提取每帧实体数据；
+2. 从 `d` 建立 configstring 索引 → 值 的映射，找出 mapname/gametype/队伍等关键索引；
+3. 把这两类数据整理成 `server1649370` 可下发的模板（configstring 列表 + 实体帧序列），
+   再对照真实抓包校验字节级格式。
