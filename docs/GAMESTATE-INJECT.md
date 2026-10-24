@@ -8479,3 +8479,38 @@ r176 时：
 2. **只写 ADDRESS_STRING**（不调 `invoke_sequence`）；
 3. 让主循环自己连（等几秒）；
 4. 观察 `net`/`table`。
+
+## 242. 2026-10-27 14:30–15:00：**只写 ADDRESS_STRING 不足以触发连接（12 秒无变化）**
+
+### 242.1 实验（撤销 invoke_sequence 线程修改，只写地址）
+
+```
+git checkout -- tools/ring_bridge_1649370.py   （恢复原版）
+stage=6  net=4  ui=5  table=1135
+write ADDRESS_STRING(0xC7AF590) = "127.0.0.1:29000" -> True（addr_now=775369265）
+t+1..12s: ui=5  net=4  table=1135  stage=6   （**完全无变化**）
+```
+
+### 242.2 结论
+
+- **只写地址不会触发连接**；
+- 主循环虽然会跑（`0x7EEBC0`），但它**不检查 ADDRESS_STRING**（那是 `0x5BE730` 的参数来源，不是触发条件）；
+- 所以 `invoke_sequence([CONNECT_FN])` 仍然是**必需的**（用来"启动"连接流程）。
+
+### 242.3 但 invoke_sequence 又执行不到 0x5BE730
+
+- 挂窗口线程：`0x5BE730` 不执行（哨兵未写）、但 `sent=7..12`；
+- 挂主线程：`sent=0`、`0x5BE730` 仍不执行。
+
+### 242.4 死结
+
+```
+需要 invoke_sequence 触发 0x5BE730
+  → 但它挂起窗口线程时 0x5BE730 不跑（在另一个线程）
+  → 挂起主线程时网络停了（sent=0）
+```
+
+### 下一步
+
+改用 **QueueUserAPC**（向主线程投递 APC）：APC 在主线程进入 alertable 等待时执行，
+无需挂起线程，也不会停网络。

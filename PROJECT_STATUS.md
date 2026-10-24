@@ -18603,3 +18603,7 @@ lobby          = 0x37E19850
 > **2026-10-27 14:00–14:30【🎯 重大理解：ring_bridge 在 r176 后从未修改（git 历史 827f116 → aa79c85 无中间提交），r176 用的是原版窗口线程；而 0x5BE730 在主线程 → invoke_sequence 从未真正执行它；connect 是主循环自己发的（写 ADDRESS_STRING + 条件满足）】**
 >
 > git log：`aa79c85`（我的修改）之前是 `827f116`（很早）。→ r176 成功不是 invoke_sequence 的功劳，而是主循环检测到地址后自己连。下一步：撤销修改、只写 ADDRESS_STRING、让主循环自己连。
+
+> **2026-10-27 14:30–15:00【只写 ADDRESS_STRING 不触发连接（12s 无变化）→ invoke_sequence 仍是必需的，但它挂窗口线程执行不到 0x5BE730、挂主线程又停网络（sent=0）→ 死结；下一步改 QueueUserAPC】**
+>
+> 实验：恢复原版 ring_bridge、只写 0xC7AF590="127.0.0.1:29000"，12 秒内 ui/net/table 全不变。→ 需要 invoke_sequence，但线程挂起方式两难。下一步：QueueUserAPC 向主线程投递。
