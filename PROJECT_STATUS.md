@@ -1,5 +1,8 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [HANDOVER DOC WRITTEN: docs/SNAPSHOT-FORMAT-VERIFIED.md]**
+> Consolidates only measured/read facts: header byte layout (incl. the 8-bit last_changed), the five content blocks with their single call sites, the entity list (gates 1307/1308, count byte at buffer[164], three-part id skipping byte 164), the mode pipeline with the 13-entry jump table and the demonstrated float write, the position component encoding (scale 5.0), the cursor fields, the acceptance oracle (ui_state 5 = loading screen), everything tried against the loader, and eight falsified statements.
+> Evidence: docs/SNAPSHOT-FORMAT-VERIFIED.md.
 > **2026-10-23 [The loading object is a C++ instance with vtable 0xD599DC]**
 > 0xD599DC (in .rdata) is a vtable of .text addresses; slot 0 (0xB82850) is the deleting destructor; 0xB824F0 writes [esi]=0xD599DC and reads [esi+0x4F4], so the instance is at least 0x4F8 bytes. My earlier 'no vtable' note is withdrawn.
 > With few rounds left, the focus shifts to consolidating the findings into the handover documents.
