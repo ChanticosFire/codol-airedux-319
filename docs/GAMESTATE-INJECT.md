@@ -2615,3 +2615,39 @@ peak_table = 1136
    （`gamestate-stream-6407.bin`）的 configstring 差异（7184–7218 之外还有哪些）；
 3. 把缺的 configstring 补进服务端 gamestate（用 `build_native_gamestate` 或直接拼接），
    使重建结果达到 1224。
+
+## 83. 2026-10-25 08:00–08:20：**决定性对照 —— demo 播放表到 1258/1266，服务端只 1136**
+
+### 83.1 demo 播放路径（r115）
+
+```
+t=0.00   weapon=0  table=0     net=1  ui=0
+t=11.02  weapon=0  table=0     net=7  ui=0
+t=11.42  weapon=0  table=0     net=8  ui=0
+t=14.83  weapon=35 table=1258  net=8  ui=0   ← 表重建到 1258
+t=15.03  weapon=35 table=1258  net=10 ui=0
+t=15.23  weapon=43 table=1266  net=10 ui=0
+peak_table = 1266
+```
+
+### 83.2 两条路径对照
+
+| 路径 | 表重建峰值 | weapon_count | 结果 |
+|---|---|---|---|
+| **服务端 gamestate**（r114） | **1136** | 1 | **181 错误** |
+| **demo 播放**（r115） | **1258 → 1266** | 35 → 43 | **正常**（ui=0、state 10） |
+
+→ demo 路径的武器来源比服务端多 **122 个**（1258 - 1136），且 demo 的 `weapon_count`
+是 35/43（多次新建），服务端只有 1。
+
+### 83.3 来源判断
+
+demo 播放走的是 **`d`/`p`/`s` 文本命令流**（540 条 `d`），而服务端只发 gamestate 的
+configstring（291 条）。demo 的**命令流里有服务端 gamestate 缺失的武器定义**，
+这解释了 122 个差距。
+
+### 下一步
+
+1. 从 demo 的 `d` 命令里筛出武器相关 configstring（7184–7218 之外还有哪些索引）；
+2. 把这些命令按顺序补进服务端 gamestate（或改为下发 `d` 命令序列）；
+3. 目标：让服务端路径的 `0x827F738` 至少到 **1224**，消除 181。
