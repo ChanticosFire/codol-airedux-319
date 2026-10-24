@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-23 [ui_state is driven by a loading object at [0x8269774]]**
+> 0x803780: esi = [0x8269774]; non-null -> run the object's update and keep ui_state 5; null -> clear ui_state to 0 and install a callback. So loading is dismissed when that object goes away.
+> Next: read [0x8269774] at the capture moment and watch whether ui_state ever reaches 0.
+> Evidence: [ui state driven by loading object](evidence/experiments/20261023-codex-ui-state-driven-by-loading-object.json).
 > **2026-10-23 [The real oracle is ui_state (0x84ABA50) = 5, not net_state == 10]**
 > At the capture moment: net_state 10, ui_state 5, count 1, id 4048, frame black with a spinner. ui_state 5 is the loading screen (0x8037D6 chooses it), so the world-visible condition is ui_state != 5.
 > The missing condition is therefore in the frontend's map-load completion (0x8018B0 / 0x803830 / 0x8037D6), not in the network layer or entity data.
