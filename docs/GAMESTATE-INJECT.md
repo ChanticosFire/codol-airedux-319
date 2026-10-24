@@ -8645,3 +8645,41 @@ run_match 的历史成功 = pump 能跑 + 服务端主动发 gamestate + 客户�
 1. 确认 `PUMP_FN` 的线程归属（窗口线程 vs 主线程）；
 2. 若 PUMP 在窗口线程 → 所有 `invoke_sequence(PUMP_FN)` 都有效；
 3. 那问题就变成"**如何让服务端在客户端未 connect 的情况下发 gamestate**" —— 这可能不可行（协议要求先 connect）。
+
+## 246. 2026-10-27 16:30–17:00：**🎯 决定性对比 —— `PUMP_FN` 在窗口线程（能执行），`CONNECT_FN` 在主线程（执行不到）**
+
+### 246.1 实验（哨兵 patch `0x674F30`）
+
+```
+patch 0x674F30 (PUMP_FN entry) → jmp cave
+cave: pushad / mov [0xE54BC48], 0xBADC0DE / popad / 重放 8 字节 / jmp 0x674F38
+ring_bridge pump --settle 2
+结果：tid=29340（窗口线程）、resumed=true、process_alive=true
+      **PUMP SENTINEL = 0xBADC0DE  → PUMP 成功执行！**
+```
+
+### 246.2 与 CONNECT_FN 的对比
+
+| 函数 | 地址 | 线程 | invoke_sequence 能否执行 |
+|---|---|---|---|
+| `PUMP_FN` | `0x674F30` | **窗口线程 29340** | ✅ **能**（哨兵写入） |
+| `CONNECT_FN` | `0x5BE730` | 主线程 | ❌ **不能**（哨兵从未写入） |
+
+### 246.3 这解释了全部历史
+
+1. **`run_match.py` 的 `net=10` 靠 `pump`**（`invoke_sequence(PUMP_FN)` 有效），**不是靠 `connect`**；
+2. `forward --pump` 一直在发 keepalive（`sent=7..12`）—— 那也是 pump；
+3. `forward --connect-address` 的 `invoke_sequence(CONNECT_FN)` **从未执行**（主线程）；
+4. 所以客户端**从未主动 connect**。
+
+### 246.4 关键推论
+
+**连接不需要 `CONNECT_FN`**：
+- `pump` 会驱动网络状态机；
+- 若地址已写（`ADDRESS_STRING`）+ `state`/`stage` 合适，**pump 内部可能就会发 connect**；
+- 或者服务端在 `pump` 后收到的是别的包。
+
+### 下一步
+
+1. 写地址 + `pump`（不用 `CONNECT_FN`）+ 观察 gs 收到什么；
+2. 若 pump 发出 connect → 完成；若只发 keepalive → 需要别的触发。

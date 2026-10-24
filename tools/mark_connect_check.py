@@ -28,12 +28,13 @@ k32.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, 
 k32.WriteProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
 k32.VirtualProtectEx.argtypes = [W.HANDLE, C.c_void_p, C.c_size_t, W.DWORD, C.POINTER(W.DWORD)]
 
-TARGET = 0x5BE740          # call 0xC42DE0 (inside 0x5BE730, the connect entry)
-RETURN_TO = 0x5BE745       # original return address
-CALLEE = 0xC42DE0
+TARGET = 0x674F30          # PUMP_FN entry (push ebp / mov ebp,esp / mov eax,[0x7886808])
+RETURN_TO = 0x674F38       # after the three replayed instructions (mov ecx,[0x788680c])
+CALLEE = None              # no call target: we replay instructions instead
 SENTINEL_ADDR = 0xE54BC48
-SENTINEL = 0xCAFEBABE
+SENTINEL = 0xBADC0DE
 PATCH_LEN = 5
+REPLAY = bytes.fromhex("558beca108688807")   # push ebp / mov ebp,esp / mov eax,[0x7886808]
 
 
 def find_pid() -> int:
@@ -69,17 +70,18 @@ def main() -> int:
                                     C.create_string_buffer(blob, len(blob)), len(blob), C.byref(got))
         return bool(ok) and got.value == len(blob)
 
-    original = read(TARGET, PATCH_LEN)
-    if len(original) != PATCH_LEN or original[0] != 0xE8:
-        print(json.dumps({"error": "target is not a call", "bytes": original.hex()}, indent=2))
+    original = read(TARGET, len(REPLAY))
+    if original != REPLAY:
+        print(json.dumps({"error": "replay mismatch", "got": original.hex(),
+                          "want": REPLAY.hex()}, indent=2))
         return 1
 
     if args.restore:
         old = W.DWORD()
-        k32.VirtualProtectEx(handle, C.c_void_p(TARGET), PATCH_LEN, 0x40, C.byref(old))
-        ok = write(TARGET, original)
-        k32.VirtualProtectEx(handle, C.c_void_p(TARGET), PATCH_LEN, old.value, C.byref(old))
-        print(json.dumps({"pid": pid, "restored": ok, "bytes": read(TARGET, PATCH_LEN).hex()}, indent=2))
+        k32.VirtualProtectEx(handle, C.c_void_p(TARGET), len(REPLAY), 0x40, C.byref(old))
+        ok = write(TARGET, REPLAY)
+        k32.VirtualProtectEx(handle, C.c_void_p(TARGET), len(REPLAY), old.value, C.byref(old))
+        print(json.dumps({"pid": pid, "restored": ok, "bytes": read(TARGET, len(REPLAY)).hex()}, indent=2))
         return 0 if ok else 1
 
     cave = int(k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40) or 0)
@@ -89,7 +91,7 @@ def main() -> int:
     code = b"\x60"                                                # pushad
     code += b"\xC7\x05" + struct.pack("<I", SENTINEL_ADDR) + struct.pack("<I", SENTINEL)   # mov dword [addr], imm
     code += b"\x61"                                                # popad
-    code += b"\xE8" + struct.pack("<I", (CALLEE - (cave + len(code) + 5)) & 0xFFFFFFFF)    # call callee
+    code += REPLAY                                                 # replay the original instructions
     code += b"\xE9" + struct.pack("<I", (RETURN_TO - (cave + len(code) + 5)) & 0xFFFFFFFF)  # jmp back
     if not write(cave, code):
         raise SystemExit("write cave failed")
