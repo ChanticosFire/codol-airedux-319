@@ -32758,3 +32758,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **注册函数未执行（§605）**：`0x5C78D5`/`0x5C78E0`/`0x4F37A0` 三个 hook 计数全 0，`[0x766929C]=0`；注册代码所在的大初始化函数（prologue 在 `0x5C6090` 等处）从未被调用。客户端虽报 `engine-init: 5.4s`，实际引擎初始化/回调注册未跑完。下一轮查 `0x4F37A0` 的调用者链并核实 launch 的 breakpoint 是否命中。
 
 **engine-init 未经断点验证（§606）**：`launch_1649370.py` 只有两处 `phase_done`（process-and-uac-guard / reused-existing-runtime），**没有 engine-init**；全仓搜索只命中 `run_match.py:262` 的 `wait_for(... "engine-init", 40)`，且 r514 输出里**没有任何 breakpoint 命中记录**。所以「engine-init 完成」不代表引擎真能跑帧，与 §604/§605 吻合。下一轮找该名字的真正来源并改用「回调计数非 0」作为就绪判据。
+
+**纠正 engine-init 误判（§607）**：`engine-init` 来自 `session_bridge.py:534-537`，只在断点 `Engine init returned` 命中时记录——所以断点**确实命中过**，§606 的「没有断点命中」是误判。但这与「回调表为空」形成更强矛盾：只能解释为**回调注册发生在 Engine init returned 之后**（进入游戏/地图时才注册）。下一轮查 `0x4F37A0` 的调用者链，确认注册触发时机。
