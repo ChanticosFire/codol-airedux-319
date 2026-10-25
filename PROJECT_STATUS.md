@@ -33026,3 +33026,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **重磅：CL_ParseGamestate 从未被调用（§732）**：hook 计数 0，说明 injected=6 的 gamestate 分片根本没进入 CL_ParseServerMessage/CL_ParseGamestate；state=7 完全由 0x5BE90A 断开路径写入。下一轮 hook CL_ParseServerMessage(0x471E90) 与 netchan 接收点，定位 gamestate 在哪一层被丢弃。
 
 **0x674F30 高频调用但 CL_ParseServerMessage 为 0（§733）**：STATE=7 采样显示 0xE861000=2110（0x674F30 8秒内被调 2110 次），0x471E90 恒 0——gamestate 注入 ring_b 后没有任何代码把它送进 CL_ParseServerMessage，推测在 0x674F30 内部被识别为无效消息而静默丢弃。下一轮反汇编 0x674F30 真实实现并追其出口。
+
+**0x674F30 确认是 ring_a drain（§734）**：memcpy 槽数据到 [ebx+8]、设置 type/len/channel(157)、成功返回 1。但包被取走 2110 次而 CL_ParseServerMessage 恒 0，矛盾集中在调用者：取到包后没交给解析器。下一轮找 0x674F30 的调用者。
