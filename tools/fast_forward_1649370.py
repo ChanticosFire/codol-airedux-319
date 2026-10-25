@@ -119,6 +119,10 @@ def main() -> int:
                 samples.append((round(time.monotonic(), 4), hex(slot), client.u32(slot)))
             eips = sample_eips(client.pid, thread_ids(client.pid))
             enc = client.u32(0x331c0c8)
+            enc2 = client.u32(0x331c0c8)
+            time.sleep(0.001)
+            enc3 = client.u32(0x331c0c8)
+            print(f"   CLptr: t0={enc:#010x} t0b={enc2:#010x} t1ms={enc3:#010x}", flush=True)
             dec = enc ^ 0xD362501F
             fn = client.u32(dec + 0x109244) if 0x10000 < dec < 0x7FFFFFFF else None
             flag = client.u32(dec + 0x100260) if 0x10000 < dec < 0x7FFFFFFF else None
