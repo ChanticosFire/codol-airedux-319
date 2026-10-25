@@ -33248,3 +33248,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **BREAKTHROUGH: 0x813F60 is CL_ReadPackets (843)**: the inbound chain is 0x813F60 -> [0x7508B80] queue -> 0x771320 Netchan_Process -> 0x5ABF90 -> CL_ParseGamestate, and it returns immediately because the gate cmp [CL+0x100260],1 fails (that flag is set by 0x813DEA which never runs). Next round set [CL+0x100260]=1, populate the gamestate queue, call 0x813F60.
 
 **Gamestate queue [0x7508B80] is never created (844)**: runtime shows it is 0 and a full .text scan finds only reads, no writes - so CL_ReadPackets always returns immediately. Outbound is fully implemented; inbound's consumer exists but its data source is the absent driver. Next round map the queue format from 0x813FB0-0x8140F9, construct a minimal queue with one entry containing connectResponse, and call CL_ReadPackets.
+
+**Queue format mapped (845)**: 0x813FB0-0x8140F9 shows 5 channels with counters at +0x14/+0x44/+0x74/+0xa4/+0xd4 and 0x30-byte entries based at [0x7508B80]+0x308054. Next round allocate ~0x310000, point [0x7508B80] at it with all counters 0, verify CL_ReadPackets returns cleanly, then populate channel 0 with one entry.
