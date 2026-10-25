@@ -33078,3 +33078,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **sendto/recvfrom 都是 0（§758）**：手动恢复字节成功后以 --len 8 重 hook；connect 后 state=4、ring_a=27/27 全被 drain，而 sendto 与 recvfrom 计数均为 0——客户端完全不调用真实网络函数，只往 ring_a 写且被 drain 丢弃。结论：唯一出路是 patch 0x674F30 阻止消费、由 bridge 抢读 ring_a（即 §655 的方向，当时"read 不动"正说明 patch 生效）。下一轮重做该方案。
 
 **block 生效但回包注入错队列（§759）**：drain block 后 bridge 成功 sent=3（读 ring_a 并发 gs），gs 回 10 包但被 inject_oob_raw 注入 ring_b（无人读），故客户端仍收不到。新假设：ring_a 是请求/响应共用队列，响应应写回 ring_a、由客户端在 drain 恢复后读取。下一轮验证：block→写响应进 ring_a→restore→看客户端是否消费。
+
+**澄清 net=0（§760）**：net 是 netchan 状态，state=0 时本应为 0；UDP socket（59849/22011）正常存在，非网络故障。下一步 block→inject_ring_a→restore 验证 ring_a 是否请求/响应共用，并核实槽内 0x4E8/0x4EC 哪个是 type、哪个是 length。
