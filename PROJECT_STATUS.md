@@ -33062,3 +33062,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **三端口发包无反应（§750）**：connect 后 state=4，向 63039/53803/22011 发 connectResponse 后 state 恒 4，客户端完全没反应。四类可能：非游戏 socket、绑定特定地址、tcp-guard 拦住、包被丢。下一轮 hook WS2_32 sendto/recvfrom 确认真实网络路径。
 
 **64 位 Python 拿不到 32 位 ws2_32 地址（§751）**：GetModuleHandleW 返回 64 位基址导致 GetProcAddress 溢出。下一轮解析客户端 PE 导入表，从 IAT 读出 sendto/recvfrom 的 32 位真实地址再 hook。
+
+**IAT 解析坐标混乱（§752）**：确认辅助库节 VA = RVA + 0x400000；ws2_32 的 INT VA=0xEA59F44、IAT VA=0xCA84D4 均可映射，但读出的导入名仍为 '?'，说明 val 的解析方式需再核对。下一轮打印 val 实际值。
