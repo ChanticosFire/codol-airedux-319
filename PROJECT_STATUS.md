@@ -32612,3 +32612,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **纠错（§537）**：改过 commandTime 的 `snap-ct.bin` **从未被真正发送过**（唯一一次使用它的会话在 connect 阶段崩溃，之后每次都回退到原始快照），因此"改 commandTime 无效"的结论撤回，列为未验证。另实测：写 `cl+0x2C` 能保留但不传播到 predicted，写 `cl+0x3C70` 立即被归零——两份 ps 的 commandTime 都没有赋值路径。下一轮先用 `snap-ct.bin` 真跑一次并确认 gs 日志路径。
 
 **snap-ct 真跑结果（§538）**：gs 日志确认发送了 `snap-ct.bin`，但 `predictedPlayerState.commandTime` 仍为 0 ⇒ **header 那 4 字节不是 ps.commandTime**，需走 ps 块内 changed 位方案。同时发现 182 字节 compact 快照**不传 ps.origin**（客户端 origin 全 0），而 r446 用的是 245 字节 `snap-nospec-1.bin`。下一轮改用 245 字节基线再验证。
+
+**会话规律（§539）**：同一客户端进程只经得起一次成功连接，`disconnect→connect` 后必在 9–20 s 内退出；后续必须"一进程一实验"。`runs/snap-245-ct.bin`（245 B、origin=(336,261,60)、commandTime=471192）已备好，下一轮用全新客户端验证 origin 与 commandTime 是否恢复。
