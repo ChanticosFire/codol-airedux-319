@@ -33364,3 +33364,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Generic one-shot harness works (901)**: tools/call_once_1649370.py takes any function/ecx/arg with per-install scratch and a guarded one-shot; room.changemap(ecx=1) ran cleanly (fired=1, count=1, esp sane, result=0xDC7200 a string pointer) with the client alive. Next round read that string and drive create-room -> set-map -> start-game.
 
 **0xDC7200 is not a map name (902)**: it resolves to "how_qlive_tool_tip", so 0x639700's return is incidental and the map name comes through an argument. Next round find which slot/register carries it and call with a pointer to "mp_crash_tropical" written into client memory.
+
+**room.changemap is a GETTER (903)**: 0x639700 checks slot 0x15, gets via slot 0x1D, reads the current slot's map pointer (fallback 0xDAE091), assigns and reports via slot 0x1F - it never sets the map. The map must be fixed at room.create time (0x6397C0). Next round disassemble that.
