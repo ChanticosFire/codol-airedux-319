@@ -33126,3 +33126,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x6F850000 is WSOCK32.dll (782)**: module-name enumeration shows 0x6F850000=WSOCK32.dll (legacy Winsock), 0x77820000=WS2_32.dll, plus WINHTTP/MSWSOCK/netutils. All previous sendto/recvfrom hooks targeted WS2_32 addresses, so legacy WSOCK32 calls were invisible. Next round hook WSOCK32!sendto (0x6F853D56) and WSOCK32!recvfrom (0x6F8515D0).
 
 **WSOCK32!recvfrom also 0, but ring_b gained a write (783)**: WSOCK32.sendto is a forwarder to ws2_32, WSOCK32.recvfrom is real code, but hooking it still shows 0 calls after connect. However ring_b went from 0/0 to 0/1 - something wrote one record during the session. Next round locate the ring_b writer (ref at 0x67492A) and its callers.
+
+**ring_b writer is also console (784)**: 0x67492A belongs to function 0x674740, whose only caller is 0x5C23A0 inside 0x5C2260 (console print). So ring_b's single write is console machinery too - all four queues are console plumbing. Next round stop chasing rings and inventory what cl.state=4 already provides for rendering.
