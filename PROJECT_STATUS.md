@@ -33426,3 +33426,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0xAD73C5 is the game network initialiser (932)**: it stores the socket handle at [object+0x85F4] then calls WSAStartup, inside real netcode at 0xAD67xx-0xAD74xx. Next round find its entry point and caller - the caller decides whether the transport starts at boot.
 
 **0xAD7220 takes three arguments and returns a handle (933)**: caller pushes &out, ebx, [edi] then stores eax at [esi+0x10], and the body stores a socket at [obj+0x85F4] then calls WSAStartup - the classic connect/session-open shape. Next round find where it reads host and port so we can point it at our server.
+
+**0xAD7220 has a slot table at [obj+0x210] (934)**: cmp [edi+ecx*4+0x210],0 decides free/occupied (stride 4, indexed by arg1); occupied returns error 1 and handle 0. Real multi-slot network bookkeeping. Next round find who owns/initialises +0x210 and who calls it in normal operation - if the boot never creates that object, that is the gate, and it is plain POD.
