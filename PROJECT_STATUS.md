@@ -33106,3 +33106,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x6751F0 is the outbound message entry (772)**: 0x6750A0 (ring_a producer) is its ecx==2 branch; types 0/1 are no-ops. Full outbound path: 0x6751F0(data,type,...) -> 0x6750A0 writes slot+type 0x191 -> 0x674F30 drain copies and discards. Next round hook 0x6751F0 to log all outbound messages and look for a sibling inbound entry.
 
 **0x7872C00 ring is read-only dead code (773)**: all refs are inside 0x675140 itself with nothing writing the read/write dwords, so it always returns 0. A per-client ring exists at 0x786DA28/0x786DA2C (0x7867768 + client*0x62C8 + 0x62C0). Next round check its refs for writers.
+
+**0x4F8C50 is the real receive handler (774)**: it calls 0x674FE0 to read one packet from the per-client ring (0x7867768+client*0x62C8+0x62C0), test eax/je when empty, and is called every frame from 0x4F8DF7. Next round hook 0x674FE0 and check whether it ever returns >0; if so that ring is the injection point.
