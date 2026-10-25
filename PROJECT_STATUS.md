@@ -33080,3 +33080,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **block 生效但回包注入错队列（§759）**：drain block 后 bridge 成功 sent=3（读 ring_a 并发 gs），gs 回 10 包但被 inject_oob_raw 注入 ring_b（无人读），故客户端仍收不到。新假设：ring_a 是请求/响应共用队列，响应应写回 ring_a、由客户端在 drain 恢复后读取。下一轮验证：block→写响应进 ring_a→restore→看客户端是否消费。
 
 **澄清 net=0（§760）**：net 是 netchan 状态，state=0 时本应为 0；UDP socket（59849/22011）正常存在，非网络故障。下一步 block→inject_ring_a→restore 验证 ring_a 是否请求/响应共用，并核实槽内 0x4E8/0x4EC 哪个是 type、哪个是 length。
+
+**重大发现：inject_ring_a 字段写反（§761）**：0x674F30 反汇编证明 +0x4E8 是 type(dword)、+0x4EC 是 length(word)，而代码里 RING_A_LENGTH=0x4E8、RING_A_TYPE=0x4EC 反了，导致注入的槽 type=长度值、length=0，客户端必然忽略——这是注入无效的直接原因。下一轮修正常量与 w16 写法。
