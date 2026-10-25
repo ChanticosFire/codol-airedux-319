@@ -24809,3 +24809,70 @@ Round 121 测到 `0x59B560` 内部也调用它（`f42=1`），本轮 `0x454A6C` 
 |---|---|
 | 126 | 崩点收窄到循环后 8 条指令 |
 | **127** | **🎯🎯 `0x42F3E0` 被调用（`f42=1`）但没返回（`a71=0`）⇒ 崩在它内部；且 `0x59B560` 内部也调用它 ⇒ 两次崩溃很可能同源；下轮反汇编该函数** |
+
+## 386. 2026-11-02 06:00–07:00：**`0x42F3E0` 入口解引用安全，可疑点前移到 `call 0x42F2F0`**
+
+### 386.1 完整反汇编
+
+```asm
+0x42F3E0  push ebp / mov ebp, esp / push esi
+0x42F3E4  esi = [ebp+8]                    ; 参数字符串
+0x42F3E7  **cmp byte ptr [esi], 0**         ; 解引用（esi = 0xDB2F0C，.rdata，有效）
+0x42F3EA  je 0x42F48C
+0x42F3F0  push esi
+0x42F3F1  eax = 0x7FFFFFFF
+0x42F3F6  edx = 0xDADDE0
+0x42F3FB  **call 0x7745E0**                  ; 字符串比较
+0x42F400  add esp, 4
+0x42F403  test eax, eax
+0x42F405  je 0x42F48C
+0x42F40B  push esi
+0x42F40C  **call 0x42F2F0**                  ; ← 下一个可疑点
+0x42F411  add esp, 4
+0x42F414  test eax, eax
+0x42F416  jne 0x42F479
+0x42F418  al = byte ptr [esi]
+0x42F41A  push ebx
+0x42F41B  test al, al
+0x42F41D  je 0x42F440
+0x42F41F  push esi
+0x42F420  cmp al, 0x2A
+0x42F422  jne 0x42F444
+0x42F424  **mov ecx, [0x1988634]**           ; 唯一 ≥5 字节普通指令
+0x42F42A  call 0x431810
+0x42F432  inc dword ptr [0x1988634]
+0x42F438  lea ebx, [eax + 0xA0]
+0x42F43E  jmp 0x42F450
+0x42F440  xor eax, eax / jmp 0x42F44E
+0x42F444  push 0x1C / call 0x49D3B0
+0x42F44E  mov ebx, eax
+0x42F450  test ebx, ebx / je 0x42F476
+0x42F454  mov eax, esi / call 0x431A40
+0x42F45B  test al, al / jne 0x42F47C
+0x42F45F  push esi / push 0x1C / call 0x49D3B0
+0x42F467  push esi / push 0x1C / call 0x49D3D0
+```
+
+### 386.2 三个观察
+
+1. **`0x42F3E7` 的 `[esi]` 安全** —— `esi = 0xDB2F0C`（`'defaultweapon_mp'`）位于 `.rdata`（`0xCA8000..0xE15A70`）；
+2. **`0x42F40C call 0x42F2F0`** 是下一个可疑点；
+3. **`0x42F424`（`mov ecx,[0x1988634]`，6 字节）** 是该函数内唯一满足 ≥5 字节的普通指令，
+   适合作为安全探针。
+
+### 386.3 下一轮
+
+在 `0x42F424` 与安全出口 `0x42F48C` 各装计数器：
+
+| 读数 | 含义 |
+|---|---|
+| `0x42F424` 命中 | 走到 `cmp al,0x2A` 之后，崩在后面 |
+| `0x42F424` 未命中但 `0x42F48C` 命中 | 走了 `je`（空串/未找到）后崩 |
+| 两者都未命中 | 崩在 `0x42F3E7`..`0x42F424` 之间（含 `call 0x7745E0` 与 `call 0x42F2F0`） |
+
+### 386.4 里程碑
+
+| Round | 结论 |
+|---|---|
+| 127 | `0x42F3E0` 被调用但没返回 |
+| **128** | **完整反汇编：入口 `[esi]` 解引用安全（`esi` 在 `.rdata`）；可疑点前移到 `0x42F40C call 0x42F2F0`；`0x42F424` 是唯一可安全 hook 的内部点 ⇒ 下轮用它和出口 `0x42F48C` 二分** |
