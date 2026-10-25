@@ -29981,3 +29981,59 @@ COD4 枚举：
 |---|---|
 | 226 | 清零三个 `01` ⇒ 观战提示消失、出现「按空格」、贴地第一人称 |
 | **227** | **🎯 确认 `clc+0x3BA4` 从 **2 变成 0**（`PM_INTERMISSION` -> `PM_NORMAL`）⇒ 那三个 `01` 字节含 `pm_type`，`+0x3BA4` 就是它；但 `clc+0x3C80` 三浮点（336/60/261）静置+按键后恒定 ⇒ 该地址可能不是 `vieworg`；空格/W 注入无效，疑因窗口无键盘焦点 |
+
+## 481. 2026-11-07 05:00–06:00：**窗口激活成功但按键无效；`clc+0x3C80` 不是 `vieworg`**
+
+### 481.1 本轮实验
+
+`runs/_drive_input_and_watch.py`：
+激活游戏窗口（`SetForegroundWindow`）→ 发 SPACE → 按住 W 1.5s → 全程采样。
+
+```
+hwnd=0x30a80a34
+foreground now = 0x30a80a34  (match=True)   ← 激活成功
+
+pm_type=0  全程
+pos=(336.00, 60.00, 261.00)  全程恒定（idle / space / W / afterW 都相同）
+distinct positions seen: 1
+```
+
+### 481.2 三个结论
+
+1. **窗口激活成功** —— 排除"焦点问题"；
+2. **按键仍无效** —— 空格、W 均无任何效果；
+3. **`clc+0x3C80` 的三个浮点不是 `vieworg`** —— 全程不变，是静态数据。
+
+### 481.3 关键洞察：`clc+0x3BA4` 是 `playerState_t` 起点
+
+既然 `pm_type` 是 `playerState_t` 的第一个字段，则：
+
+```
+clc+0x3BA4  = pm_type       = 0     (PM_NORMAL)
+clc+0x3BA8  = pm_flags      = 1
+clc+0x3BAC  = pm_time       = 0
+...
+clc+0x3C80  = ?             = 336.0  （距起点 0xDC，可能是 origin 但不变）
+```
+
+**若玩家真的 spawn，`origin` 应随重力落地等变化；它不变 ⇒ 玩家还没真正 spawn。**
+
+### 481.4 「按空格」的真正含义
+
+**很可能不是"按键确认"，而是"等待玩家数据/等待出生点下发"。**
+
+我们的 gamestate 只有 3 个 configstring、`CS_PLAYERS` 段缺失 ⇒
+客户端没有任何"出生点"信息可用于 spawn 玩家。
+
+### 481.5 下一轮
+
+1. 扫描 `clc+0x00`..`+0x40` 找 `state` 字段，确认 `clc.state` 是否达 `CA_ACTIVE(6)`；
+2. 扫描整个 `clc` 找随时间变化的浮点三元组（真正的 `vieworg`）；
+3. 若确认尚未 spawn，则根源回到 **gamestate 缺 `CS_PLAYERS`/出生点数据**，需补该数据。
+
+### 481.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 227 | 确认 `clc+0x3BA4` = `pm_type`（2->0） |
+| **228** | **🎯 激活窗口（`match=True`）后注入空格/W 仍完全无效、`clc+0x3C80` 三浮点全程恒定 ⇒ **该地址不是 `vieworg`，玩家可能根本没 spawn**；`pm_type = PM_NORMAL(0)` 已确认；「按空格」很可能是"等待出生点/玩家数据下发"，而 gamestate 缺 `CS_PLAYERS` 段 |
