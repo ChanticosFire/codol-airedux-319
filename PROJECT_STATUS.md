@@ -33264,3 +33264,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Walking CL_InitNetchan (851)**: the 0x814DC0 callback is a guard needing CL+0x10025C!=0 and arg3!=0; after it, CL_InitNetchan sets [CL+0x100260]=2, sets +0x10923C=1, memsets 0x20000, MSG_Init, calls 0x815B70 (header writer) and 0x644080 (memcpy_s) - all safe so far. Next round hook 0x815F0C to locate the crash.
 
 **CL_InitNetchan crashes before any probe (852)**: entry/early/netchan probes all installed but none incremented when calling 0x815CA0 remotely - so the fault is in the remote-thread wrapper or the function's first instructions (0x40148 frame + __chkstk is a stack candidate). Next round store esp at entry and dump state, or find the natural caller of 0x815CA0 in the connect path and drive that instead.
+
+**CL_InitNetchan has two natural callers (853)**: 0x51587D (push ebx) and 0x515AE4 (stack arg), both in the session layer near state write mov [esi],9 and timeout 0xffffd8f1 - i.e. the connect/restart path. Next round find where ebx is computed in 0x51587D's enclosing function; that is the argument CL_InitNetchan expects.
