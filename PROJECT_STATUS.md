@@ -33352,3 +33352,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **room.startgame reaches a real begin-game method 0x62F840 (895)**: it requires cls.state<3 (we have 0), then dispatches a 7-char command string 0xDC7528 through vtable slot 0x52 ([ebx+0x148]). This path is executable now unlike matchmaking. Next round read 0xDC7528 and find the dispatcher.
 
 **Correction: 0xDC7528 is raw data of length 7, not text (896)**: the local struct is {ptr=0xDC7528, 4, len=7} - a binary request payload, not a command line. Next round resolve vtable slot 0x52 ([ebx+0x148]) dispatcher; a fixed 7-byte message would be the game-start message.
+
+**DECISIVE: 0x628320 is a bit-stream writer (897)**: 0xDC7528 resolves to code doing writeBits(3)/writeBits(8)/writeBits(0x15)/writeBits(0x20), so room.startgame serialises a genuine outbound protocol message. With all outbound terminating in ring_a (827) and our drain tap (833), issuing room.startgame should yield a real game-session message we can capture and forward. Next round trigger that path.
