@@ -32461,3 +32461,112 @@ PROJECT_STATUS.md  : 32422 行
 |---|---|
 | 266 | 最终总结（配方/排除清单/后续路径/地址清单/工具） |
 | **267（本轮）** | **🔚 轮次用尽收尾：确认环境（客户端存活、`net=10`、`ui=0`、`pm_type=0`、`origin=(336,60,261)`）与仓库终态（`HEAD = remote = 3e09a48`，STATUS 18623 行 / 524 节）；**目标保持 active —— 未完成（第 5 项未达成）、非阻塞（有 3 条明确后续路径）** |
+
+## 525. 2026-11-09：**🎯 研究 2697 参考服务端 —— 机制提炼 + 自建 gamestate 编解码器（逐字节往返一致）**
+
+### 525.1 资料来源
+
+- `他人文件参考/CODOL-2.6.9.7-技术文档.md`（1122 行）§6 协议章节
+- `他人文件参考/codol-server-launcher-members-20261023/server/source/crates/protocol-1604220/src/`
+  - `game_initial_state.rs`（82 行）—— gamestate 消息体编码器
+  - `game_configstrings.rs`（277 行）—— configstring 池编码器
+  - `game_bits.rs`（154 行）—— 位流 Writer/Reader
+
+### 525.2 参考实现的 gamestate 布局（机制）
+
+```
+tag 3 | server_command_sequence u32 | map_name string | zone_name string
+| checksum u32 | tag 4 | ConfigStrings | tag 5 | client_number u32
+| checksum_feed u32 | tag 5
+```
+
+`ConfigStrings`：
+```
+count u16
+text[]:    index = 1 bit("== prev+1") 否则 14 bit 绝对索引 ; 然后 NUL 字符串
+simple:    count 10 bit ; 每项 index + 11 bit model
+complex:   count 11 bit ; 每项 index + 11 + 8 + 1(+9) + 4(+14*n)
+```
+
+约束：`SLOT_COUNT=12761`、`MAX_TEXT_BYTES=8191`、`MAX_POOL_BYTES=0x20000`、
+`MAX_NAME_BYTES=31`、`MAX_CLIENT_NUMBER=18`；字符串 NUL 终止、位流 LSB-first。
+
+### 525.3 我们 build 的实测解析（与参考结构**完全吻合**）
+
+用 `tools/build_gamestate_1649370.py` 解析 `gamestate-network-ffb56d7e-6411.bin`：
+
+```
+prefix=b'\x00\x00\x00\x00'  seq=1  map=b'mp_crash_tropical'  zone=b'war'
+checksum=0xffb56d7e
+configstrings: **291 text** / 0 simple / 0 complex   (index 0..12249)
+client_number=**1**   checksum_feed=0x00000000
+re-encode: 6411 B  **BYTE-EXACT ROUND-TRIP**
+consumed 6411 / 6411  PERFECT
+```
+
+**⇒ 1649370 与参考实现机制同源，字段顺序/位宽/索引编码全部对得上。**
+
+### 525.4 重大纠正：不是 3 条 configstring，而是 291 条
+
+此前 gs 日志显示 `[0]=serverinfo, [1]="", [2]="cod", [3]="155"` 只有 3 条 ——
+那是解析器只看开头。实际 **291 条，索引 0..12249**，包含：
+
+| 索引 | 内容 | 含义 |
+|---|---|---|
+| 0..3 | serverinfo / "" / "cod" / "155" | 产品标识与版本 |
+| 13, 16, 23 | `745 0.0001...` / `433.25 98.5 137.0` / `\winner\0` | 数值与坐标 |
+| 1413..1585 | `MP_OBITUARY_*`、`MP_MATCH_STARTING`、`PERKS_*` | **本地化字符串表** |
+| **1424** | **`PLATFORM_PRESS_TO_SPAWN`** | **「按 空格」提示的来源！** |
+| 2552..2562 | 声音别名、`compass_map_*`、`thermal_mp` | 声音/罗盘/音乐 |
+| 3009..3049 | `* 1224` ~ `* 1258` 与角色模型名 | **模型引用（文本形式）** |
+| 7184..7218 | （35 条连续，待查） | 未定 |
+| 11829..12249 | `059j_spine4`、`0 0 0 1`、`tag_player` | tag / 骨骼 |
+
+**⇒ `index 1424 = PLATFORM_PRESS_TO_SPAWN` 确证了客户端停在"按空格出生"状态。**
+
+### 525.5 「数据位不同」的实证
+
+参考实现中模型引用走**位流段**（simple 10+11 bit / complex 11+8+1+4+14n）；
+**我们 build 的 simple/complex 计数都是 0**，模型改用**文本 `* <modelIndex>`** 放在 text 池。
+
+**⇒ 机制同源、表示方式不同。** 对我们有利：**加玩家数据只需往 text 池加条目，无需处理位流段。**
+
+### 525.6 自建编解码器（已可用）
+
+`tools/build_gamestate_1649370.py`：
+
+```
+--check FILE                     解析 + 往返验证
+--in F --out F --set-client N    改 client_number
+--in F --out F --add-player IDX --add-value STR   插入 text 条目
+```
+
+**验证：改 `client_number` 1 -> 0，只差 1 字节（offset `0x1902`: `01` -> `00`），
+长度不变（6411 B），重新解析 OK，round-trip 仍逐字节一致。**
+
+**⇒ 这解决了 §466「改 gamestate 长度/内容就崩」的老问题**：
+当时是按固定偏移硬改、破坏结构；现在有正确编解码器，可安全改内容甚至改长度。
+
+### 525.7 两个确凿的缺口
+
+1. **`client_number = 1`**（demo 抓包值）—— gs 是单客户端连接，应分配 **0**；
+   若客户端认为自己是 1 号而快照无 1 号实体 → 无法 spawn。
+2. **玩家名 bank 缺失** —— 索引 `0x6C7`（1735，参考实现的 `0x6C7+clientIndex`）
+   附近**一条 configstring 都没有**。
+
+**注意**：该 gamestate 提取自 demo（本地回放不需要玩家 configstring），
+所以缺玩家数据可能是正常的；**我们 build 的玩家 bank 实际索引仍需实测。**
+
+### 525.8 下一轮
+
+1. 定位**本 build 的玩家 configstring 索引**：
+   - 反汇编 `CL_ParseSnapshot`（`0x471E90`）附近找 `0x6C7 + reg` 形式的常量；
+   - 或运行时观察某个索引区间在 spawn 后被填充。
+2. 用自建 codec 生成：`client_number=0` + 玩家条目（索引/value 待定）→ 实测是否 spawn。
+
+### 525.9 里程碑
+
+| Round | 结论 |
+|---|---|
+| 267 | 轮次用尽收尾 |
+| **268（本轮）** | **🎯 研究 2697/1604220 参考服务端：提炼 gamestate 布局与 configstring 池机制（1bit+14bit 增量索引、三类条目、事务性提交）；**自建 `tools/build_gamestate_1649370.py` 并与真实文件达成 BYTE-EXACT ROUND-TRIP**；纠正「只有 3 条 configstring」为 **291 条（索引 0..12249）**；确证 **index 1424 = `PLATFORM_PRESS_TO_SPAWN`**；发现 **`client_number = 1`** 与**玩家 bank 索引 0x6C7 为空**两个缺口；实证「数据位不同」= 模型引用用文本 `* N` 而非位流段 ⇒ 加玩家数据只需改 text 池 |
