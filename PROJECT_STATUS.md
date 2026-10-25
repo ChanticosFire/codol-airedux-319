@@ -32882,3 +32882,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **gamestate 分片与加密（§664）**：`_send_fragments` 用 1162 字节分片（3426 → 3 片）、10 字节头、XOR key=`(challenge^seq)&0xFF`、首片前 4 字节明文。所以 inject-oob 必须正确加密才有效；更稳的是让 gs 自己发（它内部有 challenge）。下一轮确认 bridge 是否把 connect 转给了 gs。
 
 **纯转发也没送到 gs（§665）**：ring_a 20/20（被 bridge drain），但 gs 日志只有 start——问题在 bridge「取出后没 sendto」这段。下一轮读 forward 的发送循环确认。
+
+**bridge 核心 bug 找到（§666）**：ring_a 槽里数据完整（`ff ff ff ff connect bb10496...`），但 `RING_A_LENGTH=0x4EC` 读到的是 **0**，`drain_ring_a` 因此跳过所有包却仍推进 read——解释「20/20 而 gs 零收到」。下一轮重测槽结构找真正的长度字段。
