@@ -30219,3 +30219,53 @@ avg brightness = 79.5
 |---|---|
 | 230 | `clc+0x10` 不是 state（负面结果） |
 | **231** | **🎉 破解 `0x5C8060` 状态名查找函数：本 build `CA_PRIMED = 9`、`CA_ACTIVE = 10`（非教科书 5/6）⇒ **`net_state` 的 10 就是 `CA_ACTIVE`，状态机早已完成**；真正剩余问题是玩家实体不 spawn，首要嫌疑 `clc+0x10 = 5` 实为 `clc.clientNum = 5` |
+
+## 485. 2026-11-07 09:00–10:00：**结构命名纠正 —— `[0x76638F4]^0x6891D1C7` 是 `cl`（clientActive）不是 `clc`**
+
+### 485.1 本轮读数
+
+```
+cls.state(0x76446B0) = 10        ← 固定全局，= CA_ACTIVE(10)
+clc(实为 cl) = 0x1305034c
+
+cl+0x0000 = 0
+cl+0x000c = 204641
+**cl+0x0010 = 5**        ← 用 \clientNum\3 也不变
+cl+0x0034 = 5
+cl+0x3ba4 = 0            ← pm_type = PM_NORMAL
+cl+0x3b98 = -1
+cl+0x3be8 = 155
+```
+
+### 485.2 三个确认
+
+1. **`0x76446B0` = `cls.state`（固定全局）= 10 = `CA_ACTIVE`** ⇒ 状态机完成；
+2. **`[0x76638F4] ^ 0x6891D1C7` 指向的是 `cl`（`clientActive_t`）**，不是 `clc`
+   —— 因为它含 `pm_type`（`+0x3BA4`）与坐标（`+0x3C80`），正是 `cl->playerState` 的特征；
+3. **`cl+0x10 = 5` 恒定，不随 `--connect-extra \clientNum\N` 变化**
+   ⇒ 它不是 `cl->clientNum`（或 clientNum 不由 connectResponse 决定）。
+
+### 485.3 长期命名错误的澄清
+
+- `clc`（`clientConnection_t`）= 网络层结构；
+- `cl`（`clientActive_t`）= 游戏层结构（含 playerState / 坐标）。
+
+**此前一直把后者当作 `clc` 读取。**
+这解释了为什么 `cl+0x10` 与 clientNum 无关、为什么写 6 会立即被覆盖
+（游戏层每帧更新它）。
+
+### 485.4 下一轮
+
+找 `cl->clientNum` 的写入点（决定"哪个 playerstate 是我"）：
+
+1. 静态搜索 `cl` 结构里 0–18 范围字段的写入；
+2. 或找 `CL_GetPlayerState` / "比较 clientNum" 的代码；
+3. **最实用**：`pm_type` 在 `cl+0x3BA4`、`cl` 里已有完整 playerstate，
+   检查其中是否含 `int clientNum` 字段（`playerState_t` 通常就有）。
+
+### 485.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 231 | 破解状态机常量 `CA_ACTIVE = 10` |
+| **232** | **🎯 ① `0x76446B0` = `cls.state` = 10 = `CA_ACTIVE`（固定全局，状态机完成）② `[0x76638F4]^0x6891D1C7` 指向的是 **`cl`（clientActive_t）** 而非 `clc`，含 `pm_type` 与坐标 ③ `cl+0x10 = 5` 恒定、不随 clientNum 变化 ⇒ 不是 clientNum；**此前的 `clc` 命名是长期错误** |
