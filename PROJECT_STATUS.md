@@ -21611,3 +21611,88 @@ gs 确实发了（`oob:7`，含 `connectResponse`），`forward` 也在注入，
 | 76 | 不 arm ⇒ 一次成功走到 `net=8`（ff 含地图 5 项、gs 收到 `gamestateupdate`） |
 | 77 | 同配置失败（`net=4→0`） |
 | **78** | **连续 3 次触发，三次全部卡在 `net=4→0`；`in/connect=3`、`oob=7` 说明包已发出/回复，但客户端不接受 `connectResponse` ⇒ 下一步用 `--dump-in` 检查注入时的 `state` 与 challenge 字段** |
+
+## 338. 2026-10-31 06:00–07:00：**🎯 `--dump-in` 定位到 `connectResponse` 在 `state=0` 时注入**
+
+### 338.1 注入包的 state 分布（本轮 r296）
+
+```
+注入包数: 9
+  len=32    state=3   [challengeResponse 190544]      ← 时机正确
+  len=109   **state=0**   [connectResponse \mapname]   ← **太晚**
+  len=1172  state=0   [gamestate 分片]
+  len=1172  state=0
+  len=1172  state=0
+  len=1172  state=0
+  len=1172  state=0
+  len=611   state=0
+  len=259   state=0
+```
+
+### 338.2 与轮询的对应
+
+```
+t+1.94 net=3  ff_count=6
+t+5.50 net=4                 ← 进入 CA_CONNECTING
+t+6.35 net=0                 ← 0.85 秒后放弃
+（connectResponse 到达时已在此之后）
+gs: stats = 0
+```
+
+### 338.3 结论（问题已精确定位）
+
+**`forward` 拿到 `connectResponse` 时，客户端的 `net_state` 已经是 0，
+于是这个包被 `CLpacketEvent` 丢弃，`net` 永远到不了 5。**
+
+- `challengeResponse` 时机正确（`state=3`）；
+- **`connectResponse` 时机错误（`state=0`，应在 4）**；
+- 因此 `net` 停在 4 后回 0，`stats` 不发出，地图加载不启动。
+
+这与 Round 76 的成功形成鲜明对比：那一次 `connectResponse` 恰好在 `state=4` 注入。
+
+### 338.4 为什么 gs 早就发了、forward 却迟了
+
+gs 在收到 `connect` 后 **0.6 ms** 内就发出 `connectResponse`（Round 61 实测）。
+延迟发生在 `forward` 侧：它必须等 `invoke_sequence`（`--start-challenge`）
+把窗口线程挂起、改 EIP、调用 `0x5C05F0`、再恢复 —— 这一整套动作需要时间，
+期间 socket 里的包只能排队。
+
+`--retry-seconds 0` 只触发一次，所以只有第一次 `invoke_sequence` 与
+`challengeResponse` 的时机吻合；`connectResponse` 来得更晚（客户端已发完 connect
+并开始等），恰好落在 `invoke_sequence` 之后。
+
+### 338.5 下一轮（针对性地压缩这一段）
+
+思路：**让 `forward` 在 `--start-challenge` 之后立刻进入纯接收模式，
+并且不要在同一次运行里再做任何 `invoke_sequence`**。目前已经是这样
+（无 `--pump`、`--retry-seconds 0`），所以需要换思路：
+
+**方案 A：提前触发**
+在客户端还没发 `connect` 之前就把 `0x5C05F0` 调完（即 `--start-challenge`
+一启动就执行），这样 it 之后 `forward` 完全空闲，可以立即注入 `connectResponse`。
+本轮其实已经接近这个做法，但仍晚。
+
+**方案 B：让 gs 更早回复**
+`on_connect` 目前可能在收到包后才回。可以改为**预先生成** `connectResponse`
+并在收到 `connect` 的第一时间发出 —— 但对 `forward` 的调度没有帮助。
+
+**方案 C：绕开 `--start-challenge`，改用更轻的触发方式**
+`--start-challenge` 会 `SuspendThread` 窗口线程。若改为**只写 `net_state`
+之前先写一个"已连接"标志**，让客户端自己发起 connect（就像 Round 76 那样
+它自己走到了 3），那么 `forward` 就完全不需要 `invoke_sequence`，
+主循环可以零延迟注入。
+
+**Round 76 的事实支持方案 C**：那一次客户端**自己**走到了 3、4、5、8，
+说明只要 `flag=0` + `conn adr` 正确，客户端可以自主完成握手 ——
+**根本不需要 `--start-challenge`**。
+
+⇒ **下一轮：完全不使用 `--start-challenge`**，只用
+`forward --target … --retry-seconds 0`（纯接收 + 注入），
+看客户端能否自己发起 connect 并完成握手。
+
+### 338.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 78 | 连续 3 次卡在 `net=4→0` |
+| **79** | **🎯 `--dump-in` 证明 `connectResponse` 在 `state=0` 注入（`challengeResponse` 在 3 是对的）⇒ 处理延迟来自 `--start-challenge` 的 `invoke_sequence`；Round 76 证明客户端能自主完成握手 ⇒ 下轮完全不用 `--start-challenge`** |
