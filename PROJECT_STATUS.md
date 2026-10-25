@@ -32876,3 +32876,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **start_challenge 只设状态不发包（§661）**：它只写 loopback 地址 + `connection+0x30=0` + `cls.state=3`，靠客户端帧 tick 调 `0x5C05F0` 发 getchallenge；而帧 tick 的网络路径是死的（§650-654），所以 getchallenge 从未发出、gs 只看到 start。下一轮改用 `inject-oob` 直接塞包或手动调 `0x5C05F0`。
 
 **state=0 需重来 + inject-oob 是可靠驱动路径（§662）**：当前客户端已回 state=0、地址清空，inject-oob 虽成功但不会被当挑战响应。inject-oob 直接写 ring_b（slot 0x78712EC），不依赖客户端发包，可替代"服务端回包"——下一轮用全新客户端按 0→3→4→5 顺序驱动。
+
+**connect 直接到 state=4（§663）**：全新客户端 state=1 → connect 后直接变 4（CA_CONNECTED），地址写为 localhost，ring_a=1，ring_b=0。客户端认为已连接、在等 gamestate。下一步用 inject-oob 塞 gamestate 的 6 个分片（不依赖帧 tick）。
