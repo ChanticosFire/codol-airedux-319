@@ -381,6 +381,17 @@ class GameServer:
             peer["command_count"] = count + 1
             peer["command_due"] = time.monotonic() + self.command_interval
 
+    @staticmethod
+    def _xor_cycle(data: bytes, key: int) -> str:
+        """XOR a byte string with the four bytes of `key`, cycling, and hex-dump it.
+
+        Experiment helper: the client ciphers in-band bodies, and the server's own
+        sender uses `(challenge ^ seq) & 0xFF`.  Trying the challenge-derived keys
+        lets us see whether the decrypted head looks like a sane `usercmd`.
+        """
+        kb = [(key >> (8 * i)) & 0xFF for i in range(4)]
+        return bytes(b ^ kb[i % 4] for i, b in enumerate(data)).hex()
+
     def _send_fragments(self, addr: tuple, peer: dict, payload: bytes, seq: int,
                         kind: str, frag_size: int = 1162) -> None:
         peer["last_server_seq"] = seq
@@ -539,6 +550,10 @@ class GameServer:
                       "acked_our_seq": acked_ours,
                       "length": len(data), "body_len": len(body),
                       "body_head": body[:48].hex(),
+                      "body_dec_challenge": self._xor_cycle(body[:48], peer.get("challenge") or 0),
+                      "body_dec_ch_ack": self._xor_cycle(
+                          body[:48], ((peer.get("challenge") or 0) ^ (server_id << 24)
+                                      ^ (message_ack & 0xFFFFFFFF)) & 0xFFFFFFFF),
                       "body_nonzero": sum(1 for b in body[:48] if b) > 0})
         else:
             self.log({"dir": "in", "kind": "inband_short", "from": f"{addr[0]}:{addr[1]}",
