@@ -33232,3 +33232,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Command formats resolved; no inbound path (835)**: 0xDBFE28 is 'connect %s \"%s\"' and 0xDBFE38 'stats'; the state=4 branch builds connect while 0x5C0E00 builds stats - both outbound. No inbound consumer exists in the pump (0x4F8C50 only prints console), and the 0x5BE700 gate waits on an event never signalled. Next round map the pump's read side completely before writing replies into it.
 
 **Direct CL_ParseServerMessage call crashes (836)**: after fixing msg_t.cursize and building the 109-byte connectResponse blob, calling 0x471E90 with --msg crashed the client. Direct invocation is not viable without the rest of the message pipeline. Next round inspect its prologue for the first globals it needs, else return to fabrication.
+
+**Parse pipeline dispatches on unvalidated state (837)**: 0x471E90 calls 0x403C70 which does jmp [ebx*4+0x404004] after cmp ebx,0x20, with ebx derived from uninitialised client state - so calling the parser in isolation crashes structurally. Next round stop driving the receive path in isolation and pursue fabrication of the in-game view instead.
