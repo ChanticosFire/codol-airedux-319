@@ -32872,3 +32872,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **connect 请求没到 gs（§659）**：新 gs 日志只有 start；ring_b=478（challenge 响应已发）、ring_a 62-67（客户端发包），但 gs 没收到 connect/gamestate，state 停 4。下一轮查 bridge 是否把 ring_a 全部块都转发了。
 
 **gs 完全正常（§660）**：直接 UDP 探测 `getchallenge` → 收到 `challengeResponse 1955532436`；带 `\n` 的版本被记为 unknown_oob。所以 gs 能收能回，问题是 bridge 的 `start_challenge` 可能发了带换行的命令。下一轮检查其实现。
+
+**start_challenge 只设状态不发包（§661）**：它只写 loopback 地址 + `connection+0x30=0` + `cls.state=3`，靠客户端帧 tick 调 `0x5C05F0` 发 getchallenge；而帧 tick 的网络路径是死的（§650-654），所以 getchallenge 从未发出、gs 只看到 start。下一轮改用 `inject-oob` 直接塞包或手动调 `0x5C05F0`。
