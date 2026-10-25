@@ -1,0 +1,71 @@
+{"ts": 1792908955.103082, "dir": "meta", "kind": "start", "port": 28969, "generation": "1.1.1.13", "map": "mp_crash_tropical"}
+{"ts": 1792908987.81269, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "getchallenge", "args": ["0", "a731af49a6a2c7e2"], "length": 38}
+{"ts": 1792908987.813556, "dir": "in", "kind": "getchallenge", "from": "127.0.0.1:28986", "token": "0", "challenge_assigned": 1907625381}
+{"ts": 1792908987.814152, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "challengeResponse 1907625381", "hex": "ffffffff6368616c6c656e6765526573706f6e73652031393037363235333831"}
+{"ts": 1792908987.875219, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "getchallenge", "args": ["0", "a731af49a6a2c7e2"], "length": 38}
+{"ts": 1792908987.876804, "dir": "in", "kind": "getchallenge", "from": "127.0.0.1:28986", "token": "0", "challenge_assigned": 1907625444}
+{"ts": 1792908987.878008, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "challengeResponse 1907625444", "hex": "ffffffff6368616c6c656e6765526573706f6e73652031393037363235343434"}
+{"ts": 1792908988.238988, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "connect", "args": ["a731af49a6a2c7e2", "\\name\\QWRtaW5pc3RyYUNsaWVudA==\\xuid\\a731af49a6a2c7e2\\natType\\3\\rank\\0\\clan\\0000000000000000\\2490\\-695030357\\checksum\\-694791800\\challenge\\1907625381\\statver\\19 1248641861\\gameMomementRecording\\0\\secureProfileReady\\1\\invited\\0\\openid\\0\\csi\\0\\session\\0\\partyid\\0\\partyMembers\\0\\teamid\\0\\isroomhost\\0\\team\\0\\joinType\\0\\playerLobbyInfo\\0\\isshoutcaster\\0\\wargodchoice\\0\\onlineStats\\0"], "length": 409}
+{"ts": 1792908988.239727, "dir": "in", "kind": "connect", "from": "127.0.0.1:28986", "uid": "a731af49a6a2c7e2", "userinfo_keys": ["2490", "challenge", "checksum", "clan", "csi", "gameMomementRecording", "invited", "isroomhost", "isshoutcaster", "joinType", "name", "natType", "onlineStats", "openid", "partyMembers", "partyid", "playerLobbyInfo", "rank", "secureProfileReady", "session", "statver", "team", "teamid", "wargodchoice", "xuid"], "name": "QWRtaW5pc3RyYUNsaWVudA==", "xuid": "a731af49a6a2c7e2", "challenge_field": "1907625381", "effective_challenge": 1907625381, "build_field": "-695030357"}
+{"ts": 1792908988.240266, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "connectResponse \\mapname\\mp_crash_tropical\\gametype\\war\\sv_maxclients\\12\\protocol\\1\\shortversion\\1.1.1.13", "hex": "ffffffff636f6e6e656374526573706f6e7365205c6d61706e616d655c6d705f63726173685f74726f706963616c5c67616d65747970655c7761725c73765f6d6178636c69656e74735c31325c70726f746f636f6c5c315c73686f727476657273696f6e5c312e312e312e3133"}
+{"ts": 1792908988.855171, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "stats", "args": [], "length": 1140}
+{"ts": 1792908988.856126, "dir": "in", "kind": "stats", "from": "127.0.0.1:28986", "args": [], "challenge": 1907625381}
+{"ts": 1792908988.958221, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908988.959062, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908988.959598, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908988.960073, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908988.960922, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "stats", "args": [], "length": 1140}
+{"ts": 1792908988.961375, "dir": "in", "kind": "stats", "from": "127.0.0.1:28986", "args": [], "challenge": 1907625381}
+{"ts": 1792908989.074979, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.075956, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.076591, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.077195, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.077656, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.078988, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "stats", "args": [], "length": 1140}
+{"ts": 1792908989.080302, "dir": "in", "kind": "stats", "from": "127.0.0.1:28986", "args": [], "challenge": 1907625381}
+{"ts": 1792908989.184072, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.184812, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.185323, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.18578, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.186591, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.268157, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.269602, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "stats", "args": [], "length": 1140}
+{"ts": 1792908989.271058, "dir": "in", "kind": "stats", "from": "127.0.0.1:28986", "args": [], "challenge": 1907625381}
+{"ts": 1792908989.271968, "dir": "meta", "kind": "gamestate_source", "source": "file", "payload_length": 6411, "registration_checksum": "0xffb56d7e", "configstrings": [[0, "\\g_gametype\\war\\mapname\\mp_crash_tropical"], [1, ""], [2, "cod"]], "configstring_count": 3, "payload_head": "0000000003010000006d705f63726173685f74726f706963616c00776172007e6db5ff042301af5c323438325c325c323438355c31385c323439305c3231345c323439315c305c333035365c325c675f67616d65747970655c7761725c675f68"}
+{"ts": 1792908989.272722, "dir": "out", "kind": "fragment", "message": "gamestate", "to": "127.0.0.1:28986", "seq": 3, "index": 0, "count": 6, "stride": 1162, "chunk": 1162, "length": 1172}
+{"ts": 1792908989.274148, "dir": "out", "kind": "fragment", "message": "gamestate", "to": "127.0.0.1:28986", "seq": 3, "index": 1, "count": 6, "stride": 1162, "chunk": 1162, "length": 1172}
+{"ts": 1792908989.275339, "dir": "out", "kind": "fragment", "message": "gamestate", "to": "127.0.0.1:28986", "seq": 3, "index": 2, "count": 6, "stride": 1162, "chunk": 1162, "length": 1172}
+{"ts": 1792908989.276689, "dir": "out", "kind": "fragment", "message": "gamestate", "to": "127.0.0.1:28986", "seq": 3, "index": 3, "count": 6, "stride": 1162, "chunk": 1162, "length": 1172}
+{"ts": 1792908989.278054, "dir": "out", "kind": "fragment", "message": "gamestate", "to": "127.0.0.1:28986", "seq": 3, "index": 4, "count": 6, "stride": 1162, "chunk": 1162, "length": 1172}
+{"ts": 1792908989.279593, "dir": "out", "kind": "fragment", "message": "gamestate", "to": "127.0.0.1:28986", "seq": 3, "index": 5, "count": 6, "stride": 1162, "chunk": 601, "length": 611}
+{"ts": 1792908989.347642, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.349212, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.350719, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.35214, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.353425, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "gamestateupdate", "args": ["1"], "length": 22}
+{"ts": 1792908989.35488, "dir": "in", "kind": "gamestateupdate", "from": "127.0.0.1:28986", "count": 1, "args": ["1"]}
+{"ts": 1792908989.356164, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "gamestateupdate", "args": ["2"], "length": 22}
+{"ts": 1792908989.35774, "dir": "in", "kind": "gamestateupdate", "from": "127.0.0.1:28986", "count": 2, "args": ["2"]}
+{"ts": 1792908989.465699, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.46642, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.574051, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.575033, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.685837, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.686909, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.795724, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908989.869114, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "gamestateupdate", "args": ["3"], "length": 22}
+{"ts": 1792908989.86999, "dir": "in", "kind": "gamestateupdate", "from": "127.0.0.1:28986", "count": 3, "args": ["3"]}
+{"ts": 1792908989.982738, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908990.091284, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908990.312804, "dir": "out", "kind": "fragment", "message": "snapshot", "to": "127.0.0.1:28986", "seq": 1000, "index": 0, "count": 1, "stride": 1162, "chunk": 249, "length": 259}
+{"ts": 1792908990.313362, "dir": "meta", "kind": "snapshot_source", "path": "runs\\demo-outer-exact\\baseline-outer17-245.bin", "payload_length": 249, "seq": 1000, "file_index": 0, "payload_head": "0000000000001a010000046637631a000000000000a843b10080824300007042000000002b0000000000000000c2000000000201004000009f01400000a6b000"}
+{"ts": 1792908990.351313, "dir": "in", "kind": "oob", "from": "127.0.0.1:28986", "command": "gamestateupdate", "args": ["4"], "length": 22}
+{"ts": 1792908990.352821, "dir": "in", "kind": "gamestateupdate", "from": "127.0.0.1:28986", "count": 4, "args": ["4"]}
+{"ts": 1792908990.880662, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908990.985006, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908991.088866, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908991.29721, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908992.860095, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908992.964225, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908993.172281, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
+{"ts": 1792908993.276768, "dir": "out", "kind": "oob", "to": "127.0.0.1:28986", "text": "statResponse 1907625381", "hex": "ffffffff73746174526573706f6e73652031393037363235333831"}
