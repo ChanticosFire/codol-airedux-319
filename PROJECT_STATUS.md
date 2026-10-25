@@ -33060,3 +33060,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **重大发现：客户端有 3 个 UDP socket（§749）**：63039/53803/22011，无 TCP。客户端自己用 UDP socket 收发，不经过 ring，证实 ring 注入方向无效。修复方向：bridge 把 gs 回包直接 sendto 到客户端 UDP 端口。下一轮确定哪个端口是游戏协议用。
 
 **三端口发包无反应（§750）**：connect 后 state=4，向 63039/53803/22011 发 connectResponse 后 state 恒 4，客户端完全没反应。四类可能：非游戏 socket、绑定特定地址、tcp-guard 拦住、包被丢。下一轮 hook WS2_32 sendto/recvfrom 确认真实网络路径。
+
+**64 位 Python 拿不到 32 位 ws2_32 地址（§751）**：GetModuleHandleW 返回 64 位基址导致 GetProcAddress 溢出。下一轮解析客户端 PE 导入表，从 IAT 读出 sendto/recvfrom 的 32 位真实地址再 hook。
