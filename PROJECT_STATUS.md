@@ -30037,3 +30037,63 @@ clc+0x3C80  = ?             = 336.0  （距起点 0xDC，可能是 origin 但不
 |---|---|
 | 227 | 确认 `clc+0x3BA4` = `pm_type`（2->0） |
 | **228** | **🎯 激活窗口（`match=True`）后注入空格/W 仍完全无效、`clc+0x3C80` 三浮点全程恒定 ⇒ **该地址不是 `vieworg`，玩家可能根本没 spawn**；`pm_type = PM_NORMAL(0)` 已确认；「按空格」很可能是"等待出生点/玩家数据下发"，而 gamestate 缺 `CS_PLAYERS` 段 |
+
+## 482. 2026-11-07 06:00–07:00：**🎯 决定性发现 —— `clc.state = 5`（`CA_PRIMED`），卡在激活前**
+
+### 482.1 `clc+0x00` 扫描结果
+
+```
++0x00  0
++0x04  0
++0x08  0
++0x0c  0x2718d = 160141
++0x10  **5**          ← 很可能是 clc.state = 5
++0x14  0
++0x18  0
++0x1c  0x440ee3d8 = float 571.560
++0x20  0x92656fe0 = float -0.000
++0x34  **5**
++0x3c  336.000        ← 与 clc+0x3C80 处完全相同
++0x40  60.000
++0x44  261.000
+```
+
+### 482.2 结论一：两处坐标是同一组
+
+`clc+0x3C` / `+0x40` / `+0x44` = 336 / 60 / 261，与 `clc+0x3C80` 处完全相同
+⇒ 同一组坐标的两个副本，即「按空格」的出生点位置。
+它在 idle 与按键后都不变，是因为**玩家还没进入可移动状态**。
+
+### 482.3 结论二：`clc.state = CA_PRIMED(5)`
+
+```c
+#define CA_DISCONNECTED  0
+#define CA_CONNECTING    1
+#define CA_CHALLENGING   2
+#define CA_CONNECTED     3
+#define CA_LOADING       4
+#define CA_PRIMED        5    ← 当前
+#define CA_ACTIVE        6    ← 需要到达
+```
+
+**⇒ 客户端已连上、已收到 gamestate、已解析 snapshot，但还没被"激活"进入游戏。**
+
+**这就是玩家不 spawn、不响应键盘、位置恒定的根本原因。**
+
+### 482.4 下一轮
+
+找让 `clc.state` 从 `CA_PRIMED(5)` -> `CA_ACTIVE(6)` 的机制。COD4 里通常由：
+
+1. `svc_clientEnter` 可靠命令；
+2. `svc_map_restart`；
+3. `CL_InitDownloads` 完成后由 `cg_init` 触发。
+
+**gs 现在没有发送任何 `clientEnter` 类命令**（`--oob-command` 默认 `None`）。
+下一轮先查 gs 支持哪些命令通道，再试发 `clientEnter`。
+
+### 482.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 228 | 窗口激活但按键无效，怀疑未 spawn |
+| **229** | **🎯 扫到 `clc.state = 5`（`CA_PRIMED`）—— 客户端卡在 CA_PRIMED、未到 CA_ACTIVE(6)，这是玩家不 spawn、键盘无响应、位置恒定的根因；另发现 `clc+0x3C/0x40/0x44` = 336/60/261 与 `clc+0x3C80` 处是同一组坐标的两个副本（出生点） |
