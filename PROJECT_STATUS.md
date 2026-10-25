@@ -33300,3 +33300,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Both connect handlers are script bindings (869)**: 0x94CFB0 and 0x94CF10 only forward into indirect engine calls ([0xE81CCC]/[0xE81C4C], all .bss script-VM tables) - the real connect lives in UI script resources (ui_mp/scriptmenu). So a real connect must run the UI script's connect action, not a native function. Next round locate UI script action dispatch.
 
 **Locating the UI script loader (870)**: searched for the ui_mp/scriptmenu string and pointers to it to find how UI script resources are loaded and how a menu action reaches the script VM.
+
+**0x604834 is the .menu loader; sf_ is the script-function prefix (871)**: it builds ui_mp/scriptmenus/<name>.menu and loads resource type 25. The useful find is the "sf_" prefix (0xDC56C0) - script callbacks are named sf_<x>, so its refs lead to the script-function registry. Next round follow those refs.
