@@ -27203,3 +27203,50 @@ snapFlag = ReadU32(clc + 0x3BE4)
 |---|---|
 | 170 | 验证 `message_ack` 读取正确；hybrid snapshot 也无效 |
 | **171** | **🎯 定位 `CL_ParseSnapshot` 入口 `0x471E90`；解出 `clc = [0x331C0C8] ^ 0xD362501F`，并确认 `clc+0x3BE4` 是"snapshot 解析成功"标志 ⇒ 下轮运行时读该标志做二值判定** |
+
+## 429. 2026-11-05 01:00–02:00：**🎯🎯🎯 二值答案：`clc+0x3BE4 = 0` —— snapshot 从未被成功解析**
+
+### 429.1 运行时读数
+
+```
+clc seen = 0x13dcced0          （clc 读取稳定，解码正确）
+flag(c+3BE4) = 0               ← **snapshot 解析成功标志 = 0**
+
+snapshot fragments = 805
+last ack: seq=139 ack=3        （ack 恒为 3）
+net_state 轨迹: 3 → 4 → 5 → 8 → 9
+```
+
+### 429.2 结论
+
+**客户端从未成功解析过任何 snapshot。** 805 个包发出，`CL_ParseSnapshot`
+的成功出口（`0x472810`）一次都没走到 ⇒ `ack` 停在 3 完全解释得通。
+
+### 429.3 下一步方向
+
+`CL_ParseSnapshot` 入口：
+
+```asm
+0x471E90  push ebp / mov ebp,esp
+0x471E93  eax = 0x3BE4
+0x471E98  call 0xC43280        ; __chkstk，一次性扩展约 15 KB 栈
+```
+
+两种可能：
+
+1. **函数从未被调用** ⇒ 问题在调用方（包分发器 / `CL_ParsePacketEntities`）；
+2. **被调用但解析失败** ⇒ 读返回值 / `[ebp-0x3BD8]` 定位失败点。
+
+### 429.4 下一轮
+
+**hook `0x471E90`**（入口 `55 8B EC`，3 字节，可安全 hook）计数：
+
+- 计数为 0 ⇒ 从未被调用；
+- 计数 > 0 ⇒ 被调用但失败。
+
+### 429.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 171 | 解出 `clc` 并定位 `clc+0x3BE4` 标志 |
+| **172** | **🎯 运行时读数 `clc=0x13DCCED0`、`flag(clc+0x3BE4)=0` ⇒ snapshot 从未被成功解析（805 个包全部无效），解释 `ack` 恒为 3 ⇒ 下轮 hook `0x471E90` 区分"未调用"与"调用后失败"** |
