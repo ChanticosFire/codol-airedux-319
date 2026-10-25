@@ -29731,3 +29731,67 @@ avg brightness = 69.5  pixels>30 = 52.0%
 |---|---|
 | 222 | delta 崩溃 + clientNum 新假设 |
 | **223** | **🎯 验证：gamestate 字节 5 `01`->`00` **不影响观战**（假设推翻）；但确认 `baseline-outer17-245.bin` + 修正 gamestate 是**最稳组合**：`net=10` 稳定 140 秒无崩溃、`flag=1` 周期性出现；观战由其它机制决定** |
+
+## 477. 2026-11-07 01:00–02:00：**扫描 `clc` 窗口，首次映射关键字段 —— 疑似 `clientNum = 2`**
+
+### 477.1 字符串路线的否定
+
+`spectator` 字符串唯一 `.text` 引用在 `0x4EF5C6`：
+
+```asm
+0x4EF5C6  push 0xDBA91C            ; "spectator"
+0x4EF5CB  mov [0x32B36E4],ax       ; 存索引
+0x4EF5D1  call 0x74BD10            ; 字符串注册函数
+0x4EF5D6  push 0x11 / push 1 / push 0xDBA928
+...
+```
+
+**这是本地化/资源表初始化，不是观战判断逻辑 ⇒ 该路线否定。**
+
+### 477.2 `clc` 窗口扫描
+
+`clc = [0x76638F4] ^ 0x6891D1C7 = 0x13050604`（每次运行不同，堆分配）
+
+```
++0x3b88  1
++0x3b8c  4
++0x3b98  **-1**        ← 疑 spectatorClient（-1 = 非观战）
++0x3ba4  **2**         ← 疑 clientNum
++0x3ba8  **1**
++0x3be4  0             ← snapshot parsed flag（本次扫描时为 0）
++0x3be8  **155**       ← 正是 gamestate 里 [3]="155" 的值！
++0x3bec  "maps/mp/mp_crash_tropical.d3dp…"   ← 地图路径字符串
++0x3c80  0x43a80000 = 336.0
++0x3c84  0x42700000 = 60.0        ← 三个浮点，疑 vieworg
++0x3c88  0x43828000 = 261.0
+```
+
+### 477.3 推断
+
+| 偏移 | 值 | 推断 |
+|---|---|---|
+| `+0x3B98` | -1 | `spectatorClient = -1`（表示"不是观战"） |
+| `+0x3BA4` | **2** | 很可能是 `clientNum = 2` |
+| `+0x3BE8` | 155 | 与 gamestate `[3]="155"` 一致 ⇒ gamestate 被成功解析 |
+| `+0x3C80` | 336.0, 60.0, 261.0 | 疑 `vieworg`（与 gamestate 的 433.25/98.5/137.0 不同） |
+
+**重大意义**：若 `+0x3B98 = -1` 确是 `spectatorClient`，则客户端**并非**在观战；
+而 `+0x3BA4 = 2` 若为 `clientNum`，则客户端认为自己是 **2 号玩家**，
+但 snapshot/playerstate 里没有 2 号玩家的数据 ⇒ 渲染不出自己的第一人称视角，
+只能显示空场景 + 观战 UI。
+
+**这比之前"以为自己是观战者"的假设更精确：客户端是"2 号玩家，但没有 2 号的 playerstate"。**
+
+### 477.4 下一轮
+
+1. 验证 `+0x3BA4` 是否随 `--connect-extra \clientNum\N` 变化 —— 若是，即为 clientNum；
+2. 若确认是 2，则把 snapshot 的 playerstate clientNum 也设成 2
+   （或反过来让客户端认为自己是 0 号）；
+3. 同时观察 `+0x3B98` 在收到 snapshot 前后是否从 -1 变成别的值。
+
+### 477.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 223 | 字节 5 假设被推翻，确定最稳组合 |
+| **224** | **🎯 扫描 `clc` 窗口首次映射关键字段：`+0x3B98 = -1`（疑 `spectatorClient`）、**`+0x3BA4 = 2`（疑 `clientNum = 2`）**、`+0x3BE8 = 155`（证明解析生效）、`+0x3BEC` 起地图路径、`+0x3C80` 起三个浮点（疑 `vieworg`）⇒ **新推断：客户端认为自己是 2 号玩家，但 snapshot 里没有 2 号 playerstate ⇒ 渲染不出第一人称** |
