@@ -33134,3 +33134,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x813C20 initializer never reaches 0x813D55 (786)**: state=7 is written at 0x813D34 but cl+0x10025C/0x109240/0x109244 all stay 0, so execution leaves between 0x813D34 and 0x813D55 - likely the je at 0x813D45 ([0x76446A1]) or a fault in call 0x528470 at 0x813D49. Next round hook 0x813D45 and 0x813D55 and compare counters after connect.
 
 **0x813C20 is the disconnect path (787)**: hook at 0x813D55 counted 0 reaches and state stayed 4, so the post-state=7 initializer block never runs; with all three callers passing eax=0 (725) the conclusion is that 0x813C20 is disconnect/cleanup and the observed state=7 is its side effect. The real connect-success transition has never run. Next round search for cls.state=5/6 writes and connectResponse handling.
+
+**cls.state only 0/3/4/7 direct writes (788)**: enumerated all stores to 0x76446B0 - only 0,3,4,7; no 5 or 6 anywhere. Since state=5 was observed with net=4/chan=157, states 5/6 must be indirect writes through a register or a helper. Next round scan for indirect stores of 5/6 to an alias of cls.state.
