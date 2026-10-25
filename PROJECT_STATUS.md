@@ -33020,3 +33020,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **CL_ParseGamestate 分析（§729）**：0x472D80 先 memset(0xC86DD28,0,0xC764)（与 0x5BE90A 的 0x2C768 清零同一区域）、读 2 字节 count、逐条解析 configstring，0x472ED6 有 cmp ebx,0x31D9/jl 边界检查、越界走 Com_Error(0x4F82E0)；我们 index 0/1/2 安全。下一轮看 0x472F92 分支与返回路径，确认解析成功后如何进入 ACTIVE。
 
 **0x472C70 是写入全局表的 configstring 处理函数（§730）**：0x472F92 循环里以 (index, string) 调用它；index 边界 0x31D9、越界 Com_Error。下一轮反汇编 0x472C70，确认 slot type 判断（0x77D8250+index 需 >=0x17 或 ==0x15），决定我们发的 configstring 是否被接受。
+
+**纠正 0x472C70 性质（§731）**：它是按位读 11/8/9/4 位字段+sprintf 格式化的解析辅助函数，不是写全局表；§730 判断作废。gamestate 解析路径本身没崩。下一轮在 CL_ParseGamestate(0x472D80) 装 hook，看调用次数与返回后 state。
