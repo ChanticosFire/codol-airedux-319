@@ -32916,3 +32916,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **澄清解密失误（§681）**：源文件 gamestate-client0.bin 是 6411 字节、`mp_crash_tropical`，gs 日志也确认 payload_length=6411；我解出 `mp_crase_trorial` 是 key 用错（假设 challenge=0，实际非 0）。gamestate 内容正确，state 4→0 另有原因。下一轮用真实 challenge 解密并检查 snapshot 格式。
 
 **gs 的 gamestate 完全正确（§682）**：payload_head 明文证明 `mp_crash_tropical`/`war`/checksum 0xffb56d7e 都对。问题收窄到「客户端收到 gamestate 后解析失败」（4→0 发生在最后一片后 1 秒、snapshot 之前）。下一轮 hook Com_Error(0x77C930) 或 CL_ParseServerMessage 的 svc3 分支。
+
+**bridge 前台 vs 后台差异（§683）**：后台 `Start-Process`+重定向时 bridge 日志空、gs 零收发；前台直接跑（§679）则 61 received/injected 全通。后续一律用前台方式跑 bridge。下一轮前台重跑 + hook Com_Error 抓 4→0 错误。
