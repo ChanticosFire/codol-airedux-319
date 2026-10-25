@@ -33380,3 +33380,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Correction: vtable is long enough; 0x62F840 is in two vtables (909)**: 0xDC7274+0xBC/0xC0 are valid (0x6311C0/0x6312E0), so section 908's 'too short' claim was wrong; the method is also in 0xDC7750, i.e. a base/derived pair. Since 0x62F840 touches [ebx+0x105D8], this must be the large derived instance. Next round find pointers to vtable 0xDC7750 to locate it.
 
 **Derived class never constructed (910)**: vtable 0xDC7750 has zero references, so no derived instance exists; only the base class is constructed at 0x62C025. Since 0x62F840 needs the derived object (+0x105D8), the local-game path cannot work. Next round inspect the construction site for the base object's real layout.
+
+**Base is ~0x120 bytes, derived would be >0x105D8 - so build one (911)**: the base ctor at 0x62C000 zeroes only [ebx+4..0x1C] and installs 0xDC7274, while 0x62F840 reads +0x278/+0x105D8/+0x105FE/+0x106F8. Route D: allocate ~0x11000 bytes, write vtable 0xDC7750 at offset 0, zero the rest, then call 0x62F840 with that as `this`. Next round implement it.
