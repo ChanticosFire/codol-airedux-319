@@ -32922,3 +32922,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **真病根是抢包（§684）**：前台跑也 sent=0，§683 判断作废；客户端（drain 已恢复）每秒几百次抢 ring_a，bridge Python 循环抢不过。方案 A：连接前后短暂 block drain 让 bridge 独占，取完立即 restore。下一轮试方案 A。
 
 **方案 A 成功到 state=7（§685）**：block drain 后 bridge 独占 ring_a，sent=3/received=96/injected=10；状态轨迹 4→5（stats）→**7（ACTIVE）**→不到 1 秒掉到 0，之后注入全 write_failed、connection 变垃圾值 0xd362501f。这是首次到达 CA_ACTIVE。下一轮查 7→0 那一秒发生了什么（Com_Error/进程存活）。
+
+**state=7 后崩溃（§686）**：launch 记录 `stop_reason: unhandled_exception`，客户端进程消失、无异常详情；崩溃发生在 state=7 后约 160ms（200728.709→200728.872），正是开始按 ACTIVE 跑帧/消费 snapshot 的时刻。疑为 snapshot 数据缺 ACTIVE 必需字段。下一轮用 Com_Error hook + 崩溃前截图确认。
