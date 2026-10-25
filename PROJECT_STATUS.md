@@ -32712,3 +32712,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **serverCommand 不推进状态（§582）**：用正确参数（`--command-file/--command-seq/--command-repeat/--command-interval`）让 gs 发出 259 条 command，客户端仍停在 `state=5`——候选 1 排除。现在最可能是"首个快照未通过有效性判定"（`CL_FirstSnapshot` 依赖 `cl.snap.valid`，而 ps.commandTime 从未被写入）。下一轮反汇编 `CL_FirstSnapshot` 判定条件。
 
 **澄清两个 state（§583）**：`0x76446B0` 是 `cls.state`（连接状态机，实测 5=CA_PRIMED），`cl->state`（偏移 0）与连接无关且为 0。客户端**没有断开**，黑屏只是因为 PRIMED 未开始渲染世界。`gs` 的 259 条 serverCommand 与数百 snapshot 均已送达。下一轮反汇编 `0x76446B0` 的写入点找 `CL_FirstSnapshot`。
+
+**CL_FirstSnapshot 未被调用（§584）**：`cls.state` 只有 5 个写入点，且 **ACTIVE=7 不是 6**；`0x5BE90A` 正是置 7 的地方，但 hook 计数为 0——这段代码从未执行。说明 `PRIMED→ACTIVE` 的转换函数没被触发，问题在上游。下一轮找该函数的真实入口与调用者。
