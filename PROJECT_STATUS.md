@@ -33192,3 +33192,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Connection entry located (815)**: state=4 write at 0x5BEA8B fires exactly once; it is preceded by memset(0x7888788, ebx, 0x1398) (5016-byte network buffer) and followed by CL initialisation (0x331C0C8 xor key, +0x14, +0x30=-0xBB8). state=7 write never fires, matching all prior sessions. Next round dump the full connect routine and see what it does after 0x5BEAC3 - where the client gives up.
 
 **0x5C05F0 is the real network pump (816)**: it gates on cls.state in {3,4,5,6}, bails if [CL+0x100260]==1, dispatches via a jump table at 0x5C0F2C using 0x7F4F10's result, and enforces a 3000ms send throttle (time-[ebx+0x30]). Since CL is zero, [CL+0x100260]==0 so the pump proceeds. Next round dump the jump table and 0x7F4F10.
+
+**state=4 branch parses a challenge with explicit failure codes (817)**: 0x7F4F10 returns 2 when CL+0x28==0x9D (our channel), so the pump takes 0x5C0693, passes the 3000ms throttle (CL+0x30=0), and lands on 0x5C0776 for state 4; it builds strings and branches on 0x5BE700 to either EXE_HOSTUNREACH or EXE_CLIENTFAILEDTOCHALLENGE. Next round disassemble 0x5BE700 and satisfy its condition.
