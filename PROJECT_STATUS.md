@@ -33158,3 +33158,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Main thread is inside 0x4A0060, a MSG_WriteString-style function (798)**: stack return 0x4A01B6 belongs to function 0x4A0060 which has a 0x20044 frame, Com_Error on overflow at 0x4A0092, memcpy at 0x4A00B4 - a bulk string append. Main thread is doing bulk text/memory work, not the game loop. Next round find its caller to see what text is being produced.
 
 **Main thread runs a configstring write + 0x7A69 hash loop (799)**: at 0x4F94AF a string is copied then hashed with multiplier 0x7A69 into a msg_t, which is exactly configstring registration; 0x81E717 shows a 1.3MB bulk write. So the client IS processing configstrings (a server-message path), just long enough to look stuck. Next round capture the string/len at 0x4F94AF to see the indices and values.
+
+**Stack scan was misleading (800)**: 0x4F94AF and 0x4A0060 probes both 0; and 0x4A01B6 / 0x75B17E55 on the stack are data values (the latter beyond shell32's code range, covered by no export), not return addresses. Next round hook the CRT helpers that actually run (0xC44350/0xC3C266/0xC49DD8/0xC49E1E) and capture [esp] to get true callers one level at a time.
