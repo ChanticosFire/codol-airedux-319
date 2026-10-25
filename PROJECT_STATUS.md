@@ -33252,3 +33252,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Queue format mapped (845)**: 0x813FB0-0x8140F9 shows 5 channels with counters at +0x14/+0x44/+0x74/+0xa4/+0xd4 and 0x30-byte entries based at [0x7508B80]+0x308054. Next round allocate ~0x310000, point [0x7508B80] at it with all counters 0, verify CL_ReadPackets returns cleanly, then populate channel 0 with one entry.
 
 **Constructing the queue crashes too (846)**: allocated 0x310000 at 0xEE50000, set [0x7508B80] and [CL+0x100260]=1 - client crashed immediately (CreateRemoteThread failed:5 is secondary). Since ~50 other sites read that global, publishing a zeroed block is unsafe. Next round sample those readers to see whether the global is a bounded receive buffer or something central that would make reconstruction open-ended.
+
+**[0x7508B80] is a 4+MB session object (847)**: sampled readers touch +8, +0xA and +0x4231F0 - far too far apart for a receive buffer. So it is the client-session structure and +0x308054 is one region of it; faking it breaks every other subsystem and recreating 4MB of session state is not bounded. Next round accept this and make the strategic call.
