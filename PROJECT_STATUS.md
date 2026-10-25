@@ -32706,3 +32706,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **纠正 6 轮错误前提（§579）**：`status` 显示 `state=0`、`address_string=""`——`cbuf connect` **从未真正发起连接**；gs 里那条 getchallenge 是 bridge 的 `--start-challenge` 自己发的。改用 `ring_bridge connect --address ...` 后 `state` 变 4、`ring_a` 开始前进（`address_written: true`）。新问题是 bridge 读走了包但没发到 gs（`--dump-in` 空、gs 无记录），下一轮查 `cmd_forward` 的过滤分支。
 
 **握手卡点解决（§580）**：真因是①客户端自动排空函数 `0x674F30` 把 `ring_a` 清空（bridge 永远读不到）②`cbuf connect` 根本不设置地址。解法：`ring_bridge ring-a-drain block` + `ring_bridge connect --address`。处理后服务端日志显示完整链路 `connect → connectResponse → gamestate(6 片) → snapshot(453 个)`，客户端 `cl->state` 从 0 走到 **5 (CA_PRIMED)**。剩余：PRIMED→ACTIVE 还需持续运行 bridge。
+
+**稳定停在 CA_PRIMED（§581）**：握手全通后 `cl->state=5` 不再前进（`ring_b` 已收 5647 包、`ring_a` 持续发包、gs 发了 connectResponse/gamestate×15/snapshot×数百）。下一轮优先试"发 `svc_serverCommand`"（gs 的 `--server-command-*`），因为 PRIMED→ACTIVE 很可能要求至少一条服务器命令；其次排查 gamestate 被重复发 15 次的问题。
