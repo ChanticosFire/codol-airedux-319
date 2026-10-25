@@ -33090,3 +33090,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **正确格式注入 ring_a 也无效果（§764）**：connectResponse（type=0x191）注入 queued、drain 恢复，但 state 恒 4、ring_a 26/26 全被 drain——证实 0x674F30 取走就扔。三条路（ring_b/ring_a/UDP）全部封死。下一轮验证 state 门槛假设：直接把 cls.state 改成 5，看 drain 行为是否改变。
 
 **set-state 5 导致崩溃（§765）**：写入成功但 2 秒内 state=0、CL 地址变动（重启），说明 CA_PRIMED 需要 netchan 预初始化，硬跳必崩；state 门槛假设否决。下一轮改扫 ws2_32 完整导出（含按序号）找 WSARecvFrom/WSASendTo/select/WSAEventSelect。
+
+**重大突破线索：WSAAsyncSelect（§766）**：ws2_32 转发层完整导出含 WSAAsyncSelect(0x6f85381a)/select/recvfrom/sendto，但无 WSARecvFrom/WSASendTo；WSAAsyncSelect 说明客户端用窗口消息异步收包，解释 recvfrom=0。下一轮 hook WSAAsyncSelect 记录 socket/窗口/消息号，再用 PostMessage 驱动其收包。
