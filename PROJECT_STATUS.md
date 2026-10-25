@@ -33188,3 +33188,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Only two call sites; only 0x4F8F25 is hot (813)**: module search found call 0x621E50 at 0x4F8F25 and 0x4F9075 only; after hooking both, 0x4F8F25=29004 while 0x4F9075=0 (installed but cold), the rest of 0x621E50's 111051 predating the hook. So the hot path is 0x4F8F25. Next round capture its arguments to see the real argument stream.
 
 **Hot-path args are ('5', 0x20000, '5') (814)**: 0x621E50 receives a one-char string and a numeric tag; the dangerous [ebx+2] read would fault at 0x20002 but the esi!=4 guard diverts first. So this subtree is a text/token handler, not a game-message dispatcher, and never touches cls.state. Next round pivot back to the connection path with clean tools and log the connect attempt step by step.
+
+**Connection entry located (815)**: state=4 write at 0x5BEA8B fires exactly once; it is preceded by memset(0x7888788, ebx, 0x1398) (5016-byte network buffer) and followed by CL initialisation (0x331C0C8 xor key, +0x14, +0x30=-0xBB8). state=7 write never fires, matching all prior sessions. Next round dump the full connect routine and see what it does after 0x5BEAC3 - where the client gives up.
