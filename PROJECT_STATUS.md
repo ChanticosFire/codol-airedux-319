@@ -32574,3 +32574,9 @@ consumed 6411 / 6411  PERFECT
 ### 1649370 当前会话进展
 
 复用 `r107flow/runtime` 完成 r426/r427 两次真实连接。正确设置 gamestate `client_number=0`，以及再加入参考玩家名 configstring `1735=Player`，客户端都到 `CA_ACTIVE(10)` 且地图渲染，但始终显示“按空格”，无法自行移动或射击。SPACE 再试无可见效果。静态复核发现实体解析器 `0x671700` 对 selector > 12 存在正常返回路径，早期“非空实体必然读到流错误”结论需收窄。下一步定位 245 B 快照的实体字段位游标，构造本地实体与位置并验证操作。证据见 `evidence/experiments/20261025-1649370-client0-playerbank.json`；第 5 项仍未达成。
+
+### 1649370 快照解析修正（§527）
+
+复用 `r107flow/runtime` 对 245 B 快照做客户端解析 hook：原版 `0x35=01` 的玩家状态块出口无错误、bit=1382；改为 `00` 后出口已是 error=1、bit=994。尽管客户端仍可进 `CA_ACTIVE(10)` 并显示地图，旧“改 0x35 已获得有效非观战玩家状态”的结论撤回。`client_number=0` 与 `1735=Player` 两个正确 codec 变体仍未使角色出生。下一步先构造 error=0 的玩家状态，再加入本地实体与位置。第五项“可自行移动、射击”未达成。证据：`evidence/experiments/20261025-1649370-snapshot-preblock-error.json`。
+
+r435/r436 的实验性调试未产生可用快照结果，客户端已退出；两轮均复用 `r107flow/runtime`，未增加大型运行时。

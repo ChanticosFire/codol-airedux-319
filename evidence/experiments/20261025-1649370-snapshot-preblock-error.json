@@ -1,0 +1,120 @@
+{
+  "build": 1649370,
+  "runtime_reused": "r107flow/runtime",
+  "original_snapshot": {
+    "sha256": "6d03cde387571deb9362904055c3d69df54ab369ca0778218b8f507addb534a6",
+    "bytes": 245,
+    "byte_0x35": 1,
+    "r431_preblock_entry": {
+      "error": 0,
+      "bit": 57,
+      "byte_cursor": 8,
+      "length": 245
+    },
+    "r431_preblock_exit": {
+      "error": 0,
+      "bit": 1382,
+      "byte_cursor": 177,
+      "length": 245
+    },
+    "observed_net_state": 10
+  },
+  "patched_snapshot": {
+    "sha256": "07d195bd4a608965fd9f77fb90f6548cf7831b6b4f44b31f8350e2a64a29f440",
+    "bytes": 245,
+    "byte_0x35": 0,
+    "r434_hooks": {
+      "preblock_entry": {
+        "target": "0x671D80",
+        "count": 2132,
+        "captured_words": [
+          "0x0",
+          "0x0",
+          "0x16da20",
+          "0x0",
+          "0x20000",
+          "0xf5",
+          "0x0",
+          "0x8",
+          "0x39",
+          "0x0",
+          "0x0",
+          "0x0"
+        ]
+      },
+      "preblock_exit": {
+        "target": "0x4723BE",
+        "count": 2132,
+        "captured_words": [
+          "0x1",
+          "0x0",
+          "0x16da20",
+          "0x0",
+          "0x20000",
+          "0x7d",
+          "0x0",
+          "0x7d",
+          "0x3e2",
+          "0x0",
+          "0x0",
+          "0x0"
+        ]
+      },
+      "entity_entry": {
+        "target": "0x471D80",
+        "count": 2758,
+        "captured_words": [
+          "0x1",
+          "0x0",
+          "0x16da20",
+          "0x0",
+          "0x20000",
+          "0x7d",
+          "0x0",
+          "0x7d",
+          "0x3e2",
+          "0xffffffff",
+          "0xfffe7961",
+          "0x0"
+        ]
+      }
+    },
+    "observed_net_state": 10
+  },
+  "byte35_sweep": [
+    {
+      "v": 1,
+      "count": 903,
+      "net": 10,
+      "error": 0,
+      "bit": 1382,
+      "pm": 2
+    },
+    {
+      "v": 0,
+      "count": 905,
+      "net": 10,
+      "error": 1,
+      "bit": 994,
+      "pm": 0
+    },
+    {
+      "v": 2,
+      "count": 907,
+      "net": 10,
+      "error": 0,
+      "bit": 1398,
+      "pm": 7
+    },
+    {
+      "v": 3,
+      "count": 908,
+      "net": 0,
+      "error": 0,
+      "bit": 1398,
+      "pm": 0
+    }
+  ],
+  "interpretation": "net state 10 and rendered map do not establish a fully valid snapshot; the patched byte causes preblock stream error before entity parsing",
+  "limitation": "r431 values transcribed from live hook output; later sweep values after net state returned to 0 excluded"
+}

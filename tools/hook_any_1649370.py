@@ -92,8 +92,10 @@ def main() -> int:
                     help="base address of the four result slots")
     ap.add_argument("--capture", type=int, default=0,
                     help="copy this many bytes of the captured buffer, at call time")
-    ap.add_argument("--capture-src", choices=("arg0", "ecx"), default="arg0",
+    ap.add_argument("--capture-src", choices=("arg0", "arg1", "arg4", "ecx", "edx", "ebp", "esi"), default="arg0",
                     help="which register/argument points at the buffer to copy")
+    ap.add_argument("--capture-offset", type=lambda v: int(v, 0), default=0,
+                    help="byte offset from the captured pointer")
     ap.add_argument("--pid", type=int, default=0)
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--read", action="store_true")
@@ -207,8 +209,11 @@ def main() -> int:
         # Stack-passed name arrays die as soon as the function returns, so
         # reading them afterwards always yields zeros.
         count_words = args.capture // 4
-        src_off = b"\x24" if args.capture_src == "arg0" else b"\x18"
+        src_off = {"arg0": b"\x24", "arg1": b"\x28", "arg4": b"\x34",
+                   "ecx": b"\x18", "edx": b"\x14", "ebp": b"\x08", "esi": b"\x04"}[args.capture_src]
         code += b"\x8B\x74\x24" + src_off                    # mov esi,[esp+src]
+        if args.capture_offset:
+            code += b"\x81\xC6" + struct.pack("<I", args.capture_offset & 0xFFFFFFFF)
         code += b"\xBF" + struct.pack("<I", slot_capture)    # mov edi,capture_dst
         code += b"\xB9" + struct.pack("<I", count_words)     # mov ecx,words
         code += b"\xF3\xA5"                                  # rep movsd
