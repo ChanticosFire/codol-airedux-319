@@ -28876,3 +28876,45 @@ vid_restart, cmd, chatmodeteam, chatmodepublic, unattended, quit
 |---|---|
 | 209 | 实体 0/1 全黑，方向转为切换视角 |
 | **210** | **🎯 完整命令表只有 6 条、**没有任何视角/观战命令** ⇒ 「Q 下一位玩家」是硬编码快捷键；真正根因是 **`clientNum` 无效**导致客户端判定"我是观战者" ⇒ 需检查 `connectResponse` 与 gamestate configstring 的玩家槽位信息 |
+
+## 462. 2026-11-06 10:00–11:00：**🎯 `file` 模式忽略 configstring —— 这才是玩家信息没生效的原因**
+
+### 462.1 代码证据
+
+```python
+def send_due_gamestates(self):
+    if self.gamestate_source == "native":
+        payload = build_native_gamestate(..., configstrings=self.configstrings, ...)
+    elif self.gamestate_source == "file":
+        payload = self.gamestate_file.read_bytes()      # 直接读文件，configstring 被忽略！
+```
+
+**一直使用 `--gamestate-source file`，所以 `--configstring-file` / `DEFAULT_CONFIGSTRINGS`
+里的玩家信息从未被发送出去。** 日志里那 3 个 configstring 是从 gamestate
+文件本身解析出来的，不是 gs 构造的。
+
+### 462.2 `build_native_gamestate` 的接口
+
+```python
+def build_native_gamestate(registration_checksum, *, client_number: int = 0,
+                           configstrings=None, mapname=..., gametype=...):
+    if configstrings is None:
+        configstrings = ((0, ...g_gametype/mapname...), (1, b""), (2, b"cod"))
+```
+
+- 有 `client_number` 参数（默认 0）；
+- `gameserver.py:287` 调用时未传 `client_number`。
+
+### 462.3 下一轮
+
+1. 构造 `configstrings.json`，把 `[2]` 换成真实的 `CS_PLAYERS[0]` 格式：
+   `\name\Player\team\allies\model\...`
+2. 用 `--gamestate-source native --configstring-file configstrings.json` 跑；
+3. 对比是否仍进观战模式 —— 快速验证"CS_PLAYERS 缺失导致观战"这一假设。
+
+### 462.4 里程碑
+
+| Round | 结论 |
+|---|---|
+| 210 | configstring 只有 3 个、`[2]="cod"` |
+| **211** | **🎯 `file` 模式**忽略** configstring（直接读文件），因此 `--configstring-file` 一直无效；`native` 模式才使用 configstring，且 `build_native_gamestate` 有 `client_number` 参数（默认 0）；下轮构造含 `CS_PLAYERS[0]` 的 configstring 并用 `native` 模式验证观战假设** |
