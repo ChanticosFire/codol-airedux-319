@@ -30269,3 +30269,68 @@ cl+0x3be8 = 155
 |---|---|
 | 231 | 破解状态机常量 `CA_ACTIVE = 10` |
 | **232** | **🎯 ① `0x76446B0` = `cls.state` = 10 = `CA_ACTIVE`（固定全局，状态机完成）② `[0x76638F4]^0x6891D1C7` 指向的是 **`cl`（clientActive_t）** 而非 `clc`，含 `pm_type` 与坐标 ③ `cl+0x10 = 5` 恒定、不随 clientNum 变化 ⇒ 不是 clientNum；**此前的 `clc` 命名是长期错误** |
+
+## 486. 2026-11-07 10:00–11:00：**🎯 `playerState` 几乎全 0 —— 快照太短是直接原因**
+
+### 486.1 结构起点确认
+
+`cl+0x3BA4` = `pm_type`（§479/§480 已验证：清零快照三个 `01` 后从 2 变 0），
+故 `playerState_t` 从 `cl+0x3BA4` 开始。
+
+### 486.2 扫描前 0x400 字节
+
+```
++0x000  pm_type  = 0
++0x004  pm_flags = 0
++0x008  pm_time  = 0
+...
++0x020  = **1**     ← 少数非零
++0x0A8  = **1**     ← 少数非零
+...其余大量为 0...
+
+origin（浮点，值大故不在 0..18 候选里）：
++0x0DC = 336.0   (cl+0x3C80)
++0x0E0 = 60.0    (cl+0x3C84)
++0x0E4 = 261.0   (cl+0x3C88)
+```
+
+### 486.3 决定性结论
+
+**`playerState` 结构"几乎空的"** —— 只有 `pm_type` 与 `origin`，
+其余字段（`clientNum`、`viewangles`、`velocity`、武器状态、`pm_flags` 等）全为 0。
+
+**⇒ 客户端有 `playerState` 对象但内容严重不完整 ⇒ 无法 spawn 玩家、无法响应输入。**
+
+这解释了所有现象：
+
+- `pm_type = PM_NORMAL(0)`（类型对）；
+- `origin = 336/60/261`（位置有）；
+- **但缺 `clientNum` ⇒ 不知道这个 playerstate 属于谁**；
+- **缺 `viewangles`/`velocity`/武器 ⇒ 无法移动射击**。
+
+### 486.4 根因链条（完整）
+
+| 层 | 状态 |
+|---|---|
+| 网络连接 | `cls.state = CA_ACTIVE(10)` |
+| gamestate | 解析成功（`cl+0x3BE8 = 155`） |
+| snapshot | 解析成功（`flag=1`） |
+| **playerState** | **存在但几乎为空** |
+| 玩家 spawn | 因 playerState 不完整而失败 |
+| 输入响应 | 因没有可操作实体而失败 |
+
+### 486.5 下一轮
+
+让 snapshot 携带更完整的 `playerState`：
+
+1. **`baseline-outer17-245.bin` 只有 245 字节**，而真实 COD4 的
+   `playerState_t` 约 0x2D0（720）字节 —— **这份快照太短**；
+2. 从 demo 里提取更长的 snapshot（或拼接完整 playerstate）；
+3. 或确认 245 字节快照的解码路径能否填满 playerState。
+
+### 486.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 232 | 纠正 `cl` 命名 |
+| **233** | **🎯 `playerState`（`cl+0x3BA4` 起 0x400 字节）：`pm_type=0`、`origin=(336,60,261)` 在 `+0xDC/0xE0/0xE4`，但**其余字段几乎全 0**（`clientNum`、`viewangles`、`velocity`、武器全缺）⇒ **playerState 严重不完整是玩家无法 spawn、无法响应的直接原因；245 字节快照对约 720 字节的完整 playerState 来说太短** |
