@@ -25109,3 +25109,65 @@ gs: stats = 1
 | 130 | 找到第一段里的 `edx = [0]` 空指针路径（patch 后仍崩） |
 | 131 | 发现还有第二代码块（`0x42F351`） |
 | **132** | **🎯🎯 找到真正崩点：`0x42F364 eax = [表项] = 0` → `0x42F36B esi = [eax]` 解引用 0；修复为 `8B 30` → `31 F6`（`xor esi,esi`）** |
+
+## 391. 2026-11-02 11:00–12:00：**⚠ 我的修复引入新崩点 —— `xor esi,esi` 让 `strncmp(0, ...)` 崩**
+
+### 391.1 三处补丁全部写入成功
+
+```
+0x42F32C jae -> jmp                     -> eb 23            ok=1
+0x59B560 -> ret                          -> c3 90 ...        ok=1
+0x42F36B mov esi,[eax] -> xor esi,esi    -> 31 f6            ok=1
+```
+
+### 391.2 但 `after_call` 仍为 0
+
+```
+t+ 6.58 net=8 tb=1 ui=0 | cond=1699 **after_call=0** epi=0 ff=0
+t+ 6.76 CLIENT GONE
+gs: stats = 4
+```
+
+### 391.3 原因：`je 0x42F3A3` 的目标正是那个 `strncmp`
+
+```asm
+0x42F36F  test esi, esi
+0x42F371  **je 0x42F3A3**                  ; esi==0 → 跳到 0x42F3A3
+0x42F373  al = [esi]
+0x42F379  cmp al, 0x2A / jne 0x42F3A3
+0x42F37D  push esi / call 0x431A60
+0x42F38A  imul eax, eax, 0x1474
+0x42F390  add eax, 0x19E30F0
+0x42F395  je 0x42F3A3
+0x42F397  eax = [eax + 0x9C]
+0x42F39D  test eax, eax / je 0x42F3A3
+0x42F3A1  esi = [eax]
+0x42F3A3  **ecx = [ebp+8]**
+0x42F3A7  eax = 0x7FFFFFFF
+0x42F3AC  **edx = esi**
+0x42F3AE  **call 0x7745E0**                ; strncmp(edx, ecx, 0x7FFFFFFF)
+```
+
+**把 `esi` 置 0 只是把"解引用 0"换成了"`strncmp` 收到空指针"** —— 崩点没消失，只是换了位置。
+
+### 391.4 正确的修复
+
+当表项为空（`esi == 0`）时，应**直接跳到循环出口 `0x42F3BF`**，而不是进 `strncmp`：
+
+```
+0x42F371: 74 30  (je +0x30 -> 0x42F3A3)  ->  74 4C  (je +0x4C -> 0x42F3BF)
+```
+
+验算：`0x42F373 + 0x4C = 0x42F3BF` ✓（`pop ebx / pop edi / xor eax,eax`）
+
+### 391.5 下一轮
+
+保留 `0x42F36B` 的 `xor esi,esi`，加上 `0x42F371: 74 30 -> 74 4C`，
+再验证 `after_call` 是否变为 ≥1。
+
+### 391.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 132 | 找到 `0x42F36B mov esi,[eax]` 的空指针 |
+| **133** | **⚠ `xor esi,esi` 修复后仍崩：`je 0x42F3A3` 直奔 `strncmp(0,...)` ⇒ 需把 `0x42F371` 的跳转目标从 `0x42F3A3` 改为循环出口 `0x42F3BF`（`74 30` → `74 4C`）** |
