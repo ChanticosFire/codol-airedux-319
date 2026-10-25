@@ -33068,3 +33068,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **.rimp 是字符串池（§753）**：0xEA59F44 处解出 "SetLastError"/"GetTempFileNameA"/"IsDebugger"，说明 .rimp 是导入名字符串区而非 INT 表；静态文件里 IAT 槽位是占位，读不到运行时地址。下一轮改运行时读法：从客户端进程枚举 32 位模块拿 ws2_32 基址，再按导出表算 sendto/recvfrom。
 
 **找到 ws2_32 真实地址（§754）**：VirtualQueryEx 枚举出 111 个 PE 镜像（Module32First 只报 7 个）；ws2_32 主实现 base=0x77820000，sendto=0x77869A4C、recvfrom=0x77869A37、WSASendTo=0x778693B3、WSARecvFrom=0x7786935E。下一轮 hook WSASendTo/WSARecvFrom 观察真实收发。
+
+**导出解析错误（§755）**：find_ws2 脚本把 AddressOfNames 的名字 RVA 当成函数地址，hook 后 original 是 "WSASen"/"WSARecvF" 字符串。正确算法需 AddressOfNameOrdinals + AddressOfFunctions 映射。下一轮修正后重取真实地址。
