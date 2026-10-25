@@ -32890,3 +32890,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **修复方案：NUL 取长（§668）**：read/write 前后全 0（无长度数组），但槽内是完整 OOB 命令、401 字节、以 `\x00` 结尾。`drain_ring_a` 改为「读满整槽 + 找第一个 `\x00` 取长」即可。下一轮改 bridge 并用全新客户端验证 gs 能否收到 connect。
 
 **NUL 取长修复生效但仍 0 in（§669）**：改完 `drain_ring_a` 后 ring_a 被正常消费（6/6）但 gs 仍 0 条 in——说明还有别的过滤/发送问题。下一轮给 forward 加调试输出看包是否走到 sendto。
+
+**重大突破：connect 通了 + gs 回 229 条（§670）**：NUL 取长修复后 gs 首次收到 `connect`（解析出 uid/userinfo）并回 219 条 inband（gamestate+snapshot），链路首次真正打通。唯一问题：gs 回包发往旧端口 29129（端口不匹配）。下一轮用同一端口重跑并观察 state/ps。

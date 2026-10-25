@@ -40,6 +40,7 @@ import json
 import socket
 import struct
 import subprocess
+import sys
 import time
 from ctypes import wintypes as W
 from datetime import datetime, timezone
@@ -466,9 +467,13 @@ class Client:
             read = write - RING_A_SLOTS
         while read < write:
             slot = RING_A_BASE + (read & (RING_A_SLOTS - 1)) * RING_A_STRIDE
-            length = self.u32(slot + RING_A_LENGTH)
-            if 0 < length <= 0x4E6:
-                payload = self.read(slot, length) or b""
+            # Slots hold the raw payload with no stored length.  OOB commands
+            # are NUL-terminated, so the first NUL is the packet end.
+            raw = self.read(slot, RING_A_STRIDE) or b""
+            nul = raw.find(b"\x00")
+            length = nul if nul > 0 else len(raw)
+            payload = raw[:length]
+            if payload:
                 packets.append({
                     "slot": hex(slot),
                     "length": length,
@@ -767,6 +772,10 @@ def cmd_forward(client: Client, args) -> dict:
         while time.monotonic() < deadline:
             progressed = False
             outbox = client.drain_ring_a() + client.drain_ring_c(args.port)
+            if outbox:
+                print(f"[forward] outbox={len(outbox)} "
+                      f"first={outbox[0]['payload'][:16]!r} sent={sent}",
+                      file=sys.stderr, flush=True)
             for packet in outbox:
                 payload = packet["payload"]
                 stats_note = None
