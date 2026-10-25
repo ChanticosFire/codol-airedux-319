@@ -32730,3 +32730,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **纠正 0x4706D0 身份（§591）**：回调表 dump 显示 `0xE9C6900` 是 16 字节链表节点，name 分别为 `switchtomainmenu`/`preloadmap`/`unpausegame`/`pausegame`——**`0x4706D0` 是"回主菜单"回调，不是主循环**（§585/§586 判断作废）。`cls.state` 共 240 处引用，立即数写入仅 7 处且**无一处写 6**，ACTIVE 实为 7；真正入口是 `0x813D36`（条件 ebx!=0），所在函数入口 `0x813C20`。下一轮查其调用者。
 
 **ACTIVE 路径是 cl_demo_play（§592）**：`0x813C20`（唯一写 state=7 的函数）只被 `0x813AB0` 以非 0 参数调用，而 `0x813AB0` 注册的命令名是 **`cl_demo_play`**（相邻字符串 `demo/%s.demo`、`$demoDownloadBuffer`）。说明这个 build 的 `CA_ACTIVE` 是为**播放 demo**准备的，实时连接只能到 `CA_PRIMED`。下一轮直接执行 `cl_demo_play` 验证。
+
+**cbuf 通道整体失效（§593）**：`cl_demo_play testdemo` 注入返回 injected 但 `state` 仍为 0、命令未执行；与 §579 的 `connect` 情况一致——cbuf 注入只能当"可能生效"的辅助，不能用于必须执行的验证。下一轮改用 `launch_1649370.py` 启动参数 `+cl_demo_play testdemo`。
