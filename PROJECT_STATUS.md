@@ -33368,3 +33368,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **room.changemap is a GETTER (903)**: 0x639700 checks slot 0x15, gets via slot 0x1D, reads the current slot's map pointer (fallback 0xDAE091), assigns and reports via slot 0x1F - it never sets the map. The map must be fixed at room.create time (0x6397C0). Next round disassemble that.
 
 **room.create dispatches into engine vtable slot 1 (904)**: 0x6397C0 calls [edi+4] (0x62CA80) with the engine manager in ecx and a value from 0x624430 pushed; the default map string 0xDAE091 is empty, confirming no room. Next round analyse 0x62CA80.
+
+**Session manager never created (905)**: 0x84ABB08/0x84ABB14/0x84ABA50 are all zero, so 0x477B00 takes its empty branch and no room can exist. Next round find the writer of those globals - the session-manager constructor - and call it once via the harness.
