@@ -31736,3 +31736,100 @@ brightness = 79.5  pixels>30 = 63.6%
 |---|---|
 | 255 | 阶段总结 + IAT hook 方案 |
 | **256** | **🎯 `GetKeyboardState` IAT 钩子**安装成功且 `verify IAT = 0x41c70000 OK`**（`runs/_hook_gks2.py`，stub 58B + 256B cfg 页）；但**强制 W（cfg[0x57]=0x80）未产生 `forwardmove`**，强制 SPACE+W 也未改变 `pm_type`/`origin`（仍 336/60/261、亮度 79.5）⇒ **输入层不是当前阻塞点**；客户端仍停在「按空格」等待状态、没有可操作角色 ⇒ **阻塞点上移：需补全 `CS_PLAYERS` 或让快照携带本地玩家实体** |
+
+## 514. 2026-11-08 14:00–15:00：**🎯 `GetKeyboardState` 从不被调用；输入走窗口消息；但消息送达后客户端仍不动作**
+
+### 514.1 带计数器的钩子（决定性实验）
+
+`runs/_hook_gks_count.py` 在桩开头加 `inc byte [CFG+0x100]`：
+
+```
+exe=0x400000  user32=0x76820000
+GetKeyboardState = 0x7685a940
+IAT slot = 0x10a8394
+stub=0xede0000 cfg=0xedf0000
+stub bytes: 64
+stub write ok: True
+cfg write ok: True
+IAT patch ok: True
+verify IAT = 0xede0000
+
+counter at 0xedf0100, forcing ['0x57', '0x20']
+  t+0.6s  calls=0
+  t+1.2s  calls=0
+  t+1.8s  calls=0
+  t+2.4s  calls=0
+  t+3.0s  calls=0
+```
+
+**⇒ 客户端从不调用 `GetKeyboardState`（计数器恒为 0）。**
+§254-§255 关于"输入走 GetKeyboardState"的结论被推翻 —— 该 API 虽被导入，但未在游戏逻辑中使用。
+
+### 514.2 模块清单：无 DirectInput / XInput / HID / RawInput
+
+```
+=== input / graphics related modules present ===
+  d3d9.dll  d3dcompiler_43.dll  gcloudvoice.dll  imm32.dll
+  libcef.dll  nvd3dum.dll  winmm.dll  winmmbase.dll
+```
+
+**无 `dinput8.dll`、无 `xinput*.dll`、无 `hid.dll`** ⇒ 排除 DirectInput / XInput / RawInput。
+
+**⇒ 输入只能走 Win32 窗口消息（WM_KEYDOWN / WM_KEYUP）。**
+
+### 514.3 窗口枚举：只有一个可见窗口，类名 `CODO`
+
+```
+visible hwnd      class     title                 rect
+YES   0x00e10936  CODO      ʹ���ٻ�online          (0,0 1920x1080)
+total windows for pid: 7 (visible: 1)
+```
+
+**⇒ 此前聚焦的窗口是正确的（`CODO`，独占全屏 1920x1080）。**
+
+### 514.4 直接 PostMessage：消息送达但客户端不动作
+
+```
+[before  ] pm_type=0 origin=(336.0, 60.0, 261.0)
+PostMessage SPACE down -> 1
+PostMessage SPACE up   -> 1
+[afterSP ] pm_type=0 origin=(336.0, 60.0, 261.0)
+PostMessage W down -> 1
+PostMessage W up   -> 1
+(W down posts failed: 0 / 30)
+[afterW  ] pm_type=0 origin=(336.0, 60.0, 261.0)
+cls.state = 10  ui = 0
+```
+
+**`PostMessage` 全部返回 1（消息成功入队），但 `pm_type` 与 `origin` 均无变化。**
+
+### 514.5 结论：阻塞点在服务端数据，不在输入层
+
+三条输入通道（`SendInput`、IAT 钩 `GetKeyboardState`、`PostMessage`）都已试过，
+**消息确实能送到游戏窗口，但客户端不响应**。
+
+**⇒ 客户端处于"等待服务端数据"的状态**：它停在该状态时，
+移动/出生逻辑根本不会被驱动，输入即使送达也无人消费。
+
+**这与 §472/§513 的判断一致**：gamestate 只有 3 个 configstring、`CS_PLAYERS` 段缺失，
+客户端没有"自己这个玩家"的槽位数据，因此永远停在「按空格」。
+
+### 514.6 下一轮
+
+补齐 `CS_PLAYERS` 数据。约束（来自既有实验）：
+
+- `[2]="cod"` 是产品标识，`strcmp` 强校验（§471），**不能改、不能移位**；
+- `[0xC86DD30] = 0x89` 是"cod"在 configstring 缓冲区中的偏移（§472），
+  所以**任何在 "cod" 之前增删长度的改动都会破坏该校验**；
+- 因此只能在 `"cod\0"` **之后**追加内容，且需保持其后的二进制尾部对齐
+  （§466 的教训：改变总长度会让 `net` 从 10 掉回 0）。
+
+**⇒ 可行方案：在 configstring[3]（"155"）处做等长替换，或用 snapshot 的实体表
+携带本地玩家（§209：空表→观战、给实体无位置→黑屏，需同时给出位置）。**
+
+### 514.7 里程碑
+
+| Round | 结论 |
+|---|---|
+| 256 | IAT 钩子安装成功但强制键无效 |
+| **257** | **🎯 三重结论：① 带计数器的钩子证明**客户端从不调用 `GetKeyboardState`**（计数恒 0）② 模块清单**无 dinput8/xinput/hid** ⇒ 排除 DirectInput/XInput/RawInput，输入只能走窗口消息 ③ 窗口枚举确认唯一可见窗口为 `CODO`（此前聚焦正确），而 **`PostMessage` 把 WM_KEYDOWN/KEYUP 成功入队（返回 1）后 `pm_type`/`origin` 仍无变化** ⇒ **阻塞点在服务端数据（缺 `CS_PLAYERS`）、不在输入层** |
