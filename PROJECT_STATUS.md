@@ -33094,3 +33094,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **重大突破线索：WSAAsyncSelect（§766）**：ws2_32 转发层完整导出含 WSAAsyncSelect(0x6f85381a)/select/recvfrom/sendto，但无 WSARecvFrom/WSASendTo；WSAAsyncSelect 说明客户端用窗口消息异步收包，解释 recvfrom=0。下一轮 hook WSAAsyncSelect 记录 socket/窗口/消息号，再用 PostMessage 驱动其收包。
 
 **0x6F850000 是纯转发层（§767）**：其导出地址指向 "ws2_32.WSAA..." 转发字符串，真实实现在 0x77820000。下一轮在该模块用三表映射找 WSAAsyncSelect，并处理 AddressOfFunctions 的 0x80000000 转发标志。
+
+**找到全部真实网络函数（§768）**：0x77820000 的导出全是 code（非转发）：WSAAsyncSelect=0x77838990、WSARecvFrom=0x7783B670、WSASendTo=0x77858AB0、WSAEventSelect=0x7783AC00、select=0x7783AE80。下一轮 hook WSAAsyncSelect 记录 socket/hWnd/wMsg/lEvent，再用 PostMessage 驱动收包。
