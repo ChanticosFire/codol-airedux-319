@@ -25339,3 +25339,57 @@ exception_seen: （没有出现）
 |---|---|
 | 135 | 枚举 7 条分支，确认只需改 `0x42F36D` |
 | **136** | **五处 patch 全写入但 `after_call` 仍 0；给 launcher 加了 `exception_seen` 记录（第一次因 `event` 不可序列化导致 launcher 崩溃，已修正为只记整数）；结果 `exception_seen` 未出现 ⇒ `handle_exception` 不是实际路径 ⇒ 下轮去 `codol_rebuild` 找 `stop_reason` 的真正赋值点** |
+
+## 395. 2026-11-02 15:00–16:00：**找到真正的异常记录点 —— `debug_loop.py` 早已记录 `registers`/`instruction`，但没写进 JSON**
+
+### 395.1 源码定位
+
+```
+E:\GAME\COD\1649370\src\codol_rebuild\runtime\debug_loop.py
+  L168: self.record(row)
+  L171: self.log['stop_reason'] = 'unhandled_exception'
+```
+
+**访问违规走 `L126` 的 `else` 分支**，其中：
+
+```python
+L130  eip = struct.unpack_from('<I', ctx, 184)[0]
+L131  esp = struct.unpack_from('<I', ctx, 196)[0]
+L132  row['registers'] = {'eax':…,'ecx':…,'edx':…,'ebx':…,'esi':…,'edi':…,
+                          'ebp':…,'eip':…,'esp':…}
+L133  row['instruction'] = self.process.read(eip, 32).hex()
+L136  row['stack'] = self.process.read(esp, stack_size).hex()
+L157  row['frames'].append(entry)      （调用栈，最多 20 帧，含返回地址与参数字符串）
+L163  row['parameters'] = [...]
+```
+
+**`row` 里一直带着 `eip`、出错指令字节、寄存器与调用栈。**
+
+### 395.2 但最终 JSON 里没有
+
+```
+top-level keys: scope / main_menu_verified / … / stop_reason / child_terminated /
+                guard_cleanup / finished_at
+stop_reason = "unhandled_exception"
+```
+
+**没有 `registers` / `instruction` / `events` / `frames`。**
+
+⇒ `self.record(row)` 写入的 `row` 没有被 `close()` 序列化进最终 JSON。
+
+### 395.3 下一轮
+
+看 `E:\GAME\COD\1649370\src\codol_rebuild\runtime\session.py` 的 `record()` 与 `close()`：
+
+1. `record()` 把 `row` 存到哪个容器；
+2. `close()` 为何没把它写进 JSON；
+3. 让 `close()` 一并 dump 该容器。
+
+**异常地址其实一直躺在内存里，只差写进文件这一步。**
+
+### 395.4 里程碑
+
+| Round | 结论 |
+|---|---|
+| 136 | `handle_exception` 未被调用 |
+| **137** | **🎯 定位到 `debug_loop.py`：`row` 已包含 `registers`（含 `eip`）、`instruction`、`frames`、`parameters`；但最终 JSON 只序列化 `log` 顶层字段 ⇒ 下轮改 `session.py` 的 `close()` 把 `row` 列表一起写出来** |
