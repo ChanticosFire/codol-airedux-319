@@ -33084,3 +33084,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **重大发现：inject_ring_a 字段写反（§761）**：0x674F30 反汇编证明 +0x4E8 是 type(dword)、+0x4EC 是 length(word)，而代码里 RING_A_LENGTH=0x4E8、RING_A_TYPE=0x4EC 反了，导致注入的槽 type=长度值、length=0，客户端必然忽略——这是注入无效的直接原因。下一轮修正常量与 w16 写法。
 
 **客户端写入代码证实修正正确（§762）**：0x67511F 写 [esi+0x4E8]=type、0x675125 写 [esi+0x4EC]=length，memcpy_s 上限 0x4E6，与 §761 修正一致。但实测客户端自写包 len=0，可能长度在包体内。下一轮读槽内容确认 ring_a 报文格式。
+
+**ring_a 槽格式确认（§763）**：槽内是完整 OOB 包（\xff\xff\xff\xffconnect ...\0），type=0x191、len=0（长度靠 NUL），客户端正反复重试 connect（12 个包），bridge 已把它们转发 gs（sent=3）。下一轮把 gs 的 connectResponse 按同格式写回 ring_a 再 restore drain，看客户端是否消费。
