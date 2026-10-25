@@ -33172,3 +33172,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x621E96 missed because singleton already allocated (805)**: 0x643300 fast-path returns [0xE85C68] which is now 0x245B5730, but the mov edi,eax after call 0xBAC600 counted 0 across 52460 logic calls - the only executions happened before the hook existed, during early startup. Next round hook earlier or just treat [0xE85C68] as the object and dump its vtable slot +0x20.
 
 **0xBAC600 is a getter not a factory (806)**: bytes are 8b 81 f0 01 00 00 c3 = mov eax,[ecx+0x1F0]; ret, and 0x621E91 does call 0xBAC600, so edi=[ecx+0x1F0] where ecx is 0x621E50's this. That is why the singleton 0x245B5730 is not edi. Counts: logic 92314, gate 84634. Next round capture 0x621E50's ecx and read [ecx+0x1F0] to get edi and its real vtable.
+
+**Gate runs inside a loop (807)**: after restoring and re-hooking 0x621E50 (entry 9685, this=0x18DB00 stack addr, [this+0x1F0]=0), the gate at 0x621EA0 counted 124048 - about 13x the entry count - so the gate is in an inner loop that reloads edi each iteration. Next round disassemble 0x621E50's body to find that loop and the edi reload, which is where per-frame work is decided.
