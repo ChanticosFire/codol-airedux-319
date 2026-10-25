@@ -33254,3 +33254,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Constructing the queue crashes too (846)**: allocated 0x310000 at 0xEE50000, set [0x7508B80] and [CL+0x100260]=1 - client crashed immediately (CreateRemoteThread failed:5 is secondary). Since ~50 other sites read that global, publishing a zeroed block is unsafe. Next round sample those readers to see whether the global is a bounded receive buffer or something central that would make reconstruction open-ended.
 
 **[0x7508B80] is a 4+MB session object (847)**: sampled readers touch +8, +0xA and +0x4231F0 - far too far apart for a receive buffer. So it is the client-session structure and +0x308054 is one region of it; faking it breaks every other subsystem and recreating 4MB of session state is not bounded. Next round accept this and make the strategic call.
+
+**BREAKTHROUGH: session object is statically allocated (848)**: 0x7508B80 is inside .data whose vsize is 0xDBB1CC0 (230MB) with only 0x62000 file-backed - i.e. a huge .bss where the session object already exists zero-filled. Only the pointer assignment is missing. Next round locate that static region's base address.
