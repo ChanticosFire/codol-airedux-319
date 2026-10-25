@@ -22331,3 +22331,66 @@ Start-Process ... forward ...
 | 85 | 找到 5 个写入点；归零点属断开函数 `0x77C290` |
 | 86 | 脚本 typo；但 ff 11 项完整证明能到 8 |
 | **87** | **脚本顺序写反（轮询先于 forward），本轮观测无效；但确认 `Com_Error` 的 `arg0` 是整数错误码、`arg1` 才是格式串，且它有 576 个调用点 ⇒ 下轮需抓 `arg1` 并修正启动顺序** |
+
+## 347. 2026-10-31 15:00–16:00：**🎯🎯🎯 抓到错误消息 —— `Com_Error(2, "EXE_ERR_SERVER_TIMEOUT")`**
+
+### 347.1 本轮修正了顺序（先 forward，再轮询），一次成功
+
+```
+t+ 0.00 net=3  Com_Error=0  disconnect=0
+t+ 3.02 net=4  Com_Error=0  disconnect=0
+t+ 3.87 net=0  **Com_Error=1  disconnect=1**
+               **arg0 = 0x2**
+               **arg1 = 0xDBB658   msg = 'EXE_ERR_SERVER_TIMEOUT'**
+t+ 4.08 net=None
+t+ 4.08 CLIENT GONE
+```
+
+### 347.2 关键收获：根因的错误文本第一次被读出来
+
+**`EXE_ERR_SERVER_TIMEOUT`（服务器超时）** —— 客户端在 `CA_CONNECTING` 阶段
+判定"服务器没有响应"，主动调用 `Com_Error(2, ...)` 退出。
+
+这把此前所有模糊描述（"回 0"、"被断开"、"崩溃"）统一成了**一个明确的判定**：
+
+```
+net=4（CA_CONNECTING）
+  → 等待 connectResponse
+     → 超时 → Com_Error(2, "EXE_ERR_SERVER_TIMEOUT")
+        → 断开函数 0x77C290（disconnect=1）
+           → net_state = 0
+              → 进程退出
+```
+
+### 347.3 与 Round 84 的矛盾（重要）
+
+Round 84 在 `0x5C05F0` 里读到的节流阈值是 **3000 ms**：
+
+```asm
+0x5C06B3  cmp eax, 0xBB8     ; 3000
+0x5C06B8  jl 0x5C0F1B        ; 不到 3 秒就本次跳过
+```
+
+**但实测 `net=4` 只持续 0.85 秒就报超时。**
+⇒ 触发 `EXE_ERR_SERVER_TIMEOUT` 的是**另一个超时判定**，不是那个 3000ms 节流。
+
+### 347.4 下一轮：定位 `EXE_ERR_SERVER_TIMEOUT` 的触发点
+
+字符串 `EXE_ERR_SERVER_TIMEOUT` 位于 **`0xDBB658`**。做法：
+
+1. 在 `.text` 里搜索 `push 0xDBB658`（`68 58 B6 DB 00`）的引用点；
+2. 该处前面的比较指令就是真正的超时阈值；
+3. 若阈值是一个较小的常数（例如 1000 或 800），就把 patch 目标定在那里
+   —— 把它放大到 30000，让客户端有充足时间等到 ring B 里的 `connectResponse`。
+
+**这是目前最直接、最有希望的一击**：有了确切的字符串地址，
+就能精确定位到那一个 `cmp`，而不是继续在函数里猜。
+
+### 347.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 84 | 解出 `0x5C05F0` 的 3000ms 节流 |
+| 85 | 找到 5 个写入点；归零点属断开函数 `0x77C290` |
+| 86–87 | 两次脚本错误（typo / 顺序），观测无效 |
+| **88** | **🎯🎯 抓出 `Com_Error(2, "EXE_ERR_SERVER_TIMEOUT")`：`net=4 → 0` 的真实原因是"服务器超时"判定；且它并非来自 3000ms 那个节流 ⇒ 下轮按字符串地址 `0xDBB658` 反查真正的超时比较点** |
