@@ -27094,3 +27094,63 @@ Line 522: acked_ours = message_ack == peer.get("last_server_seq", 0) and message
 |---|---|
 | 168 | seq 改 4 后 ack 仍为 3 |
 | **169** | **🎯 `acked_ours = (message_ack == last_server_seq)` 设计上不可能为 true ⇒ 前两轮追的是假信号；真信号是 `messageAck` 恒为 3（只 ack gamestate）；且从未用过"验证能到 state 10"的那个工具（其源文件不存在）** |
+
+## 427. 2026-11-04 23:00–24:00：**hybrid snapshot（167 字节、文档验证过的格式）也未能推进；需先验证 `message_ack` 的读取偏移**
+
+### 427.1 本轮做了什么
+
+`build_1649370_snapshot.py` 的文档记载该格式"moves to connection state 10"，
+其 `build()` 只需要源的**前 164 字节**。于是用现有数据合成：
+
+```
+python tools\build_1649370_snapshot.py \
+    --source runs\demo-outer-exact\baseline-outer17-245.bin \
+    --out runs\snapshot-hybrid-from-baseline.bin
+
+wrote runs\snapshot-hybrid-from-baseline.bin (167 bytes)
+00562c000000046637631a000000000000a843b1...0305
+↑  ↑          ↑  ↑
+|  serverTime │  snapFlags
+svc 0         delta
+```
+
+格式符合文档（`svc 0` + serverTime + delta + flags + bit stream + EOF 0x05）。
+
+### 427.2 结果 —— 仍是 net=9、ack=3
+
+```
+max net_state = 9
+ALIVE net=9 ui=0 table=11
+snapshot fragments = 948
+
+seq=59   ack=3
+seq=100  ack=3
+seq=122  ack=3      ← ack 恒为 3
+```
+
+### 427.3 必须先验证的事
+
+```python
+Line 520: message_ack = struct.unpack_from("<i", data, 5)[0]
+```
+
+从**偏移 5** 读 4 字节，但 `data` 是完整包（含 header）。
+**该位置是否真的是 ack 字段，从未验证过。**
+
+Round 169 已经踩过一次"派生字段判定有 bug"的坑（`acked_ours` 设计上不可能为 true）。
+这次要先确认 `message_ack` 的读取位置，再决定下一步，避免又追假信号。
+
+### 427.4 下一轮
+
+读 `on_inband` 完整实现（含 `data` 的结构定义），确认：
+
+1. `data` 的 header 布局（长度 / seq / ack 各占几字节）；
+2. 偏移 5 读出的到底是不是 ack；
+3. 若是，为何恒为 3；若不是，真正的 ack 在哪个偏移。
+
+### 427.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 169 | 发现 `acked_ours` 字段是假信号 |
+| **170** | **🎯 用文档验证过的 hybrid snapshot（167 字节）合成并测试，结果仍是 `net=9`、`ack=3` ⇒ 需先验证 `message_ack` 的读取偏移（偏移 5）是否正确，避免再次追假信号** |
