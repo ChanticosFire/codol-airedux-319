@@ -33288,3 +33288,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Both gate functions are dormant (863)**: 0x5BE700 and 0x809140 both counted 0 on a fresh client; events exist (0x4B4/0x4B0) but nothing is blocked on them. The design is event-driven - a driver signals, a session thread wakes, the gate runs. With no driver nothing wakes. Next round find who calls 0x5BFCE0.
 
 **Connect entry invoked from lobby routine (864)**: 0x5C0252..0x5C028B copies a 120-byte block from 0x8277368 out, calls three UI functions (0x81EAE0/0x820610/0x81E770), copies back, then calls 0x5BFCE0. That block is the join request. Next round identify the routine's entry/callers and [0xCA8200].
+
+**0x5C01C0 is an indirect callback; [0xCA8200] is VirtualFree (865)**: no direct caller exists, so the lobby routine is reached through a registered pointer (UI event table). The legitimate route is to find the registration and drive the mapped UI event. Next round scan for immediate/pointer references to 0x5C01C0.
