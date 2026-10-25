@@ -32930,3 +32930,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **最小 snapshot 也崩（§688）**：单字节 svc0 的 snapshot 下 state 仍到 7 后崩（connection=0xd362501f）——问题不在 snapshot 内容而在 gamestate 处理。下一轮完全停掉 snapshot 只发 gamestate 验证。
 
 **确证 gamestate 是崩溃原因（§689）**：完全不发 snapshot 时 state 仍 4→5→7→0、connection 仍被写成 0xd362501f——gamestate 内容字节级正确但解析时越界写坏 cl。疑点：configstring 只有 3 个（客户端可能期望全量初始化）、或 baseline 长度不对。下一轮解析 gamestate 结构并与 gamestate-3426.bin 对比。
+
+**gamestate 格式非标准（§690）**：gamestate-client0.bin 在 svc3 后直接跟裸字符串（无 configstring index/计数），不是标准 netchan gamestate，很可能是合成数据；客户端按标准格式解析时把 'm'(0x6d) 当 index，越界写坏 cl。下一轮查 native_gamestate.py 并重建标准格式。
