@@ -103,6 +103,7 @@ class GameServer:
                  gamestate_gametype: str | None = None,
                  oob_command: str | None = None, oob_delay: float = 30.0,
                  gamestate_file: str | None = None,
+                 connect_extra: str | None = None,
                  snapshot_preserve_time: bool = False):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
@@ -116,6 +117,7 @@ class GameServer:
         self.checksum_feed = checksum_feed
         self.gamestate_source = gamestate_source
         self.gamestate_file = Path(gamestate_file) if gamestate_file else None
+        self.connect_extra = connect_extra
         self.snapshot_preserve_time = snapshot_preserve_time
         self.gamestate_repeat = int(gamestate_repeat or 0)
         self.gamestate_interval = float(gamestate_interval or 0.0)
@@ -249,6 +251,16 @@ class GameServer:
                     f"\\gametype\\{gametype_text}"
                     f"\\sv_maxclients\\{DEFAULT_MAXCLIENTS}"
                     f"\\protocol\\1\\shortversion\\{PROTOCOL_GENERATION}")
+        # Experiments need to extend this OOB string (clientNum, sv_clientSideName,
+        # spectator flags, ...) without editing code each time.  The suffix is
+        # plain text so it cannot corrupt the binary gamestate.
+        if self.connect_extra:
+            extra = self.connect_extra
+            if not extra.startswith("\\"):
+                extra = "\\" + extra
+            response = response + extra
+            self.log({"dir": "meta", "kind": "connect_extra",
+                      "value": extra[:120]})
         self.send_oob(addr, response)
 
     @staticmethod
@@ -599,6 +611,9 @@ def main() -> int:
     parser.add_argument("--command-seq", type=int, default=4)
     parser.add_argument("--configstring-file", default=None,
                         help="JSON [[index, value], ...] replacing the built-in configstrings")
+    parser.add_argument("--connect-extra", default=None,
+                        help="extra \\key\\value text appended to connectResponse "
+                             "(e.g. \"\\\\clientNum\\\\0\"); purely experimental")
     parser.add_argument("--command-repeat", type=int, default=1,
                         help="how many times to send the server-command stream")
     parser.add_argument("--command-interval", type=float, default=5.0,
@@ -643,7 +658,7 @@ def main() -> int:
                         args.gamestate_repeat, args.gamestate_interval, args.gamestate_map,
                         args.gamestate_gametype, args.oob_command,
                         args.oob_delay if args.match_duration is None else args.match_duration,
-                        args.gamestate_file, args.snapshot_preserve_time)
+                        args.gamestate_file, args.connect_extra, args.snapshot_preserve_time)
     try:
         server.serve()
     except KeyboardInterrupt:

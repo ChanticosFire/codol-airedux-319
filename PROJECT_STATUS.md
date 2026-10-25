@@ -29518,3 +29518,88 @@ connectResponse \mapname\mp_crash_tropical\gametype\war\sv_maxclients\12
 |---|---|
 | 219 | `0x89` 是 cs[2] 偏移，`"cod"` 是协议要求 |
 | **220** | **🎯 解析 gamestate 尾部：`[3]="155"` 之后是 `\x01\x00` + 11 个数值 + 坐标 + `\winner\` 等更多 InfoString，结构远比预想复杂 ⇒ 精确插入 `CS_PLAYERS` 风险高；**转向在 `connectResponse`（纯文本 OOB、零风险）中追加 `\clientNum\0` 等字段** |
+
+## 474. 2026-11-06 22:00–23:00：**发现真实快照样本；真实基线跑通但仍观战**
+
+### 474.1 `connectResponse` 加字段实验（失败）
+
+新增 `--connect-extra` CLI 参数（纯文本追加到 connectResponse，零风险）。
+
+传 `\clientNum\0\sv_clientSideName\Player\sv_clientSideTeam\allies`：
+
+```
+net=10 稳定 150s, ui=0, table=11
+avg brightness = 68.9  pixels>30 = 52.0%
+```
+
+**截图仍是 3D 场景 + 「Q 下一位玩家 / E 上一位玩家」观战提示。**
+亮度提升只是阳光/视角差异，**不是模式变化** ⇒ **`connectResponse` 追加玩家字段无效**。
+
+### 474.2 发现真实快照样本
+
+`runs/demo-outer-exact/` 里一直存着真实快照：
+
+```
+245 bytes  baseline-outer17-245.bin      ← 真实基线（含 playerstate）
+259 bytes  p-delta-outer113-259.bin
+209 bytes  p-delta-outer289-209.bin
+268 bytes  p-delta-outer466-268.bin
+332 bytes  p-delta-outer541-332.bin
+352 bytes  p-delta-outer542-352.bin
+```
+
+头尾特征：
+
+```
+baseline-outer17-245.bin   245 bytes  head=00 56 2c 00 00 00 04 ...  tail=0b 1d 0c ff 07 00 00 05
+p-delta-outer113-259.bin   259 bytes  head=00 d6 51 00 00 01 04 ...  tail=ae 02 00 00 00 06 01 05
+p-delta-outer542-352.bin   352 bytes  head=00 9c f9 00 00 01 04 ...  tail=00 00 00 40 00 00 02 05
+```
+
+**此前一直用的 `snapshot-hybrid-from-baseline.bin` 只有 167 字节，是从一份不存在的
+"2697 baseline"派生的。**
+
+### 474.3 用真实基线跑
+
+```
+--snapshot-file runs\demo-outer-exact\baseline-outer17-245.bin
+--connect-extra \clientNum\0
+
+t+16.05 net=9
+t+16.15 **net=10**
+max net_state = 10, survived 150.1s
+**ALIVE** net=10 ui=0 table=11
+avg brightness = 69.2  pixels>30 = 51.9%
+```
+
+**截图：3D 场景 + 计分板 + 左下角新增「双方持平」（比分逻辑在跑）
++ 底部仍是「Q 下一位玩家 / E 上一位玩家」观战提示。**
+
+### 474.4 观战根因
+
+**数据源是 demo** —— demo 里客户端本身就是旁观者（无真实玩家连接）。
+
+且 gamestate 只有 3 个 configstring：
+
+```
+[0] \g_gametype\war\g_hardcore\0\mapname\mp_crash_tropical\...
+[1] (空)
+[2] "cod"   ← 产品标识，不能改（见 §471）
+```
+
+**真实游戏应有几百个 configstring（含 `CS_PLAYERS` 段）。**
+
+**⇒ 观战模式是"demo 数据本身不含本地玩家槽位"的必然结果。**
+
+### 474.5 下一轮方向
+
+1. 用 `p-delta-*` 序列（真实 delta 快照）替代单一 baseline，模拟连续快照流；
+2. 或从 demo 里提取更完整的 configstring 段（尤其 `CS_PLAYERS`）；
+3. 注意 `[2]="cod"` 绝不能动（§471 已证）。
+
+### 474.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 220 | 转向 `connectResponse` 追加字段 |
+| **221** | **🎯 发现真实快照样本（`baseline-outer17-245.bin` + 5 个 `p-delta-*`），此前用的 167 字节 hybrid 源自不存在的 2697 baseline；改用真实基线后 `net=10` 稳定 150 秒、新增「双方持平」UI；`connectResponse` 加 `clientNum` 无效 ⇒ 观战根因是 **demo gamestate 只有 3 个 configstring、缺 `CS_PLAYERS` 段**，demo 本身即旁观者视角 |
