@@ -33044,3 +33044,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **纠正：0x5C1EE0 是 console 日志（§741）**：0xDBFFA0="R"、0xDBFFA4="[ 0|%24llu]CL"，strcmp 是判断日志前缀，非 OOB 分发，§740 作废。帧循环里完全没有收包→CL_ParseServerMessage 路径。下一轮从 CL_ParseServerMessage 往回追调用者链直到线程入口/消息泵。
 
 **0x473BFD 无 call 指向，是函数指针（§742）**：CL_ParseServerMessage 唯一调用者 0x473BFD 无任何 call，说明其所在函数 0x473A50 经函数指针调用（回调/线程入口）。下一轮搜 0x473A50/0x473BFD 的数据引用（函数指针表），追到注册点即知触发收包的事件。
+
+**0x473A50 是死函数（§743）**：prologue 确认它是入口但无 call、无数据引用，从未被调用，故 CL_ParseServerMessage 恒 0；真正收包解析走另一条路。0x473400 有 1 个数据引用（函数指针），很可能是真正入口。下一轮反汇编 0x4733xx-0x4734xx 并找其注册点。
