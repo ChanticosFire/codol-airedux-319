@@ -27044,3 +27044,53 @@ messageAck: 3,  acked_our_seq: false
 |---|---|
 | 167 | 根因定位为 snapshot seq 1000 跳跃 |
 | **168** | **⚠ 把 seq 改为 4 后 `messageAck` 仍为 3、`acked_our_seq` 仍 false ⇒ seq 不是根因（或不是唯一根因）；下轮先验证 `acked_our_seq` 字段本身的判定逻辑是否正确，避免继续追假信号** |
+
+## 426. 2026-11-03 22:00–23:00：**🎯 `acked_ours` 字段设计上不可能为 true —— 前两轮追的是假信号**
+
+### 426.1 代码证据
+
+```python
+Line 522: acked_ours = message_ack == peer.get("last_server_seq", 0) and message_ack > 0
+```
+
+**它比较的是「客户端 ack 的值」==「我们最后发出的 seq」。**
+
+### 426.2 为什么永远为 false
+
+- snapshot 发了 **928 个分片**，`last_server_seq` 从 4 涨到 **932**；
+- 客户端 ack 停在 **3**；
+- `3 != 932` ⇒ `acked_ours = false`。
+
+**客户端永远追不上每 0.05 秒一个包的发送速度** ⇒ 该判定从设计上就不可能为 `true`。
+**Round 167–168 一直在追一个假信号。**
+
+### 426.3 真正的信号：`messageAck` 恒为 3
+
+3 正是 **gamestate 的 seq**（`seq = 3 + gamestate_count`）。
+
+⇒ **客户端确实 ack 了 gamestate，但从不 ack 任何 snapshot。**
+
+### 426.4 还有一个被忽略的事实
+
+一直使用的是 `build_1649370_snapshot_entity.py`（13 字节，手工构建）。
+
+**但文档里明确验证过"能到 state 10"的是另一个工具** `build_1649370_snapshot.py`，
+它需要 `runs/snapshot-2697-only.bin` —— **该文件不存在**（`runs` 被清理过）。
+
+**⇒ 从未真正测试过那个被验证过的 snapshot。**
+
+### 426.5 下一轮
+
+重建 `snapshot-2697-only.bin`：
+
+- 来源为 `runs/ring-dump-43.jsonl`（seq 33，XOR cookie low byte 15）；
+- 该文件同样不存在，需从 demo 或已有抓包重新提取；
+- 或读 `build_1649370_snapshot.py` 的 `SOURCE_PREFIX=164` / `ACTOR_BIT_START=1309` 逻辑，
+  看能否用现有数据合成。
+
+### 426.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 168 | seq 改 4 后 ack 仍为 3 |
+| **169** | **🎯 `acked_ours = (message_ack == last_server_seq)` 设计上不可能为 true ⇒ 前两轮追的是假信号；真信号是 `messageAck` 恒为 3（只 ack gamestate）；且从未用过"验证能到 state 10"的那个工具（其源文件不存在）** |
