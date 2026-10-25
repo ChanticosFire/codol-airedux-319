@@ -33366,3 +33366,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0xDC7200 is not a map name (902)**: it resolves to "how_qlive_tool_tip", so 0x639700's return is incidental and the map name comes through an argument. Next round find which slot/register carries it and call with a pointer to "mp_crash_tropical" written into client memory.
 
 **room.changemap is a GETTER (903)**: 0x639700 checks slot 0x15, gets via slot 0x1D, reads the current slot's map pointer (fallback 0xDAE091), assigns and reports via slot 0x1F - it never sets the map. The map must be fixed at room.create time (0x6397C0). Next round disassemble that.
+
+**room.create dispatches into engine vtable slot 1 (904)**: 0x6397C0 calls [edi+4] (0x62CA80) with the engine manager in ecx and a value from 0x624430 pushed; the default map string 0xDAE091 is empty, confirming no room. Next round analyse 0x62CA80.
