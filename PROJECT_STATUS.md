@@ -32592,3 +32592,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 `svc_serverCommand=0x05` 假设已被 r455/r456 否定：启用后客户端在 connect 后 9–16 s 崩溃，比基线更快。只有 r446 的"无跟随、无 servercmd、0.1 s 间隔"配置被证实可长时间稳定。下次必须先反汇编 `CL_ParseServerMessage` 的 svc dispatch 表确认真实编号与载荷格式，再开该功能；同时排查复用 runtime 是否导致崩溃。第 5 项未达成。
 
 **svc 枚举已静态确认**：跳转表 `0x473C50` 给出 svc 0=snapshot、**1=serverCommand**、2=u32+处理、3=gamestate、5=无操作返回。正确格式 `[0x01][seq u32][text NUL]`，sequence 必须递增（`0x47384E` 比较 `[conn+0x8014C]`）。此前 `svc=5` 的假设被否定（svc 5 是无操作返回，会截断消息）。代码已改为 0x01；r457 仍因环境问题在 10 s 内崩溃，需洁净 runtime 复测。第 5 项未达成。
+
+**r458–r459 基线复现与副本关系（§530）**：与 r446 相同的服务端参数可稳定到 `CA_ACTIVE(10)`，说明 r450–r457 的崩溃来自 servercmd/跟随两个新变量（servercmd 在 net=8 就发送，写入尚未就绪的连接对象）。新测得：`cl+0x3C` 是 `snapShot.ps.origin`（写入保留），`cl+0x3C80` 是 `predictedPlayerState.origin`（每帧从 snapShot 重建，写入无效），`conn+0x8014C` 是 serverCommandSequence（初值 1，与 cmdNumber 差数百），`ps.commandTime` 恒 0。停掉服务端后按键仍无位移，证明预测被完全跳过。下一步：服务端从 `cl->cmds` 读 usercmd 做权威移动，或让 commandTime 随快照推进。第 5 项未达成。
