@@ -32738,3 +32738,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **官方 demo 也进不了 ACTIVE（§595）**：`+cl_demo_play officialdemo` 后 `state` 短暂到 1（加载中）再退回 0，与 testdemo 表现一致；画面暗一下就恢复正常大厅。两个 demo 都无法到 7，怀疑 demo 文件版本/资源不匹配或 `cl_demo_play` 有前置条件。下一轮检查 demo 文件头与版本匹配。
 
 **无武器命令（§596）**：扫 `.rdata` 确认客户端只有 demo 命令簇与 `cg_weaponBarHide`/`top3_player%d_current_weapon` 等 UI 字符串，**没有 give/setweapon 类命令或 cvar**。武器只能来自 `ps.weapon`（changed=0）。下一轮尝试"完整重排 ps 块位流"——翻转 weapon 的 changed 位同时按新偏移重新编码后续字段。
+
+**插入 34 位不崩但解析失败（§597）**：新增 `tools/snapshot_bits_1649370.py`，在 bit 460 插入 `[changed=1][mode=1][value=1]`（34 位）后快照 182→187 字节；客户端**存活**（不同于 §543 的断线），但 `predictedPlayerState` 的 origin/weapon 全为 0——位流错位导致解析失败。这为"完整重排"提供积极信号：包合法性已通过，只差把后续字段按新偏移正确重编码。
