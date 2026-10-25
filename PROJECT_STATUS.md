@@ -33040,3 +33040,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x4F8CF0 是帧循环（§739）**：时间更新+回调+call 0x5C2260+尾部 drain（丢弃剩余包）；唯一调用者 0x4F8F8E。drain 只是帧末清空，真正处理在 0x5C2260。下一轮反汇编 0x5C2260 找 CL_ParseServerMessage 调用点。
 
 **0x5C1EE0 是 OOB 命令分发（§740）**：从 msg 读字符串后与常量 0xDBFFA0 做 strcmp，符合 connectResponse/statResponse 等 OOB 命令名匹配特征。下一轮读 0xDBFFA0 处字符串确认是哪条命令，进而判断注入包是否到过这一层。
+
+**纠正：0x5C1EE0 是 console 日志（§741）**：0xDBFFA0="R"、0xDBFFA4="[ 0|%24llu]CL"，strcmp 是判断日志前缀，非 OOB 分发，§740 作废。帧循环里完全没有收包→CL_ParseServerMessage 路径。下一轮从 CL_ParseServerMessage 往回追调用者链直到线程入口/消息泵。
