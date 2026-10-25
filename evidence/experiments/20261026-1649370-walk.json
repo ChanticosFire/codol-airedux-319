@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "exe_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "pipeline": [
+    "GetAsyncKeyState(W)",
+    "tools/drive_from_keyboard_1649370.py 6m/s 20Hz",
+    "runs/snap-drive.bin origin",
+    "gameserver rereads file each send",
+    "client snapShot.ps + predictedPlayerState follow",
+    "rendered frame moves"
+  ],
+  "measurement": {
+    "net_state": 10,
+    "origin_before": [
+      336.0,
+      60.0,
+      133.81
+    ],
+    "origin_after": [
+      336.0,
+      77.4,
+      133.81
+    ],
+    "moved_m": 17.4,
+    "hold_seconds": 3.0,
+    "speed_mps": 6.0
+  },
+  "screenshots": [
+    "evidence/experiments/20261026-walk-before.jpg",
+    "evidence/experiments/20261026-walk-after.jpg"
+  ],
+  "limits": "prediction still does not run client-side; movement is server-authoritative and driven by an external keyboard sampler. No weapon/crosshair yet (ps.weapon=0)."
+}
