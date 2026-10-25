@@ -32696,3 +32696,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **UI 主题与版本（§574）**：只有一个 exe（FileVersion/ProductVersion 均为 1649370），r499/r502 都从 runtime 同一份拷贝启动。但 UI 主题确实有两种：当前全新启动是**白色科技风**，用户提供的截图是**深色/蓝色**；`config_mp.cfg` 加密无法对比，恢复旧备份会导致渲染黑屏。两种主题下大厅角色**都持枪**，与武器无关。
 
 **进图卡 net=5（§575）**：r502 只注入一条 connect 也卡在 `CA_CONNECTING(5)`；服务端日志显示 gs 正常（stats→statResponse、持续发 snapshot），**客户端没发 connect**——最可能是 cbuf 溢出后命令队列异常，注入返回 injected 但未执行。下一轮重启客户端后立即连接，或改用启动参数 `+connect` 绕开 cbuf。
+
+**全新实例仍卡 net=4（§576）**：pid 34716 全新启动、零 cbuf 前置注入，只发一条 connect 仍卡 net=4；gs 日志只收到 `getchallenge` 并回了 `challengeResponse`，**客户端没继续发 connect**——排除了"cbuf 残留"，指向 challengeResponse 格式或 bridge 回注问题。下一轮抓 bridge 实时输出确认回注。
