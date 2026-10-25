@@ -32874,3 +32874,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **gs 完全正常（§660）**：直接 UDP 探测 `getchallenge` → 收到 `challengeResponse 1955532436`；带 `\n` 的版本被记为 unknown_oob。所以 gs 能收能回，问题是 bridge 的 `start_challenge` 可能发了带换行的命令。下一轮检查其实现。
 
 **start_challenge 只设状态不发包（§661）**：它只写 loopback 地址 + `connection+0x30=0` + `cls.state=3`，靠客户端帧 tick 调 `0x5C05F0` 发 getchallenge；而帧 tick 的网络路径是死的（§650-654），所以 getchallenge 从未发出、gs 只看到 start。下一轮改用 `inject-oob` 直接塞包或手动调 `0x5C05F0`。
+
+**state=0 需重来 + inject-oob 是可靠驱动路径（§662）**：当前客户端已回 state=0、地址清空，inject-oob 虽成功但不会被当挑战响应。inject-oob 直接写 ring_b（slot 0x78712EC），不依赖客户端发包，可替代"服务端回包"——下一轮用全新客户端按 0→3→4→5 顺序驱动。
