@@ -32868,3 +32868,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **state=4 原因是 forward 没绑定端口（§657）**：gs 与 bridge 进程都在，但 `Get-NetTCPConnection -LocalPort 29126` 为空（无监听），gs 日志只有 start。客户端包发不到 gs，永远停在连接中。下一轮换 29127 端口并先验证端口监听再 connect。
 
 **更正 §657 + 新问题（§658）**：`cmd_forward` 是 UDP，`Get-NetUDPEndpoint` 显示 29127 一直在监听（§657 误判）。重新 connect 后 ring_b=300、gs 日志有 snapshot fragment，但**发到旧端口 29126**（已 kill 的旧 bridge），新 bridge 收不到——gs 按首个包的源地址回复。下一轮重启 gs 再用新 bridge 发 challenge。
+
+**connect 请求没到 gs（§659）**：新 gs 日志只有 start；ring_b=478（challenge 响应已发）、ring_a 62-67（客户端发包），但 gs 没收到 connect/gamestate，state 停 4。下一轮查 bridge 是否把 ring_a 全部块都转发了。
