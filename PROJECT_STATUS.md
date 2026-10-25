@@ -33086,3 +33086,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **客户端写入代码证实修正正确（§762）**：0x67511F 写 [esi+0x4E8]=type、0x675125 写 [esi+0x4EC]=length，memcpy_s 上限 0x4E6，与 §761 修正一致。但实测客户端自写包 len=0，可能长度在包体内。下一轮读槽内容确认 ring_a 报文格式。
 
 **ring_a 槽格式确认（§763）**：槽内是完整 OOB 包（\xff\xff\xff\xffconnect ...\0），type=0x191、len=0（长度靠 NUL），客户端正反复重试 connect（12 个包），bridge 已把它们转发 gs（sent=3）。下一轮把 gs 的 connectResponse 按同格式写回 ring_a 再 restore drain，看客户端是否消费。
+
+**正确格式注入 ring_a 也无效果（§764）**：connectResponse（type=0x191）注入 queued、drain 恢复，但 state 恒 4、ring_a 26/26 全被 drain——证实 0x674F30 取走就扔。三条路（ring_b/ring_a/UDP）全部封死。下一轮验证 state 门槛假设：直接把 cls.state 改成 5，看 drain 行为是否改变。
