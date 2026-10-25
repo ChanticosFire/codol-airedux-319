@@ -33098,3 +33098,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **找到全部真实网络函数（§768）**：0x77820000 的导出全是 code（非转发）：WSAAsyncSelect=0x77838990、WSARecvFrom=0x7783B670、WSASendTo=0x77858AB0、WSAEventSelect=0x7783AC00、select=0x7783AE80。下一轮 hook WSAAsyncSelect 记录 socket/hWnd/wMsg/lEvent，再用 PostMessage 驱动收包。
 
 **WSAAsyncSelect also never called (769)**: count=0 and all args zero, so the async window message model is ruled out. Client calls neither sendto/recvfrom nor WSAAsyncSelect. Next round hook WSARecvFrom/select/WSAEventSelect to find the real send/recv mechanism.
+
+**DECISIVE: all WinSock APIs are 0 (770)**: WSARecvFrom/select/WSAEventSelect all zero, plus earlier sendto/recvfrom/WSAAsyncSelect/WSASendTo - the client never touches the network stack; ring_a is the whole transport and the 0x674F30 drain just discards it. Return direction unreachable via any socket API. Next round: hook the engine message dispatcher (the real svc dispatch used at runtime) instead of the ring.
