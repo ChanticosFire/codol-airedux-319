@@ -32702,3 +32702,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **net=4 定位（§577）**：`--output` 是 bridge 全局参数（须放在子命令前），但 `forward` 分支不写该文件，日志仍拿不到；现象稳定复现为 `net=3→4、table=0`，gs 只收到 `getchallenge` 并回 `challengeResponse`。无法区分"响应不被接受"还是"bridge 没回注"。最后一轮直接读 forward 分支代码 + 核对 challengeResponse 封装。
 
 **最后一轮（§578）**：读 `cmd_forward` 确认回注路径正确（`inject_oob_raw` 写 RING_B，`status=="queued"`），且 `--oob-until-state` 默认 0 使 OOB 包无条件接受——**bridge 没有拦 challengeResponse**。卡点缩小到客户端侧：它在 state=4 收到响应后不发 connect，很可能要求 challengeResponse 带特定字段（gs 现在只回纯文本）。
+
+**纠正 6 轮错误前提（§579）**：`status` 显示 `state=0`、`address_string=""`——`cbuf connect` **从未真正发起连接**；gs 里那条 getchallenge 是 bridge 的 `--start-challenge` 自己发的。改用 `ring_bridge connect --address ...` 后 `state` 变 4、`ring_a` 开始前进（`address_written: true`）。新问题是 bridge 读走了包但没发到 gs（`--dump-in` 空、gs 无记录），下一轮查 `cmd_forward` 的过滤分支。
