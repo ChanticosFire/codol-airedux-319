@@ -32710,3 +32710,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **稳定停在 CA_PRIMED（§581）**：握手全通后 `cl->state=5` 不再前进（`ring_b` 已收 5647 包、`ring_a` 持续发包、gs 发了 connectResponse/gamestate×15/snapshot×数百）。下一轮优先试"发 `svc_serverCommand`"（gs 的 `--server-command-*`），因为 PRIMED→ACTIVE 很可能要求至少一条服务器命令；其次排查 gamestate 被重复发 15 次的问题。
 
 **serverCommand 不推进状态（§582）**：用正确参数（`--command-file/--command-seq/--command-repeat/--command-interval`）让 gs 发出 259 条 command，客户端仍停在 `state=5`——候选 1 排除。现在最可能是"首个快照未通过有效性判定"（`CL_FirstSnapshot` 依赖 `cl.snap.valid`，而 ps.commandTime 从未被写入）。下一轮反汇编 `CL_FirstSnapshot` 判定条件。
+
+**澄清两个 state（§583）**：`0x76446B0` 是 `cls.state`（连接状态机，实测 5=CA_PRIMED），`cl->state`（偏移 0）与连接无关且为 0。客户端**没有断开**，黑屏只是因为 PRIMED 未开始渲染世界。`gs` 的 259 条 serverCommand 与数百 snapshot 均已送达。下一轮反汇编 `0x76446B0` 的写入点找 `CL_FirstSnapshot`。
