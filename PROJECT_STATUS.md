@@ -32624,3 +32624,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **补写 commandTime 首次失败（§544）**：新工具 `patch_ps_commandtime_1649370.py` 在 `0x472406` 装代码洞写 `cl+0x2C`，两次（含空指针保护）都导致客户端连接后退出，说明 `cl+0x2C` 不是安全的 `snapShot.ps.commandTime`。下一步先用 `0x6701D0` 的 `[ebp+0x10]`（已证实是 ps 基址）与 cl 做差，确定 `ps-cl` 常量后再写。
 
 **补写第二轮（§545）**：修正 `mov ecx,[...]`→`lea ecx,[...]` 后，r478 首次 connect 能到 net=4 且客户端存活（指针问题已修），但补发 connect 后仍退出，说明**给 ps.commandTime 赋值本身有副作用**。下一轮先做只读验证（记录 `[ebp-0x3BB0]` 的值与来源），再决定写入值与时机。
+
+**只读验证（§546）**：local snapshot 的 ps+0 是垃圾 `0x417D92EA`，而 predicted 的是 0，说明**复制路径跳过或清零了 commandTime**，从此推断"补写 local snapshot 未必能到 predicted"（解释 §545 的副作用）。同时定位到命令执行循环 `0x4724CA`（`[ebp-0x48]`=serverCommandSequence、`[ebx+0x3B94]`=cmdNumber）。下一轮优先让 `cmdNumber - serverCommandSequence` 落入 1..32。
