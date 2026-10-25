@@ -32079,3 +32079,74 @@ brightness = 21.8   pixels>30 = 9.8%
 |---|---|
 | 260 | 消息通路证明是活的；键盘不生效因玩家未 spawn |
 | **261** | **🎯 dump `0xC87A48C` 缓冲区：**`cod` 实际是 `cs[3]`**（`buffer[0]` 为空槽，`0x89` 精确吻合），且该缓冲区内容是 `battery_multiplier`/`ui_cpoffsety`/`ui_hide_timer`/GUID 等 ⇒ **它不是 CoD 的 `configstrings[]` 而是应用层字符串表** ⇒ **修正 §472/§490 的推断，「补 `CS_PLAYERS`」方案需重新评估，真正的 configstring 数组尚未定位** |
+
+## 519. 2026-11-08 19:00–20:00：**全内存搜索 —— 客户端不保存 CoD 风格的服务器 InfoString**
+
+### 519.1 扫描 1007.7 MB 的结果
+
+```
+b'\mapname\'        hits: 1       @ 0x0018d620
+b'mp_crash_tropical' hits: 38     （多数是资源路径/纹理名）
+b'\sv_hostname\'     hits: 0
+```
+
+**`\mapname\` 唯一命中处的上下文：**
+
+```
+0x0018d610  63 6f 6e 6e 65 63 74 52 65 73 70 6f 6e 73 65 20   connectResponse
+0x0018d620  5c 6d 61 70 6e 61 6d 65 5c 6d 70 5f 63 72 61 73   \mapname\mp_cras
+0x0018d630  68 5f 74 72 6f 70 69 63 61 6c 5c 67 61 6d 65 74   h_tropical\gamet
+0x0018d640  79 70 65 5c 77 61 72 5c 73 76 5f 6d 61 78 63 6c   ype\war\sv_maxcl
+0x0018d650  69 65 6e 74 73 5c 31 32 5c 70 72 6f 74 6f 63 6f   ients\12\protoco
+0x0018d660  6c 5c 31 5c 73 68 6f 72 74 76 65 72 73 69 6f 6e   l\1\shortversion
+0x0018d670  5c 31 2e 31 2e 31 2e 31 33 00                        \1.1.1.13.
+```
+
+### 519.2 结论
+
+**该命中处是 gs 发出的 `connectResponse` OOB 文本的副本，不是 configstring 数组。**
+
+**⇒ 客户端并没有把 `\mapname\...` 存成 CoD 风格的 `cs[0]`（CS_SERVERINFO）InfoString。**
+它从 gamestate 里直接取 mapname（§493 已知 `cl+0x3BE8 = 155` 来自 gamestate）。
+
+**⇒ 本 build 的 configstring 机制与 CoD4 教科书不同，"补 CS_PLAYERS"这条路的可行性进一步降低。**
+
+### 519.3 当前项目状态（截至本轮）
+
+**已达成（有证据）**：真实连接（`cls.state=10=CA_ACTIVE`）、gamestate 解析、
+snapshot 解析、地图加载渲染、退出观战（`pm_type=PM_NORMAL`）、
+`snapshot -> cl->playerState` 链路打通、服务端驱动移动（19 米平滑）。
+
+**未达成**：客户端输入驱动的移动、射击、对局结束返回大厅。
+
+**阻塞点**：客户端停在"开赛前确认"（`战术团队竞技模式` + `按 空格↓` + 计分板 `0 0`），
+且已证明四条输入通道（`SendInput` / `GetKeyboardState` IAT 钩子 / `PostMessage` /
+`WM_CHAR`+鼠标，覆盖全部 7 个窗口）都无法推进；消息通路本身是活的
+（`WM_ACTIVATE` 能造成断开），说明游戏在"玩家 spawn 之前"不接玩法输入。
+
+### 519.4 已掌握的关键地址与结构（供后续接手）
+
+| 项 | 值 / 说明 |
+|---|---|
+| `cls.state` | `0x76446B0`；`CA_ACTIVE = 10`、`CA_PRIMED = 9`（本 build，非教科书 5/6） |
+| `cl` 指针 | `[0x76638F4] ^ 0x6891D1C7` |
+| `cl->playerState` | `cl + 0x3BA4`（`pm_type` 在 `+0`） |
+| 玩家坐标 | `cl + 0x3C80/84/88`（x/y/z）；另一副本在 `cl + 0x3C/40/44` |
+| snapshot 解析标志 | `cl + 0x3BE4`（置 1 表示解析成功） |
+| `cl->cmdNumber` | `cl + 0x3B94`（按住键时递增） |
+| gamestate 里的 `[3]` | `cl + 0x3BE8`（=155） |
+| 应用层字符串表 | `0xC87A48C`（`cod` 在 `+0x89` = `cs[3]`；**不是 CoD configstrings**） |
+| 产品标识校验 | `0x4549EB`..`0x454A28`，`strcmp(edx,"cod")` 失败即 `Com_Error` |
+| 状态名查找函数 | `0x5C8060`（跳转表 `0x5C80B4`） |
+| `GetKeyboardState` IAT | `0x10A8394`（**客户端从不调用**，计数恒 0） |
+| 可复用钩子工具 | `runs/_hook_gks2.py`（装）+ `runs/_verify_gks_hook.py`（验）+ `runs/_hook_gks_count.py`（计数） |
+
+**快照文件**：`runs/snap-nospec-all.bin`（245 字节；清零 `0x2F/0x35/0x3C` 三个 `01`，
+坐标在 `0x0F/0x14/0x18` = x/z/y）—— 当前最稳组合，`net=10` 可稳定 150 秒以上。
+
+### 519.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 261 | `0xC87A48C` 是应用层字符串表，非 configstring |
+| **262** | **🎯 全内存扫描 1007.7 MB：`\mapname\` 仅 1 处命中（`0x18D620`，是 `connectResponse` OOB 副本），`\sv_hostname\` 0 命中 ⇒ **客户端不保存 CoD 风格的服务器 InfoString / configstring 数组** ⇒ "补 `CS_PLAYERS`"路线可行性进一步降低；本轮同时整理了**完整的地址/结构清单**与可复用钩子工具，供后续接手 |
