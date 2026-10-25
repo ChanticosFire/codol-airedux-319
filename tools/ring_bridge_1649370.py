@@ -469,10 +469,13 @@ class Client:
             slot = RING_A_BASE + (read & (RING_A_SLOTS - 1)) * RING_A_STRIDE
             # Slots hold the raw payload with no stored length.  OOB commands
             # are NUL-terminated, so the first NUL is the packet end.
-            raw = self.read(slot, RING_A_STRIDE) or b""
-            nul = raw.find(b"\x00")
-            length = nul if nul > 0 else len(raw)
-            payload = raw[:length]
+            raw = self.read(slot, RING_A_STRIDE)
+            nul = raw.find(b"\x00") if raw else -1
+            length = nul if (nul is not None and nul > 0) else (len(raw) if raw else 0)
+            payload = raw[:length] if raw else b""
+            print(f"[drain_ring_a] idx={read} slot={slot:#x} "
+                  f"raw={raw[:12]!r} nul={nul} len={length}",
+                  file=sys.stderr, flush=True)
             if payload:
                 packets.append({
                     "slot": hex(slot),

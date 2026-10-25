@@ -32894,3 +32894,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **重大突破：connect 通了 + gs 回 229 条（§670）**：NUL 取长修复后 gs 首次收到 `connect`（解析出 uid/userinfo）并回 219 条 inband（gamestate+snapshot），链路首次真正打通。唯一问题：gs 回包发往旧端口 29129（端口不匹配）。下一轮用同一端口重跑并观察 state/ps。
 
 **澄清 §670（§671）**：那次 gs 收到 connect 的 `from` 是 29129（旧 bridge），不是 NUL 修复的功劳；新 bridge 的 stderr 无任何 outbox 输出、gs 0 in/0 out，而 ring_a 仍被消费——NUL 取长返回空（read 失败或首字节为 0）。下一轮在 drain_ring_a 里打中间值。
+
+**drain_ring_a 没执行，客户端自己消费 ring_a（§672）**：加调试后 bridge stderr 空、ring_a 仍 20/20——说明 bridge forward 循环没跑，而客户端（drain 已恢复）自己把包取走了。恢复 drain 的副作用是与 bridge 抢包。下一轮查 bridge 为何没跑 + 处理抢包问题。
