@@ -26944,3 +26944,67 @@ final net=9 ui=0 table=11 gate=1
 |---|---|
 | 165 | snapshot 只发 1 次且仅 245 字节 |
 | **166** | **🎯 改成持续流（475 个包）后：客户端存活 **92.8 秒**、UI 提示文字会变化（证明包被解析），但主状态仍「等待玩家数据…」⇒ 问题从"没有流"变成"流的内容不是完整 snapshot"** |
+
+## 424. 2026-11-03 20:00–21:00：**🎯🎯🎯 找到根因 —— 客户端 ack 停在 seq 3，而 snapshot 用的是 seq 1000（跳跃 997）**
+
+### 424.1 本轮改动
+
+用 `tools/build_1649370_snapshot_entity.py` 手工构建了 **合法但极简** 的 snapshot：
+
+```
+wrote runs\snapshot-empty-entity-table.bin (13 bytes)
+entities=[] head=00 00 1a 01 00 00 0c 06 28 e4 ff 01 05
+```
+
+该工具的文档明确记载：此格式在 2026-10-23 验证过，
+**能让客户端 "moves to connection state 10 and starts sending usercmds"**。
+
+gs 参数改为：`--snapshot-file runs\snapshot-empty-entity-table.bin --snapshot-repeat 3000 --snapshot-interval 0.05`
+
+### 424.2 结果 —— 仍是 net=9，但 inband 增至 5
+
+```
+max net_state seen = 9
+ALIVE final: net=9 ui=0 table=11 f2/f3=1 1      （存活 144.5 秒）
+
+gs lines = 1884, snapshot fragments = 915
+in/inband: 5   in/gamestateupdate: 5   in/stats: 2
+```
+
+### 424.3 inband 包详情 —— 根因浮现
+
+```json
+{"dir":"in","kind":"inband","seq":1,"serverId":155,
+ "messageAck":**3**, "acked_our_seq":**false**,
+ "length":71,"body_len":62,
+ "body_head":"01000000e8a3a2a2a2d3d6c3cec98ccac3ce8292829282..."}
+```
+
+| 字段 | 值 | 含义 |
+|---|---|---|
+| `messageAck` | **3** | 客户端确认到 **seq 3**（= gamestate） |
+| `acked_our_seq` | **false** | **从未确认我们的 snapshot** |
+| 我们的 snapshot seq | **1000** | 与 3 相差 **997** |
+
+### 424.4 这就是根因
+
+客户端只 ack 到 seq 3，而 snapshot 用 seq 1000。序列号跳跃 997，
+客户端会认为中间丢了 997 个包，因此不 ack、继续等 seq 4..999，
+永远停在「等待玩家数据…」。
+
+而且 `--snapshot-repeat 3000` 每次都发同一个 seq 1000
+（`seq = self.snapshot_seq + index`，而 `index` 因只有一个文件而恒为 0），
+所以客户端始终收到重复的 seq 1000，永远等不到 seq 4。
+
+### 424.5 修复方案
+
+1. `--snapshot-seq` 改为 **4**（紧跟 gamestate 的 seq 3）；
+2. **修改 `send_due_snapshots`**：repeat 模式下让 seq 随发送次数**递增**，
+   而不是用固定 `index`。
+
+### 424.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 166 | 475 个 snapshot 发出、客户端存活 92 秒、UI 会更新 |
+| **167** | **🎯 根因：`messageAck: 3`、`acked_our_seq: false`，而 snapshot 用 `seq 1000` —— 跳跃 997 ⇒ 客户端永远等 seq 4..999 ⇒ 必须让 snapshot seq 从 4 开始并递增** |
