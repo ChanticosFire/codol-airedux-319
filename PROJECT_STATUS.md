@@ -29029,3 +29029,54 @@ offset 45:     **\2482\2\2485\18\2490\214\2491\0\3056\2\g_gametype\war\g_hardcor
 |---|---|
 | 211 | `file` 模式忽略 configstring |
 | **212** | **🎯 破解 gamestate 的 configstring 格式：**`\<index>\<value>`** 序列（如 `\2482\2`、`\3056\2`），`CS_SERVERINFO` 从 offset 77 开始；要加 `CS_PLAYERS[0]` 只需插入一段 `\<index>\<value>`，关键是确定其索引** |
+
+## 465. 2026-11-06 13:00–14:00：**🎯 确认 configstring 是 NUL 分隔序列，`[2]` 正是 `CS_PLAYERS[0]`**
+
+### 465.1 结构确认
+
+| index | 偏移 | 值 |
+|---|---|---|
+| `[0]` | 77..174 | `\g_gametype\war\g_hardcore\0\mapname\mp_crash_tropical\scr_game_a...`（InfoString） |
+| `[1]` | 174 | 空 |
+| **`[2]`** | **175..178** | **`"cod"`** ← 这里本该是 `CS_PLAYERS[0]` |
+| `[3]` | 179.. | `"155"` |
+| `[4]` | … | 二进制 |
+
+### 465.2 与 COD4 布局对照
+
+```
+CS_SERVERINFO = 0
+CS_SYSTEMINFO = 1
+CS_PLAYERS    = 2 起（每玩家一个 slot）
+```
+
+**⇒ `[2] = "cod"` 不是玩家信息 ⇒ 客户端解析 `CS_PLAYERS[0]` 失败
+⇒ 判定"没有玩家" ⇒ 观战模式。**
+
+### 465.3 修复方案
+
+把 `"cod\0"`（offset 175..178，4 字节）替换为真正的玩家 InfoString：
+
+```
+\name\Player\team\allies\model\mp_allies_rifleman\rank\1\score\0\ping\50\0
+```
+
+长度 4 → 约 75 字节，文件总长增加约 71 字节。
+因后续内容都是 NUL 分隔，index 不变（`[3]` 仍是 `"155"`），只是多了一段。
+
+**需验证**：gamestate 后面那段二进制（`155\0\x01\x00745 0.000106654...`）
+是否对绝对偏移敏感。若它只是"configstring 区之后的剩余数据"，整体后移安全；
+若有长度/偏移字段，需同步更新。
+
+### 465.4 下一轮
+
+1. 写脚本替换 `"cod\0"` → 玩家 InfoString，输出新 gamestate 文件；
+2. 用 `--gamestate-file` 指向新文件跑；
+3. 看是否还进观战。
+
+### 465.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 212 | 破解 configstring 格式 |
+| **213** | **🎯 configstring 是 **NUL 分隔序列、index = 顺序**：`[0]`=服务器 InfoString、`[1]`=空、**`[2]`=`"cod"`**；COD4 的 `CS_PLAYERS` 从 index **2** 开始 ⇒ `[2]` 本该是玩家 InfoString，实际却是 `"cod"` ⇒ 客户端判定无玩家 ⇒ 观战；修复即替换 `"cod\0"`** |
