@@ -23,7 +23,7 @@ ORIGINAL = bytes.fromhex("8b55b483c4")     # mov edx,[ebp-0x4c]; add esp,0xc
 CL_PTR = 0x76638F4
 CL_XOR = 0x6891D1C7
 SERVER_TIME = 0x3B90
-PS_COMMAND_TIME = 0x2C
+PS_FROM_EBP = -0x3BB0        # local snapshot (ebp-0x3BD0) + 0x20 = ps
 RESUME = TARGET + len(ORIGINAL)
 
 
@@ -33,12 +33,16 @@ def build_cave(cave: int) -> bytes:
     code += b"\xa1" + struct.pack("<I", CL_PTR)           # mov eax,[cl_ptr]
     code += b"\x35" + struct.pack("<I", CL_XOR)           # xor eax,CL_XOR
     code += b"\x85\xc0"                                   # test eax,eax
-    jz_at = len(code)
-    code += b"\x74\x00"                                   # jz skip (patched below)
+    skip1 = len(code)
+    code += b"\x74\x00"
+    code += b"\x8d\x8d" + struct.pack("<i", PS_FROM_EBP)  # lea ecx,[ebp-0x3BB0] = ps address
+    skip2 = -1
     code += b"\x8b\x90" + struct.pack("<I", SERVER_TIME)  # mov edx,[eax+3b90]
-    code += b"\x89\x90" + struct.pack("<I", PS_COMMAND_TIME)  # mov [eax+2c],edx
+    code += b"\x89\x11"                                   # mov [ecx],edx
     skip = len(code)
-    code[jz_at + 1] = (skip - (jz_at + 2)) & 0xFF
+    code[skip1 + 1] = (skip - (skip1 + 2)) & 0xFF
+    if skip2 >= 0:
+        code[skip2 + 1] = (skip - (skip2 + 2)) & 0xFF
     code += b"\x61\x9d"                                   # popad; popfd
     code += ORIGINAL
     code += b"\xe9" + struct.pack("<i", RESUME - (cave + len(code) + 5))
