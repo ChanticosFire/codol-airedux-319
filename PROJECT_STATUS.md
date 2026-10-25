@@ -31967,3 +31967,53 @@ after posting to all windows:
 |---|---|
 | 258 | 七窗口 × 四输入方式全部无效 |
 | **259** | **🎯 精读截图：UI 显示 `战术团队竞技模式` + `按 空格↓` + 计分板 `0 0` ⇒ **客户端停在"开赛前确认"界面**（不是观战、不是加载遮罩）；结合 §515 的"四输入全无效"与"CEF + `Chrome_WidgetWin_0` 为 `vis=False`" ⇒ **新假设：CODOL 的 UI 是 CEF 离屏渲染，键盘必须经 `CefBrowserHost::SendKeyEvent` 才能送达，普通 `WM_KEYDOWN` 到任何窗口都无效** |
+
+## 517. 2026-11-08 17:00–18:00：**激活消息被客户端处理（并导致断开）—— 消息通路是活的，但键盘仍无玩法效果**
+
+### 517.1 实验序列
+
+1. `AttachThreadInput(self_tid, target_tid, True)` -> 成功
+2. `SetForegroundWindow(CODO)` / `SetFocus(CODO)` -> 均成功
+   （`GetFocus == HWND: True`、`GetForegroundWindow == HWND: True`）
+3. `PostMessage(WM_ACTIVATE, WA_ACTIVE)` / `WM_SETFOCUS` / `WM_ACTIVATEAPP(1)` -> 全部返回 1
+4. `SendInput` SPACE 与 W
+
+### 517.2 读数
+
+```
+[afterAct  ] pm=0 org=(0.0, 0.0, 0.0)     <- 位置从 (336,60,261) 归零
+[afterSP   ] pm=0 org=(0.0, 0.0, 0.0)
+[afterW    ] pm=0 org=(0.0, 0.0, 0.0)
+
+随后连续 6 次采样：net=0  ui=0  pm=0  org=(0,0,0)  flag=0
+brightness = 21.8   pixels>30 = 9.8%
+```
+
+**`net` 从 10 掉到 0（`CA_DISCONNECTED`），画面变暗。**
+
+### 517.3 两个结论
+
+**① 消息通路是活的**：客户端确实处理了 `WM_ACTIVATE`/`WM_SETFOCUS`/`WM_ACTIVATEAPP`，
+并因此**主动断开**。**这证明窗口消息能到达并改变游戏状态。**
+
+**② 但键盘消息仍无玩法效果**：即便消息通路已被证明可用，
+`WM_KEYDOWN`（SPACE / W）依然不改变任何玩法状态。
+
+**⇒ 与 §515/§516 一致：不是"消息送不到"，而是"游戏在玩家 spawn 之前
+不把键盘输入接到玩法逻辑上"。**
+
+### 517.4 副作用记录（重要）
+
+**`WM_ACTIVATEAPP(1)` 会导致客户端断开**（`net` 10 -> 0）。
+后续实验**不要**再发该消息；`AttachThreadInput` + `SetFocus` 单独使用是安全的（§228 已证）。
+
+### 517.5 恢复
+
+客户端已断开，需重启（launch + patch + forward）才能继续实验。
+
+### 517.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 259 | 精读截图：`战术团队竞技模式` + `按 空格↓` ⇒ 开赛前确认界面 |
+| **260** | **🎯 `AttachThreadInput` + `SetFocus` + `WM_ACTIVATE`/`WM_SETFOCUS`/`WM_ACTIVATEAPP(1)` 全部成功（`GetFocus==HWND`、`GetForegroundWindow==HWND`），**客户端确实处理了这些消息并因此断开**（`origin` 归零、`net` 10->0、亮度 21.8）⇒ **消息通路被证明是活的**；但 `SendInput` SPACE/W 仍无玩法效果 ⇒ **键盘输入不生效不是通路问题，而是玩家未 spawn 前游戏不接玩法输入**；**副作用：`WM_ACTIVATEAPP(1)` 会导致断开，后续须避免** |
