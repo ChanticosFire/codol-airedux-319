@@ -25460,3 +25460,71 @@ L247: (self.run_dir/'result.json').write_text(json.dumps(self.data,…))
 |---|---|
 | 136–137 | 发现 `row` 已含 `registers`/`instruction`，但没找到落盘文件 |
 | **138** | **🎯 找到 `reuse-*/result.json` 的 `events`；读出崩溃记录：`0xc0000005` @ `0x43204F`，`parameters=["0x0","0xc"]`，`edx=0`；反汇编确认 `0x43204F mov ecx,[edx+0xC]` 即崩溃指令 ⇒ 下轮追 `edx` 的来源** |
+
+## 397. 2026-11-02 17:00–18:00：**🎯🎯🎯🎯🎯 根因完全确定 —— 全局指针 `[0x32AA908]` 为 0**
+
+### 397.1 崩溃函数的完整上下文
+
+```asm
+0x432000  push ebp / mov ebp, esp / sub esp, 0x104
+0x432013  eax = [ebp+8]                    ; 参数（0xDAE091 或 0xDB0224）
+0x432023  call 0xC3C740                    ; strncpy(dst, src, 0xFF)
+0x43202E  push 0xDB0224                    ; 字符串 '|'
+0x432034  [ebp-5] = 0
+0x432038  call 0xC3CEC7                    ; strtok / strchr
+0x432040  test eax, eax
+0x432042  je 0x43208E
+0x432044  cmp byte ptr [eax], 0
+0x432047  **je 0x43207B**                   ; token 为空则跳过
+0x432049  **edx = [0x32AA908]**             ; ← **全局指针，值为 0**
+0x43204F  **mov ecx, [edx + 0xC]**           ; ← **edx=0 → 读 [0xC] → 崩溃**
+0x432052  mov dl, [eax]
+0x432054  cmp dl, [ecx]                      ; 字符串比较循环
+…
+```
+
+### 397.2 完整因果链
+
+```
+0x432000(str) → strncpy → strtok(s, '|')
+  → token 非空
+    → edx = [0x32AA908]        ← 全局指针，**为 0**
+      → ecx = [edx + 0xC]      ← **读 0xC → 访问违规**
+```
+
+**`[0x32AA908]` 是某个全局对象指针，本场景下从未初始化。**
+
+### 397.3 硬件证据（`result.json` 的 `events[233]`）
+
+```
+exception  = 0xc0000005           ACCESS_VIOLATION
+address    = 0x43204f
+parameters = ["0x0", "0xc"]       读操作，地址 0xC
+registers.edx = 0x0
+registers.eip = 0x43204f
+```
+
+**四条信息互相印证，唯一指向 `mov ecx,[edx+0xC]`。**
+
+### 397.4 修复（2 字节）
+
+```
+0x432047: 74 32  (je +0x32 -> 0x43207B)  ->  EB 32  (jmp +0x32)
+```
+
+无条件跳过这段危险的比较，直接走 `0x43207B` 的安全路径。
+
+### 397.5 下一轮
+
+应用该 patch，验证：
+
+1. 客户端不再崩在 `0x43204F`；
+2. `after_call`（`0x454A71`）是否变为 ≥1；
+3. 是否继续走到 `0x454A92` / 函数收尾。
+
+### 397.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 138 | 拿到 `0xc0000005 @ 0x43204F`、`parameters=["0x0","0xc"]`、`edx=0` |
+| **139** | **🎯 追到函数入口 `0x432000`（唯一调用者 `0x43210C`），确认 `0x432049 edx=[0x32AA908]` 全局指针为 0 ⇒ `0x43204F mov ecx,[edx+0xC]` 崩溃；修复为 `0x432047: 74 32 -> EB 32`** |
