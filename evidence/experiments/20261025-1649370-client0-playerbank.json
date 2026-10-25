@@ -1,0 +1,45 @@
+{
+  "build": 1649370,
+  "source_exe_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "runtime_reused": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+  "snapshot": "runs/snap-nospec-1.bin",
+  "runs": [
+    {
+      "name": "r426",
+      "gamestate": "runs/gamestate-client0.bin",
+      "gamestate_sha256": "737d3c5b99e91972cd9f4e689f810c290a5b89549ff496b401c38855dbfe6a79",
+      "gamestate_bytes": 6411,
+      "server_events": {
+        "getchallenge": 1,
+        "connect": 1,
+        "gamestate_fragments": 6
+      },
+      "observed_net_state": 10,
+      "observed_ui_state": 0,
+      "screen": "evidence/experiments/20261025-client0.jpg",
+      "screen_observation": "3D map rendered; press-space spawn prompt remains; no controllable player"
+    },
+    {
+      "name": "r427",
+      "gamestate": "runs/gamestate-client0-player1735.bin",
+      "gamestate_sha256": "b5cc2de5a7cdb782db373681b8be9300f8d51a4f34591329317eddd568f78e99",
+      "gamestate_bytes": 6420,
+      "server_events": {
+        "getchallenge": 1,
+        "connect": 1,
+        "gamestate_fragments": 6
+      },
+      "observed_net_state": 10,
+      "observed_ui_state": 0,
+      "screen": "evidence/experiments/20261025-client0-player1735-after-space.jpg",
+      "screen_observation": "3D map rendered; press-space spawn prompt remains; no controllable player"
+    }
+  ],
+  "static_finding": {
+    "function": "0x671700",
+    "selector_dispatch": "0x671791..0x67179A",
+    "normal_end": "selector > 12 at 0x671794 branches to return 1 at 0x671B21",
+    "caller": "0x471E50..0x471E5B branches to 0x471DDA on return 1",
+    "limitation": "static path only; exact bit cursor for 245-byte baseline and valid entity payload still unverified"
+  }
+}

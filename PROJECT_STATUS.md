@@ -32570,3 +32570,7 @@ consumed 6411 / 6411  PERFECT
 |---|---|
 | 267 | 轮次用尽收尾 |
 | **268（本轮）** | **🎯 研究 2697/1604220 参考服务端：提炼 gamestate 布局与 configstring 池机制（1bit+14bit 增量索引、三类条目、事务性提交）；**自建 `tools/build_gamestate_1649370.py` 并与真实文件达成 BYTE-EXACT ROUND-TRIP**；纠正「只有 3 条 configstring」为 **291 条（索引 0..12249）**；确证 **index 1424 = `PLATFORM_PRESS_TO_SPAWN`**；发现 **`client_number = 1`** 与**玩家 bank 索引 0x6C7 为空**两个缺口；实证「数据位不同」= 模型引用用文本 `* N` 而非位流段 ⇒ 加玩家数据只需改 text 池 |
+
+### 1649370 当前会话进展
+
+复用 `r107flow/runtime` 完成 r426/r427 两次真实连接。正确设置 gamestate `client_number=0`，以及再加入参考玩家名 configstring `1735=Player`，客户端都到 `CA_ACTIVE(10)` 且地图渲染，但始终显示“按空格”，无法自行移动或射击。SPACE 再试无可见效果。静态复核发现实体解析器 `0x671700` 对 selector > 12 存在正常返回路径，早期“非空实体必然读到流错误”结论需收窄。下一步定位 245 B 快照的实体字段位游标，构造本地实体与位置并验证操作。证据见 `evidence/experiments/20261025-1649370-client0-playerbank.json`；第 5 项仍未达成。
