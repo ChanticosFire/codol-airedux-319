@@ -32928,3 +32928,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **崩溃点在 CL_ParseServerMessage（§687）**：崩溃后 `connection=0xd362501f`，正是 `0x471E90` 里的 XOR 常量——说明栈/上下文被解析器写坏，崩溃发生在 CL_ParseServerMessage 内部。state=7 后客户端确实开始解析，但越界写坏 cl。下一轮在 0x471E90 内分 svc 分支 hooks + 用最小合法 snapshot 试验。
 
 **最小 snapshot 也崩（§688）**：单字节 svc0 的 snapshot 下 state 仍到 7 后崩（connection=0xd362501f）——问题不在 snapshot 内容而在 gamestate 处理。下一轮完全停掉 snapshot 只发 gamestate 验证。
+
+**确证 gamestate 是崩溃原因（§689）**：完全不发 snapshot 时 state 仍 4→5→7→0、connection 仍被写成 0xd362501f——gamestate 内容字节级正确但解析时越界写坏 cl。疑点：configstring 只有 3 个（客户端可能期望全量初始化）、或 baseline 长度不对。下一轮解析 gamestate 结构并与 gamestate-3426.bin 对比。
