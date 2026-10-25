@@ -32854,3 +32854,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x5AA980 是 switch 分发的承载函数（§650）**：131KB 栈帧、参数 `[ebp+8]`；调用者 0x5AAEB3/0x5AAEBC 位于 `jmp dword [eax*4+0x5AAF28]` 的 4-case switch 分发里，很可能就是 `CL_ParseServerMessage` 各 case 的承载函数。`0x5C2260` 的调用者来自 0x4F8xxx。下一轮 hook 这两处。
 
 **switch 不是消息分发（§651）**：`0x5AAEB3`/`0x4F8CD6`/`0x5AA980` 全 0；反汇编显示 `0x5AA980` 前的代码是"字符串长度 + memcpy 到容量受限缓冲区"，是**发送路径**而非接收。§650 推测作废。下一轮换方向：直接手动调用 `0x471E90`（CL_ParseServerMessage）验证解析器本身是否工作。
+
+**不能直接调 0x471E90（§652）**：它要 `msg_t*` 参数而非 ring；当前 state=0、ring_a 还积着 577 个未消费块（好素材）。下一步找 `0x674F30`（ring_a drain）的调用者——那才是"读 ring→组装 msg→解析"的入口。
