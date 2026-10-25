@@ -33222,3 +33222,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **state=5 was a crash artifact (830)**: gate-NOP without drain block gives state 4 and a live client (ring_a consumed normally), while blocking the drain crashes the client immediately - so the state=5 sighting was the crash precursor. The drain is required; outbound traffic must be observed cooperatively. Next round hook 0x674F30 entry, capture dst/src/len and payload, without blocking it.
 
 **Observing 0x674F30 instead of blocking (831)**: entry hook on 0x674F30 with client alive shows 7552 drain calls, arg0=dst (stack), arg1=0, arg2=out (stack), state 4, ring_a 2/2 consumed normally. The dst buffer changes per call so payload must be copied inside the hook. Next round extend the cave to copy the first N bytes of dst into a scratch area for the bridge to read.
+
+**Post-hoc dst inspection fails (832)**: the drain's dst pointer is stable (0x18DAD0) but its contents never change because when read>=write the function returns 0 without copying, so the copy must be captured inside the hook. Next round write a dedicated hook whose cave does memcpy(scratch,[ebp+8],N) before replaying the stolen bytes.
