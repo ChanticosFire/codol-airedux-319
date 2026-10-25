@@ -21696,3 +21696,75 @@ gs 在收到 `connect` 后 **0.6 ms** 内就发出 `connectResponse`（Round 61 
 |---|---|
 | 78 | 连续 3 次卡在 `net=4→0` |
 | **79** | **🎯 `--dump-in` 证明 `connectResponse` 在 `state=0` 注入（`challengeResponse` 在 3 是对的）⇒ 处理延迟来自 `--start-challenge` 的 `invoke_sequence`；Round 76 证明客户端能自主完成握手 ⇒ 下轮完全不用 `--start-challenge`** |
+
+## 339. 2026-10-31 07:00–08:00：**否定结果 —— 客户端不会自主发起连接，`--start-challenge` 是必需的**
+
+### 339.1 本轮实验
+
+```
+完全不用 --start-challenge：
+  forward --target 127.0.0.1:28969 --retry-seconds 0 --dump-in … --seconds 40
+其余不变（ui_mapname 改写、两个补丁、flag=0、conn adr 正确）
+```
+
+### 339.2 结果：客户端完全不动
+
+```
+forward: injected=0  received=0
+注入包数: 0
+
+poll:
+t+ 0.00 net=1  ff_count=0
+t+ 1.03 net=1  ff_count=2
+t+ 2.72 net=1  ff_count=6
+t+12.32 net=0  ff_count=6      ← 全程停在 1，没有任何连接尝试
+t+12.92 net=0  table=1135      （回滚到大成大厅）
+gs: stats = 0
+ALIVE
+```
+
+**`net` 从未到 3** —— 客户端没有自主发起 `getchallenge`/`connect`。
+
+### 339.3 由此确定的约束
+
+| 做法 | 结果 |
+|---|---|
+| 不触发 | 客户端停在 `net=1`，什么都不发 |
+| `--start-challenge` | 客户端到 3/4，但 `invoke_sequence` 让 `connectResponse` 迟到（`state=0`） |
+| 手工写 `net_state=3` | 客户端自己状态机不同步，反复复位（Round 76 已证伪） |
+
+**三条路都有代价。** 这正是过去几十轮反复徘徊的根本原因。
+
+### 339.4 关键推论：需要"触发"与"纯转发"分离
+
+`--start-challenge` 之所以拖慢 `connectResponse`，是因为它在**同一个进程、
+同一个循环**里既做 `invoke_sequence`（挂起窗口线程）又做 socket 收发。
+
+**若把两者分成两个进程**：
+1. 进程 A：短时间运行，只做 `--start-challenge`（触发客户端进入 CHALLENGING），
+   `--seconds 3` 后退出；
+2. 进程 B：**紧接着**启动，只做纯接收 + 注入（`--seconds 40`，无 `--start-challenge`）。
+
+那么当客户端真正发出 `connect` 时，进程 B 完全没有 `invoke_sequence` 干扰，
+`connectResponse` 一到就能立即注入。
+
+### 339.5 下一轮（进程分离）
+
+```
+1. forward A: --start-challenge --retry-seconds 0 --seconds 3    （仅触发）
+2. 等 A 退出（约 3 秒）
+3. forward B: --retry-seconds 0 --dump-in … --seconds 40         （纯转发）
+4. 轮询 45 秒
+```
+
+**判定**：
+- 若 `--dump-in` 里 `connectResponse` 的 `state` 变成 **4** ⇒ 方案成立，
+  `net` 应当推进到 5、8，地图 fastfile 应再次出现；
+- 若仍是 0 ⇒ 说明延迟来自别处（例如客户端在 4 阶段的超时本身就极短）。
+
+### 339.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 79 | `--dump-in` 证明 `connectResponse` 在 `state=0` 注入 |
+| **80** | **否定结果：不用 `--start-challenge` 时客户端完全不动（`net` 停在 1）⇒ 触发是必需的；但触发与转发在同一循环里互相拖累 ⇒ 下轮把"触发"和"纯转发"拆成两个进程** |
