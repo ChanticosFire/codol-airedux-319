@@ -32596,3 +32596,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **r458–r459 基线复现与副本关系（§530）**：与 r446 相同的服务端参数可稳定到 `CA_ACTIVE(10)`，说明 r450–r457 的崩溃来自 servercmd/跟随两个新变量（servercmd 在 net=8 就发送，写入尚未就绪的连接对象）。新测得：`cl+0x3C` 是 `snapShot.ps.origin`（写入保留），`cl+0x3C80` 是 `predictedPlayerState.origin`（每帧从 snapShot 重建，写入无效），`conn+0x8014C` 是 serverCommandSequence（初值 1，与 cmdNumber 差数百），`ps.commandTime` 恒 0。停掉服务端后按键仍无位移，证明预测被完全跳过。下一步：服务端从 `cl->cmds` 读 usercmd 做权威移动，或让 commandTime 随快照推进。第 5 项未达成。
 
 **相机位置源确认（§531）**：游戏窗口真正前台后 SendInput 按住 W 三秒，`predictedPlayerState` 完全不动，排除输入通道问题、确认预测不产出。停服后写入实验证明 `cl+0x3C` 的 x/z 分量驱动相机水平位置（画面平移），y 分量无效（改 120 画面不变）；相机高度字段仍未找到，`cl+0x58`/`ps+0x2C` 均不是。武器可由 `ps+0x4C`（快照不传）直接设置。新增 `--client-state-pid` 门控（未验证）。第 5 项未达成。
+
+**后台抓图与否定结果（§532）**：`tools/capture_window_bg.py`（PrintWindow）可在游戏不在前台时抓完整画面，`tools/scan_viewheight_1649370.py` 做自动字段扫描。实测否定三条猜测：`cl+0x40`(y)/`cl+0x44`(z) 都不是相机高度（改动画面不变，只有 x 有效）；`cl+0x2C` 不是 `snapShot.ps` 起点（commandTime 是垃圾值，`cl+0x78` 设 1 无武器、`cl+0x58` 设 60 不抬视角）；逐字段扫描时出现纯黑帧（72.03），方法需修正。下一步转向定位 cgame 的 `cg` 全局（`cg->refdef.vieworg`）。第 5 项未达成。
