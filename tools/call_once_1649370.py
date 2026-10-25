@@ -34,7 +34,7 @@ k32.WriteProcessMemory.argtypes = [W.HANDLE, ctypes.c_void_p, ctypes.c_void_p,
                                    ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)]
 
 
-def build_body(scratch: int, fn: int, ecx: int, arg: int | None) -> bytes:
+def build_body(scratch: int, fn: int, ecx: int, arg: int | None, edi: int | None = None) -> bytes:
     """Build the guarded payload; jmp displacement computed after assembly."""
     parts: list[bytes] = []
     jmp_index = -1
@@ -44,6 +44,8 @@ def build_body(scratch: int, fn: int, ecx: int, arg: int | None) -> bytes:
     parts.append(b"\x0F\x85\x00\x00\x00\x00")        # jne rel32 (patched)
     parts.append(b"\xC7\x05" + struct.pack("<I", scratch + SLOT_FIRED) + b"\x01\x00\x00\x00")
     parts.append(b"\xFF\x05" + struct.pack("<I", scratch + SLOT_COUNT))
+    if edi is not None:
+        parts.append(b"\xBF" + struct.pack("<I", edi & 0xFFFFFFFF))   # mov edi, EDI
     parts.append(b"\xB9" + struct.pack("<I", ecx & 0xFFFFFFFF))
     if arg is not None:
         parts.append(b"\x68" + struct.pack("<I", arg & 0xFFFFFFFF))
@@ -68,6 +70,7 @@ def main() -> int:
     ap.add_argument("--pid", type=int, required=True)
     ap.add_argument("--fn", type=lambda v: int(v, 0), default=0)
     ap.add_argument("--ecx", type=lambda v: int(v, 0), default=0)
+    ap.add_argument("--edi", type=lambda v: int(v, 0), default=None)
     ap.add_argument("--arg", type=lambda v: int(v, 0), default=None)
     ap.add_argument("--target", type=lambda v: int(v, 0), default=TARGET_DEFAULT)
     ap.add_argument("--len", type=int, default=LEN_DEFAULT)
@@ -114,7 +117,7 @@ def main() -> int:
     if not cave or not scratch:
         raise SystemExit("VirtualAllocEx failed")
 
-    body = build_body(scratch, args.fn, args.ecx, args.arg)
+    body = build_body(scratch, args.fn, args.ecx, args.arg, args.edi)
     code = bytearray()
     code += b"\x60"                       # pushad
     code += body
@@ -130,7 +133,7 @@ def main() -> int:
         raise SystemExit("patch failed")
 
     print(f"cave {cave:#x} scratch {scratch:#x}")
-    print(f"will call {args.fn:#x} ecx={args.ecx:#x} arg={args.arg} once")
+    print(f"will call {args.fn:#x} ecx={args.ecx:#x} edi={args.edi} arg={args.arg} once")
     return 0
 
 
