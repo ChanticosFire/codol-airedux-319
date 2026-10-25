@@ -92,7 +92,7 @@ def main() -> int:
                     help="base address of the four result slots")
     ap.add_argument("--capture", type=int, default=0,
                     help="copy this many bytes of the captured buffer, at call time")
-    ap.add_argument("--capture-src", choices=("arg0", "arg1", "arg4", "ecx", "edx", "ebp", "esi"), default="arg0",
+    ap.add_argument("--capture-src", choices=("arg0", "arg1", "arg2", "arg3", "arg4", "ecx", "edx", "ebp", "esi"), default="arg0",
                     help="which register/argument points at the buffer to copy")
     ap.add_argument("--capture-offset", type=lambda v: int(v, 0), default=0,
                     help="byte offset from the captured pointer")
@@ -128,6 +128,9 @@ def main() -> int:
     slot_ret = args.slot + 4
     slot_arg0 = args.slot + 8
     slot_arg1 = args.slot + 12
+    slot_arg2 = args.slot + 0x18
+    slot_arg3 = args.slot + 0x1C
+    slot_arg4 = args.slot + 0x20
     slot_ecx = args.slot + 0x10
     slot_eax = args.slot + 0x14
     slot_capture = args.slot + 0x40
@@ -143,9 +146,11 @@ def main() -> int:
         "is_hooked": bool(entry and entry[0] == 0xE9),
         "counters": {"count": u32(slot_count), "ret": u32(slot_ret),
                      "arg0": u32(slot_arg0), "arg1": u32(slot_arg1),
+                     "arg2": u32(slot_arg2), "arg3": u32(slot_arg3),
+                     "arg4": u32(slot_arg4),
                      "ecx": u32(slot_ecx), "eax": u32(slot_eax)},
     }
-    for key in ("ret", "arg0", "arg1", "ecx", "eax"):
+    for key in ("ret", "arg0", "arg1", "arg2", "arg3", "arg4", "ecx", "eax"):
         if isinstance(report["counters"].get(key), int):
             report["counters"][key] = hex(report["counters"][key])
     if args.capture:
@@ -193,6 +198,12 @@ def main() -> int:
     code += b"\xA3" + struct.pack("<I", slot_arg0)
     code += b"\x8B\x44\x24\x28"                              # mov eax,[esp+0x28] arg1
     code += b"\xA3" + struct.pack("<I", slot_arg1)
+    code += b"\x8B\x44\x24\x2C"                              # mov eax,[esp+0x2c] arg2
+    code += b"\xA3" + struct.pack("<I", slot_arg2)
+    code += b"\x8B\x44\x24\x30"                              # mov eax,[esp+0x30] arg3
+    code += b"\xA3" + struct.pack("<I", slot_arg3)
+    code += b"\x8B\x44\x24\x34"                              # mov eax,[esp+0x34] arg4
+    code += b"\xA3" + struct.pack("<I", slot_arg4)
     code += b"\xFF\x05" + struct.pack("<I", slot_count)
     # pushad pushes EAX,ECX,EDX,EBX,ESP,EBP,ESI,EDI in that order, so afterwards
     # the caller ECX sits at [esp+0x18].  Some functions (0x484C10) receive their
@@ -209,8 +220,9 @@ def main() -> int:
         # Stack-passed name arrays die as soon as the function returns, so
         # reading them afterwards always yields zeros.
         count_words = args.capture // 4
-        src_off = {"arg0": b"\x24", "arg1": b"\x28", "arg4": b"\x34",
-                   "ecx": b"\x18", "edx": b"\x14", "ebp": b"\x08", "esi": b"\x04"}[args.capture_src]
+        src_off = {"arg0": b"\x24", "arg1": b"\x28", "arg2": b"\x2C", "arg3": b"\x30",
+                   "arg4": b"\x34", "ecx": b"\x18", "edx": b"\x14",
+                   "ebp": b"\x08", "esi": b"\x04"}[args.capture_src]
         code += b"\x8B\x74\x24" + src_off                    # mov esi,[esp+src]
         if args.capture_offset:
             code += b"\x81\xC6" + struct.pack("<I", args.capture_offset & 0xFFFFFFFF)

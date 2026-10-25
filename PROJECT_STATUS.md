@@ -32602,3 +32602,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **ps 真实位置（§533）**：hook `0x471980` 抓到 local snapshot 指针，origin 在 snapshot+0x30、ps 在 +0x20；但该 ps 的 commandTime/pm_type 是垃圾，而 `predictedPlayerState`（cl+0x3C70）的对应位置是正确的 0/0。说明网络解析临时结构与客户端最终使用的 ps 偏移不同，前几轮按 `cl+0x2C` 的推算全部无效。下一步从 `0x6701D0` 的 `[ebp+0x10]` 直接取解析器写入的 ps 地址。第 5 项未达成。
 
 **修正（§533.1）**：`0x169E08+0x30` 的 origin 更可能是快照 header 的 origin 副本，不是 ps.origin；ps 在 `snapshot_t` 内的偏移仍未知。抓取工具缺 `arg2`/`arg3`，下一轮先补上再抓 `0x6701D0` 的 `[ebp+0x10]`（ps 基址）。第 5 项未达成。
+
+**ps 基址与模板（§534）**：钩子工具已扩展 arg2/arg3；实测 `0x6701D0` 的 `arg2=0x1670AC` 即 ps 基址（解析后内存清空，是临时缓冲）。`0x471980` 里 `memcpy(&[ebp-0xBC], 0xDA9920, 0x58)` 表明 **0xDA9920 是 ps 模板**，下一轮 dump 它即可重建本 build 的 `playerState_t` 字段布局。第 5 项未达成。
