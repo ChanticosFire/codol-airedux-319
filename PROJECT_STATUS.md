@@ -33304,3 +33304,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x604834 is the .menu loader; sf_ is the script-function prefix (871)**: it builds ui_mp/scriptmenus/<name>.menu and loads resource type 25. The useful find is the "sf_" prefix (0xDC56C0) - script callbacks are named sf_<x>, so its refs lead to the script-function registry. Next round follow those refs.
 
 **0x60F78F is the UI-script runner (872)**: it strncmp-tests the "sf_" prefix, then loads ui_mp/scriptmenus/<name>.menu and runs it via 0x601940 with context 0x34F2B00. Script name comes from 0x514880 - the last link before a script-driven connect. Next round disassemble 0x514880.
+
+**0x601940 is a bulk resource-list loader (873)**: it walks {count,array} loading each as type 26, so 0x60F7AF loads dependencies not executes script. Shifted to finding callers of the connect dispatcher 0x60D540. Next round analyse those callers for the menu-event handler.
