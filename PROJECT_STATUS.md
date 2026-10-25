@@ -33190,3 +33190,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Hot-path args are ('5', 0x20000, '5') (814)**: 0x621E50 receives a one-char string and a numeric tag; the dangerous [ebx+2] read would fault at 0x20002 but the esi!=4 guard diverts first. So this subtree is a text/token handler, not a game-message dispatcher, and never touches cls.state. Next round pivot back to the connection path with clean tools and log the connect attempt step by step.
 
 **Connection entry located (815)**: state=4 write at 0x5BEA8B fires exactly once; it is preceded by memset(0x7888788, ebx, 0x1398) (5016-byte network buffer) and followed by CL initialisation (0x331C0C8 xor key, +0x14, +0x30=-0xBB8). state=7 write never fires, matching all prior sessions. Next round dump the full connect routine and see what it does after 0x5BEAC3 - where the client gives up.
+
+**0x5C05F0 is the real network pump (816)**: it gates on cls.state in {3,4,5,6}, bails if [CL+0x100260]==1, dispatches via a jump table at 0x5C0F2C using 0x7F4F10's result, and enforces a 3000ms send throttle (time-[ebx+0x30]). Since CL is zero, [CL+0x100260]==0 so the pump proceeds. Next round dump the jump table and 0x7F4F10.
