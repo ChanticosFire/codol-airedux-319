@@ -33372,3 +33372,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Session manager never created (905)**: 0x84ABB08/0x84ABB14/0x84ABA50 are all zero, so 0x477B00 takes its empty branch and no room can exist. Next round find the writer of those globals - the session-manager constructor - and call it once via the harness.
 
 **STRUCTURAL: session manager has readers but no writer (906)**: scans find only reads of 0x84ABB08/0x84ABB14, so like [0x7508B80] (294) and the events (859) it is an injection point whose injector is absent. Four independent findings now show all network/session state is externally injected: only the single-player shell (render, input, UI scripts, audio, demo) is native. Next round try calling the begin-game method 0x62F840 directly to start a local game.
+
+**Calling begin-game directly crashes (907)**: 0x62F840 with ecx=engine manager killed the client even though the guard checks pass on paper - the body dereferences never-built state, same class as setting cls.state directly (292). Next round read 0x62F8C3 onward to find which field faults.
