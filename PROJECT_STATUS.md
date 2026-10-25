@@ -32614,3 +32614,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **snap-ct 真跑结果（§538）**：gs 日志确认发送了 `snap-ct.bin`，但 `predictedPlayerState.commandTime` 仍为 0 ⇒ **header 那 4 字节不是 ps.commandTime**，需走 ps 块内 changed 位方案。同时发现 182 字节 compact 快照**不传 ps.origin**（客户端 origin 全 0），而 r446 用的是 245 字节 `snap-nospec-1.bin`。下一轮改用 245 字节基线再验证。
 
 **会话规律（§539）**：同一客户端进程只经得起一次成功连接，`disconnect→connect` 后必在 9–20 s 内退出；后续必须"一进程一实验"。`runs/snap-245-ct.bin`（245 B、origin=(336,261,60)、commandTime=471192）已备好，下一轮用全新客户端验证 origin 与 commandTime 是否恢复。
+
+**245B 快照不安全（§540）**：r470 用全新客户端首次连接 `snap-245-ct.bin` 即崩，印证 §527（改 `0x35` 破坏变长编码）。两版快照形成取舍：245 B origin 有效但解析非法，182 B 解析全对但 origin 不生效。下一轮二选一：修 182 B 的 origin 位流，或用字段级重编码重造 245 B 的 ps0。
