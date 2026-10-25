@@ -32784,3 +32784,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **执行即退出可复现（§616）**：第二次复现「写 table+count → count 归零 → state=0 → 进程退出」，两个 hook（0x77C5B0、0x77C930）都来不及读（进程退出后计数消失）。下一轮改用 `launch --breakpoint` 在进程内捕获并记录，或写入后立即读取。
 
 **断点未命中（§617）**：`launch --breakpoint 0x77C5B0:callback_entry` 运行后日志里**没有任何断点命中记录**，而 count 仍从 1 变 0——说明 `dec` 执行了但 `call ebx` 可能失败（`0x77C5B0` 函数体依赖前置状态）。下一轮直接 hook `0x4F3056`（call ebx）看 ebx 值。
+
+**计数 20ms 内归零（§618）**：手动注册后每 20ms 采样，count 在一个周期内从 1→0，证明 `0x4F3020` 的 dec+call 循环确实执行。工具限制：`--capture-src` 不支持 `ebx`，而 `call ebx` 的指针正在 ebx。下一轮在 `0x77C5B0` 内部逐条装 hook 定位退出指令。
