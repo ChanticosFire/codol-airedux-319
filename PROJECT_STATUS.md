@@ -32608,3 +32608,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **ps 定位闭环（§535）**：local snapshot 的 origin 唯一命中 `+0x30`，故 `ps = +0x20`；其中 `pm_flags/pm_time/origin` 正确而 `commandTime/pm_type` 是未初始化垃圾，说明**快照 delta 没有传这两个字段**。修正 §532：`cl+0x2C` 很可能就是 `cl->snapShot.ps`（只是那两个字段未写入）。`patch_snapshot_commandtime.py` 改 bit 68 无效也因此得到解释。下一步按 `0x6701D0` 的 -97 分支编码，把 commandTime/pm_type 标成 changed 并补值。
 
 **commandTime 编码已还原（§536）**：`-97` 类型走 `0x670BBF` → `0x66F9E0`，编码为 `[1 bit changed][1 bit mode][8 位减量 或 32 位绝对值]`。因此改 bit 68 无效是必然的；正确做法是改 changed 位并插入 33 位（会改变 ps 块长度），或在客户端侧 patch 解析后补写 commandTime（风险更低）。下一轮用代码洞补写并观察预测是否解除。
+
+**纠错（§537）**：改过 commandTime 的 `snap-ct.bin` **从未被真正发送过**（唯一一次使用它的会话在 connect 阶段崩溃，之后每次都回退到原始快照），因此"改 commandTime 无效"的结论撤回，列为未验证。另实测：写 `cl+0x2C` 能保留但不传播到 predicted，写 `cl+0x3C70` 立即被归零——两份 ps 的 commandTime 都没有赋值路径。下一轮先用 `snap-ct.bin` 真跑一次并确认 gs 日志路径。
