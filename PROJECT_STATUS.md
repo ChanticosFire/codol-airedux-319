@@ -32708,3 +32708,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **握手卡点解决（§580）**：真因是①客户端自动排空函数 `0x674F30` 把 `ring_a` 清空（bridge 永远读不到）②`cbuf connect` 根本不设置地址。解法：`ring_bridge ring-a-drain block` + `ring_bridge connect --address`。处理后服务端日志显示完整链路 `connect → connectResponse → gamestate(6 片) → snapshot(453 个)`，客户端 `cl->state` 从 0 走到 **5 (CA_PRIMED)**。剩余：PRIMED→ACTIVE 还需持续运行 bridge。
 
 **稳定停在 CA_PRIMED（§581）**：握手全通后 `cl->state=5` 不再前进（`ring_b` 已收 5647 包、`ring_a` 持续发包、gs 发了 connectResponse/gamestate×15/snapshot×数百）。下一轮优先试"发 `svc_serverCommand`"（gs 的 `--server-command-*`），因为 PRIMED→ACTIVE 很可能要求至少一条服务器命令；其次排查 gamestate 被重复发 15 次的问题。
+
+**serverCommand 不推进状态（§582）**：用正确参数（`--command-file/--command-seq/--command-repeat/--command-interval`）让 gs 发出 259 条 command，客户端仍停在 `state=5`——候选 1 排除。现在最可能是"首个快照未通过有效性判定"（`CL_FirstSnapshot` 依赖 `cl.snap.valid`，而 ps.commandTime 从未被写入）。下一轮反汇编 `CL_FirstSnapshot` 判定条件。
