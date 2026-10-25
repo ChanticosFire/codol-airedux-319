@@ -3379,6 +3379,14 @@ def main(argv=None) -> int:
     original_handle_exception = bridge_mod.GameSessionBridge.handle_exception
 
     def tolerant_handle_exception(self, event, code, address, row):
+        # Record the exception code and faulting address (both plain integers so
+        # they stay JSON-serialisable).  `event` is an EVENT object and must not
+        # be stored directly.
+        try:
+            self.record({"exception_seen": {"code": int(code),
+                                            "address": int(address)}})
+        except Exception:  # noqa: BLE001 - diagnostics must never block
+            pass
         try:
             return original_handle_exception(self, event, code, address, row)
         except ValueError as error:
