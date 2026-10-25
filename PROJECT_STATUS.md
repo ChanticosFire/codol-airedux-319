@@ -33450,3 +33450,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Master cvar redirected to 127.0.0.1:28969 (944)**: tools/set_master_cvar_1649370.py allocates a string in the client and repoints the cvar object's string/latched/reset slots (layout: +0x00 name, +0x04 flags, +0x08 mod, +0x0C string, +0x18 latched, +0x24 reset), turning cod4master.activision.com into 127.0.0.1:28969. First time we changed what the client aims at rather than forcing internal state. Next round listen on 28969, trigger a refresh and capture the query format.
 
 **Preparing to capture the master query (945)**: need a UDP listener on the cvar's new address plus a refresh trigger (normally the server-browser UI calls the master-query function). Next round capture the datagram while refreshing.
+
+**Master cvar looked up by name, not via global (946)**: [0x765E7C8] has only its registration ref while [0x333A00C] has many, so nothing caches the master cvar - query code must fetch it by name, meaning our value change takes effect with no cache to invalidate. Next round trace consumers of the "1860"/"1861" name strings to the master-query function.
