@@ -33100,3 +33100,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **WSAAsyncSelect also never called (769)**: count=0 and all args zero, so the async window message model is ruled out. Client calls neither sendto/recvfrom nor WSAAsyncSelect. Next round hook WSARecvFrom/select/WSAEventSelect to find the real send/recv mechanism.
 
 **DECISIVE: all WinSock APIs are 0 (770)**: WSARecvFrom/select/WSAEventSelect all zero, plus earlier sendto/recvfrom/WSAAsyncSelect/WSASendTo - the client never touches the network stack; ring_a is the whole transport and the 0x674F30 drain just discards it. Return direction unreachable via any socket API. Next round: hook the engine message dispatcher (the real svc dispatch used at runtime) instead of the ring.
+
+**drain really is a pure discard (771)**: after the 0x4F9203 loop ends at 0x4F921C the function does SEH cleanup and returns; the 128KB buffer and msg struct are never read. Last open question about ring_a closed. Next round hook the producer 0x6750A0 and its caller to intercept outbound traffic.
