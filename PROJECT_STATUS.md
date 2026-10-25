@@ -31600,3 +31600,62 @@ def my_GetKeyboardState(lpKeyState):
 |---|---|
 | 253 | 猜测是 Raw Input 导致输入不通 |
 | **254** | **🎯 检查导入表**推翻该猜测**：仅有 `GetKeyboardState`/`MapVirtualKey`/`SendInput`/`keybd_event`，**无 DirectInput、无 `RegisterRawInputDevices`**；而 **`GetKeyboardState` 返回"调用线程消息队列"的键盘状态** ⇒ **多线程游戏的渲染/逻辑线程看不到注入按键** ⇒ **精确修复点：hook `user32!GetKeyboardState`，返回前把 `VK_W`(0x57) 设为 `0x80`** |
+
+## 512. 2026-11-08 12:00–13:00：**阶段总结 —— 已达成项、未达成项、以及 next-step 方案**
+
+### 512.1 已达成（有证据）
+
+| 项目 | 证据 |
+|---|---|
+| 真实连接 | `cls.state = 10` = `CA_ACTIVE`（§484 破解状态常量）；gs 日志有真实 `connect`/`stats`/`inband` |
+| gamestate 解析 | `cl+0x3BE8 = 155`，与 gamestate `[3]="155"` 精确一致 |
+| snapshot 解析 | `cl+0x3BE4`（正确公式 `([0x76638F4]^0x6891D1C7)+0x3BE4`）周期性被置 1 |
+| 地图加载 | `mp_crash_tropical.ff` 加载，3D 场景渲染（截图 `r410-screen.png` 亮度 77.8） |
+| 退出观战 | 清零 `baseline-outer17-245.bin` 的 3 个 `0x01` 字节后 `pm_type = PM_NORMAL(0)`，观战提示消失、出现「按空格」、视角变贴地第一人称 |
+| snapshot -> playerState 链路 | 改快照 `0x0F/0x14/0x18` 坐标，`cl+0x3C80/84/88` 精确跟随（§490） |
+| 服务端驱动移动 | 下发 20 个递增坐标，`origin.x` 从 336 平滑走到 355（含插值），画面正常（§493） |
+
+### 512.2 未达成（验收标准要求）
+
+| 项目 | 状态 | 原因 |
+|---|---|---|
+| **玩家可自由移动** | 仅"服务端驱动"，非"客户端输入驱动" | 见 512.3 |
+| 射击 | 未验证 | 同上 |
+| 对局结束返回大厅 | 未验证 | 未验证 `disconnect` 路径 |
+
+### 512.3 当前唯一卡点（已精确定位）
+
+**客户端用 `user32!GetKeyboardState` 读键盘**（导入表确认，无 DirectInput / 无 Raw Input）。
+
+`GetKeyboardState` 返回的是"**调用线程的消息队列**"对应的键盘状态。
+游戏在渲染/逻辑线程调用它，该线程从未处理过键盘消息，
+**因此 `SendInput` / `keybd_event` 注入的按键对它不可见**。
+
+**证据链**：`cl->cmdNumber`（`cl+0x3B94`）在按 W 时从 136 增到 142
+（说明 `usercmd` 确实在生成），但 `cl+0x0..0x9000` 全范围内
+**不存在 `forwardmove`**（说明命令内容里没有移动值）。
+
+### 512.4 next-step 方案（可直接执行）
+
+**Hook `user32!GetKeyboardState` 的 IAT 条目**：
+
+1. `OpenProcess` + 找到客户端 IAT 中 `GetKeyboardState` 的条目地址
+   （可用 `pefile` 解析 `DIRECTORY_ENTRY_IMPORT` 得到 user32 的 FirstThunk RVA，
+   再加目标进程基址）；
+2. `VirtualAllocEx` 分配一小块 RWX 内存，写入 shellcode：
+   - 先把 `esi`/`edi` 保存，调用原 `GetKeyboardState`；
+   - 然后把 `lpKeyState[0x57]`（'W'）设为 `0x80`、`[0x20]`（空格）按需；
+   - 返回 1；
+3. 把 IAT 条目改写为新地址；
+4. 之后游戏读键盘就会看到"W 被按住" -> `forwardmove = 127`
+   -> `usercmd` 有值 -> gs 能收到 -> **玩家真正走动**。
+
+**验证方法**：hook 后按 §252 的脚本扫 `cl+0x0..0x9000`，
+应能看到某个槽从 0 变成 127。
+
+### 512.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 254 | 锁定 `GetKeyboardState` 为修复点 |
+| **255** | **📋 阶段总结：7 项已达成（连接/gamestate/snapshot/地图/退出观战/链路打通/服务端驱动移动）；3 项未达成（客户端输入移动、射击、返回大厅）；**唯一卡点已精确定位为 `GetKeyboardState` 的线程语义**，并给出可直接执行的 IAT hook 方案** |
