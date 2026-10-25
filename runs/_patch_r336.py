@@ -119,6 +119,83 @@ patch(0x432047, bytes.fromhex("7432"), bytes.fromhex("eb32"),
 patch(0x58F3B9, bytes.fromhex("8b0c8d508b9801"), bytes.fromhex("8b0d508b9801 90".replace(" ", "")),
       "0x58F3B9 mov ecx,[ecx*4+table] -> mov ecx,[table]")
 
+
+# --- KEY FIX 12: 0x58EF76 mov esi,[ecx*4+0x1988B50] -> mov esi,[0x1988B50] ---
+# Same table as 0x58F3B9; ecx is an out-of-range index so the entry is NULL and
+# 0x58EFA1 faults on [esi+0x58C].  The filled table base is a valid zero object.
+patch(0x58EF76, bytes.fromhex("8b348d508b9801"), bytes.fromhex("8b35508b980190"),
+      "0x58EF76 mov esi,[ecx*4+table] -> mov esi,[table]")
+
+
+# --- KEY FIX 13: 0x4724A9  jne 0x47281A -> nop x6 ---
+# CL_ParseSnapshot bails out here 706/706 times because [esi] == 1 (a stack-local
+# mode flag) while the check requires 0.  Skipping the check lets the parser run
+# to completion so we can see whether the snapshot body itself is accepted.
+patch(0x4724A9, bytes.fromhex("0f856b030000"), bytes.fromhex("909090909090"),
+      "0x4724A9 skip the [esi]!=0 bail-out")
+
+
+# --- KEY FIX 14: nop the other two bail-outs of CL_ParseSnapshot ---
+# 0x4724C4 and 0x4724CD both jump to 0x47281A (skip the flag set) when their
+# checked field is zero.  Together with KEY FIX 13 this removes all three
+# early-outs so the parser can actually run to completion.
+patch(0x4724C4, bytes.fromhex("0f8450030000"), bytes.fromhex("909090909090"),
+      "0x4724C4 skip bail-out 2")
+patch(0x4724CD, bytes.fromhex("0f8447030000"), bytes.fromhex("909090909090"),
+      "0x4724CD skip bail-out 3")
+
+
+
+# --- KEY FIX 15 (CORRECT): 0x472456  xor eax,key -> jmp 0x472490 ---
+# edi is 0 in our flow, so the edi-related checks at 0x472466..0x47247B would
+# either bail out (safe path via 0x4727C9) or dereference [edi+0x3B9C] and fault.
+# 0x472490 is the common join point of all those checks and leads straight into
+# the glass-block parser (0x4724A0) and the rest of the normal parse body.
+patch(0x472456, bytes.fromhex("351f5062d3"), bytes.fromhex("e935000000"),
+      "0x472456 jmp 0x472490 (skip edi-dependent checks)")
+
+
+# --- KEY FIX 16: 0x472209  mov dword ptr [esi],1 -> nop x6 ---
+# This is the EOF marker.  When the snapshot runs short the reader sets
+# [esi]=1 and CL_ParseSnapshot later rejects the packet at 0x4724A7
+# (cmp [esi],0).  Suppressing the marker lets the parse body continue so we can
+# see how far it gets with the data we actually send.
+patch(0x472209, bytes.fromhex("c70601000000"), bytes.fromhex("909090909090"),
+      "0x472209 suppress the EOF marker")
+
+
+# --- KEY FIX 17: 0x47223D  jne 0x47226D -> jmp 0x47226D ---
+# ecx==0 (short buffer) makes this jne fall through into the "save EOF + ret"
+# path at 0x472248..0x472267.  Forcing the jump continues the normal parse body.
+patch(0x47223D, bytes.fromhex("752e"), bytes.fromhex("eb2e"),
+      "0x47223D jne -> jmp 0x47226D (continue parse instead of early ret)")
+
+
+
+
+# --- KEY FIX 18 (GLOBAL): create the object behind [0x32AA908] ---
+# The binary references [0x32AA908] from 30 sites across many modules; in our
+# flow that global is never created, so every deref ([ptr+0xC] etc.) faults.
+# Build a small structure whose +0xC field points at an empty string, and store
+# it in the global.  All 30 sites then see a valid pointer.
+_empty = k.VirtualAllocEx(h, None, 0x100, 0x3000, 0x04)
+_srv   = k.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x04)
+if _empty and _srv:
+    _g = ctypes.c_size_t()
+    _z = b"\x00"
+    k.WriteProcessMemory(h, ctypes.c_void_p(_empty),
+                         ctypes.create_string_buffer(_z, 1), 1, ctypes.byref(_g))
+    _blob = b"\x00" * 0xC + struct.pack("<I", _empty) + b"\x00" * 0x30
+    k.WriteProcessMemory(h, ctypes.c_void_p(_srv),
+                         ctypes.create_string_buffer(_blob, len(_blob)),
+                         len(_blob), ctypes.byref(_g))
+    _glob = struct.pack("<I", _srv)
+    k.WriteProcessMemory(h, ctypes.c_void_p(0x32AA908),
+                         ctypes.create_string_buffer(_glob, 4), 4, ctypes.byref(_g))
+    print(f"  [0x32AA908] init: srv={_srv:#x} empty={_empty:#x}")
+else:
+    print(f"  [0x32AA908] init FAILED: srv={_srv} empty={_empty}")
+
 # --- KEY FIX 9: fill the 0x1988B50 table so lookups never return NULL ---
 # The table is an object registry that our flow never populates (table=1 but
 # consumers query index 1, 2, ...).  Allocate a large zero page and point every
