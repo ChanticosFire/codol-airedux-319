@@ -33440,3 +33440,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Network layer IS initialised ([0xE84EE0]=1) - missing piece is a connection target (939)**: the context already exists, so zero socket traffic simply means nothing asks it to connect. The offline shell boots, inits its network layer, then sits in the menu with no server address - hence no connect, no packets, empty lobby structures. Objective now reduces to supplying a server address and triggering connect. Next round enumerate address-carrying cvars/commands.
 
 **Master-server hostname exists: cod4master.activision.com (940)**: found as a literal among numeric entries at file offset 0x9BD55C ("1858|1859|cod4master.activision.com|1860|1861"), inherited from the COD4 lineage. Next round check whether any pointer references it; if not it is dead data and the real address must come from the lobby/platform layer at runtime.
+
+**Master hostname IS referenced at 0x4FC4D2/0x4FC4ED (941)**: not dead data - two instructions reference cod4master.activision.com, placing master-server query code in the 0x4FCxxx region. Next round read the enclosing function to see how the hostname becomes an address and which port accompanies it.
