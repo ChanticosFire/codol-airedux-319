@@ -33274,3 +33274,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Remote invocation unreliable (856)**: calling 0x515340 caused a crash and neither that entry probe nor 0x815CA0's fired - the remote thread never ran, matching the earlier CreateRemoteThread error 5. inject_call cannot be trusted on this process. Next round drive the engine via the proven inline-hook cave instead, e.g. hooking the pump 0x5C05F0.
 
 **Connect entry is 0x5BFCE0 (857)**: the block calling 0x515340 (-> CL_InitNetchan) belongs to 0x5BFCE0. Next round analyse its entry conditions/argument and find its callers to identify the natural connect trigger.
+
+**0x5BFCE0 gates on 0x809140 (858)**: the connect entry returns immediately unless 0x809140() returns non-zero al - a login/session prerequisite evaluated before the netchan path. Next round disassemble 0x809140.
