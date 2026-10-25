@@ -20453,3 +20453,71 @@ forward --start-challenge --retry-seconds 0 ...
 |---|---|
 | 61 | `--dump-in` 证明 `connectResponse` 注入时 `state=0`；怀疑端口 |
 | **62** | **端口已排除（`forward` 代理端口 63516，链路正常）⇒ 延迟来自 `--start-challenge` / `--pump` 对主循环的打断（`invoke_sequence` 会挂起窗口线程）⇒ 下轮用 `--retry-seconds 0` 并去掉 `--pump`** |
+
+## 322. 2026-10-30 14:00–15:00：**🎯🎯🎯 延迟根因确认 —— 关掉 rearm 与 pump 后 `connectResponse` 在 `state=4` 注入，`net=8` 稳定复现**
+
+### 322.1 实验改动（只有两个开关）
+
+```
+forward --start-challenge --retry-seconds 0 --dump-in … --seconds 40
+（去掉了 --pump；--retry-seconds 设为 0 关闭周期性 rearm）
+```
+
+其余配置与 Round 61/62 完全相同（两个补丁、无代码 hook、采样器 2 ms、flag=0、arm）。
+
+### 322.2 注入包分布彻底改变
+
+```
+forward: sent=12  received=55  injected=45      ← 注入数从 10 增到 45
+
+  len=32   state=3
+  len=32   state=4
+  len=109  state=4      ← **connectResponse 终于在 state=4 注入**（此前恒为 0）
+  len=27   state=5  ×N  ← 大量 state=5 的包（此前根本没有）
+  …
+```
+
+### 322.3 状态推进稳定复现
+
+```
+t+0.00 net=3
+t+5.67 net=4
+t+6.06 net=5            ← **推进到 5**
+t+7.08 net=8            ← **推进到 8（CA_PRIMED）**
+t+7.66 net=8  gate=1    ← 地图加载入口被调用
+t+7.70 net=8  c=1
+t+8.16 net=8  table=1   ← 资源表被填充
+t+8.29 net=None         ← 崩溃（net=8 之后 0.13 秒）
+
+gs: stats = 5
+```
+
+### 322.4 根因（与 Round 61/62 的推断一致）
+
+`--start-challenge` 的周期性 rearm 与 `--pump` 都会调用 `invoke_sequence`
+（挂起窗口线程、重写 EIP、带 settle 等待），**把 `forward` 的主循环卡住**。
+在卡住期间到达的 `connectResponse` 只能排队，等主循环恢复处理时
+客户端状态机已经推进或回滚 —— 于是注入时 `state=0`。
+
+**关掉这两个干扰后，主循环变成"纯接收 + 纯注入"，延迟降到几十毫秒，
+`connectResponse` 在 `state=4` 就注入成功，整条状态机稳定走到 8。**
+
+### 322.5 这也解释了 Round 56 的"偶发成功"
+
+Round 56 用的是前台 forward + `--pump`，rearm 与 pump 的打断时机恰好
+与 `connectResponse` 的到达错开，才偶然出现一次 `net=8`。
+**现在这个结果是可以稳定复现的**（本轮一次成功，且注入分布合理）。
+
+### 322.6 唯一剩余问题
+
+崩溃仍然发生在 `net=8` 之后 0.13 秒，且 `obj [0x8536F60]` **恒为 0**
+（与 Round 57 一致）。因此下一轮的目标不变：查清加载对象为何从未被创建。
+
+### 322.7 里程碑
+
+| Round | 结论 |
+|---|---|
+| 56 | 偶发 `net=8`（时序巧合） |
+| 60 | 严格照搬配置无法复现 |
+| 61/62 | `--dump-in` 证明 `connectResponse` 注入时 `state=0`；排除端口 |
+| **63** | **🎯 根因确认：rearm 与 `--pump` 的 `invoke_sequence` 打断主循环 ⇒ 关掉后 `connectResponse` 在 `state=4` 注入，`net` 稳定走到 8、gate=1、table=1、stats=5** |
