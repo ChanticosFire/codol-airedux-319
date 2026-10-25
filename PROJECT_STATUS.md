@@ -33338,3 +33338,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **DECISIVE: found the match-management command table (888)**: room.create/list/join/leave/startgame/servers/changeteam/changemap/jumpgame and room.match.quick/ranked/coop/cancel plus party.*, with concrete handlers (startgame 0x6398A0, changemap 0x639700, match.quick 0x63A720). This is the real game-session layer. Next round disassemble 0x63A720 and 0x639700.
 
 **0x63E510 is the match-request initialiser (889)**: sets up global request struct 0xC39B108 with 132-byte params at 0x330B8A0 (memset), then submits after a check. Next round disassemble the submission after 0x63E5CE to find the network call.
+
+**0x63BCB0 constructs the match object, vtable 0xDC795C (890)**: it clears fields 0x20..0x100 and constructs members at +0x110..+0x128; the network submission is elsewhere. Next round resolve vtable 0xDC795C to find the request method.
