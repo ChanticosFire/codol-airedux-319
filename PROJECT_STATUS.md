@@ -33346,3 +33346,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x63CCA0 is the match command handler (892)**: it does a virtual call, checks [esi+0x100], string-compares 0xDB7C10 and 0xDB6AA0, then calls engine vtable slot 2 on [0x82E13FC] (verified valid in 862). Next round read those strings to learn the exact command.
 
 **Engine manager resolved (893)**: [0x82E13FC]=0x245D77A0 with vtable 0xDC7274; slot 2 (0x62D5D0) is what 0x63CCA0 calls; match state [0x84ABA50]=0 (idle). Next round disassemble 0x62D5D0 to see whether the request leads to local setup or to a network layer.
+
+**Matchmaking methods are stubs (894)**: vtable +0x60 (0x62FE30) is a predicate and +0x8C (0x631840) is a bare ret, so room.match.* is dead by design (the matchmaker was a remote service). Pivot to direct commands: room.startgame 0x6398A0, room.join 0x639830, room.changemap 0x639700. Next round disassemble 0x6398A0.
