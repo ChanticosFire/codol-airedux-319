@@ -32756,3 +32756,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **根因锁定：回调表空（§604）**：用 `Wow64GetThreadContext` 抓主线程（32 位进程），EIP=0x77D9858C，栈回溯到 `0x4FE37E`（帧率循环）→ `0x4FEA95` → `0x77FA69`（主循环）。主循环 `0x77FA44: call edi` 遍历回调表，而**运行时 `[0x766929C]=0`、`[0x3402818]=0`——回调表是空的**。这统一解释了 CL 帧/UI/快照解析链全部 count=0、origin 全 0。下一轮 hook 注册点 `0x5C78D5/0x5C78E0` 确认是否执行。
 
 **注册函数未执行（§605）**：`0x5C78D5`/`0x5C78E0`/`0x4F37A0` 三个 hook 计数全 0，`[0x766929C]=0`；注册代码所在的大初始化函数（prologue 在 `0x5C6090` 等处）从未被调用。客户端虽报 `engine-init: 5.4s`，实际引擎初始化/回调注册未跑完。下一轮查 `0x4F37A0` 的调用者链并核实 launch 的 breakpoint 是否命中。
+
+**engine-init 未经断点验证（§606）**：`launch_1649370.py` 只有两处 `phase_done`（process-and-uac-guard / reused-existing-runtime），**没有 engine-init**；全仓搜索只命中 `run_match.py:262` 的 `wait_for(... "engine-init", 40)`，且 r514 输出里**没有任何 breakpoint 命中记录**。所以「engine-init 完成」不代表引擎真能跑帧，与 §604/§605 吻合。下一轮找该名字的真正来源并改用「回调计数非 0」作为就绪判据。
