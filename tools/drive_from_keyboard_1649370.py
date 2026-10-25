@@ -22,7 +22,7 @@ from pathlib import Path
 
 import ctypes
 
-SLOTS = ((0x0F, 0), (0x14, 2), (0x18, 1))  # snapshot offset, origin component (x, z, y)
+SLOTS = ((0x0F, 0), (0x18, 1), (0x14, 2))  # measured: 0x0F=x, 0x18=y, 0x14=z
 KEYS = {
     "forward": 0x57,   # W
     "back": 0x53,      # S
@@ -56,7 +56,7 @@ def main() -> int:
         if dx or dz:
             step = args.speed * period
             origin[0] += dx * step
-            origin[2] += dz * step
+            origin[1] += dz * step
             moved += step
             for (off, comp) in SLOTS:
                 struct.pack_into("<f", data, off, origin[comp])
