@@ -32604,3 +32604,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **修正（§533.1）**：`0x169E08+0x30` 的 origin 更可能是快照 header 的 origin 副本，不是 ps.origin；ps 在 `snapshot_t` 内的偏移仍未知。抓取工具缺 `arg2`/`arg3`，下一轮先补上再抓 `0x6701D0` 的 `[ebp+0x10]`（ps 基址）。第 5 项未达成。
 
 **ps 基址与模板（§534）**：钩子工具已扩展 arg2/arg3；实测 `0x6701D0` 的 `arg2=0x1670AC` 即 ps 基址（解析后内存清空，是临时缓冲）。（修正）dump `0xDA9920` 后确认它不是 ps 模板（内容为 0/345/2/1266/1267/1317 等表值），该推断已撤回；仍确定的是 `0x6701D0` 的第 3 栈参数即 ps 基址（实测 0x1670AC，解析后被清空）。第 5 项未达成。
+
+**ps 定位闭环（§535）**：local snapshot 的 origin 唯一命中 `+0x30`，故 `ps = +0x20`；其中 `pm_flags/pm_time/origin` 正确而 `commandTime/pm_type` 是未初始化垃圾，说明**快照 delta 没有传这两个字段**。修正 §532：`cl+0x2C` 很可能就是 `cl->snapShot.ps`（只是那两个字段未写入）。`patch_snapshot_commandtime.py` 改 bit 68 无效也因此得到解释。下一步按 `0x6701D0` 的 -97 分支编码，把 commandTime/pm_type 标成 changed 并补值。

@@ -131,6 +131,7 @@ def main() -> int:
     slot_arg2 = args.slot + 0x18
     slot_arg3 = args.slot + 0x1C
     slot_arg4 = args.slot + 0x20
+    slot_ebp = args.slot + 0x24
     slot_ecx = args.slot + 0x10
     slot_eax = args.slot + 0x14
     slot_capture = args.slot + 0x40
@@ -148,9 +149,10 @@ def main() -> int:
                      "arg0": u32(slot_arg0), "arg1": u32(slot_arg1),
                      "arg2": u32(slot_arg2), "arg3": u32(slot_arg3),
                      "arg4": u32(slot_arg4),
+                     "ebp": u32(slot_ebp),
                      "ecx": u32(slot_ecx), "eax": u32(slot_eax)},
     }
-    for key in ("ret", "arg0", "arg1", "arg2", "arg3", "arg4", "ecx", "eax"):
+    for key in ("ret", "arg0", "arg1", "arg2", "arg3", "arg4", "ebp", "ecx", "eax"):
         if isinstance(report["counters"].get(key), int):
             report["counters"][key] = hex(report["counters"][key])
     if args.capture:
@@ -204,6 +206,10 @@ def main() -> int:
     code += b"\xA3" + struct.pack("<I", slot_arg3)
     code += b"\x8B\x44\x24\x34"                              # mov eax,[esp+0x34] arg4
     code += b"\xA3" + struct.pack("<I", slot_arg4)
+    # pushad layout: [esp+0x08] is the caller EBP, which locates stack frames
+    # such as the local snapshot_t at [ebp-0x3BD0].
+    code += b"\x8B\x44\x24\x08"                              # mov eax,[esp+0x08] ebp
+    code += b"\xA3" + struct.pack("<I", slot_ebp)
     code += b"\xFF\x05" + struct.pack("<I", slot_count)
     # pushad pushes EAX,ECX,EDX,EBX,ESP,EBP,ESI,EDI in that order, so afterwards
     # the caller ECX sits at [esp+0x18].  Some functions (0x484C10) receive their
