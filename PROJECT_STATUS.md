@@ -33258,3 +33258,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **BREAKTHROUGH: session object is statically allocated (848)**: 0x7508B80 is inside .data whose vsize is 0xDBB1CC0 (230MB) with only 0x62000 file-backed - i.e. a huge .bss where the session object already exists zero-filled. Only the pointer assignment is missing. Next round locate that static region's base address.
 
 **Static session object works; next blocker is CL+0x10026C==0 (849)**: writing [0x7508B80]=0x8106A24 survives cleanly, but calling CL_ReadPackets then crashes at 0x771320 because CL+0x10026C is 0 and 0x771320 does mov al,[esi+8] with esi=0. So the .bss pointer trick works; the next missing pointer is the netchan at CL+0x10026C. Next round find what writes it.
+
+**CL_InitNetchan mapped (850)**: +0x10026C's only writer is 0x815E19 inside CL_InitNetchan (0x815CA0); all four preconditions verified true; it sets netchan fields then calls the callback at [CL+0x109240]=0x814DC0 with our argument forwarded. Next round disassemble 0x814DC0 to learn what that argument must be.
