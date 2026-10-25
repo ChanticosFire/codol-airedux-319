@@ -32732,3 +32732,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **ACTIVE 路径是 cl_demo_play（§592）**：`0x813C20`（唯一写 state=7 的函数）只被 `0x813AB0` 以非 0 参数调用，而 `0x813AB0` 注册的命令名是 **`cl_demo_play`**（相邻字符串 `demo/%s.demo`、`$demoDownloadBuffer`）。说明这个 build 的 `CA_ACTIVE` 是为**播放 demo**准备的，实时连接只能到 `CA_PRIMED`。下一轮直接执行 `cl_demo_play` 验证。
 
 **cbuf 通道整体失效（§593）**：`cl_demo_play testdemo` 注入返回 injected 但 `state` 仍为 0、命令未执行；与 §579 的 `connect` 情况一致——cbuf 注入只能当"可能生效"的辅助，不能用于必须执行的验证。下一轮改用 `launch_1649370.py` 启动参数 `+cl_demo_play testdemo`。
+
+**cl_demo_play 执行了但没进 ACTIVE（§594）**：修好 PowerShell `[]` 通配符陷阱（用 `-LiteralPath`）后，`testdemo.demo` 就位；在 `launch` 的 `GAME_ARGUMENTS` 追加 `+cl_demo_play testdemo`，启动后 `state` 确实从 0 变 1（命令生效），但 8 秒后退回 0——demo 加载失败。下一轮用 6.9 MB 的官方 `officialdemo.demo` 复试。
