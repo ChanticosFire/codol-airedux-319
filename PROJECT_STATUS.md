@@ -33286,3 +33286,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **[0x82E13FC] is valid after all (862)**: runtime shows object 0x245977F0, vtable 0xDC7274, slot[0x5C]=0x62FDE0 - fully initialised, so the section-861 crash was not a missing pointer there but inject_call unreliability. Next round stop testing gates via inject_call; instrument 0x809140/0x5BE700 with hook_any while signalling events with inject_call, reading results from hook counters.
 
 **Both gate functions are dormant (863)**: 0x5BE700 and 0x809140 both counted 0 on a fresh client; events exist (0x4B4/0x4B0) but nothing is blocked on them. The design is event-driven - a driver signals, a session thread wakes, the gate runs. With no driver nothing wakes. Next round find who calls 0x5BFCE0.
+
+**Connect entry invoked from lobby routine (864)**: 0x5C0252..0x5C028B copies a 120-byte block from 0x8277368 out, calls three UI functions (0x81EAE0/0x820610/0x81E770), copies back, then calls 0x5BFCE0. That block is the join request. Next round identify the routine's entry/callers and [0xCA8200].
