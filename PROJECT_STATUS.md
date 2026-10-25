@@ -32912,3 +32912,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **史诗级突破（§679）**：`sent=1/received=61/injected=61`，connectResponse、5 个 gamestate 分片、52 个 snapshot 全部注入成功，首次完成完整服务端数据流。但 state 在 gamestate 收完后 4→0（疑似时序：gs 未等客户端二次 connect 就发 gamestate，或 gamestate 内容不符）。下一轮抓 4→0 瞬间的错误。
 
 **gs 设计如此（§680）**：on_connect 里设 `gamestate_due = now + delay_send(1s)`，send_due_gamestates 到期自动发——不是时序 bug。state 4→0 的原因应在 gamestate 内容（configstrings/checksum/svc3 格式）。下一轮逐字节对比 gamestate 分片与真实抓包。
+
+**澄清解密失误（§681）**：源文件 gamestate-client0.bin 是 6411 字节、`mp_crash_tropical`，gs 日志也确认 payload_length=6411；我解出 `mp_crase_trorial` 是 key 用错（假设 challenge=0，实际非 0）。gamestate 内容正确，state 4→0 另有原因。下一轮用真实 challenge 解密并检查 snapshot 格式。
