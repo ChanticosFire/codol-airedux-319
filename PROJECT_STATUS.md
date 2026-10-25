@@ -33140,3 +33140,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x76446B0 is a per-client state array, stride 32 (789)**: sites at 0x4732AB and 0x5C0353 compute [edi*32 + 0x76446B0] and compare with 5, so states 5/6 are written as indexed stores rather than direct scalars. Both then call 0x7F9090 and do a netchan handshake (rotate/xor [eax+0x11128]). Next round hook 0x5C0353 and read its counter after connect.
 
 **state==5 never reached (790)**: probe on 0x5C0353 counted 0, state stayed 4, so the PRIMED handshake never runs; and reading 0x76446B0 with stride 32 yields pointer-like values at indexes 1/2, so it is a struct array not an int array. Next round dump that region and find the store of 5.
+
+**Nothing stores 5 into [reg+0x76446B0] (791)**: searched all c7 8x indexed forms - none; all stores are absolute c7 05 with 0/3/4/7. Indexed refs are only the reads at 0x4732AB/0x5C0353. So state=5 observations must refer to a different variable/index, and the state==5 branch has never been taken. Next round dump the per-client struct that 0x5C034E walks.
