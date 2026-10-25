@@ -33244,3 +33244,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Render path too deep; console queue revisited (841)**: 0xBEC9B0 is a startup coordinator not the renderer, and rebuilding cl (0x109244+ bytes) is not tractable. Re-enumerated callers of CL_ParseGamestate/CL_ParseServerMessage to see if any live path feeds them. Next round act on that inventory; if none, the console queue is the only inbound structure and 0x5C2260 may be a parser rather than a printer.
 
 **Found live gamestate consumer 0x5ABF90 (842)**: a second caller of CL_ParseGamestate at 0x5AC1C4 lives inside 0x5ABF90, which loops over gamestates (131KB frame, reads [0x7508B80]+0x308050 and CL+0x10025C) and then post-processes. This is the inbound path. Next round find callers of 0x5ABF90 and the producer of [0x7508B80]+0x308050.
+
+**BREAKTHROUGH: 0x813F60 is CL_ReadPackets (843)**: the inbound chain is 0x813F60 -> [0x7508B80] queue -> 0x771320 Netchan_Process -> 0x5ABF90 -> CL_ParseGamestate, and it returns immediately because the gate cmp [CL+0x100260],1 fails (that flag is set by 0x813DEA which never runs). Next round set [CL+0x100260]=1, populate the gamestate queue, call 0x813F60.
