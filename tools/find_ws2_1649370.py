@@ -76,23 +76,29 @@ class Client:
         if not ne or len(ne) < 40:
             return {}
         nnames = struct.unpack_from("<I", ne, 24)[0]
+        funcs_rva = struct.unpack_from("<I", ne, 28)[0]
         names_rva = struct.unpack_from("<I", ne, 32)[0]
-        if not nnames or not names_rva:
+        ords_rva = struct.unpack_from("<I", ne, 36)[0]
+        if not nnames or not names_rva or not funcs_rva or not ords_rva:
             return {}
-        blob = self.read(base + names_rva, min(nnames, 8000) * 4)
-        if not blob:
+        count = min(nnames, 8000)
+        names_blob = self.read(base + names_rva, count * 4)
+        ords_blob = self.read(base + ords_rva, count * 2)
+        if not names_blob or not ords_blob:
             return {}
         found: dict[str, int] = {}
-        for i in range(min(nnames, 8000)):
-            if (i + 1) * 4 > len(blob):
-                break
-            rva = struct.unpack_from("<I", blob, i * 4)[0]
+        for i in range(count):
+            rva = struct.unpack_from("<I", names_blob, i * 4)[0]
             raw = self.read(base + rva, 32)
             if not raw:
                 continue
             name = raw.split(b"\x00")[0].decode("latin-1", "replace")
-            if name in TARGETS:
-                found.setdefault(name, base + rva)
+            if name not in TARGETS or name in found:
+                continue
+            ordinal = struct.unpack_from("<H", ords_blob, i * 2)[0]
+            func_rva = self.u32(base + funcs_rva + ordinal * 4)
+            if func_rva:
+                found[name] = base + func_rva
         return found
 
 

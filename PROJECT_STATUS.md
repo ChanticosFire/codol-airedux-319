@@ -33070,3 +33070,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **找到 ws2_32 真实地址（§754）**：VirtualQueryEx 枚举出 111 个 PE 镜像（Module32First 只报 7 个）；ws2_32 主实现 base=0x77820000，sendto=0x77869A4C、recvfrom=0x77869A37、WSASendTo=0x778693B3、WSARecvFrom=0x7786935E。下一轮 hook WSASendTo/WSARecvFrom 观察真实收发。
 
 **导出解析错误（§755）**：find_ws2 脚本把 AddressOfNames 的名字 RVA 当成函数地址，hook 后 original 是 "WSASen"/"WSARecvF" 字符串。正确算法需 AddressOfNameOrdinals + AddressOfFunctions 映射。下一轮修正后重取真实地址。
+
+**三表映射修正成功（§756）**：find_ws2 改用 AddressOfNameOrdinals+AddressOfFunctions 后得到真实地址 sendto=0x7783AD80、recvfrom=0x7783B530（此前是 "WSASen" 字符串 RVA）；0x6F85xxxx 为转发 thunk。下一轮 hook 这两个地址并触发连接观察收发。
