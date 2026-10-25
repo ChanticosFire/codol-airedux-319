@@ -33108,3 +33108,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x7872C00 ring is read-only dead code (773)**: all refs are inside 0x675140 itself with nothing writing the read/write dwords, so it always returns 0. A per-client ring exists at 0x786DA28/0x786DA2C (0x7867768 + client*0x62C8 + 0x62C0). Next round check its refs for writers.
 
 **0x4F8C50 is the real receive handler (774)**: it calls 0x674FE0 to read one packet from the per-client ring (0x7867768+client*0x62C8+0x62C0), test eax/je when empty, and is called every frame from 0x4F8DF7. Next round hook 0x674FE0 and check whether it ever returns >0; if so that ring is the injection point.
+
+**0x4F8C50 never runs (775)**: probe at 0x4F8C70 (test eax after the ring read) never fired across a whole connect session, so the receive handler 0x4F8C50 is not on the executing path - its call site 0x4F8DF7 is a cold branch. Next round hook 0x4F8C50 entry to confirm and walk the frame function to find the real per-frame path.
