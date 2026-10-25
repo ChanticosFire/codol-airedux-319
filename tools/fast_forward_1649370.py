@@ -118,6 +118,12 @@ def main() -> int:
             for slot in args.hook:
                 samples.append((round(time.monotonic(), 4), hex(slot), client.u32(slot)))
             eips = sample_eips(client.pid, thread_ids(client.pid))
+            enc = client.u32(0x331c0c8)
+            dec = enc ^ 0xD362501F
+            fn = client.u32(dec + 0x109244) if 0x10000 < dec < 0x7FFFFFFF else None
+            flag = client.u32(dec + 0x100260) if 0x10000 < dec < 0x7FFFFFFF else None
+            print(f"   CL: enc={enc:#010x} dec={dec:#010x} [+0x109244]={fn if fn is None else hex(fn)} "
+                  f"[+0x100260]={flag if flag is None else hex(flag)}", flush=True)
             trace = []
             good_tid = eips[0][0] if eips else None
             for _ in range(100):
