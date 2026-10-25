@@ -33272,3 +33272,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Session-layer callers sit in the pump region (855)**: 0x515340's callers 0x5C004D/0x5C0553 are just before the network pump 0x5C05F0, completing the chain 0x5C0xxx -> 0x515340 -> CL_InitNetchan -> pump -> CL_ReadPackets -> Netchan_Process -> CL_ParseGamestate. Earlier failures came from calling CL_InitNetchan with arg 0. Next round read the argument at 0x5C004D and call 0x515340 instead.
 
 **Remote invocation unreliable (856)**: calling 0x515340 caused a crash and neither that entry probe nor 0x815CA0's fired - the remote thread never ran, matching the earlier CreateRemoteThread error 5. inject_call cannot be trusted on this process. Next round drive the engine via the proven inline-hook cave instead, e.g. hooking the pump 0x5C05F0.
+
+**Connect entry is 0x5BFCE0 (857)**: the block calling 0x515340 (-> CL_InitNetchan) belongs to 0x5BFCE0. Next round analyse its entry conditions/argument and find its callers to identify the natural connect trigger.
