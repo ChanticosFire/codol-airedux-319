@@ -32898,3 +32898,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **drain_ring_a 没执行，客户端自己消费 ring_a（§672）**：加调试后 bridge stderr 空、ring_a 仍 20/20——说明 bridge forward 循环没跑，而客户端（drain 已恢复）自己把包取走了。恢复 drain 的副作用是与 bridge 抢包。下一轮查 bridge 为何没跑 + 处理抢包问题。
 
 **双向链路首次打通（§673）**：`[drain_ring_a] nul=401 len=401` + `outbox=1`，gs 收到 2 条 in 并往 29132 回 snapshot——客户端→bridge→gs→bridge 首次双向通。但 ring_b 仍 0/0（bridge 没注入）、客户端 state 回 0（超时）。瓶颈在 bridge 的「recvfrom→inject_ring_b」段。下一轮修它。
+
+**收包阈值（§674）**：`--oob-until-state` 默认 0、`--reliable-until-state` 默认 9；但 gamestate/snapshot 都带 FRAGMENT_BIT 不会被丢，所以 ring_b=0 的原因应在 `inject_oob_raw` 返回非 queued。下一轮给收包分支加调试看注入状态。
