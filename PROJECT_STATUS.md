@@ -33350,3 +33350,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Matchmaking methods are stubs (894)**: vtable +0x60 (0x62FE30) is a predicate and +0x8C (0x631840) is a bare ret, so room.match.* is dead by design (the matchmaker was a remote service). Pivot to direct commands: room.startgame 0x6398A0, room.join 0x639830, room.changemap 0x639700. Next round disassemble 0x6398A0.
 
 **room.startgame reaches a real begin-game method 0x62F840 (895)**: it requires cls.state<3 (we have 0), then dispatches a 7-char command string 0xDC7528 through vtable slot 0x52 ([ebx+0x148]). This path is executable now unlike matchmaking. Next round read 0xDC7528 and find the dispatcher.
+
+**Correction: 0xDC7528 is raw data of length 7, not text (896)**: the local struct is {ptr=0xDC7528, 4, len=7} - a binary request payload, not a command line. Next round resolve vtable slot 0x52 ([ebx+0x148]) dispatcher; a fixed 7-byte message would be the game-start message.
