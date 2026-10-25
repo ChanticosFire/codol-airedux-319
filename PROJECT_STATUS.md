@@ -33056,3 +33056,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **决定性发现：ring_b 只写不读（§747）**：ring_b 的 3 处引用分别是 memset 初始化、写 read、写 write，无一读取；ring_a 才有 5 处读引用（含 0x674F30 drain）。这解释了一切：注入 ring_b 的包永远无人消费，故 CL_ParseServerMessage/CL_ParseGamestate 恒 0。修复方向：按 ring_a 槽格式注入到 ring_a。
 
 **inject_ring_a 已存在（§748）**：接口/槽布局齐全，但 ring_a 同样被 0x674F30 drain 后取走就扔，注入大概率同样失效。根本疑问：客户端到底有没有从 ring 读包并解析的路径？若两个 ring 都只写/只清，真正收包应走自己的 UDP socket。下一轮检查客户端 socket 创建与 recvfrom。
+
+**重大发现：客户端有 3 个 UDP socket（§749）**：63039/53803/22011，无 TCP。客户端自己用 UDP socket 收发，不经过 ring，证实 ring 注入方向无效。修复方向：bridge 把 gs 回包直接 sendto 到客户端 UDP 端口。下一轮确定哪个端口是游戏协议用。
