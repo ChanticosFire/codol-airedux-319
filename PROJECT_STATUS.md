@@ -33344,3 +33344,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **DECISIVE: match state machine at [0x84ABA50] (891)**: 0x63E100 does cmp eax,5 / jmp [eax*4+0x63E178], i.e. six state handlers for a real game-session state variable. Next round read the switch table and check [0x84ABA50]'s runtime value and writers.
 
 **0x63CCA0 is the match command handler (892)**: it does a virtual call, checks [esi+0x100], string-compares 0xDB7C10 and 0xDB6AA0, then calls engine vtable slot 2 on [0x82E13FC] (verified valid in 862). Next round read those strings to learn the exact command.
+
+**Engine manager resolved (893)**: [0x82E13FC]=0x245D77A0 with vtable 0xDC7274; slot 2 (0x62D5D0) is what 0x63CCA0 calls; match state [0x84ABA50]=0 (idle). Next round disassemble 0x62D5D0 to see whether the request leads to local setup or to a network layer.
