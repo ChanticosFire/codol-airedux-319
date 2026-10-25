@@ -33246,3 +33246,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Found live gamestate consumer 0x5ABF90 (842)**: a second caller of CL_ParseGamestate at 0x5AC1C4 lives inside 0x5ABF90, which loops over gamestates (131KB frame, reads [0x7508B80]+0x308050 and CL+0x10025C) and then post-processes. This is the inbound path. Next round find callers of 0x5ABF90 and the producer of [0x7508B80]+0x308050.
 
 **BREAKTHROUGH: 0x813F60 is CL_ReadPackets (843)**: the inbound chain is 0x813F60 -> [0x7508B80] queue -> 0x771320 Netchan_Process -> 0x5ABF90 -> CL_ParseGamestate, and it returns immediately because the gate cmp [CL+0x100260],1 fails (that flag is set by 0x813DEA which never runs). Next round set [CL+0x100260]=1, populate the gamestate queue, call 0x813F60.
+
+**Gamestate queue [0x7508B80] is never created (844)**: runtime shows it is 0 and a full .text scan finds only reads, no writes - so CL_ReadPackets always returns immediately. Outbound is fully implemented; inbound's consumer exists but its data source is the absent driver. Next round map the queue format from 0x813FB0-0x8140F9, construct a minimal queue with one entry containing connectResponse, and call CL_ReadPackets.
