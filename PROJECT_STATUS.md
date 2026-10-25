@@ -32600,3 +32600,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **后台抓图与否定结果（§532）**：`tools/capture_window_bg.py`（PrintWindow）可在游戏不在前台时抓完整画面，`tools/scan_viewheight_1649370.py` 做自动字段扫描。实测否定三条猜测：`cl+0x40`(y)/`cl+0x44`(z) 都不是相机高度（改动画面不变，只有 x 有效）；`cl+0x2C` 不是 `snapShot.ps` 起点（commandTime 是垃圾值，`cl+0x78` 设 1 无武器、`cl+0x58` 设 60 不抬视角）；逐字段扫描时出现纯黑帧（72.03），方法需修正。下一步转向定位 cgame 的 `cg` 全局（`cg->refdef.vieworg`）。第 5 项未达成。
 
 **ps 真实位置（§533）**：hook `0x471980` 抓到 local snapshot 指针，origin 在 snapshot+0x30、ps 在 +0x20；但该 ps 的 commandTime/pm_type 是垃圾，而 `predictedPlayerState`（cl+0x3C70）的对应位置是正确的 0/0。说明网络解析临时结构与客户端最终使用的 ps 偏移不同，前几轮按 `cl+0x2C` 的推算全部无效。下一步从 `0x6701D0` 的 `[ebp+0x10]` 直接取解析器写入的 ps 地址。第 5 项未达成。
+
+**修正（§533.1）**：`0x169E08+0x30` 的 origin 更可能是快照 header 的 origin 副本，不是 ps.origin；ps 在 `snapshot_t` 内的偏移仍未知。抓取工具缺 `arg2`/`arg3`，下一轮先补上再抓 `0x6701D0` 的 `[ebp+0x10]`（ps 基址）。第 5 项未达成。
