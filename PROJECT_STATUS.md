@@ -32632,3 +32632,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **改 cmdNumber 会断开（§548）**：带自检实测，写 `cl+0x3B94` 后第一帧 `net` 就从 10 掉到 0——它参与 usercmd 序号一致性校验，不能外部改。剩下不碰 netchan 语义的入口只有 `conn+0x8014C`（serverCommandSequence），下一轮在自检条件下重做。
 
 **窗口假设被排除（§549）**：带自检把 `conn+0x8014C` 压到 `cmdNumber-16`（窗口 17），`net` 全程 10、`cl` 不变，但按住 W 三秒 `origin` 一动不动；cbuf 注入 `+forward` 同样零位移。所以"预测被 >32 窗口跳过"不是全部原因。下一步验证 usercmd 里的 `forwardmove` 是否为 0，以判定问题在输入层还是 pmove 的 `pm_type/pm_flags`。
+
+**键盘有效但 usercmd 无痕迹（§550）**：按键前后 `cl` 的 0x5000 字节零差异，但 ESC 能打开部署界面，且界面里武器（M4A1/斯泰尔TMP）正常显示——说明 profile loadout 完整、`ps.weapon=0` 才是游戏内无武器的原因。下一轮先用代码洞补 `ps.weapon`（风险低、直接改善截图），再攻移动。
