@@ -32310,3 +32310,113 @@ brightness = 79.4  pixels>30 = 63.7%   （与之前完全相同）
 |---|---|
 | 264 | `cl+0x3B98` 非可控 clientNum |
 | **265** | **🎯 四变体逐一实测：`0x2F`→pm_type=2、`0x3C`→pm_type=2、**`0x35`→pm_type=0**、全清→pm_type=0 ⇒ **`0x35` 是唯一控制 `pm_type` 的字节**，最小补丁从 3 字节降为 **1 字节**（`0x35: 01->00`）；但 `snap-nospec-1.bin` 截图仍是「按 空格↓」⇒ **补丁最小化不能让玩家 spawn，`pm_type` 仅必要条件之一** |
+
+## 523. 2026-11-08 23:00–24:00：**📋 最终阶段总结（goal 轮次用尽）**
+
+### 523.1 验收标准逐项结论
+
+| # | 验收项 | 状态 | 证据 |
+|---|---|---|---|
+| 1 | gs 日志出现真实 `connect`/`stats` 包 | **✅ 达成** | `r419-gs.jsonl`：`connect` 1、`gamestateupdate` 5、`inband` 114+、`oob` 7 |
+| 2 | 客户端 `net_state` 由握手推进 | **✅ 达成** | `cls.state` 0→3→4→5→6→9→**10 = CA_ACTIVE**（本 build `CA_ACTIVE=10`，§484 破解） |
+| 3 | 对局可结束并返回大厅 | **✅ 达成** | §520：`disconnect` → `cls.state` 10→0、进程存活、完整大厅 UI 截图 `r420-disconnect.png` |
+| 4 | `ui_state != 5` | **✅ 达成** | 全程 `ui=0` |
+| 5 | 截图是「可自由操作的对局」（能移动/射击，非 demo） | **❌ 未达成** | 停在「按 空格↓」开赛确认界面；世界渲染正常、`pm_type=PM_NORMAL(0)`，但输入不驱动玩法 |
+
+**⇒ 5 项中 4 项达成，第 5 项（玩家可自由操作）未达成。目标未完成。**
+
+### 523.2 可复现配方（已验证）
+
+**启动序列**：
+
+```
+1. python -m server319.lsg --cert runs\20261020-live-derived01\tls\auth.crt \
+     --key runs\20261020-live-derived01\tls\auth.key --port 28969 --allow-auth-tls --seconds 600
+2. python -m server1649370.gameserver --port 28969 --delay-send 1 \
+     --gamestate-source file \
+     --gamestate-file runs\demo-outer-exact\gamestate-network-ffb56d7e-6411.bin \
+     --gamestate-gametype war --gamestate-map mp_crash_tropical \
+     --snapshot-file runs\snap-nospec-1.bin \
+     --snapshot-delay 1 --snapshot-seq 4 --snapshot-repeat 5000 \
+     --snapshot-interval 0.1 --match-duration 600 --log runs\rNNN-gs.jsonl
+3. python -B -X utf8 tools\launch_1649370.py --name rNNN --reuse-runtime r107flow \
+     --until-close --local-profile --full --local-auth-lsg --loopback-tcp-guard
+4. python tools\patch_retry_ms_1649370.py --pid <pid> --ms 0
+5. python tools\drive_login_state_machine.py --ticks 20 --interval 0.35 --set-ui-state 1
+6. python runs\_patch_r336.py <pid>        # 15 处运行时补丁 + 全局对象初始化
+7. python tools\ring_bridge_1649370.py forward --target 127.0.0.1:28969 \
+     --bind-port 290NN --start-challenge --retry-seconds 0 --seconds 400
+```
+
+**快照最小补丁**（`runs/snap-nospec-1.bin`）：
+
+```
+源文件: runs/demo-outer-exact/baseline-outer17-245.bin  (245 bytes, seq=17)
+改动1: offset 0x35 : 0x01 -> 0x00      ⇒ pm_type: PM_INTERMISSION(2) -> PM_NORMAL(0)
+改动2: offset 0x0F : x (float)
+改动3: offset 0x14 : z (float)
+改动4: offset 0x18 : y (float)
+（0x0F/0x14/0x18 映射到 cl+0x3C80(x)/0x3C84(y)/0x3C88(z)，已实测精确跟随）
+```
+
+### 523.3 第 5 项的阻塞点与已排除项
+
+**现象**：世界正常渲染、`pm_type=PM_NORMAL(0)`、`cls.state=CA_ACTIVE`，
+但画面停在「战术团队竞技模式 + 按 空格↓ + 计分板 0 0」。
+
+**已排除（均有实验证据）**：
+
+| 假设 | 排除方式 | 结论 |
+|---|---|---|
+| 键盘注入通道不对 | `SendInput` / `GetKeyboardState` IAT 钩子 / `PostMessage` / `WM_CHAR`+鼠标；覆盖**全部 7 个窗口**（含 CEF） | 消息均入队成功（返回 1），状态不变 |
+| 游戏用 `GetKeyboardState` | 带计数器钩子（§514） | **调用计数恒 0**，客户端从不调用 |
+| 游戏用 DirectInput/RawInput | 模块清单（§514） | 无 `dinput8`/`xinput`/`hid` |
+| `forwardmove` 在 `cl` 里 | 全扫 `cl+0x0..0x9000`（§510） | 不存在 |
+| `cl+0x3B98` 是 clientNum | 连写 0 共 60 次（§521） | 每帧被重置为 -1，写入无效果 |
+| 缺 CoD 风格 configstring | 全内存扫描 1007.7 MB（§519） | `\sv_hostname\` 0 命中、`\mapname\` 仅 1 处且是 OOB 副本 |
+
+**⇒ 客户端处于"玩家尚未 spawn"的状态，在其 spawn 之前不消费玩法输入。**
+
+### 523.4 后续最可行路径（按把握排序）
+
+1. **让快照实体表携带"本地玩家实体（含位置）"**：
+   §209 用 `build_1649370_snapshot_entity.py --entity N` 得到黑屏，但**那版只写实体 ID、无位置**；
+   §490 已确认位置在快照 `0x0F/0x14/0x18`。**两者合并**是尚未尝试的组合。
+2. **定位 cgame 的 `cg` 全局**，检查 `cg->spectatorClient` / `cgs->clientNum`，
+   确认「按空格」提示的真实判据（该提示大概率来自 `CG_DrawSpectator` 一类的绘制函数）。
+3. **定位真正触发 spawn 的协议动作**（可能是一条 `svc_serverCommand`，
+   gs 已有 `--command-file` 通道可下发命令流）。
+
+### 523.5 已积累的关键地址 / 结构（全部经实测）
+
+| 项 | 值 / 说明 |
+|---|---|
+| `cls.state` | `0x76446B0`；**`CA_ACTIVE=10`、`CA_PRIMED=9`**（本 build，非教科书 5/6） |
+| `cl` 指针 | `[0x76638F4] ^ 0x6891D1C7`（**是 `clientActive_t`，非 `clc`**） |
+| `cl->playerState` 起点 | `cl + 0x3BA4`（`pm_type` 在 `+0`） |
+| 玩家坐标 | `cl + 0x3C80/84/88`（x/y/z）；另一副本 `cl + 0x3C/40/44` |
+| snapshot 解析标志 | `cl + 0x3BE4`（置 1 = 解析成功） |
+| `cl->cmdNumber` | `cl + 0x3B94`（按键时递增） |
+| gamestate `[3]` 值 | `cl + 0x3BE8`（=155） |
+| `cl + 0x3B98` | 恒 -1（疑 `spectatorClient`，-1 = 非观战；每帧被重置） |
+| 应用层字符串表 | `0xC87A48C`（`cod` 在 `+0x89`；**不是 CoD configstrings**） |
+| 产品标识校验 | `0x4549EB..0x454A28`，`strcmp(edx,"cod")` 失败 → `Com_Error` |
+| 状态名查找函数 | `0x5C8060`（跳转表 `0x5C80B4`） |
+| `GetKeyboardState` IAT | `0x10A8394`（客户端从不调用） |
+| `0x76446B0` 附近 | `ui_state` = `0x84ABA50` |
+
+**可复用工具**：
+
+- `runs/_hook_gks2.py`（IAT 钩 `GetKeyboardState`，含形参/返回处理）
+- `runs/_hook_gks_count.py`（带调用计数的钩子，用于证明 API 是否被调用）
+- `runs/_verify_gks_hook.py`（对照 cfg 值验证钩子效果）
+- `runs/_find_forwardmove.py` / `runs/_find_forwardmove2.py`（扫描 `cl` 找 `forwardmove`）
+- `runs/_scan_clc_window.py` / `runs/_scan_clc_state_pos.py`（结构扫描）
+- `runs/_find_real_configstrings.py`（全内存 InfoString 扫描）
+
+### 523.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 265 | `0x35` 是唯一控制 `pm_type` 的字节 |
+| **266（本轮）** | **📋 最终总结：5 项验收标准**4 项达成**（真实包 / 状态推进 / 退出回大厅 / `ui!=5`），**第 5 项「可自由操作」未达成**；输出**可复现配方**（启动序列 + 单字节快照补丁）、**已排除的 6 条假设**、**3 条后续路径**、**12 项经实测的关键地址/结构**、**6 个可复用工具**；目标保持 active（有明确可做的剩余工作，非阻塞） |
