@@ -33316,3 +33316,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **BREAKTHROUGH: inline-hook route works (877)**: init_hook_1649370.py installed on 0x621E50 performs [0x7508B80]=0x8106A24 plus two SetEvent calls from the client's own thread; client stays alive and the pointer persists. Counters (0xEC30000) collide with other data but functionality is fine. Next round extend the cave with [CL+0x100260]=1 (requires decrypting CL at [[0x76638F4]^0x6891D1C7]).
 
 **Enabling the inbound gate crashes; four writes not enough (878)**: after a clean restart the extended hook (adds CL decrypt + [CL+0x100260]=1) installs but the client dies - expected, since enabling the gate makes CL_ReadPackets walk a queue whose channels/entries are still zero. Pointer alone is safe; pointer+gate is fatal. Next round populate one valid channel-0 entry first, then enable the gate.
+
+**Queue has two adjacent fields (879)**: 0x5ABF90 reads +0x308050 (sequence) and clears +8, while CL_ReadPackets uses +0x308054 as the channel array. This explains why pointer+gate alone is unsafe - the consumer touches +8 and +0x308050 too. Next round populate the minimal consistent set and verify stability.
