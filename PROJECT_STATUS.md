@@ -33072,3 +33072,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **导出解析错误（§755）**：find_ws2 脚本把 AddressOfNames 的名字 RVA 当成函数地址，hook 后 original 是 "WSASen"/"WSARecvF" 字符串。正确算法需 AddressOfNameOrdinals + AddressOfFunctions 映射。下一轮修正后重取真实地址。
 
 **三表映射修正成功（§756）**：find_ws2 改用 AddressOfNameOrdinals+AddressOfFunctions 后得到真实地址 sendto=0x7783AD80、recvfrom=0x7783B530（此前是 "WSASen" 字符串 RVA）；0x6F85xxxx 为转发 thunk。下一轮 hook 这两个地址并触发连接观察收发。
+
+**hook 又截断指令（§757）**：sendto/recvfrom 头为 8B FF 55 8B EC 83 EC 14，--len 6 只覆盖到 83 使 sub esp,0x14 变成孤儿字节；--restore 报成功却仍留 e9 未恢复（hook_any 的 bug）。下一轮手动 WriteProcessMemory 写回 8 字节，再用 --len 8 重 hook。
