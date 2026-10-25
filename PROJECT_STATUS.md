@@ -33370,3 +33370,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **room.create dispatches into engine vtable slot 1 (904)**: 0x6397C0 calls [edi+4] (0x62CA80) with the engine manager in ecx and a value from 0x624430 pushed; the default map string 0xDAE091 is empty, confirming no room. Next round analyse 0x62CA80.
 
 **Session manager never created (905)**: 0x84ABB08/0x84ABB14/0x84ABA50 are all zero, so 0x477B00 takes its empty branch and no room can exist. Next round find the writer of those globals - the session-manager constructor - and call it once via the harness.
+
+**STRUCTURAL: session manager has readers but no writer (906)**: scans find only reads of 0x84ABB08/0x84ABB14, so like [0x7508B80] (294) and the events (859) it is an injection point whose injector is absent. Four independent findings now show all network/session state is externally injected: only the single-player shell (render, input, UI scripts, audio, demo) is native. Next round try calling the begin-game method 0x62F840 directly to start a local game.
