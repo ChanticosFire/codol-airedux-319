@@ -30145,3 +30145,77 @@ avg brightness = 79.5
 |---|---|
 | 229 | 扫到 `clc+0x10 = 5`，疑似 `CA_PRIMED` |
 | **230** | **⚠ 运行时写 `clc+0x10 = 6` 后 **0.3 秒内立即被改回 5** ⇒ **`+0x10` 不是 `clc.state`，而是每帧重写的计数器**；§482 的判断不成立；但"客户端未真正进入游戏"这个事实不变（按键无响应、位置恒定、停在「按空格」）⇒ 改走"搜状态机字符串 / 找 `svc_clientEnter` 分发"的路径 |
+
+## 484. 2026-11-07 08:00–09:00：**🎉🎉 破解状态名查找函数 —— 本 build 的 `CA_ACTIVE = 10`**
+
+### 484.1 定位
+
+状态名字符串（`.rdata`）与引用点：
+
+```
+0x00dc0900  CA_DISCONNECTED   ref 0x5C806D
+0x00dc0928  CA_CONNECTING     ref 0x5C807F
+0x00dc0938  CA_CHALLENGING    ref 0x5C8085
+0x00dc0948  CA_LOADING        ref 0x5C808B
+0x00dc0954  CA_CONNECTED      ref 0x5C8091
+0x00dc0984  CA_PRIMED         ref 0x5C80A3
+0x00dc0990  CA_ACTIVE         ref 0x5C80A9
+```
+
+### 484.2 反汇编（`0x5C8060`，状态名查找函数）
+
+```asm
+0x5C8060  cmp eax, 0xA                      ; eax = state
+0x5C8063  ja 0x5C80AE                       ; > 10 -> "unknown"
+0x5C8065  **jmp dword ptr [eax*4 + 0x5C80B4]**    ; 跳转表
+0x5C806C  mov eax, 0xDC0900 / ret           ; 0
+0x5C8072  mov eax, 0xDC0910 / ret           ; 1
+0x5C8078  mov eax, 0xDC0920 / ret           ; 2
+0x5C807E  mov eax, 0xDC0928 / ret           ; 3  CA_CONNECTING
+0x5C8084  mov eax, 0xDC0938 / ret           ; 4  CA_CHALLENGING
+0x5C808A  mov eax, 0xDC0948 / ret           ; 5  CA_LOADING
+0x5C8090  mov eax, 0xDC0954 / ret           ; 6  CA_CONNECTED
+0x5C8096  mov eax, 0xDC0964 / ret           ; 7
+0x5C809C  mov eax, 0xDC0974 / ret           ; 8
+0x5C80A2  mov eax, 0xDC0984 / ret           ; **9  CA_PRIMED**
+0x5C80A8  mov eax, 0xDC0990 / ret           ; **10 CA_ACTIVE**
+0x5C80AE  mov eax, 0xDBD168 / ret           ; "unknown"
+```
+
+### 484.3 决定性结论
+
+| 常量 | **本 build** | COD4 教科书 |
+|---|---|---|
+| `CA_DISCONNECTED` | 0 | 0 |
+| `CA_CONNECTING` | **3** | 1 |
+| `CA_CHALLENGING` | **4** | 2 |
+| `CA_LOADING` | **5** | 4 |
+| `CA_CONNECTED` | **6** | 3 |
+| **`CA_PRIMED`** | **9** | 5 |
+| **`CA_ACTIVE`** | **10** | 6 |
+
+**⇒ 一直读作 `net_state` 的 `0x76446B0`，其值 **10 就是 `CA_ACTIVE`** —— 客户端状态机早已完成！**
+
+**这也解释了 §482/§483 的困惑**：`clc+0x10 = 5` 是 `CA_LOADING` 而非 `CA_PRIMED`，
+且它是个无关计数器；按教科书常量对照完全错误。
+
+### 484.4 真正剩余的问题
+
+`clc.state = CA_ACTIVE(10)`、snapshot 在解析（`flag=1`）、`pm_type = PM_NORMAL(0)`，
+**但玩家实体没 spawn。**
+
+**首要嫌疑：`clc+0x10 = 5` 可能就是 `clc.clientNum = 5`**
+—— 客户端认为自己是 5 号玩家，而快照里的 playerstate 属于别的编号 ⇒ 匹配不上 ⇒ 不 spawn。
+
+### 484.5 下一轮
+
+1. 检查 `clc+0x10` 是否随 `--connect-extra \clientNum\N` 变化（之前测的是固定 5）；
+2. 若是 clientNum，则把快照 playerstate 的编号对齐，或在 connect 阶段就声明 5 号；
+3. 也需确认 `clc.clientNum` 的真实偏移（可能不在 +0x10）。
+
+### 484.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 230 | `clc+0x10` 不是 state（负面结果） |
+| **231** | **🎉 破解 `0x5C8060` 状态名查找函数：本 build `CA_PRIMED = 9`、`CA_ACTIVE = 10`（非教科书 5/6）⇒ **`net_state` 的 10 就是 `CA_ACTIVE`，状态机早已完成**；真正剩余问题是玩家实体不 spawn，首要嫌疑 `clc+0x10 = 5` 实为 `clc.clientNum = 5` |
