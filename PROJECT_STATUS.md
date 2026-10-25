@@ -33392,3 +33392,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x34F2B00 is the UI resource manager, not the script VM (915)**: runtime dump shows screen size 1920x1080, floats, and two pointers to 640x480 UI elements - it is the geometry/resource store, so the assumption held since 873 was wrong. Next round locate the real script VM object.
 
 **Command table is a linked list at 0x4F2C92 (916)**: nodes hold a name at +4, lookup tracks a 0x7FFFFFFF best-match distance (console-style partial matching), 0x4F2D0D is the not-found exit. Next round read how the matched node is executed to find a legitimate way to run room.* commands.
+
+**0x4F2C60 is the argument fallback (917)**: it adjusts running offsets and prints an error when argv is exhausted - a console argument helper, not the executor. Three console helpers are now identified (lookup 0x4F37A0, argument fallback 0x4F2C60, registration 0x4F2D70) without the dispatcher. Next round find the call site that invokes a node's handler (call through [node+8]).
