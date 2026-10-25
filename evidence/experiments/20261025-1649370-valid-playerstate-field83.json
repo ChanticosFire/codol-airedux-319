@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "exe_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "original": {
+    "bytes": 245,
+    "sha256": "6d03cde387571deb9362904055c3d69df54ab369ca0778218b8f507addb534a6",
+    "field83_byte_offset": 67,
+    "field83_byte_value": 5,
+    "playerstate_output_offset4": 5,
+    "playerstate_exit": {
+      "error": 0,
+      "bit": 1382,
+      "cursor": 177
+    },
+    "entity_exit": {
+      "error": 0,
+      "bit": 1383,
+      "cursor": 177
+    }
+  },
+  "field_trace": [
+    {
+      "field_index": 54,
+      "descriptor": "0xda87a8",
+      "bit_before": 424,
+      "byte_cursor_before": 53,
+      "error": 0
+    },
+    {
+      "field_index": 83,
+      "descriptor": "0xda8904",
+      "bit_before": 530,
+      "byte_cursor_before": 67,
+      "error": 0
+    },
+    {
+      "field_index": 84,
+      "descriptor": "0xda8910",
+      "bit_before": 532,
+      "byte_cursor_before": 68,
+      "error": 0
+    }
+  ],
+  "descriptor83": {
+    "address": "0xda8904",
+    "field_offset": 4,
+    "bit_width": 8,
+    "flags": 0
+  },
+  "playerstate_zero": {
+    "file": "runs/snap-ps-offset4-zero.bin",
+    "sha256": "19cbc632313c43f53dc00d16c8b64a752b1d7d94276368d6aa479e5d251fe95a",
+    "diff_from_original": [
+      {
+        "offset": 67,
+        "before": 5,
+        "after": 0
+      }
+    ],
+    "playerstate_output_offset4": 0,
+    "playerstate_exit": {
+      "error": 0,
+      "bit": 1382,
+      "cursor": 177
+    },
+    "net_state": 10,
+    "screenshot": "evidence/experiments/20261025-1649370-valid-ps0.jpg",
+    "visual": "map and HUD rendered; press-space prompt absent; no verified weapon or controlled movement"
+  },
+  "input_probe": {
+    "file": "runs/r439-focused-input.json",
+    "SendInput_key_events_returned": 1,
+    "foreground_matched_game": false,
+    "distinct_server_snapshot_positions": 1,
+    "limit": "No valid gameplay-input conclusion: game did not gain foreground and the server kept snapshot position fixed."
+  },
+  "empty_entity_table_attempt": {
+    "file": "runs/snap-ps0-empty-entity-table.bin",
+    "sha256": "0cb33b6c5a5549eac3737d4805dacfb2ba38ca819ce88a0acb8bf80ff1ca0d9c",
+    "diff_from_ps0": [
+      {
+        "offset": 172,
+        "before": 3,
+        "after": 195
+      },
+      {
+        "offset": 177,
+        "before": 164,
+        "after": 0
+      }
+    ],
+    "playerstate_exit": {
+      "error": 0,
+      "bit": 1382
+    },
+    "entity_exit": {
+      "error": 0,
+      "bit": 1430,
+      "cursor": 179
+    },
+    "next_block_exit": {
+      "error": 0,
+      "bit": 1431,
+      "cursor": 179
+    },
+    "actor_block_exit": {
+      "error": 1,
+      "bit": 1962,
+      "cursor": 245
+    },
+    "observed": "reached net_state 10 transiently, then disconnected; not a valid complete snapshot"
+  },
+  "interpretation": "The single-byte field83 mutation preserves parsing and changes playerstate offset+4. The entity-table attempt misaligns the following actor block. Acceptance item 5 remains unproven."
+}

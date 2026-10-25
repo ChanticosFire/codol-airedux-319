@@ -32580,3 +32580,7 @@ consumed 6411 / 6411  PERFECT
 复用 `r107flow/runtime` 对 245 B 快照做客户端解析 hook：原版 `0x35=01` 的玩家状态块出口无错误、bit=1382；改为 `00` 后出口已是 error=1、bit=994。尽管客户端仍可进 `CA_ACTIVE(10)` 并显示地图，旧“改 0x35 已获得有效非观战玩家状态”的结论撤回。`client_number=0` 与 `1735=Player` 两个正确 codec 变体仍未使角色出生。下一步先构造 error=0 的玩家状态，再加入本地实体与位置。第五项“可自行移动、射击”未达成。证据：`evidence/experiments/20261025-1649370-snapshot-preblock-error.json`。
 
 r435/r436 的实验性调试未产生可用快照结果，客户端已退出；两轮均复用 `r107flow/runtime`，未增加大型运行时。
+
+### 1649370 有效玩家状态字段（§528）
+
+复用 `r107flow/runtime`，在原版快照上以环形解析钩子定位字段 83（读前 bit=530，byte cursor=67，结构偏移 `+4`）。只改 `0x43:05→00` 后，玩家状态输出 `+4` 变 0，解析仍 error=0 / bit=1382，客户端到 `CA_ACTIVE(10)`，地图/HUD 显示且“按空格”提示消失。移动/射击未验证，验收项 5 仍未完成。空实体表试验在 actor 块出现 error=1（§528），需按 bit/byte 双游标重新编码实体及终止符。证据：`evidence/experiments/20261025-1649370-valid-playerstate-field83.json` 和截图。
