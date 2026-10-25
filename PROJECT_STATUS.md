@@ -33276,3 +33276,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Connect entry is 0x5BFCE0 (857)**: the block calling 0x515340 (-> CL_InitNetchan) belongs to 0x5BFCE0. Next round analyse its entry conditions/argument and find its callers to identify the natural connect trigger.
 
 **0x5BFCE0 gates on 0x809140 (858)**: the connect entry returns immediately unless 0x809140() returns non-zero al - a login/session prerequisite evaluated before the netchan path. Next round disassemble 0x809140.
+
+**0x809140 is a second two-event gate (859)**: the connect entry requires [0x84B0E54]==0, state==0, and both [0x7887040] and [0x7886E64] signalled - but nothing calls SetEvent, so inbound never starts. This explains the asymmetry: outbound works via the pump branch that skips 0x809140. Next round find who would signal [0x7887040].
