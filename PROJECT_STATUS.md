@@ -33132,3 +33132,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **cl completely zeroed at state=4 (785)**: dumped cl=0x134855D4 shows every field 0 (0x3C70 ps, 0x100260, 0x109244, ...). So state=4 is only the cls state machine counter; the client object itself was never initialized. Next round find the function that normally initializes cl and consider calling it directly via the remote-call tool instead of faking fields.
 
 **0x813C20 initializer never reaches 0x813D55 (786)**: state=7 is written at 0x813D34 but cl+0x10025C/0x109240/0x109244 all stay 0, so execution leaves between 0x813D34 and 0x813D55 - likely the je at 0x813D45 ([0x76446A1]) or a fault in call 0x528470 at 0x813D49. Next round hook 0x813D45 and 0x813D55 and compare counters after connect.
+
+**0x813C20 is the disconnect path (787)**: hook at 0x813D55 counted 0 reaches and state stayed 4, so the post-state=7 initializer block never runs; with all three callers passing eax=0 (725) the conclusion is that 0x813C20 is disconnect/cleanup and the observed state=7 is its side effect. The real connect-success transition has never run. Next round search for cls.state=5/6 writes and connectResponse handling.
