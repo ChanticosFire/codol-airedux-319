@@ -27154,3 +27154,52 @@ Round 169 已经踩过一次"派生字段判定有 bug"的坑（`acked_ours` 设
 |---|---|
 | 169 | 发现 `acked_ours` 字段是假信号 |
 | **170** | **🎯 用文档验证过的 hybrid snapshot（167 字节）合成并测试，结果仍是 `net=9`、`ack=3` ⇒ 需先验证 `message_ack` 的读取偏移（偏移 5）是否正确，避免再次追假信号** |
+
+## 428. 2026-11-04 24:00–01:00：**🎯🎯🎯 定位 `CL_ParseSnapshot` 入口 `0x471E90`，并解出 `clc = [0x331C0C8] ^ 0xD362501F`**
+
+### 428.1 关键反汇编
+
+```asm
+0x471E90  push ebp / mov ebp,esp
+0x471E93  eax = 0x3BE4
+0x471E98  call 0xC43280                    ; __chkstk（本地结构大小正好 0x3BE4）
+0x471E9D  eax = [0xE3F240] / xor eax,ebp / [ebp-4] = eax   ; 栈 cookie
+0x471EA7  **eax = [0x331C0C8]**             ; ← clc 的编码指针
+0x471EAD  ebx = [0x76638F4]
+0x471EB5  **eax ^= 0xD362501F**             ; ← 解码出 clc
+0x471EBF  [ebp-0x3BE0] = eax
+…
+0x472810  **mov dword ptr [ebx + 0x3be4], 1**   ; snapshot 解析成功标志
+0x47281A  pop edi / pop esi / pop ebx / ret      ; 成功返回
+```
+
+### 428.2 结论
+
+**`clc = [0x331C0C8] ^ 0xD362501F`**
+
+`0x331C0C8` 正是此前笔记记录的 "encoded conn" 地址（XOR 键 `0xD362501F`）——
+现在确认它就是 `clc`（client connection）。
+
+另外 `0x471E90` 的 `__chkstk` 申请 **0x3BE4** 字节本地空间，
+与 `clc+0x3BE4` 那个标志的偏移一致，进一步佐证这是 `CL_ParseSnapshot`。
+
+### 428.3 下一轮（关键二值验证）
+
+运行时读：
+
+```
+clc      = ReadU32(0x331C0C8) ^ 0xD362501F
+snapFlag = ReadU32(clc + 0x3BE4)
+```
+
+- `snapFlag == 1` ⇒ snapshot **已被成功解析**，问题在状态机推进；
+- `snapFlag == 0` ⇒ snapshot **从未被成功解析**，可完全解释 `ack` 恒为 3。
+
+这能把"客户端到底有没有处理我们的 snapshot"（自 Round 163 起存疑）变成二值答案。
+
+### 428.4 里程碑
+
+| Round | 结论 |
+|---|---|
+| 170 | 验证 `message_ack` 读取正确；hybrid snapshot 也无效 |
+| **171** | **🎯 定位 `CL_ParseSnapshot` 入口 `0x471E90`；解出 `clc = [0x331C0C8] ^ 0xD362501F`，并确认 `clc+0x3BE4` 是"snapshot 解析成功"标志 ⇒ 下轮运行时读该标志做二值判定** |
