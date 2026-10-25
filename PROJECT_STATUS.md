@@ -33064,3 +33064,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **64 位 Python 拿不到 32 位 ws2_32 地址（§751）**：GetModuleHandleW 返回 64 位基址导致 GetProcAddress 溢出。下一轮解析客户端 PE 导入表，从 IAT 读出 sendto/recvfrom 的 32 位真实地址再 hook。
 
 **IAT 解析坐标混乱（§752）**：确认辅助库节 VA = RVA + 0x400000；ws2_32 的 INT VA=0xEA59F44、IAT VA=0xCA84D4 均可映射，但读出的导入名仍为 '?'，说明 val 的解析方式需再核对。下一轮打印 val 实际值。
+
+**.rimp 是字符串池（§753）**：0xEA59F44 处解出 "SetLastError"/"GetTempFileNameA"/"IsDebugger"，说明 .rimp 是导入名字符串区而非 INT 表；静态文件里 IAT 槽位是占位，读不到运行时地址。下一轮改运行时读法：从客户端进程枚举 32 位模块拿 ws2_32 基址，再按导出表算 sendto/recvfrom。
