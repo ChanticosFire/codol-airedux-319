@@ -28979,3 +28979,53 @@ stats = 3
 |---|---|
 | 211 | 发现 `file` 模式忽略 configstring |
 | **212** | **🎯 `native` 模式 + 玩家 configstring 实测：configstring 确实被发出，但 **`net=0`**（握手失败）、`gate=0`、`table=1353` ⇒ native 模式 gamestate 缺关键数据，不能换；必须保持 `file` 模式并直接修改 gamestate 文件的 configstring 区域** |
+
+## 464. 2026-11-06 12:00–13:00：**🎯🎯 破解 gamestate 的 configstring 格式 —— `\<index>\<value>` 序列**
+
+### 464.1 gamestate 文件布局（`gamestate-network-ffb56d7e-6411.bin`，6411 字节）
+
+```
+offset 0..3:   00 00 00 00              ack
+offset 4:      03                       seq
+offset 5:      01                       ?
+offset 6..8:   00 00 00
+offset 9:      "mp_crash_tropical\0"    mapname
+offset 27:     "war\0"                  gametype
+offset 31:     ~m b5 ff 04 23 01 af    二进制头
+offset 45:     **\2482\2\2485\18\2490\214\2491\0\3056\2\g_gametype\war\g_hardcore\0\mapname\mp_crash_tropical\...**
+```
+
+### 464.2 configstring 的真实格式
+
+**不是 NUL 分隔的裸字符串序列，而是 `\<index>\<value>` 形式**：
+
+| 片段 | 含义 |
+|---|---|
+| `\2482\2` | configstring[2482] = `"2"` |
+| `\2485\18` | configstring[2485] = `"18"` |
+| `\2490\214` | configstring[2490] = `"214"` |
+| `\2491\0` | configstring[2491] = `"0"` |
+| `\3056\2` | configstring[3056] = `"2"` |
+| `\g_gametype\war\g_hardcore\0\mapname\mp_crash_tropical\...` | **CS_SERVERINFO** |
+
+**CS_SERVERINFO 从 offset 77 开始**（offset 76 是分隔的 `\`）。
+
+### 464.3 含义
+
+**要加 `CS_PLAYERS[0]`，只需在 configstring 区域插入一段 `\<index>\<value>`。**
+
+关键是确定 `CS_PLAYERS` 的起始索引 —— 从 `\2482`、`\2485`、`\3056` 这些高索引看，
+本 build 的 configstring 编号空间很大（>= 3056），`CS_PLAYERS` 的索引可能也在几百/几千量级。
+
+### 464.4 下一轮
+
+1. 精确解析 offset 31 之后的头结构（`~m b5 ff 04 23 01 af` 是什么）；
+2. 找出 `CS_PLAYERS` 的索引（可从 `g_` 开头的 configstring 值推断，或从 demo 找玩家名字）；
+3. 构造新 gamestate 文件，在其中插入 `\<index>\<value>`。
+
+### 464.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 211 | `file` 模式忽略 configstring |
+| **212** | **🎯 破解 gamestate 的 configstring 格式：**`\<index>\<value>`** 序列（如 `\2482\2`、`\3056\2`），`CS_SERVERINFO` 从 offset 77 开始；要加 `CS_PLAYERS[0]` 只需插入一段 `\<index>\<value>`，关键是确定其索引** |
