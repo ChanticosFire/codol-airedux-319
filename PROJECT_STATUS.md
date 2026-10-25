@@ -22010,3 +22010,118 @@ gamestate 分片 ×5
 |---|---|
 | 79–82 | 三个归因（invoke_sequence / 进程分离 / 端口）全部被推翻 |
 | **83** | **🎯 量化确认：客户端从 state=3 到发 getchallenge 需 4.55 秒，而 net=4 窗口仅 0.84 秒；connectResponse 内容完全正确 ⇒ 纯粹是"秒级 tick 与亚秒级窗口"的矛盾；下轮应延长客户端等待窗口** |
+
+## 343. 2026-10-31 11:00–12:00：**🎯 解出 `0x5C05F0` 的超时逻辑与状态分派表**
+
+### 343.1 函数开头：只处理 3/4/5/6 四个状态
+
+```asm
+0x5C0607  eax = [0x76446B0]           ; net_state
+0x5C0611  ecx = [0x331C0C8]           ; 加密连接指针
+0x5C0617  ebx = ecx ^ 0xD362501F      ; 解密 -> conn
+0x5C062F  [ebp-0x1150] = eax          ; 保存原 state
+0x5C0635  cmp eax,3 / je 0x5C064D
+0x5C063A  cmp eax,4 / je 0x5C064D
+0x5C063F  cmp eax,6 / je 0x5C064D
+0x5C0644  cmp eax,5 / jne 0x5C0F1B    ; 不是 3/4/5/6 -> 直接返回
+```
+
+### 343.2 通道状态查询与第一个跳转表
+
+```asm
+0x5C0662  eax = [ebx+0x28]            ; netchan 通道号
+0x5C0666  call 0x7F4F10               ; 查询通道状态，返回 0..3
+0x5C066E  cmp eax,3 / ja 0x5C067A
+0x5C0673  jmp [eax*4 + 0x5C0F2C]
+```
+
+跳转表 `0x5C0F2C`：
+
+| 通道状态 | 目标 |
+|---|---|
+| 0 | `0x5C067A` |
+| 1 | `0x5C0F1B`（直接返回） |
+| 2 | **`0x5C0693`（超时检查）** |
+| 3 | `0x5C067A` |
+
+`0x5C067A` 会检查 `0x5BE700()` 的返回值，失败则 `push "EXE_HOSTUNREACH"`。
+
+### 343.3 超时逻辑（关键）
+
+```asm
+0x5C0693  edx = [0xC7AF6A8]           ; 当前时间
+0x5C0699  esi = [0x76446B0]           ; net_state
+0x5C069F  ecx = edx
+0x5C06A1  ecx -= [ebx+8]              ; 距开始
+0x5C06A4  eax = edx
+0x5C06A6  eax -= [ebx+0x30]           ; 距上次重试
+0x5C06A9  cmp esi,3 / je 0x5C06B3
+0x5C06AE  cmp esi,4 / jne 0x5C06BE
+0x5C06B3  **cmp eax, 0xBB8**           ; 3000 ms
+0x5C06B8  **jl 0x5C0F1B**              ; 不到 3 秒 -> 什么都不做，等下一个 tick
+0x5C06BE  eax = [ebp-0x1150]
+0x5C06C4  cmp eax,5 / jne 0x5C06CE
+0x5C06C9  cmp ecx,0x64                ; state 5：100 ms 节流
+0x5C06CE  cmp eax,6 / jne 0x5C06DF
+0x5C06D3  cmp ecx,0x1F4               ; state 6：500 ms 节流
+0x5C06D9  jl 0x5C0F1B
+0x5C06DF  cmp esi,3 / je 0x5C06E9
+0x5C06E4  cmp esi,4 / jne 0x5C06FB
+0x5C06E9  **inc dword ptr [ebx+0x34]** ; 重试计数 +1
+0x5C06F2  **mov [ebx+0x30], ecx**      ; 重置节流起点
+```
+
+**三个关键字段（首次精确定位）**：
+
+| 字段 | 含义 |
+|---|---|
+| `[conn+0x30]` | 节流起点（上次重试时刻） |
+| `[conn+0x34]` | 重试计数 |
+| `0xBB8` = 3000 | state 3/4 的重试间隔（毫秒） |
+
+### 343.4 第二个跳转表（按 state-3 分派）
+
+`0x5C0FB: add eax,-3 / cmp eax,3 / ja 0x5C0F0C / jmp [eax*4 + 0x5C0F3C]`
+
+| state | 名称 | 目标 |
+|---|---|---|
+| 3 | `CA_CHALLENGING` | **`0x5C070E`**（`sprintf "getchallenge 0 \"%s\""` 并发送） |
+| 4 | `CA_CONNECTING` | **`0x5C0776`**（发 `connect`） |
+| 5 | `CA_CONNECTED` | `0x5C0E07` |
+| 6 | `CA_LOADING` | `0x5C0EBB` |
+
+### 343.5 `0x5C0F1B` 是"正常等待"，不是失败
+
+```asm
+0x5C0F1B  mov ecx,[ebp-4]
+0x5C0F1E  pop edi / pop esi
+0x5C0F20  xor ecx,ebp
+0x5C0F22  pop ebx
+0x5C0F23  call 0xC3C20F               ; __security_check_cookie
+0x5C0F28  mov esp,ebp / pop ebp / ret  ; 直接返回
+```
+
+而 `0x5C0F0C` 才是 `Com_Error`：
+
+```asm
+0x5C0F0C  push 0xDBFE4C / push 0 / call 0x4F82E0
+```
+
+**所以 `jl 0x5C0F1B` 是"本次 tick 不做动作，等下次"，属于正常节流。**
+
+### 343.6 仍未解决：谁把 net_state 归零
+
+`0x5C0F1B` 的返回路径不写 `net_state`；结合 Round 55 的"`0x76446B0` 无直接写入"，
+归零只能来自：
+- 另一条通过 `[conn+0x100260]`（`0x5C0655` 处比较的标志）触发的路径；
+- 或 `0x5C0776`（state=4 的 `connect` 分支）内部，在发送失败后自己复位。
+
+**下一轮**：反汇编 `0x5C0776`（state=4 分支），看它发完 `connect` 之后
+是否在某个失败分支里把状态清零，以及它是否检查 `[conn+0x100260]`。
+
+### 343.7 里程碑
+
+| Round | 结论 |
+|---|---|
+| 83 | 量化：tick 4.55s vs 窗口 0.84s |
+| **84** | **🎯 解出 `0x5C05F0`：状态 3/4 的节流阈值是 3000 ms、`[conn+0x30]`=节流起点、`[conn+0x34]`=重试计数；两个跳转表（通道状态 / state-3 分派）全部解出；`0x5C0F1B` 是正常等待而非失败 ⇒ 归零发生在别处（疑为 `0x5C0776` 的失败分支）** |
