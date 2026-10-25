@@ -33138,3 +33138,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **cls.state only 0/3/4/7 direct writes (788)**: enumerated all stores to 0x76446B0 - only 0,3,4,7; no 5 or 6 anywhere. Since state=5 was observed with net=4/chan=157, states 5/6 must be indirect writes through a register or a helper. Next round scan for indirect stores of 5/6 to an alias of cls.state.
 
 **0x76446B0 is a per-client state array, stride 32 (789)**: sites at 0x4732AB and 0x5C0353 compute [edi*32 + 0x76446B0] and compare with 5, so states 5/6 are written as indexed stores rather than direct scalars. Both then call 0x7F9090 and do a netchan handshake (rotate/xor [eax+0x11128]). Next round hook 0x5C0353 and read its counter after connect.
+
+**state==5 never reached (790)**: probe on 0x5C0353 counted 0, state stayed 4, so the PRIMED handshake never runs; and reading 0x76446B0 with stride 32 yields pointer-like values at indexes 1/2, so it is a struct array not an int array. Next round dump that region and find the store of 5.
