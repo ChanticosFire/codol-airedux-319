@@ -35,10 +35,12 @@ import struct
 from ctypes import wintypes as W
 
 STARTGAME = 0x6398A0
-SLOT_BASE = 0xEC60000
-SLOT_FIRED = SLOT_BASE
-SLOT_RESULT = SLOT_BASE + 4
-SLOT_COUNT = SLOT_BASE + 8
+# The scratch page is allocated per install (VirtualAllocEx) and its address is
+# patched into the cave, because fixed addresses such as 0xEC60000 collide with
+# real data in this process (section 899, and 0xEC30000 in section 877).
+SLOT_FIRED = 0
+SLOT_RESULT = 4
+SLOT_COUNT = 8
 
 k32 = ctypes.WinDLL("kernel32", use_last_error=True)
 k32.OpenProcess.restype = W.HANDLE
@@ -91,17 +93,20 @@ def main() -> int:
     cave = int(k32.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x40) or 0)
     if not cave:
         raise SystemExit("VirtualAllocEx failed")
+    scratch = int(k32.VirtualAllocEx(h, None, 0x1000, 0x3000, 0x40) or 0)
+    if not scratch:
+        raise SystemExit("VirtualAllocEx (scratch) failed")
 
     code = bytearray()
     code += b"\x60"                                           # pushad
-    code += b"\x83\x3D" + struct.pack("<I", SLOT_FIRED) + b"\x00"   # cmp [fired],0
+    code += b"\x83\x3D" + struct.pack("<I", scratch + SLOT_FIRED) + b"\x00"   # cmp [fired],0
     code += b"\x75\x1B"                                       # jne +0x1B
-    code += b"\xC7\x05" + struct.pack("<I", SLOT_FIRED) + b"\x01\x00\x00\x00"
-    code += b"\xFF\x05" + struct.pack("<I", SLOT_COUNT)       # inc [count]
+    code += b"\xC7\x05" + struct.pack("<I", scratch + SLOT_FIRED) + b"\x01\x00\x00\x00"
+    code += b"\xFF\x05" + struct.pack("<I", scratch + SLOT_COUNT)       # inc [count]
     code += b"\xB9\x01\x00\x00\x00"                           # mov ecx,1
     code += b"\xB8" + struct.pack("<I", STARTGAME)            # mov eax,STARTGAME
     code += b"\xFF\xD0"                                       # call eax
-    code += b"\xA3" + struct.pack("<I", SLOT_RESULT)          # mov [result],eax
+    code += b"\xA3" + struct.pack("<I", scratch + SLOT_RESULT)          # mov [result],eax
     code += b"\x61"                                           # popad
     code += original
     code += b"\xE9" + struct.pack("<i", (args.target + args.len) - (cave + len(code) + 5))
@@ -113,7 +118,7 @@ def main() -> int:
     if not write(args.target, patch):
         raise SystemExit("patch failed")
 
-    print(f"cave {cave:#x} installed; will call {STARTGAME:#x} with ecx=1 once")
+    print(f"cave {cave:#x} scratch {scratch:#x} installed; will call {STARTGAME:#x} with ecx=1 once")
     return 0
 
 
