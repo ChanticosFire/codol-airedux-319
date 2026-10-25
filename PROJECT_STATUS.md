@@ -33452,3 +33452,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Preparing to capture the master query (945)**: need a UDP listener on the cvar's new address plus a refresh trigger (normally the server-browser UI calls the master-query function). Next round capture the datagram while refreshing.
 
 **Master cvar looked up by name, not via global (946)**: [0x765E7C8] has only its registration ref while [0x333A00C] has many, so nothing caches the master cvar - query code must fetch it by name, meaning our value change takes effect with no cache to invalidate. Next round trace consumers of the "1860"/"1861" name strings to the master-query function.
+
+**Master cvar registered but never read - master route dead (947)**: the "1860" name string and its object global are each referenced only at the registration site, so no code performs a master query. Redirecting it was harmless but useless. Absent-by-design now includes master query, lobby session manager, gamestate queue writer, session events and lobby handler state. Next round check whether any connect() site takes a string-derived address.
