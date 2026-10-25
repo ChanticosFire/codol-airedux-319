@@ -97,6 +97,13 @@ class ClientOriginReader:
             return None
         return struct.unpack("<I", buf.raw)[0]
 
+    def cmd_number(self):
+        """The client's current outgoing command number (cl + 0x3B94)."""
+        enc = self._u32(self.CL_PTR)
+        if not enc:
+            return None
+        return self._u32((enc ^ self.CL_XOR) + 0x3B94)
+
     def origin(self):
         if self._u32(self.NET_STATE) != 10:
             return None
@@ -544,7 +551,17 @@ class GameServer:
                 # unconfirmed-command window exceeds the prediction limit and
                 # CL_PredictMovement is skipped, so held movement never moves.
                 self.command_seq += 1
-                command = (b"\x05" + struct.pack("<I", self.command_seq)
+                if self.origin_reader is not None:
+                    cmd = self.origin_reader.cmd_number()
+                    if cmd is not None:
+                        # Keep the unconfirmed-command window small but non-zero:
+                        # CL_PredictMovement is skipped once cmdNumber -
+                        # serverCommandSequence exceeds 32.
+                        self.command_seq = max(self.command_seq, cmd - 4)
+                # svc_serverCommand = 1: [0x01][sequence u32][text NUL].  The
+                # handler at 0x4737E0 rejects non-increasing sequences and stores
+                # the text into conn+0x80154[sequence & 0x1FF].
+                command = (b"\x01" + struct.pack("<I", self.command_seq)
                            + self.command_text + b"\x00")
                 self._send_fragments(addr, peer, b"\x00\x00\x00\x00" + command,
                                      seq - 1, "servercmd")

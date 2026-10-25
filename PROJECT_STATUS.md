@@ -32590,3 +32590,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 真正的键盘窗口是 `CoD Splash Screen` / `Base_PowerMessageWindow`（向 `CODO` 投递无效）；`GetKeyboardState` 真实 IAT 为 `0xCA8394`，仅被窗口过程 `0xA84E90` 在 WM_KEYDOWN/WM_KEYUP 时调用。持续按键只能让 origin 在 0.2–0.9 m 内振荡，根因推断为 `cmdNumber - serverCommandSequence > 32` 使 `CL_PredictMovement` 跳过：服务端从未发 `svc_serverCommand`（推断 svc=5）。已实现 `--server-command-*` 与 `--follow-client-pid`，但**尚未验证**。第 5 项未达成。证据：§529。
 
 `svc_serverCommand=0x05` 假设已被 r455/r456 否定：启用后客户端在 connect 后 9–16 s 崩溃，比基线更快。只有 r446 的"无跟随、无 servercmd、0.1 s 间隔"配置被证实可长时间稳定。下次必须先反汇编 `CL_ParseServerMessage` 的 svc dispatch 表确认真实编号与载荷格式，再开该功能；同时排查复用 runtime 是否导致崩溃。第 5 项未达成。
+
+**svc 枚举已静态确认**：跳转表 `0x473C50` 给出 svc 0=snapshot、**1=serverCommand**、2=u32+处理、3=gamestate、5=无操作返回。正确格式 `[0x01][seq u32][text NUL]`，sequence 必须递增（`0x47384E` 比较 `[conn+0x8014C]`）。此前 `svc=5` 的假设被否定（svc 5 是无操作返回，会截断消息）。代码已改为 0x01；r457 仍因环境问题在 10 s 内崩溃，需洁净 runtime 复测。第 5 项未达成。
