@@ -32958,3 +32958,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **hook 截断 10 字节 mov 指令（§702）**：0x813D34 原为 c7 05 ... 10 字节，hook 写 e9+3nop 只覆盖 8 字节，剩 00 00 孤儿；cave 内复制的 mov 可能残缺 → 写坏内存、EIP 跳堆、connection 变 0xd362501f——这很可能就是崩溃真正原因。下一轮查 hook_any 的复制逻辑，必要时改在 0x813D3E。
 
 **真正原因：--len 太小导致跳回指令中间（§703）**：hook_any 会按 disasm 重放完整指令（§702 假设不成立），但最后 `jmp target+len`；0x813D34 的 mov 是 10 字节而 len=8，跳回 0x813D3C 落在指令中间（00 00 = add [eax],al），写坏内存并跑飞——解释了 state=7 后必崩、connection 变 0xd362501f、计数为 0。下一轮用 --len 10。
+
+**对照实验：不装 hook 也崩（§704）**：无任何 hook/代码改写，state=7 后 151ms 仍崩、主线程 EIP 在系统库——§703 的 hook 元凶论被推翻。崩因是客户端进入 ACTIVE 后自身行为（CL_InitCGame 或等待首个 snapshot 的路径）。下一轮发一个最小 snapshot 试验。
