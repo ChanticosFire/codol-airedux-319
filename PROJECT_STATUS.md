@@ -33058,3 +33058,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **inject_ring_a 已存在（§748）**：接口/槽布局齐全，但 ring_a 同样被 0x674F30 drain 后取走就扔，注入大概率同样失效。根本疑问：客户端到底有没有从 ring 读包并解析的路径？若两个 ring 都只写/只清，真正收包应走自己的 UDP socket。下一轮检查客户端 socket 创建与 recvfrom。
 
 **重大发现：客户端有 3 个 UDP socket（§749）**：63039/53803/22011，无 TCP。客户端自己用 UDP socket 收发，不经过 ring，证实 ring 注入方向无效。修复方向：bridge 把 gs 回包直接 sendto 到客户端 UDP 端口。下一轮确定哪个端口是游戏协议用。
+
+**三端口发包无反应（§750）**：connect 后 state=4，向 63039/53803/22011 发 connectResponse 后 state 恒 4，客户端完全没反应。四类可能：非游戏 socket、绑定特定地址、tcp-guard 拦住、包被丢。下一轮 hook WS2_32 sendto/recvfrom 确认真实网络路径。
