@@ -22872,3 +22872,58 @@ r308-launch.out: "stop_reason": "unhandled_exception"
 |---|---|
 | 93 | NOP `0x5C265F` ⇒ 超时消失；`net=8`、`gate`/`table`=1、`stats=7` |
 | **94** | **解出阈值：硬编码 60.0 秒（`[0x8114B78+0xC]`=0x42700000） × 1000；判断方向是"不足 60 秒即报超时"，且不读 `cl_timeout`/`cl_connectTimeout` ⇒ 解释了为何那两个 dvar 无效；该路径已被 Round 93 切断；下轮转向定位 `unhandled_exception`** |
+
+## 354. 2026-10-31 22:00–23:00：**崩溃前最后加载的是 `common_gametype_mp`，地图本体从未被加载**
+
+### 354.1 完整追踪（`FS_LoadFastfile` @ `0x49ED40`，capture arg0）
+
+```
+t+ 0.00 net=3  table=0 gate=0  FS_Load calls=6   last_ff='localized_ui_mp'
+t+ 3.63 net=4  …               calls=6
+t+ 7.02 net=5  …               calls=6
+t+ 8.03 net=8  …               calls=6
+t+ 8.15 net=8  …               calls=**8**   last_ff='common_loadscreen'
+t+ 8.59 net=8  gate=1          calls=8
+t+ 8.64 net=8  gate=1          calls=**11**  last_ff='**common_gametype_mp**'
+t+ 9.08 net=8  **table=1**     calls=11  last_ff='common_gametype_mp'
+t+ 9.20 CLIENT GONE                                 ← 崩溃
+
+gs: stats = 5
+    in/connect 1 / gamestateupdate 4 / getchallenge 1 / oob 11 / stats 5
+```
+
+### 354.2 三个关键事实
+
+1. **`FS_LoadFastfile` 共 11 次**（与 Round 74 一致）；
+2. **最后一次是 `common_gametype_mp`** —— 之后没有再加载任何文件；
+3. **`mp_crash_tropical.ff`（31 MB 本体）从未出现在 `FS_Load` 列表里**。
+
+### 354.3 结论：崩溃点在"准备发起地图加载"而不是"读取地图文件"
+
+客户端已经：
+- 握手成功（`net=8`）
+- `gate=1`（地图加载入口被调用）
+- 加载了 `mp_crash_tropical_load` / `common_loadscreen` / `common_mp_reload` / `common_gametype_mp`
+- `table=1`（资源表开始填充）
+
+**然后在这之后 0.12 秒崩溃，而 31 MB 的地图本体一次都没被打开。**
+
+⇒ 崩溃发生在"gametype 加载完成 → 准备打开地图本体"之间的那段逻辑：
+可能是**地图加载管理器未初始化**（空指针），或**某个回调/状态转换失败**。
+
+### 354.4 下一轮
+
+1. 在 `0x49ED40` **之后**紧邻的位置（比如 `0x49ED76` 之后的返回路径）打点，
+   确认 `FS_LoadFastfile` 返回后立即执行到哪里；
+2. 重点看 `0x49E600`（`Com_LoadFastfiles`）在 11 次加载完成后**还会做什么** ——
+   崩溃大概率就在它返回前的最后几条指令；
+3. 也可以在 `0x49E600` 的 `ret` 处装 hook：若 `ret` 从未命中，说明函数内部崩溃；
+   若命中了，说明崩溃发生在调用者继续执行时。
+
+### 354.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 93 | NOP 掉超时出口 ⇒ `net=8`、`gate`/`table`=1、`stats=7` |
+| 94 | 解出超时阈值=硬编码 60 秒、方向为"不足 60 秒即报错" |
+| **95** | **追踪 `FS_LoadFastfile` 11 次调用：最后加载 `common_gametype_mp`，`mp_crash_tropical.ff` 本体从未被打开 ⇒ 崩溃点在"准备发起地图加载"阶段，而非读取地图文件** |
