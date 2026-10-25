@@ -33074,3 +33074,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **三表映射修正成功（§756）**：find_ws2 改用 AddressOfNameOrdinals+AddressOfFunctions 后得到真实地址 sendto=0x7783AD80、recvfrom=0x7783B530（此前是 "WSASen" 字符串 RVA）；0x6F85xxxx 为转发 thunk。下一轮 hook 这两个地址并触发连接观察收发。
 
 **hook 又截断指令（§757）**：sendto/recvfrom 头为 8B FF 55 8B EC 83 EC 14，--len 6 只覆盖到 83 使 sub esp,0x14 变成孤儿字节；--restore 报成功却仍留 e9 未恢复（hook_any 的 bug）。下一轮手动 WriteProcessMemory 写回 8 字节，再用 --len 8 重 hook。
+
+**sendto/recvfrom 都是 0（§758）**：手动恢复字节成功后以 --len 8 重 hook；connect 后 state=4、ring_a=27/27 全被 drain，而 sendto 与 recvfrom 计数均为 0——客户端完全不调用真实网络函数，只往 ring_a 写且被 drain 丢弃。结论：唯一出路是 patch 0x674F30 阻止消费、由 bridge 抢读 ring_a（即 §655 的方向，当时"read 不动"正说明 patch 生效）。下一轮重做该方案。
