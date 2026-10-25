@@ -33330,3 +33330,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Command enumeration found game-facing names (884)**: 794 candidates / 525 unique; network-facing ones include xsessionupdate, disconnectwithkeepsession, room.join, party.join, cppOnDWConnected/Disconnected, xcancelconnectingdialog - a vocabulary entirely separate from cl_demo_*. Next round inspect the xsessionupdate handler at registration 0x47094C.
 
 **Session object exists but state is zero (885)**: [0x1C2B064]=0x810E63C with [sess]=0xDB59D8 and [sess+0xC]=0; xsessionupdate (0x4707F0) keeps 0xE36DE08/0xE36DE0C in sync with it. This is the correct subsystem - live objects plus a command registration. Next round dump the object and identify vtable 0xDB59D8.
+
+**Session object dump: state 5 plus a lock array (886)**: 0x810E63C has vtable 0xDB59D8, +8=5 (state), and repeated 0x12/0x77D725E0 pairs suggesting Windows locks/callbacks - a live synchronising structure, not a netchan session. Next round resolve vtable 0xDB59D8 and find who reads +8.
