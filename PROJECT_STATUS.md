@@ -33356,3 +33356,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **DECISIVE: 0x628320 is a bit-stream writer (897)**: 0xDC7528 resolves to code doing writeBits(3)/writeBits(8)/writeBits(0x15)/writeBits(0x20), so room.startgame serialises a genuine outbound protocol message. With all outbound terminating in ring_a (827) and our drain tap (833), issuing room.startgame should yield a real game-session message we can capture and forward. Next round trigger that path.
 
 **Room slots + inject_call fails again (898)**: 0x3306994 = [1,3,3] and 0x33069D4 = three slots; slot 0 takes the no-room branch, slots 1/2 the with-room branch, both reaching 0x62F840. The inject_call attempt crashed (third failure), confirming it is unusable. Next round extend the hook cave to call 0x6398A0 once with ecx=1 on the client's own thread.
+
+**One-shot call installs and survives, but scratch page occupied (899)**: client stays alive with the cave calling 0x6398A0, but counters read nonsense (scratch 0xEC60000 collides with real data, same defect as 0xEC30000 in 877) and ring_a stayed 0/0. Next round allocate the scratch per-install via VirtualAllocEx and patch its address into the cave.
