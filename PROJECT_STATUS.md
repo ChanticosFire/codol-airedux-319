@@ -33136,3 +33136,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x813C20 is the disconnect path (787)**: hook at 0x813D55 counted 0 reaches and state stayed 4, so the post-state=7 initializer block never runs; with all three callers passing eax=0 (725) the conclusion is that 0x813C20 is disconnect/cleanup and the observed state=7 is its side effect. The real connect-success transition has never run. Next round search for cls.state=5/6 writes and connectResponse handling.
 
 **cls.state only 0/3/4/7 direct writes (788)**: enumerated all stores to 0x76446B0 - only 0,3,4,7; no 5 or 6 anywhere. Since state=5 was observed with net=4/chan=157, states 5/6 must be indirect writes through a register or a helper. Next round scan for indirect stores of 5/6 to an alias of cls.state.
+
+**0x76446B0 is a per-client state array, stride 32 (789)**: sites at 0x4732AB and 0x5C0353 compute [edi*32 + 0x76446B0] and compare with 5, so states 5/6 are written as indexed stores rather than direct scalars. Both then call 0x7F9090 and do a netchan handshake (rotate/xor [eax+0x11128]). Next round hook 0x5C0353 and read its counter after connect.
