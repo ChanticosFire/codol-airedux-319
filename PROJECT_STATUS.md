@@ -33318,3 +33318,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Enabling the inbound gate crashes; four writes not enough (878)**: after a clean restart the extended hook (adds CL decrypt + [CL+0x100260]=1) installs but the client dies - expected, since enabling the gate makes CL_ReadPackets walk a queue whose channels/entries are still zero. Pointer alone is safe; pointer+gate is fatal. Next round populate one valid channel-0 entry first, then enable the gate.
 
 **Queue has two adjacent fields (879)**: 0x5ABF90 reads +0x308050 (sequence) and clears +8, while CL_ReadPackets uses +0x308054 as the channel array. This explains why pointer+gate alone is unsafe - the consumer touches +8 and +0x308050 too. Next round populate the minimal consistent set and verify stability.
+
+**Queue entry format not derivable (880)**: route B can publish pointers safely (877) but cannot fabricate an entry whose 0x30-byte layout no code in this build defines - the producers are the absent driver. Next round switch to route A (UI/script receive path) and re-check whether CL_ReadPackets is the game's path or only the media one.
