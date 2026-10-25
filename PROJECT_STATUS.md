@@ -30334,3 +30334,53 @@ origin（浮点，值大故不在 0..18 候选里）：
 |---|---|
 | 232 | 纠正 `cl` 命名 |
 | **233** | **🎯 `playerState`（`cl+0x3BA4` 起 0x400 字节）：`pm_type=0`、`origin=(336,60,261)` 在 `+0xDC/0xE0/0xE4`，但**其余字段几乎全 0**（`clientNum`、`viewangles`、`velocity`、武器全缺）⇒ **playerState 严重不完整是玩家无法 spawn、无法响应的直接原因；245 字节快照对约 720 字节的完整 playerState 来说太短** |
+
+## 487. 2026-11-07 11:00–12:00：**找到真实 demo；提取 200 个 delta；seq 非连续是崩溃原因**
+
+### 487.1 真实 demo 文件
+
+```
+2100212 bytes  runs\demo-hold\0C-2021-8-26[19-14-7]war.demo
+7286117 bytes  runs\demo-hold\0C-2021-8-26[19-26-24]war.demo   ← 7.3 MB
+32768 bytes    runs\demo-trash-32k\*.demo  (多个小文件)
+```
+
+### 487.2 解析 7.3 MB demo（`--limit 200`）
+
+```
+demo:  7,286,117 bytes  (70427 records, 18366 packets)
+gamestate: 6407 bytes
+baseline_candidates: 1
+p_snapshot_candidates: **725**
+导出的 delta: 200 个（332..572 字节）
+```
+
+最大 delta 572 字节（`p-delta-outer4118`），远长于此前用的 245 字节 baseline。
+
+### 487.3 关键发现：`p-delta-*` 文件名里的数字是 seq，且跳跃巨大
+
+```
+p-delta-outer4118, outer6490, outer6487, outer1893, outer2882,
+outer2481, outer1813, outer4232, outer5396, outer2753, outer5172 ...
+```
+
+**⇒ 这些是分散在 demo 各处的快照样本，不是连续流。**
+
+**这正是 §475 那次 delta 序列 18.9 秒即崩溃（`eip=eax=0xb258766e`）的原因：
+delta 只含"相对其前一个快照的变化"，seq 跳跃过大时客户端会拒绝/解析错乱。**
+
+### 487.4 下一轮
+
+demo 里有 725 个快照候选，必然存在**连续的 seq 段**：
+
+1. 提高 `--limit` 到 725（提取全部）；
+2. 按文件名里的 seq 排序；
+3. 找最长的连续段；
+4. 用那段连续 seq 的 snapshot 序列喂给客户端，使 delta 正确累积、填满 `playerState`。
+
+### 487.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 233 | `playerState` 几乎全 0 |
+| **234** | **🎯 找到真实 demo（2.1 MB / 7.3 MB），`--limit 200` 提取出 **1 baseline + 200 delta**（最大 572 字节），demo 中共 **725 个快照候选**；确认 `p-delta-*` 文件名数字为 seq 且**跳跃巨大、非连续** ⇒ 这是 §475 delta 序列崩溃的原因；下轮提取全部 725 个、按 seq 排序找最长连续段 |
