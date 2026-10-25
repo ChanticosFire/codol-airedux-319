@@ -33024,3 +33024,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **纠正 0x472C70 性质（§731）**：它是按位读 11/8/9/4 位字段+sprintf 格式化的解析辅助函数，不是写全局表；§730 判断作废。gamestate 解析路径本身没崩。下一轮在 CL_ParseGamestate(0x472D80) 装 hook，看调用次数与返回后 state。
 
 **重磅：CL_ParseGamestate 从未被调用（§732）**：hook 计数 0，说明 injected=6 的 gamestate 分片根本没进入 CL_ParseServerMessage/CL_ParseGamestate；state=7 完全由 0x5BE90A 断开路径写入。下一轮 hook CL_ParseServerMessage(0x471E90) 与 netchan 接收点，定位 gamestate 在哪一层被丢弃。
+
+**0x674F30 高频调用但 CL_ParseServerMessage 为 0（§733）**：STATE=7 采样显示 0xE861000=2110（0x674F30 8秒内被调 2110 次），0x471E90 恒 0——gamestate 注入 ring_b 后没有任何代码把它送进 CL_ParseServerMessage，推测在 0x674F30 内部被识别为无效消息而静默丢弃。下一轮反汇编 0x674F30 真实实现并追其出口。
