@@ -32681,4 +32681,6 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 
 **gamestate 无实体基线（§569）**：`gamestate-client0.bin`（6411 B）只有地图/模式/cvar + 骨骼标签；`svc 3` → `0x5BEB50`（`CL_InitCGame`）全程不构造实体基线。四条路（ps 位流/实体表/cvar/gamestate）全部验证失败。唯一未彻底尝试的是"改 cgame 的武器读取逻辑"（而非写内存），下一轮最后一次尝试，否则如实标记受阻。
 
-**武器问题最终结论（§570）**：最后一条路"patch cgame 武器读取"也关闭了——cgame 区（0x500000–0x600000）**零命中** `mov reg,[reg+0x4C]`，说明 cgame 不直接读 `ps.weapon`。五条路（ps 位流/实体表/cvar/gamestate/patch cgame）全部验证失败。**第 5 项判定为部分达成**：可自由操作（能移动、能开 ESC、能退出）成立，射击不成立。已交付证据：`evidence/experiments/20261026-1649370-walk.json` + 前后截图。
+**cgame 武器表已定位（§571）**：`0x1988B50` 是**武器表**（前 64 项全部非空，weaponDef 间隔 0x101C）；`0x1C1D188` 是 **clients 数组**（`^0xFBB2C97A` 解密），`0x82C3B58` 为当前索引（=1）。说明武器数据早已注册、当前武器索引为 0 才是无武器原因。下一轮在 net=10 时读 `client+0x3E4/+0x3F8` 确认当前武器字段并尝试写入。
+
+**武器问题最终结论（§570，已被 §571 部分推翻）**：最后一条路"patch cgame 武器读取"也关闭了——cgame 区（0x500000–0x600000）**零命中** `mov reg,[reg+0x4C]`，说明 cgame 不直接读 `ps.weapon`。五条路（ps 位流/实体表/cvar/gamestate/patch cgame）全部验证失败。**第 5 项判定为部分达成**：可自由操作（能移动、能开 ESC、能退出）成立，射击不成立。已交付证据：`evidence/experiments/20261026-1649370-walk.json` + 前后截图。
