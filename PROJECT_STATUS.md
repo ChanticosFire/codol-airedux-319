@@ -33384,3 +33384,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Base is ~0x120 bytes, derived would be >0x105D8 - so build one (911)**: the base ctor at 0x62C000 zeroes only [ebx+4..0x1C] and installs 0xDC7274, while 0x62F840 reads +0x278/+0x105D8/+0x105FE/+0x106F8. Route D: allocate ~0x11000 bytes, write vtable 0xDC7750 at offset 0, zero the rest, then call 0x62F840 with that as `this`. Next round implement it.
 
 **Route D attempt crashes (912)**: a zero object with vtable 0xDC7750 at 0x10DD0000 still dies when 0x62F840 is called - its first act is call [eax+0xBC] (0x6311C0) which faults on null members. Expected for a class with container members. Next round enumerate what slots 0x2F/0x30 require; if bounded, initialise and retry, else abandon route D.
+
+**Route D abandoned as unbounded (913)**: slot 0x2F (0x6311C0) re-enters virtual dispatch via [eax+0x64] and reads global gates plus a 0x3E24-stride table, and slot 0x30 (0x6312E0) builds an 18-entry array - the dependency graph is indefinite. Hand-building the derived object would mean re-implementing a class, not driving the client. Next round consolidate and pick the least speculative remaining work.
