@@ -33292,3 +33292,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x5C01C0 is an indirect callback; [0xCA8200] is VirtualFree (865)**: no direct caller exists, so the lobby routine is reached through a registered pointer (UI event table). The legitimate route is to find the registration and drive the mapped UI event. Next round scan for immediate/pointer references to 0x5C01C0.
 
 **DECISIVE: 0x5C01C0 is a console command handler (866)**: registered via 0x4F2D70 (Cmd_AddCommand-style, table at [0x331D408]) with name string at 0xDC06D8, desc 0xE9C6A50. So a legitimate console command starts the connect. Next round read 0xDC06B8/DC06C4/DC06D8/DC06E4 to find that command's name.
+
+**Correction: 0x5C01C0 is snd_restart (867)**: its command name is 0xDC06D8 'snd_restart', so 0x5BFCE0 is a voice/media reconnect and the CL_InitNetchan path traced was the audio transport, not the game session. Next round locate the real `connect` command registration and follow that handler.
