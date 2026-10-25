@@ -118,6 +118,8 @@ def main() -> int:
             for slot in args.hook:
                 samples.append((round(time.monotonic(), 4), hex(slot), client.u32(slot)))
             eips = sample_eips(client.pid, thread_ids(client.pid))
+            load_flag = client.u32(0x3381398)
+            print(f"   [0x3381398] (level-load flag) = {load_flag:#010x}", flush=True)
             enc = client.u32(0x331c0c8)
             enc2 = client.u32(0x331c0c8)
             time.sleep(0.001)
