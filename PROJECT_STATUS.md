@@ -25393,3 +25393,70 @@ stop_reason = "unhandled_exception"
 |---|---|
 | 136 | `handle_exception` 未被调用 |
 | **137** | **🎯 定位到 `debug_loop.py`：`row` 已包含 `registers`（含 `eip`）、`instruction`、`frames`、`parameters`；但最终 JSON 只序列化 `log` 顶层字段 ⇒ 下轮改 `session.py` 的 `close()` 把 `row` 列表一起写出来** |
+
+## 396. 2026-11-02 16:00–17:00：**🎯🎯🎯🎯🎯 拿到真实崩溃地址 `0x43204F` —— `mov ecx,[edx+0xC]` 且 `edx=0`**
+
+### 396.1 关键突破：`result.json` 里早就有完整异常记录
+
+`session.py` 显示：
+
+```python
+L234: self.data = {…, 'events': [], …}
+L237: def record(self, row):
+L238:     row['time']=time.time(); self.data['events'].append(row)
+L247: (self.run_dir/'result.json').write_text(json.dumps(self.data,…))
+```
+
+**我此前只读 `runs/r*-launch.out`（不含 `events`），真正的记录在**
+`E:\GAME\COD\1649370\workspaces\offline-runs\r107flow\reuse-*\result.json`。
+
+### 396.2 崩溃记录（`events[233]` 与 `[235]`）
+
+```json
+{
+  "exception": "0xc0000005",
+  "address": "0x43204f",
+  "tid": 24440,
+  "parameters": ["0x0", "0xc"],
+  "registers": {"eax":"0x16d478","ecx":"0x7327ac29","edx":"0x0",
+                "ebx":"0xdafe9c","esi":"0x2","edi":"0x29c9804",
+                "ebp":"0x16d57c","eip":"0x43204f","esp":"0x16d478"}
+}
+```
+
+### 396.3 崩溃指令
+
+```asm
+0x43204F  **mov ecx, dword ptr [edx + 0xc]**   ← 崩溃（edx=0 → 读 0xC）
+0x432052  mov dl, byte ptr [eax]
+0x432054  cmp dl, byte ptr [ecx]                 ← 字符串比较循环
+0x432056  jne 0x432072
+0x432058  test dl,dl / je 0x43206E
+0x43205C  mov dl,[eax+1] / cmp dl,[ecx+1]
+0x432062  jne 0x432072
+0x432064  add eax,2 / add ecx,2
+0x43206C  jne 0x432052
+```
+
+**这是一个字符串比较函数**：`edx` 是结构指针，`[edx+0xC]` 是字符串字段；
+`edx = 0` ⇒ 结构为空 ⇒ `[0xC]` ⇒ 访问违规。
+
+**与异常记录完全吻合**：`parameters = ["0x0","0xc"]`、`edx = 0x0`。
+
+### 396.4 与 `0x42F2F0` 的关系
+
+`0x43204F` 位于 `0x431810` / `0x431A40` / `0x431A60` 一带 —— 正是
+`0x42F2F0` 内部调用的子函数。**前面几轮追 `0x42F2F0` 的方向是对的，
+只是真正的崩点在它调用的这个字符串比较函数里。**
+
+### 396.5 下一轮
+
+找 `0x43204F` 所属函数的入口与调用者，确认 `edx` 从哪个参数来、为什么是 0，
+然后从源头修（而不是在分支上打补丁）。
+
+### 396.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 136–137 | 发现 `row` 已含 `registers`/`instruction`，但没找到落盘文件 |
+| **138** | **🎯 找到 `reuse-*/result.json` 的 `events`；读出崩溃记录：`0xc0000005` @ `0x43204F`，`parameters=["0x0","0xc"]`，`edx=0`；反汇编确认 `0x43204F mov ecx,[edx+0xC]` 即崩溃指令 ⇒ 下轮追 `edx` 的来源** |

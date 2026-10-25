@@ -1,0 +1,107 @@
+[patched] host arguments: --name r341 --image E:\GAME\COD\1649370\bin\v1649370\codol1649370-offline.exe --client E:\GAME\COD\Original Client --patches E:\GAME\COD\1649370\resources\v1649370\offline-menu-patches.json --overlay E:\GAME\COD\1649370\resources\v1649370\offline-resources --queue-main-menu --offline-menu-preview --until-close --local-profile --resource-library E:\GAME\COD\1649370\resources\v1649370\offline-image-library --loose-library E:\GAME\COD\1649370\resources\v1649370\offline-loose-library --breakpoint 0x4fd9b0:Com Init --breakpoint 0x4fcc00:Initial fastfiles --breakpoint 0x7ef0d0:Frontend tick --breakpoint 0x77f8b8:Engine init returned --breakpoint 0x4706d0:Switch to main menu --breakpoint 0x4f82e0:Com Error --breakpoint 0x77c930:Fatal error -- +set 2439 0 +set cl_timeout 600 +set cl_connectTimeout 600
+[patched] reusing existing runtime: E:\GAME\COD\1649370\workspaces\offline-runs\r107flow\runtime
+[startup] reused-existing-runtime: 0.011s
+[startup] process-and-uac-guard: 0.518s
+[startup] engine-init: 5.712s
+{
+  "scope": "offline client runtime reuse",
+  "main_menu_verified": false,
+  "started_at": 1792911229.3993893,
+  "reused_runtime": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\r107flow\\runtime",
+  "input_image": {
+    "path": "E:\\GAME\\COD\\1649370\\bin\\v1649370\\codol1649370-offline.exe",
+    "sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd"
+  },
+  "runtime_image_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+  "arguments": [
+    "+set",
+    "2439",
+    "0",
+    "+set",
+    "cl_timeout",
+    "600",
+    "+set",
+    "cl_connectTimeout",
+    "600"
+  ],
+  "startup_timings": [
+    {
+      "phase": "reused-existing-runtime",
+      "seconds": 0.011
+    },
+    {
+      "phase": "process-and-uac-guard",
+      "seconds": 0.518
+    },
+    {
+      "phase": "engine-init",
+      "seconds": 5.712
+    }
+  ],
+  "command_line": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\r107flow\\runtime\\codol1649370-offline.exe -q +set fs_basepath \\\"E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\r107flow\\runtime\\\" +set fs_homepath \\\"E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\r107flow\\runtime\\\" +set 2439 0 +set cl_timeout 600 +set cl_connectTimeout 600",
+  "pid": 22908,
+  "launch_path": "CreateProcessW (patched token path, guarded)",
+  "token": {
+    "verified": false,
+    "reason": "patched launch bypasses low-token isolation"
+  },
+  "creation_time": 134373848297112723,
+  "guard_mode": "loopback-tcp-udp-28969",
+  "guard_sha256": "1750566f914b9ac95e803cb48e452d35e3439ad1f608ab35375677230d0ee9e8",
+  "guard": {
+    "guard_pid": 34308,
+    "child_pid": 22908,
+    "filter_ids": [
+      157142,
+      157143,
+      157144,
+      157145,
+      157146,
+      157147
+    ],
+    "dynamic": true,
+    "job_kill_on_close": true,
+    "max_processes": 1,
+    "bound_seconds": 0,
+    "scope": "loopback-127.0.0.1:28969"
+  },
+  "resumed": true,
+  "lifetime": "until_client_exit",
+  "local_viewer_adapter": {
+    "patch_va": "0x618a23",
+    "local_modes": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "body_va": "0x618a54",
+    "exit_va": "0x6193c8"
+  },
+  "local_playlist_adapter": {
+    "entry": "0xf200000",
+    "patches": [
+      "0x6a9ea8",
+      "0x5d0afe"
+    ],
+    "policy": "local ready offline, no season and zero configured playlist: UI ID -1; local -1 is invalid"
+  },
+  "offline_menu_preview": true,
+  "engine_init_returned": true,
+  "menu_command_queued": true,
+  "stop_reason": "unhandled_exception",
+  "child_terminated": true,
+  "guard_cleanup": {
+    "closed": true,
+    "engine_close_status": 0,
+    "error": ""
+  },
+  "finished_at": 1792911261.0793483
+}
