@@ -33234,3 +33234,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Direct CL_ParseServerMessage call crashes (836)**: after fixing msg_t.cursize and building the 109-byte connectResponse blob, calling 0x471E90 with --msg crashed the client. Direct invocation is not viable without the rest of the message pipeline. Next round inspect its prologue for the first globals it needs, else return to fabrication.
 
 **Parse pipeline dispatches on unvalidated state (837)**: 0x471E90 calls 0x403C70 which does jmp [ebx*4+0x404004] after cmp ebx,0x20, with ebx derived from uninitialised client state - so calling the parser in isolation crashes structurally. Next round stop driving the receive path in isolation and pursue fabrication of the in-game view instead.
+
+**0x675390 is a strcmp not a CL initialiser (838)**: it compares CL+0x14 against literal 0xDBE518, i.e. a validation step; nothing in the connect routine assigns [CL+0x28], which stays 0 and explains the gate's first wait failing. Next round test the untried combination: write CL+0x28 ourselves, signal both events, keep the gate NOPed and the drain intact.
