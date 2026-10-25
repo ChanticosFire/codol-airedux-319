@@ -32866,3 +32866,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **恢复 drain 后客户端正常收包（§656）**：不 block drain 的完整连接下 `ring_a` 的 read/write **完全同步**（14/14），对比旧状态（2887/3464 卡 577 块）——证实 `31 C0 C3` 补丁就是"不收包"的唯一原因。但 state 停在 4 未到 5，ps 仍 0。下一轮保持此方式等 gamestate 发完，看 state 能否升 5、0x471E90 是否被调用。
 
 **state=4 原因是 forward 没绑定端口（§657）**：gs 与 bridge 进程都在，但 `Get-NetTCPConnection -LocalPort 29126` 为空（无监听），gs 日志只有 start。客户端包发不到 gs，永远停在连接中。下一轮换 29127 端口并先验证端口监听再 connect。
+
+**更正 §657 + 新问题（§658）**：`cmd_forward` 是 UDP，`Get-NetUDPEndpoint` 显示 29127 一直在监听（§657 误判）。重新 connect 后 ring_b=300、gs 日志有 snapshot fragment，但**发到旧端口 29126**（已 kill 的旧 bridge），新 bridge 收不到——gs 按首个包的源地址回复。下一轮重启 gs 再用新 bridge 发 challenge。
