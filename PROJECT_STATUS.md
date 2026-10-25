@@ -33130,3 +33130,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **ring_b writer is also console (784)**: 0x67492A belongs to function 0x674740, whose only caller is 0x5C23A0 inside 0x5C2260 (console print). So ring_b's single write is console machinery too - all four queues are console plumbing. Next round stop chasing rings and inventory what cl.state=4 already provides for rendering.
 
 **cl completely zeroed at state=4 (785)**: dumped cl=0x134855D4 shows every field 0 (0x3C70 ps, 0x100260, 0x109244, ...). So state=4 is only the cls state machine counter; the client object itself was never initialized. Next round find the function that normally initializes cl and consider calling it directly via the remote-call tool instead of faking fields.
+
+**0x813C20 initializer never reaches 0x813D55 (786)**: state=7 is written at 0x813D34 but cl+0x10025C/0x109240/0x109244 all stay 0, so execution leaves between 0x813D34 and 0x813D55 - likely the je at 0x813D45 ([0x76446A1]) or a fault in call 0x528470 at 0x813D49. Next round hook 0x813D45 and 0x813D55 and compare counters after connect.
