@@ -33,6 +33,7 @@ speaks UDP, so this server is a plain UDP endpoint that the bridge forwards to.
 from __future__ import annotations
 
 import argparse
+import ctypes
 import json
 import socket
 import struct
@@ -59,6 +60,73 @@ def _load_gamestate_plaintext() -> bytes:
 
     path = Path(__file__).resolve().parents[1] / "runs" / "gamestate-3426.bin"
     return path.read_bytes() if path.exists() else b""
+
+
+class ClientOriginReader:
+    """Read the client's predicted origin straight out of its process.
+
+    A static snapshot pins the player: the client predicts forward, then the
+    next snapshot snaps it back.  The server therefore mirrors the client's own
+    predicted origin into each snapshot (confirmed by ``--follow-client-pid``),
+    which is what makes held movement accumulate instead of oscillating.
+    """
+
+    CL_PTR = 0x76638F4
+    CL_XOR = 0x6891D1C7
+    PS_ORIGIN = 0x3C80
+    NET_STATE = 0x76446B0
+    SLOTS = ((0x0F, 0), (0x14, 2), (0x18, 1))  # snapshot offset, origin component
+
+    def __init__(self, pid: int):
+        self.pid = pid
+        self.k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        self.k32.OpenProcess.restype = ctypes.c_void_p
+        self.k32.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
+        self.k32.ReadProcessMemory.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                                               ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)]
+        self.handle = self.k32.OpenProcess(0x438, False, pid)
+        self.failures = 0
+
+    def _u32(self, addr: int):
+        buf = ctypes.create_string_buffer(4)
+        got = ctypes.c_size_t()
+        if not self.handle:
+            return None
+        ok = self.k32.ReadProcessMemory(self.handle, ctypes.c_void_p(addr), buf, 4, ctypes.byref(got))
+        if not ok or got.value != 4:
+            return None
+        return struct.unpack("<I", buf.raw)[0]
+
+    def origin(self):
+        if self._u32(self.NET_STATE) != 10:
+            return None
+        enc = self._u32(self.CL_PTR)
+        if not enc:
+            return None
+        cl = enc ^ self.CL_XOR
+        values = []
+        for index in range(3):
+            word = self._u32(cl + self.PS_ORIGIN + index * 4)
+            if word is None:
+                return None
+            values.append(struct.unpack("<f", struct.pack("<I", word))[0])
+        # A half-initialised clientActive_t reads as all zeros; mirroring that
+        # would teleport the player to the world origin and crash the client.
+        if any(value != value or abs(value) > 1.0e6 for value in values):
+            return None
+        if all(abs(value) < 1.0e-6 for value in values):
+            return None
+        return values
+
+    def apply(self, payload: bytes) -> bytes:
+        values = self.origin()
+        if values is None or len(payload) < 0x1C:
+            self.failures += 1
+            return payload
+        result = bytearray(payload)
+        for offset, component in self.SLOTS:
+            struct.pack_into("<f", result, offset, values[component])
+        return bytes(result)
 
 
 GAMESTATE_PLAINTEXT = _load_gamestate_plaintext()
@@ -104,7 +172,11 @@ class GameServer:
                  oob_command: str | None = None, oob_delay: float = 30.0,
                  gamestate_file: str | None = None,
                  connect_extra: str | None = None,
-                 snapshot_preserve_time: bool = False):
+                 snapshot_preserve_time: bool = False,
+                 follow_client_pid: int | None = None,
+                 server_command_every: int = 0,
+                 server_command_seq: int = 0,
+                 server_command_text: str | None = None):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -146,6 +218,11 @@ class GameServer:
         if configstring_file:
             self.configstrings = self._load_configstrings(Path(configstring_file))
         self.pending_oob: list[tuple[float, tuple, str]] = []
+        self.origin_reader = (ClientOriginReader(follow_client_pid)
+                              if follow_client_pid else None)
+        self.command_every = int(server_command_every or 0)
+        self.command_seq = int(server_command_seq or 0)
+        self.command_text = (server_command_text or "").encode("latin-1")
 
     # ------------------------------------------------------------------ logging
     def log(self, event: dict) -> None:
@@ -453,7 +530,24 @@ class GameServer:
             if not self.snapshot_preserve_time and len(payload) >= 9 and payload[4] == 0:
                 server_time = 72192 + index * 500
                 payload = payload[:5] + struct.pack("<I", server_time) + payload[9:]
+            if self.origin_reader is not None:
+                before = payload[0x0F:0x1C]
+                payload = self.origin_reader.apply(payload)
+                if payload[0x0F:0x1C] != before and index % 25 == 0:
+                    self.log({"dir": "meta", "kind": "origin_follow",
+                              "seq": self.snapshot_seq + index,
+                              "origin": list(struct.unpack("<fff", payload[0x0F:0x0F + 12]))})
             seq = self.snapshot_seq + index
+            if self.command_every and index % self.command_every == 0:
+                # svc_serverCommand: [0x05][sequence u32][text NUL].  Without it
+                # the client's serverCommandSequence never advances, the
+                # unconfirmed-command window exceeds the prediction limit and
+                # CL_PredictMovement is skipped, so held movement never moves.
+                self.command_seq += 1
+                command = (b"\x05" + struct.pack("<I", self.command_seq)
+                           + self.command_text + b"\x00")
+                self._send_fragments(addr, peer, b"\x00\x00\x00\x00" + command,
+                                     seq - 1, "servercmd")
             self._send_fragments(addr, peer, payload, seq, "snapshot")
             peer["snapshot_index"] = index + 1
             if index + 1 < len(self.snapshot_files):
@@ -615,6 +709,14 @@ def main() -> int:
     parser.add_argument("--snapshot-seq", type=int, default=4)
     parser.add_argument("--snapshot-preserve-time", action="store_true",
                         help="keep the snapshot body's recorded serverTime")
+    parser.add_argument("--follow-client-pid", type=int, default=None,
+                        help="mirror this client process's predicted origin into every snapshot")
+    parser.add_argument("--server-command-every", type=int, default=0,
+                        help="send one svc_serverCommand every N snapshots (0 = never)")
+    parser.add_argument("--server-command-seq", type=int, default=0,
+                        help="first svc_serverCommand sequence number")
+    parser.add_argument("--server-command-text", default=None,
+                        help="text carried by svc_serverCommand (empty is harmless)")
     parser.add_argument("--snapshot-repeat", type=int, default=0,
                         help="total snapshot sends; 0 = send once")
     parser.add_argument("--snapshot-interval", type=float, default=0.5,
@@ -673,7 +775,9 @@ def main() -> int:
                         args.gamestate_repeat, args.gamestate_interval, args.gamestate_map,
                         args.gamestate_gametype, args.oob_command,
                         args.oob_delay if args.match_duration is None else args.match_duration,
-                        args.gamestate_file, args.connect_extra, args.snapshot_preserve_time)
+                        args.gamestate_file, args.connect_extra, args.snapshot_preserve_time,
+                        args.follow_client_pid, args.server_command_every,
+                        args.server_command_seq, args.server_command_text)
     try:
         server.serve()
     except KeyboardInterrupt:

@@ -9,13 +9,15 @@
 **项目根**：`E:\GAME\COD\codol-airedux\319`
 **游戏**：CODOL Build 1649370（3.19.26.22），版本不可变更
 **自建服务端**：`server1649370/gameserver.py`（UDP 游戏服）+ `server319/lsg`（认证）
-**交接总结**：先读 `HANDOFF-1649370.md`；详细实验日志在 `1649370-STATUS.md`（至 §528）
+**交接总结**：先读 `HANDOFF-1649370.md`；详细实验日志在 `1649370-STATUS.md`（至 §529）
 
 **后续实测（§526）**：正确 codec 的 `client_number=0`，以及再加 `1735=Player`，都未使角色出生；不要重复。`0x6C7` 是否是本 build 的玩家名 bank 仍未知。
 
 **最新修正（§527）**：逐条 hook 证实原版 245 B 快照解析玩家状态成功（错误位 0，出口 bit 1382）；把 `0x35` 从 `01` 改成 `00` 后，玩家状态解析已报错（错误位 1，出口 bit 994），但运行时跳过错误仍可能进入 `CA_ACTIVE(10)` 并显示地图。因此此前“`pm_type=0` 已是有效非观战快照”的判断不成立，不能以该单字节补丁为构造基础。两次实验均复用 `r107flow/runtime`，未创建大型运行时。
 
 **最新进展（§528）**：已用 `0x6701D0` 环形解析钩子定位有效字段 83：原版快照 `0x43=05`，单字节改成 `00` 后，玩家状态输出偏移 `+4` 从 5→0，解析仍 **error=0 / bit=1382**，客户端到 `CA_ACTIVE(10)` 且“按空格”提示消失。尚未验证自主移动/射击；空实体表变体在 actor 块报错。下一步须按 bit/byte 双游标编码实体表、终止符和本地实体，逐块确认 error=0，再测输入。r438–r443 均复用 `r107flow/runtime`。
+
+**最新进展（§529）**：真正的玩法键盘窗口是 `CoD Splash Screen` / `Base_PowerMessageWindow`（向 `CODO` 投递无效）；`GetKeyboardState` 真实 IAT=`0xCA8394`，仅窗口过程 `0xA84E90` 在 WM_KEYDOWN/UP 调用。持续按键只让 origin 振荡 0.2–0.9 m，根因推断为 `cmdNumber - serverCommandSequence > 32` 使预测被跳过，服务端从未发 `svc_serverCommand`（推断 svc=5）。`gameserver.py` 已加 `--server-command-*` 与 `--follow-client-pid`，但尚未验证；第 5 项未达成。
 
 ### 最终目标
 

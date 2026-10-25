@@ -32584,3 +32584,7 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 ### 1649370 有效玩家状态字段（§528）
 
 复用 `r107flow/runtime`，在原版快照上以环形解析钩子定位字段 83（读前 bit=530，byte cursor=67，结构偏移 `+4`）。只改 `0x43:05→00` 后，玩家状态输出 `+4` 变 0，解析仍 error=0 / bit=1382，客户端到 `CA_ACTIVE(10)`，地图/HUD 显示且“按空格”提示消失。移动/射击未验证，验收项 5 仍未完成。空实体表试验在 actor 块出现 error=1（§528），需按 bit/byte 双游标重新编码实体及终止符。证据：`evidence/experiments/20261025-1649370-valid-playerstate-field83.json` 和截图。
+
+### 1649370 玩法输入与预测窗口（§529）
+
+真正的键盘窗口是 `CoD Splash Screen` / `Base_PowerMessageWindow`（向 `CODO` 投递无效）；`GetKeyboardState` 真实 IAT 为 `0xCA8394`，仅被窗口过程 `0xA84E90` 在 WM_KEYDOWN/WM_KEYUP 时调用。持续按键只能让 origin 在 0.2–0.9 m 内振荡，根因推断为 `cmdNumber - serverCommandSequence > 32` 使 `CL_PredictMovement` 跳过：服务端从未发 `svc_serverCommand`（推断 svc=5）。已实现 `--server-command-*` 与 `--follow-client-pid`，但**尚未验证**。第 5 项未达成。证据：§529。
