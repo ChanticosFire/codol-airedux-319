@@ -32934,3 +32934,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **gamestate 格式非标准（§690）**：gamestate-client0.bin 在 svc3 后直接跟裸字符串（无 configstring index/计数），不是标准 netchan gamestate，很可能是合成数据；客户端按标准格式解析时把 'm'(0x6d) 当 index，越界写坏 cl。下一轮查 native_gamestate.py 并重建标准格式。
 
 **重大发现：正确 gamestate 只有 98 字节（§691）**：native_gamestate.py 文档说明解析器在 0x472D80、格式为 `04`+u16 count+增量/index+NUL字符串；build_native_gamestate 产出 98 字节且格式正确，而我们在用的 6411 字节 gamestate-client0.bin 缺 `04`+count 头——这才是崩溃根因。下一轮用 98 字节 native gamestate 重跑。
+
+**98 字节正确 gamestate 也崩（§692）**：state 仍 4→5→7→0、connection 仍变 0xd362501f——gamestate 格式问题确实存在（6411 字节那份是错的）但不是致命原因。崩溃模式：进入 ACTIVE 后处理第一个后续包时崩。下一轮 hook CL_InitCGame(0x5BEB50)。
