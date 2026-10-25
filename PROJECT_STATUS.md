@@ -32698,3 +32698,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **进图卡 net=5（§575）**：r502 只注入一条 connect 也卡在 `CA_CONNECTING(5)`；服务端日志显示 gs 正常（stats→statResponse、持续发 snapshot），**客户端没发 connect**——最可能是 cbuf 溢出后命令队列异常，注入返回 injected 但未执行。下一轮重启客户端后立即连接，或改用启动参数 `+connect` 绕开 cbuf。
 
 **全新实例仍卡 net=4（§576）**：pid 34716 全新启动、零 cbuf 前置注入，只发一条 connect 仍卡 net=4；gs 日志只收到 `getchallenge` 并回了 `challengeResponse`，**客户端没继续发 connect**——排除了"cbuf 残留"，指向 challengeResponse 格式或 bridge 回注问题。下一轮抓 bridge 实时输出确认回注。
+
+**net=4 定位（§577）**：`--output` 是 bridge 全局参数（须放在子命令前），但 `forward` 分支不写该文件，日志仍拿不到；现象稳定复现为 `net=3→4、table=0`，gs 只收到 `getchallenge` 并回 `challengeResponse`。无法区分"响应不被接受"还是"bridge 没回注"。最后一轮直接读 forward 分支代码 + 核对 challengeResponse 封装。
