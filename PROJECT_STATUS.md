@@ -21165,3 +21165,82 @@ va = k.VirtualAllocEx(h, None, 256, 0x3000, 0x04)   # 关键：Ex 版本，在�
 |---|---|
 | 71 | 崩溃根因闭环：`ui_mapname="mp_afghan"` 而该文件不存在 |
 | **72** | **修复尝试因用错 API 失败（`VirtualAlloc` 在 Python 进程分配，返回 64 位地址，32 位客户端无法访问）⇒ 下轮改用 `VirtualAllocEx` 在目标进程内分配** |
+
+## 332. 2026-10-30 24:00–01:00：**🎯🎯🎯 改写 `ui_mapname` 成功；客户端首次请求地图 fastfile**
+
+### 332.1 用 `VirtualAllocEx` 改写成功
+
+```
+before: name = 'ui_mapname'   value = 'mp_afghan'   flags = 0x7
+VirtualAllocEx(h, None, 256, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE)
+              -> 0x430E0000            （32 位地址，位于目标进程内）
+WriteProcessMemory("mp_crash_tropical\0") -> wrote=1, readback 正确
+[0x80FC008+0x0C] = 0x430E0000
+after : value = 'mp_crash_tropical'   ok=1        ← ✅ 改写成功
+```
+
+Round 72 的失败（`0x29e06090000`、`struct.error`）确系用错 API，改用 Ex 版本后一次成功。
+
+### 332.2 🎯 fastfile 列表首次出现地图资源
+
+```
+t+3.73 net=8 table=0 gate=0 ff=6
+        patch_localized_common_mp.ff / localized_common_mp.ff
+        patch_ui_mp.ff / ui_mp.ff / patch_localized_ui_mp.ff / localized_ui_mp.ff
+
+t+3.85 net=8 table=0 gate=0 ff=8
+        ……（同上 6 个）……
+        **mp_crash_tropical_load.ff**     ← 首次出现
+        **common_loadscreen.ff**          ← 首次出现
+
+t+4.21 net=8 table=0 gate=1 ff=8
+CLIENT CRASHED
+```
+
+**这是 73 轮以来第一次观察到客户端去请求与地图相关的 fastfile。**
+
+对比此前所有实验：`ff` 列表恒为 10 个（`ui_mp` 四件套 ×2 + `common_mp` 两件），
+**从未出现过任何 `mp_*` 地图名**。本轮改为 `mp_crash_tropical` 后立刻出现
+`mp_crash_tropical_load.ff` 与 `common_loadscreen.ff`。
+
+⇒ **Round 71 的根因判断得到直接验证**：
+`ui_mapname = "mp_afghan"`（文件不存在）确实阻断了地图加载。
+
+### 332.3 仍未成功
+
+- `table` 始终为 0（未进入真正的资源表填充）；
+- `gate` 到 1 之后仍崩溃；
+- `mp_crash_tropical.ff`（31 MB 本体）**尚未出现在列表里** ——
+  客户端先请求了 `_load.ff` 和 `common_loadscreen.ff`，
+  在准备加载本体之前就崩了。
+
+### 332.4 分析：为什么还崩
+
+`mp_crash_tropical_load.ff` 与 `common_loadscreen.ff` 被请求，
+说明加载流程已经进入"读地图清单 + 准备加载画面"的阶段，
+但在进入"加载 31 MB 本体"之前崩溃。
+
+可能原因（按可能性排序）：
+1. **加载画面资源不完整**：`common_loadscreen.ff` 存在，但它可能引用
+   `mp_crash_tropical_load.ff` 里定义的图像，而离线资源库缺少对应 `.iwi`；
+2. **`0x49E600` 之后的流程需要一个"加载管理器"状态**，而我们跳过了
+   `CL_InitLoadMap` 一类的前置；
+3. **`ui_mapname` 改了，但 `ui_gametype` 未设置**（`war`），
+   导致 gametype 相关 fastfile（`common_gametype_mp.ff`）未被请求。
+
+### 332.5 下一轮
+
+1. **同时改写 `ui_gametype`**（先定位它的实际地址 —— `0x80FC020` 不是），
+   把它设为 `war`，观察 `common_gametype_mp.ff` 是否被请求；
+2. 在 `0x49ED40`（`FS_LoadFastfile`）上装一个**轻量记录 hook**，
+   把每次请求的 fastfile 名字与返回码都记下来 —— 这样即使崩溃，
+   也能从崩溃前的最后一次调用看出卡在哪个文件；
+3. 观察 `common_loadscreen.ff` 里的引用是否指向缺失资源。
+
+### 332.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 71 | `ui_mapname="mp_afghan"` 且该文件不存在 ⇒ 崩溃根因 |
+| 72 | 修复尝试因用错 `VirtualAlloc` 失败 |
+| **73** | **🎯 `VirtualAllocEx` 改写 `ui_mapname` 成功；fastfile 列表首次出现 `mp_crash_tropical_load.ff` + `common_loadscreen.ff` ⇒ 地图加载流程真正启动；但仍未加载 31 MB 本体即崩溃** |
