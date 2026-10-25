@@ -32902,3 +32902,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **收包阈值（§674）**：`--oob-until-state` 默认 0、`--reliable-until-state` 默认 9；但 gamestate/snapshot 都带 FRAGMENT_BIT 不会被丢，所以 ring_b=0 的原因应在 `inject_oob_raw` 返回非 queued。下一轮给收包分支加调试看注入状态。
 
 **端口无关的再次失败（§675）**：bridge 29133 无任何收包调试输出、gs 0 in/0 out；客户端 31792 全新、ring_a 仅 1/1——说明 connect 命令可能根本没被客户端写出（帧 tick 发送路径死）。下一轮确认 ring_a 槽内容。
+
+**双向链路完全打通（§676）**：调试文件显示 `nul=401 len=401`（提取）、`sent=1`（发出）、`[forward.recv] len=109 frag=True state=4 inject=queued`（注入）；gs 侧 4 in / 130 out。链路首次真正跑通。剩余问题：客户端在收到包后仍退出（状态机/解析问题）。下一轮高频采样抓退出前状态。
