@@ -33376,3 +33376,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Calling begin-game directly crashes (907)**: 0x62F840 with ecx=engine manager killed the client even though the guard checks pass on paper - the body dereferences never-built state, same class as setting cls.state directly (292). Next round read 0x62F8C3 onward to find which field faults.
 
 **Crash was a wrong this (908)**: 0x62F840 dereferences [ebx]->[eax+0xBC] and [eax+0xC0], but the engine manager's vtable 0xDC7274 is only 0xA0 bytes, so passing it lands on garbage. Its `this` is a larger object the engine manager dispatches into. Next round find 0x62F840's callers to learn that object.
+
+**Correction: vtable is long enough; 0x62F840 is in two vtables (909)**: 0xDC7274+0xBC/0xC0 are valid (0x6311C0/0x6312E0), so section 908's 'too short' claim was wrong; the method is also in 0xDC7750, i.e. a base/derived pair. Since 0x62F840 touches [ebx+0x105D8], this must be the large derived instance. Next round find pointers to vtable 0xDC7750 to locate it.
