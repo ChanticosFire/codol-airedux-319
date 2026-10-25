@@ -32940,3 +32940,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **崩溃模式稳定重现（§693）**：state=7 后正好 164ms 崩、connection 变 0xd362501f，第四次重现；CL_InitCGame hook 读不到（进程崩）。下一轮改用 launch --breakpoint 捕获 0x5BEB50 + 崩溃前截图。
 
 **CL_InitCGame 未命中（§694）**：--breakpoint 0x5BEB50 无命中记录、截图 CODO 窗口已消失——崩溃发生在 cgame 初始化之前、进入 ACTIVE 后那段。下一轮 hook 0x472D80/0x471E90 + state7 后 10ms 高频截图。
+
+**崩溃第 5 次重现（§695）**：state=7 后 163ms 崩、connection 变 0xd362501f，模式稳定；两个解析器 hook 仍读不到（子进程开销 > 163ms）。下一轮把读 hook 与 bridge 循环放进同一进程，零延迟读取。
