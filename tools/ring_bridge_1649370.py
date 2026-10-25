@@ -894,6 +894,9 @@ def cmd_forward(client: Client, args) -> dict:
                                                   "hex": data.hex()}) + "\n")
                     dump_handle.flush()
                 result = client.inject_oob_raw(data, args.adr_type, args.port, _adr_ip_bytes(args))
+                print(f"[forward.recv] len={len(data)} frag={fragment} state={state_now} "
+                      f"inject={result.get('status')}",
+                      file=sys.stderr, flush=True)
                 events.append({"t": round(time.monotonic(), 3), "dir": "in",
                                "length": len(data), "source": f"{source[0]}:{source[1]}",
                                "inject": result["status"], "state": state_now,

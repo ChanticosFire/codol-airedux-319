@@ -32900,3 +32900,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **双向链路首次打通（§673）**：`[drain_ring_a] nul=401 len=401` + `outbox=1`，gs 收到 2 条 in 并往 29132 回 snapshot——客户端→bridge→gs→bridge 首次双向通。但 ring_b 仍 0/0（bridge 没注入）、客户端 state 回 0（超时）。瓶颈在 bridge 的「recvfrom→inject_ring_b」段。下一轮修它。
 
 **收包阈值（§674）**：`--oob-until-state` 默认 0、`--reliable-until-state` 默认 9；但 gamestate/snapshot 都带 FRAGMENT_BIT 不会被丢，所以 ring_b=0 的原因应在 `inject_oob_raw` 返回非 queued。下一轮给收包分支加调试看注入状态。
+
+**端口无关的再次失败（§675）**：bridge 29133 无任何收包调试输出、gs 0 in/0 out；客户端 31792 全新、ring_a 仅 1/1——说明 connect 命令可能根本没被客户端写出（帧 tick 发送路径死）。下一轮确认 ring_a 槽内容。
