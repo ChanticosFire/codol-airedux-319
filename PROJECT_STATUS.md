@@ -33210,3 +33210,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **state=4 branch builds getchallenge (824)**: format strings include 0xDBFD04 "getchallenge 0 \"%s\"", plus name/clantag/xuid/natType/rank/clan strcats - the full QUAKE3 handshake. The send machinery exists and is intact; only the gate at 0x5BE700 is dead. Next round patch the `je 0x5C0F1B` at 0x5C0681 to NOP and see if getchallenge is emitted.
 
 **Bypassing the gate is not enough (825)**: with 0x5C0681 NOPed and [CL+0x28]=0x9D, connect still produced no packets. Call inventory of the state-4 branch shows mostly strcat/sprintf/string assembly plus nine indirect call eax/edx sites (0x5C0B21..0x5C0CDE), so transmission goes through an interface/vtable rather than a direct sendto. Next round trace edx at 0x5C0B21 to identify the transmit method.
+
+**state-4 branch assembles but does not transmit (826)**: all nine indirect calls are read-only getters (0x633D20 etc.); the branch builds a 0x400-byte message via 0x774900 and copies CL+0x14..CL+0x28 connection fields, but no send call is inside it. Next round disassemble the common epilogue 0x5C0E00-0x5C0F1B to find the send.
