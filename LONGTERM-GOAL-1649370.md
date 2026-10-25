@@ -9,7 +9,9 @@
 **项目根**：`E:\GAME\COD\codol-airedux\319`
 **游戏**：CODOL Build 1649370（3.19.26.22），版本不可变更
 **自建服务端**：`server1649370/gameserver.py`（UDP 游戏服）+ `server319/lsg`（认证）
-**交接总结**：先读 `HANDOFF-1649370.md`；详细实验日志在 `1649370-STATUS.md`（525 节）
+**交接总结**：先读 `HANDOFF-1649370.md`；详细实验日志在 `1649370-STATUS.md`（526 节）
+
+**后续实测（§526，提交 `bddf93c`）**：已用正确 codec 测试 `client_number=0`，以及 `client_number=0` 加参考玩家名条目 `1735=Player`。两轮真实连接都到 `CA_ACTIVE(10)` 并渲染地图，但仍显示“按空格”，未 spawn；不要重复这两项。`0x6C7` 是否是本 build 的玩家名 bank 仍未知。实验复用 `r107flow/runtime`，未创建大型运行时。
 
 ### 最终目标
 
@@ -89,9 +91,10 @@ complex:  count 11 bit ; 每项 index + 11 + 8 + 1(+9) + 4(+14*n)
 1. **定位本 build 的玩家 configstring 索引**
    - 反汇编 `CL_ParseSnapshot`（`0x471E90`）附近，找 `0x6C7 + reg` 或类似的 base+index 常量
    - 或在 demo 回放时观察哪个索引区间被玩家数据填充
-2. **用自建 codec 生成** `client_number=0` + 玩家条目，实测是否触发 spawn
+2. **继续验证玩家条目索引与格式**；`client_number=0` 和 `1735=Player` 已实测无效，不能当作尚未试过的方案
 3. **让快照实体表携带「本地玩家实体 + 位置」**
    - 已知：只给实体 ID 无位置 → 黑屏；只给位置无实体 → 不 spawn；**两者合并未试过**
+   - 静态复核 `0x671700` 发现 selector > 12 的返回路径；先定位 245 B 快照中该字段的位游标，再验证合法终止符
 4. **定位 cgame 的 `cg` 全局**，查 `cg->spectatorClient` / `cgs->clientNum`，确认「按空格」判据
 
 ### 关键地址（全部经实测）
