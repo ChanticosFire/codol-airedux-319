@@ -32628,3 +32628,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **只读验证（§546）**：local snapshot 的 ps+0 是垃圾 `0x417D92EA`，而 predicted 的是 0，说明**复制路径跳过或清零了 commandTime**，从此推断"补写 local snapshot 未必能到 predicted"（解释 §545 的副作用）。同时定位到命令执行循环 `0x4724CA`（`[ebp-0x48]`=serverCommandSequence、`[ebx+0x3B94]`=cmdNumber）。下一轮优先让 `cmdNumber - serverCommandSequence` 落入 1..32。
 
 **误判与教训（§547）**：位置从 (336,60,133.81) 变 (0,0,0) 是 gs 停掉后客户端超时断开、`cl` 重建所致，不是预测触发。流程修正：任何状态变化的读数必须先确认 `net==10` 且 `cl` 未变；预测类实验必须让 gs 全程存活，并同时打印 `net/cl/cmdNumber/connseq` 作自检。
+
+**改 cmdNumber 会断开（§548）**：带自检实测，写 `cl+0x3B94` 后第一帧 `net` 就从 10 掉到 0——它参与 usercmd 序号一致性校验，不能外部改。剩下不碰 netchan 语义的入口只有 `conn+0x8014C`（serverCommandSequence），下一轮在自检条件下重做。
