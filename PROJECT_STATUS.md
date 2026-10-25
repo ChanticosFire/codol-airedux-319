@@ -33424,3 +33424,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **REAL TCP CODE EXISTS (931)**: thunk refs found WSAStartup x4, connect x4, sendto x2, recvfrom x2, WSAAsyncSelect x5, socket x9, select x10; 0xC653D0 pushes IPPROTO_TCP/SOCK_STREAM/AF_INET then calls socket. A complete real TCP client is present, so 224's zero calls only mean it never ran. Networking was never missing - it is uninitialised by the offline boot path. Next round find which WSAStartup caller is the game transport and what gates it.
 
 **0xAD73C5 is the game network initialiser (932)**: it stores the socket handle at [object+0x85F4] then calls WSAStartup, inside real netcode at 0xAD67xx-0xAD74xx. Next round find its entry point and caller - the caller decides whether the transport starts at boot.
+
+**0xAD7220 takes three arguments and returns a handle (933)**: caller pushes &out, ebx, [edi] then stores eax at [esi+0x10], and the body stores a socket at [obj+0x85F4] then calls WSAStartup - the classic connect/session-open shape. Next round find where it reads host and port so we can point it at our server.
