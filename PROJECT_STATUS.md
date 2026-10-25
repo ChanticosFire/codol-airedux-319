@@ -21304,3 +21304,75 @@ gs: stats = 4
 |---|---|
 | 73 | 改写 `ui_mapname` 成功；ff 列表首次出现地图 fastfile |
 | **74** | **`FS_LoadFastfile` 共 11 次调用（gate 后新增 5 次）；`table` 0→1 后 0.12 秒崩溃 ⇒ 崩溃点在"最后几次 fastfile 加载之后、地图本体加载期间"** |
+
+## 334. 2026-10-31 02:00–03:00：**成功率波动再现 —— `stats=0` 时一切都不发生**
+
+### 334.1 本轮配置（与 Round 74 完全相同，仅多了增量轮询）
+
+```
+ui_mapname 改写为 mp_crash_tropical（成功，已打印确认）
+两个补丁 + fastfile 收集器
+forward-first（--retry-seconds 0）→ arm → 40 ms 增量轮询
+```
+
+### 334.2 结果：只到 net=4
+
+```
+t+0.00 net=3  table=0    gate=0  ff_count=6
+t+2.71 net=4  table=0    gate=0  ff_count=6
+t+3.56 net=0  table=0    gate=0  ff_count=6     ← 未到 5/8
+t+3.84 net=0  …                  ff_count=8     （ui_mp 四件套重复）
+t+4.97 net=0  …                  ff_count=10
+t+5.01 net=0  table=1135        （回滚）
+gone=False  total_names=10
+gs: stats = 0
+```
+
+**`stats=0` ⇒ 没有 `statResponse` ⇒ `oob` 不足 ⇒ `net` 停在 4 ⇒ 地图加载从未启动。**
+
+`ff` 列表仍然只有 `ui_mp`/`common_mp` 系列，**没有出现 `mp_crash_tropical_load.ff`**。
+
+### 334.3 与 Round 74 的对比（同配置，结果不同）
+
+| 轮次 | `net` 峰值 | `stats` | `table` | `ff_count` | 地图 fastfile |
+|---|---|---|---|---|---|
+| 74（r291） | **8** | **4** | 0→1 | 11 | **出现** |
+| **75（r292）** | **4** | **0** | 0→1135 | 10 | 未出现 |
+
+**同一套配置、同一个改写动作，一次成功一次失败。**
+
+### 334.4 现在可以确定的两层因果
+
+```
+第一层（已解决）：
+  ui_mapname = mp_afghan（不存在）→ 崩溃
+  改成 mp_crash_tropical → 首次出现地图 fastfile
+
+第二层（未解决）：
+  stats 是否发出 → net 能否到 8 → 地图加载能否启动
+  stats 的发出不受我们直接控制（flag=0 只是必要条件之一）
+```
+
+**因此下一步的重点不是"改地图名"（已生效），而是"让 `stats` 稳定发出"。**
+
+### 334.5 思路：让客户端自己进入 CHALLENGING
+
+我们一直在**手工写 `net_state=3`**（`CA_CHALLENGING`），但客户端自己的状态机
+可能并没有真正走到那一步，所以它不会按 CHALLENGING 的逻辑发 `stats`。
+
+`forward --start-challenge` 会通过 `invoke_sequence` 调用 `0x5C05F0`
+（connect 状态机），这才是"让客户端自己进入 CHALLENGING"的正确方式。
+
+**下一轮尝试**：
+1. **不要手工写 `net_state=3`**，改为完全依赖 `--start-challenge`；
+2. 但要确保 `--start-challenge` 在 `forward` 启动后**尽早**执行一次
+   （`--retry-seconds 0` 只在启动时做一次）；
+3. 观察 `stats` 是否出现 —— 若出现，说明"手工 arm"本身就是干扰源
+   （它把状态写到 3，但客户端的内部状态没同步，于是状态机在下一 tick 把它复位）。
+
+### 334.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 74 | 同配置下 `net=8`、`stats=4`、地图 fastfile 出现 |
+| **75** | **同配置下 `net=4`、`stats=0`、地图 fastfile 未出现 ⇒ 确认当前瓶颈是"`stats` 能否稳定发出"；怀疑手工写 `net_state=3` 与客户端内部状态不同步，下轮改为一律交给 `--start-challenge`** |
