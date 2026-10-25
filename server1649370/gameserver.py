@@ -549,12 +549,12 @@ class GameServer:
                       "seq": seq, "serverId": server_id, "messageAck": message_ack,
                       "acked_our_seq": acked_ours,
                       "length": len(data), "body_len": len(body),
-                      "body_head": body[:256].hex(),
-                      "body_dec_challenge": self._xor_cycle(body[:256], peer.get("challenge") or 0),
+                      "body_head": body[:2048].hex(),
+                      "body_dec_challenge": self._xor_cycle(body[:2048], peer.get("challenge") or 0),
                       "body_dec_ch_ack": self._xor_cycle(
-                          body[:256], ((peer.get("challenge") or 0) ^ (server_id << 24)
+                          body[:2048], ((peer.get("challenge") or 0) ^ (server_id << 24)
                                       ^ (message_ack & 0xFFFFFFFF)) & 0xFFFFFFFF),
-                      "body_nonzero": sum(1 for b in body[:256] if b) > 0})
+                      "body_nonzero": sum(1 for b in body[:2048] if b) > 0})
         else:
             self.log({"dir": "in", "kind": "inband_short", "from": f"{addr[0]}:{addr[1]}",
                       "length": len(data), "hex": data[:64].hex()})
