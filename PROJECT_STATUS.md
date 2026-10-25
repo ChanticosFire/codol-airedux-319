@@ -33022,3 +33022,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x472C70 是写入全局表的 configstring 处理函数（§730）**：0x472F92 循环里以 (index, string) 调用它；index 边界 0x31D9、越界 Com_Error。下一轮反汇编 0x472C70，确认 slot type 判断（0x77D8250+index 需 >=0x17 或 ==0x15），决定我们发的 configstring 是否被接受。
 
 **纠正 0x472C70 性质（§731）**：它是按位读 11/8/9/4 位字段+sprintf 格式化的解析辅助函数，不是写全局表；§730 判断作废。gamestate 解析路径本身没崩。下一轮在 CL_ParseGamestate(0x472D80) 装 hook，看调用次数与返回后 state。
+
+**重磅：CL_ParseGamestate 从未被调用（§732）**：hook 计数 0，说明 injected=6 的 gamestate 分片根本没进入 CL_ParseServerMessage/CL_ParseGamestate；state=7 完全由 0x5BE90A 断开路径写入。下一轮 hook CL_ParseServerMessage(0x471E90) 与 netchan 接收点，定位 gamestate 在哪一层被丢弃。
