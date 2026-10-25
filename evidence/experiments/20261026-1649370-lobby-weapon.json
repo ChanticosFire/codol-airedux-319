@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "build": 1649370,
+  "finding": "fresh client instance shows the lobby character holding a weapon; the earlier instance showed empty hands and had a visible \"client command overflow\" (客户端指令溢出) error dialog",
+  "fresh_instance": {
+    "name": "r499",
+    "engine_init_s": "5.753",
+    "net_state": 1,
+    "screenshot": "evidence/experiments/20261026-lobby-armed.jpg"
+  },
+  "degraded_instance": {
+    "name": "r498 (same pid 36824)",
+    "net_state": 0,
+    "symptom": "lobby character empty-handed",
+    "error_dialog": "客户端指令溢出",
+    "screenshot": "evidence/experiments/20261026-lobby-disenarmed-cbuf-overflow.jpg"
+  },
+  "conclusion": "weapon model resources and lobby rendering are fine; the empty-handed lobby was caused by cbuf overflow from too many injected console commands. In-game absence of a weapon is a separate issue (playerState.weapon == 0)."
+}
