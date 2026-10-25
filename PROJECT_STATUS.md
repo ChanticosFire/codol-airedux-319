@@ -32728,3 +32728,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **UI 层也未执行（§590）**：干净客户端连接后 `state=5`、网络收发正常（ring_a/ring_b 持续变化），但 `0x4706D0`（CL 逻辑帧）与 `0x470360`（UI 初始化）hook 计数**都为 0**——客户端主线程没在跑帧，只有网络层在动，卡在等待状态。下一轮查读 `0xE9C6908` 回调表的代码或 hook `0x4F37A0` 注册函数。
 
 **纠正 0x4706D0 身份（§591）**：回调表 dump 显示 `0xE9C6900` 是 16 字节链表节点，name 分别为 `switchtomainmenu`/`preloadmap`/`unpausegame`/`pausegame`——**`0x4706D0` 是"回主菜单"回调，不是主循环**（§585/§586 判断作废）。`cls.state` 共 240 处引用，立即数写入仅 7 处且**无一处写 6**，ACTIVE 实为 7；真正入口是 `0x813D36`（条件 ebx!=0），所在函数入口 `0x813C20`。下一轮查其调用者。
+
+**ACTIVE 路径是 cl_demo_play（§592）**：`0x813C20`（唯一写 state=7 的函数）只被 `0x813AB0` 以非 0 参数调用，而 `0x813AB0` 注册的命令名是 **`cl_demo_play`**（相邻字符串 `demo/%s.demo`、`$demoDownloadBuffer`）。说明这个 build 的 `CA_ACTIVE` 是为**播放 demo**准备的，实时连接只能到 `CA_PRIMED`。下一轮直接执行 `cl_demo_play` 验证。
