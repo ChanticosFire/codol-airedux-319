@@ -33082,3 +33082,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **澄清 net=0（§760）**：net 是 netchan 状态，state=0 时本应为 0；UDP socket（59849/22011）正常存在，非网络故障。下一步 block→inject_ring_a→restore 验证 ring_a 是否请求/响应共用，并核实槽内 0x4E8/0x4EC 哪个是 type、哪个是 length。
 
 **重大发现：inject_ring_a 字段写反（§761）**：0x674F30 反汇编证明 +0x4E8 是 type(dword)、+0x4EC 是 length(word)，而代码里 RING_A_LENGTH=0x4E8、RING_A_TYPE=0x4EC 反了，导致注入的槽 type=长度值、length=0，客户端必然忽略——这是注入无效的直接原因。下一轮修正常量与 w16 写法。
+
+**客户端写入代码证实修正正确（§762）**：0x67511F 写 [esi+0x4E8]=type、0x675125 写 [esi+0x4EC]=length，memcpy_s 上限 0x4E6，与 §761 修正一致。但实测客户端自写包 len=0，可能长度在包体内。下一轮读槽内容确认 ring_a 报文格式。

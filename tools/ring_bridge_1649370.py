@@ -105,8 +105,8 @@ RING_A_STRIDE = 0x4F0
 RING_A_SLOTS = 64
 RING_A_READ = 0x7886808
 RING_A_WRITE = 0x788680C
-RING_A_LENGTH = 0x4E8
-RING_A_TYPE = 0x4EC
+RING_A_TYPE = 0x4E8      # dword, message type
+RING_A_LENGTH = 0x4EC    # word, payload length
 
 CONNECT_FN = 0x5BE730
 PUMP_FN = 0x4F8D70
@@ -165,6 +165,9 @@ class Client:
 
     def w32(self, va: int, value: int) -> bool:
         return self.write(va, struct.pack("<I", value))
+
+    def w16(self, va: int, value: int) -> bool:
+        return self.write(va, struct.pack("<H", value))
 
     def connection(self) -> int:
         return self.u32(CONNECTION_ENCODED) ^ CONNECTION_XOR
@@ -453,7 +456,7 @@ class Client:
             return {"status": "ring_a_full", "read": read, "write": write}
         slot = RING_A_BASE + (write & (RING_A_SLOTS - 1)) * RING_A_STRIDE
         ok = (self.write(slot, payload)
-              and self.w32(slot + RING_A_LENGTH, len(payload))
+              and self.w16(slot + RING_A_LENGTH, len(payload) & 0xFFFF)
               and self.w32(slot + RING_A_TYPE, type_hint)
               and self.w32(RING_A_WRITE, write + 1))
         return {"status": "queued" if ok else "write_failed", "slot": hex(slot),
