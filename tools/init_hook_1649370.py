@@ -30,12 +30,16 @@ QUEUE_OBJ = 0x8106A24
 EVENT1 = 0x7887040
 EVENT2 = 0x7886E64
 SET_EVENT_THUNK = 0xCA816C          # IAT slot for kernel32!SetEvent
+CL_PTR = 0x76638F4                  # encrypted CL pointer global
+CL_XOR = 0x6891D1C7                 # CL pointer key
+CL_GATE = 0x100260                  # offset of the inbound gate flag in CL
 SLOT_BASE = 0xEC30000               # scratch for counters
 
 SLOT_COUNT = SLOT_BASE
 SLOT_QUEUE = SLOT_BASE + 4
 SLOT_EV1 = SLOT_BASE + 8
 SLOT_EV2 = SLOT_BASE + 0xC
+SLOT_GATE = SLOT_BASE + 0x30
 SLOT_RET = SLOT_BASE + 0x10
 
 k32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -108,6 +112,18 @@ def main() -> int:
     code += b"\x50"
     code += b"\xFF\x15" + struct.pack("<I", SET_EVENT_THUNK)
     code += b"\xFF\x05" + struct.pack("<I", SLOT_EV2)
+
+    # 4) decrypt CL and enable the inbound gate: [CL+0x100260] = 1
+    #    CL = [[0x76638F4] ^ 0x6891D1C7]
+    code += b"\xA1" + struct.pack("<I", CL_PTR)          # mov eax,[0x76638F4]
+    code += b"\x35" + struct.pack("<I", CL_XOR)          # xor eax,0x6891D1C7
+    code += b"\x85\xC0"                                  # test eax,eax
+    code += b"\x74\x14"                                  # je +0x14 (skip)
+    code += b"\x83\xB8" + struct.pack("<I", CL_GATE) + b"\x00"   # cmp [eax+gate],0
+    code += b"\x75\x0B"                                  # jne +0x0B (skip)
+    code += b"\xC7\x80" + struct.pack("<I", CL_GATE) + b"\x01\x00\x00\x00"
+    code += b"\xFF\x05" + struct.pack("<I", SLOT_GATE)
+    # skip target lands here
 
     code += b"\x8B\x44\x24\x20"                          # mov eax,[esp+0x20] retaddr
     code += b"\xA3" + struct.pack("<I", SLOT_RET)
