@@ -26604,3 +26604,52 @@ instruction = 83 be 8c 05 00 00 08   ← **cmp dword ptr [esi+0x58C], 8**
 |---|---|
 | 159 | 找到真正的清零点 `0x58F557`，正确修复应在 `0x58F3B9` |
 | **160** | **🎯 `0x58F3B9` 修复生效：崩溃从 `0x58F55A` 转移到 `0x58EFA1`（`cmp [esi+0x58C],8`，`esi=0`）⇒ 同一空指针模式在新位置重现；下轮追该函数的 `esi` 来源** |
+
+## 418. 2026-11-03 14:00–15:00：**🎯 新崩点的 `esi` 来源是同一张表的另一处索引查表**
+
+### 418.1 反汇编 `0x58EF60`..`0x58EFBB`
+
+```asm
+0x58EF60  push ebp / mov ebp,esp / push ebx
+0x58EF64  ebx = [ebp+8]
+0x58EF67  cmp dword [ebx+4], 0 / je 0x58EF75
+0x58EF6D  cmp dword [ebx], eax / je 0x58F03B
+0x58EF75  push esi
+0x58EF76  **mov esi, dword ptr [ecx*4 + 0x1988B50]**   ; ← 查表（ecx 作索引）
+0x58EF7D  push edi
+0x58EF7E  test eax,eax / jne 0x58EF86
+0x58EF82  xor edi,edi / jmp 0x58EFA1
+0x58EF86  lea edi,[eax-1]
+0x58EF89  cmp edi,[0x1BE2630] / jb 0x58EF95
+0x58EF91  xor edi,edi / jmp 0x58EFA1
+0x58EF95  lea edi,[edi+edi*2] / shl edi,5 / add edi,0x198A5E0
+0x58EFA1  **cmp dword ptr [esi + 0x58C], 8**            ; ← 崩溃（esi=0）
+```
+
+### 418.2 关键
+
+`esi = [ecx*4 + 0x1988B50]`；若 `ecx` 越界（或表项空）⇒ `esi = 0`
+⇒ `0x58EFA1` 的 `[esi+0x58C]` 崩溃。
+
+Round 160 改的 `0x58F3B9`（`mov ecx,[0x1988B50]`）只覆盖了那一处，
+**这里是同一张表的另一处索引查表**。
+
+### 418.3 修复（7 字节）
+
+```
+0x58EF76: 8B 34 8D 50 8B 98 01  (mov esi,[ecx*4+0x1988B50])  7 字节
+       -> 8B 35 50 8B 98 01 90  (mov esi,[0x1988B50]; nop)
+```
+
+**表基址本身就是有效的零对象指针（Round 150 填过），无需索引。**
+
+### 418.4 下一轮
+
+应用该 7 字节替换，观察崩溃是否再次"搬家"（搬家即说明修复有效）。
+
+### 418.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 160 | 崩溃从 `0x58F55A` 转移到 `0x58EFA1` |
+| **161** | **🎯 新崩点的 `esi` 来源是 `0x58EF76 mov esi,[ecx*4+0x1988B50]` —— 同一张表的另一处索引查表；修复为 `mov esi,[0x1988B50]` 绕过索引** |
