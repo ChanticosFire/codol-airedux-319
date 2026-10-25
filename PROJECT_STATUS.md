@@ -32880,3 +32880,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **connect 直接到 state=4（§663）**：全新客户端 state=1 → connect 后直接变 4（CA_CONNECTED），地址写为 localhost，ring_a=1，ring_b=0。客户端认为已连接、在等 gamestate。下一步用 inject-oob 塞 gamestate 的 6 个分片（不依赖帧 tick）。
 
 **gamestate 分片与加密（§664）**：`_send_fragments` 用 1162 字节分片（3426 → 3 片）、10 字节头、XOR key=`(challenge^seq)&0xFF`、首片前 4 字节明文。所以 inject-oob 必须正确加密才有效；更稳的是让 gs 自己发（它内部有 challenge）。下一轮确认 bridge 是否把 connect 转给了 gs。
+
+**纯转发也没送到 gs（§665）**：ring_a 20/20（被 bridge drain），但 gs 日志只有 start——问题在 bridge「取出后没 sendto」这段。下一轮读 forward 的发送循环确认。
