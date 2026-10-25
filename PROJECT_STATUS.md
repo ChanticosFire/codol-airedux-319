@@ -33128,3 +33128,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **WSOCK32!recvfrom also 0, but ring_b gained a write (783)**: WSOCK32.sendto is a forwarder to ws2_32, WSOCK32.recvfrom is real code, but hooking it still shows 0 calls after connect. However ring_b went from 0/0 to 0/1 - something wrote one record during the session. Next round locate the ring_b writer (ref at 0x67492A) and its callers.
 
 **ring_b writer is also console (784)**: 0x67492A belongs to function 0x674740, whose only caller is 0x5C23A0 inside 0x5C2260 (console print). So ring_b's single write is console machinery too - all four queues are console plumbing. Next round stop chasing rings and inventory what cl.state=4 already provides for rendering.
+
+**cl completely zeroed at state=4 (785)**: dumped cl=0x134855D4 shows every field 0 (0x3C70 ps, 0x100260, 0x109244, ...). So state=4 is only the cls state machine counter; the client object itself was never initialized. Next round find the function that normally initializes cl and consider calling it directly via the remote-call tool instead of faking fields.
