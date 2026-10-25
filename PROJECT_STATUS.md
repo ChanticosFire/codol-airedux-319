@@ -33142,3 +33142,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **state==5 never reached (790)**: probe on 0x5C0353 counted 0, state stayed 4, so the PRIMED handshake never runs; and reading 0x76446B0 with stride 32 yields pointer-like values at indexes 1/2, so it is a struct array not an int array. Next round dump that region and find the store of 5.
 
 **Nothing stores 5 into [reg+0x76446B0] (791)**: searched all c7 8x indexed forms - none; all stores are absolute c7 05 with 0/3/4/7. Indexed refs are only the reads at 0x4732AB/0x5C0353. So state=5 observations must refer to a different variable/index, and the state==5 branch has never been taken. Next round dump the per-client struct that 0x5C034E walks.
+
+**Sampler always documented zero direct writes to 0x76446B0 (792)**: its docstring states this explicitly and the indexed-form search (791) confirms all stores are absolute c7 05 with 0/3/4/7. So earlier "state=5" observations need re-examination - likely a different field on the same output line or a different build. Next round log all sampler fields per tick and diff against a reference run.
