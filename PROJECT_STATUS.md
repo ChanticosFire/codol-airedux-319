@@ -31914,3 +31914,56 @@ after posting to all windows:
 |---|---|
 | 257 | 三重结论定位阻塞点在服务端数据 |
 | **258** | **🎯 枚举全部 7 个窗口（确认 CEF UI：`Chrome_WidgetWin_0`/`Chrome_SystemMessageWindow`/`CoD Splash Screen`），并向**全部 7 个窗口**广播 SPACE（KEYDOWN+CHAR+KEYUP，全部返回 1），`pm_type`/`origin` 仍完全不动 ⇒ **四种输入方式（SendInput / GetKeyboardState 钩子 / PostMessage / WM_CHAR+鼠标）全部无效，七个窗口全部试过** ⇒ **客户端确认不消费输入：它停在"等待服务端玩家数据"阶段，`CS_PLAYERS` 缺失** |
+
+## 516. 2026-11-08 16:00–17:00：**画面文字精读 —— 客户端停在"开赛前确认"界面**
+
+### 516.1 `runs/r417-space.png` 上可读到的全部 UI 元素
+
+| 位置 | 内容 |
+|---|---|
+| 左上 | **`战术团队竞技模式`**（Tactical Team Deathmatch） |
+| 顶部 | `得分` / `杀` / `死` / `助` 计分板，数值 `0  0` |
+| 底部中央 | **`按 空格`** + 一个**向下箭头**图标 |
+| 左下 | 蓝色血条 / 弹药 HUD（数值 0） |
+| 主体 | mp_crash_tropical 的街道/建筑，贴地第一人称视角 |
+
+### 516.2 解读
+
+`按 空格 ↓`（带向下箭头）是 COD 系列典型的**开赛前确认 / "press SPACE to continue"** 提示，
+**不是观战提示**（观战提示是 §209 的「Q 下一位玩家 / E 下一位玩家」，已在
+§479 清零快照三个 `01` 字节后消失）。
+
+**⇒ 客户端已经走完"加载 → 进入地图 → 第一人称视角"，
+停在"等待玩家按键确认开场"这一步。**
+
+### 516.3 但四种输入方式都无法推进（§515）
+
+这引出一个新的、更具体的假设：
+
+**CODOL 的 UI 是 Chromium（CEF）离屏渲染（OSR）** —— 证据是进程里有
+`libcef.dll` + `Chrome_WidgetWin_0` + `Chrome_SystemMessageWindow`，
+而 `Chrome_WidgetWin_0` 是 **`vis=False`**（不可见）。
+
+**CEF 离屏渲染时，键盘输入必须通过 `CefBrowserHost::SendKeyEvent` 送入**，
+普通的 `WM_KEYDOWN`（无论发到哪个窗口）都不会被 CEF 消费。
+这可以解释为什么：
+
+- 我们向 7 个窗口都发了 SPACE，全部"入队成功"（返回 1），但没有任何反应；
+- `GetKeyboardState` 调用计数恒 0（游戏不用它）；
+- 没有 DirectInput / RawInput（游戏也不用它们）。
+
+### 516.4 下一轮候选方案（按可行性排序）
+
+1. **直接向 CEF 的浏览器对象喂按键**：在进程内找到 `CefBrowserHost` 或其 vtable，
+   调用 `SendKeyEvent`（需要先在进程内注入代码或做远程调用）；
+2. **本地化文本定位**：找到「按 空格」这条本地化字符串在内存/资源中的位置，
+   反查引用它的 UI 脚本，看它读的是哪个条件（可能是 `ui_` 开头的 dvar 或 lua 状态）；
+3. **绕过 UI**：直接让服务端把对局当作已开始（例如下发 `svc_serverCommand` 里的
+   开赛命令），使客户端跳过该确认界面。
+
+### 516.5 里程碑
+
+| Round | 结论 |
+|---|---|
+| 258 | 七窗口 × 四输入方式全部无效 |
+| **259** | **🎯 精读截图：UI 显示 `战术团队竞技模式` + `按 空格↓` + 计分板 `0 0` ⇒ **客户端停在"开赛前确认"界面**（不是观战、不是加载遮罩）；结合 §515 的"四输入全无效"与"CEF + `Chrome_WidgetWin_0` 为 `vis=False`" ⇒ **新假设：CODOL 的 UI 是 CEF 离屏渲染，键盘必须经 `CefBrowserHost::SendKeyEvent` 才能送达，普通 `WM_KEYDOWN` 到任何窗口都无效** |
