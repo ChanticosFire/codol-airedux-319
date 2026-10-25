@@ -32884,3 +32884,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **纯转发也没送到 gs（§665）**：ring_a 20/20（被 bridge drain），但 gs 日志只有 start——问题在 bridge「取出后没 sendto」这段。下一轮读 forward 的发送循环确认。
 
 **bridge 核心 bug 找到（§666）**：ring_a 槽里数据完整（`ff ff ff ff connect bb10496...`），但 `RING_A_LENGTH=0x4EC` 读到的是 **0**，`drain_ring_a` 因此跳过所有包却仍推进 read——解释「20/20 而 gs 零收到」。下一轮重测槽结构找真正的长度字段。
+
+**ring_a 槽无长度字段（§667）**：`RING_A_BASE` 直接是 payload（`ÿÿÿÿconnect ...`），`0x4E8`=0x191、`0x4EC`=0 都不是长度；`0x4F0` 只是槽容量。drain 因此丢弃所有包却推进 read。下一轮读 `RING_A_READ`(0x7886808) 前后找并行的长度数组，或改用结尾符取长。
