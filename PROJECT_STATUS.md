@@ -33374,3 +33374,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **STRUCTURAL: session manager has readers but no writer (906)**: scans find only reads of 0x84ABB08/0x84ABB14, so like [0x7508B80] (294) and the events (859) it is an injection point whose injector is absent. Four independent findings now show all network/session state is externally injected: only the single-player shell (render, input, UI scripts, audio, demo) is native. Next round try calling the begin-game method 0x62F840 directly to start a local game.
 
 **Calling begin-game directly crashes (907)**: 0x62F840 with ecx=engine manager killed the client even though the guard checks pass on paper - the body dereferences never-built state, same class as setting cls.state directly (292). Next round read 0x62F8C3 onward to find which field faults.
+
+**Crash was a wrong this (908)**: 0x62F840 dereferences [ebx]->[eax+0xBC] and [eax+0xC0], but the engine manager's vtable 0xDC7274 is only 0xA0 bytes, so passing it lands on garbage. Its `this` is a larger object the engine manager dispatches into. Next round find 0x62F840's callers to learn that object.
