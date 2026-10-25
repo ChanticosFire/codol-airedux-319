@@ -32942,3 +32942,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **CL_InitCGame 未命中（§694）**：--breakpoint 0x5BEB50 无命中记录、截图 CODO 窗口已消失——崩溃发生在 cgame 初始化之前、进入 ACTIVE 后那段。下一轮 hook 0x472D80/0x471E90 + state7 后 10ms 高频截图。
 
 **崩溃第 5 次重现（§695）**：state=7 后 163ms 崩、connection 变 0xd362501f，模式稳定；两个解析器 hook 仍读不到（子进程开销 > 163ms）。下一轮把读 hook 与 bridge 循环放进同一进程，零延迟读取。
+
+**同进程转发脚本（§696）**：新增 tools/fast_forward_1649370.py，在同一进程内转发并每 0.5ms 检查 state，一到 7 立刻读 hook；踩坑：Client() 无参（find_pid）、u32 返回 0 非 None。下一轮用它拿 state=7 瞬间的 hook 计数。
