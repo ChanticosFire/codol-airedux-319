@@ -88,6 +88,63 @@ patch(0x42F32C, bytes.fromhex("7323"), bytes.fromhex("eb23"),
 patch(0x59B560, bytes.fromhex("558bec568db748170000"), bytes.fromhex("c3" + "90" * 9),
       "0x59B560 -> ret")
 
+
+# --- KEY FIX 3: 0x42F36B  mov esi,[eax] -> xor esi,esi  (eax is a zero-page 0) ---
+patch(0x42F36B, bytes.fromhex("8b30"), bytes.fromhex("31f6"),
+      "0x42F36B mov esi,[eax] -> xor esi,esi")
+
+
+# --- KEY FIX 4: 0x42F371  je 0x42F3A3 -> je 0x42F3BF (skip strncmp when esi==0) ---
+patch(0x42F371, bytes.fromhex("7430"), bytes.fromhex("744c"),
+      "0x42F371 je target -> loop exit 0x42F3BF")
+
+
+# --- KEY FIX 5: 0x42F36D  je 0x42F3A3 -> je 0x42F3BF (the [ebp-1] branch) ---
+patch(0x42F36D, bytes.fromhex("7434"), bytes.fromhex("7450"),
+      "0x42F36D je target -> loop exit 0x42F3BF")
+
+
+# --- KEY FIX 6: 0x432047  je -> jmp  (global [0x32AA908] is NULL) ---
+patch(0x432047, bytes.fromhex("7432"), bytes.fromhex("eb32"),
+      "0x432047 skip the NULL global deref")
+
+
+# --- KEY FIX 11 (CORRECT ONE): 0x58F3B9 mov ecx,[ecx*4+0x1988B50] -> mov ecx,[0x1988B50] ---
+# The real crash chain (Round 159):
+#   0x58F3B9  ecx = [ecx*4 + 0x1988B50]   ; table entry = 0
+#   0x58F3D0  [ebp-0x14] = ecx            ; = 0
+#   0x58F557  esi = [ebp-0x14]            ; esi = 0   <-- the real zeroing site
+#   0x58F55A  mov eax,[esi+0x7BC]         ; fault
+# Loading the filled table base makes ecx valid for all downstream uses.
+patch(0x58F3B9, bytes.fromhex("8b0c8d508b9801"), bytes.fromhex("8b0d508b9801 90".replace(" ", "")),
+      "0x58F3B9 mov ecx,[ecx*4+table] -> mov ecx,[table]")
+
+# --- KEY FIX 9: fill the 0x1988B50 table so lookups never return NULL ---
+# The table is an object registry that our flow never populates (table=1 but
+# consumers query index 1, 2, ...).  Allocate a large zero page and point every
+# entry at it, so the 578 references all see a valid zero object.
+_zobj = k.VirtualAllocEx(h, None, 0x10000, 0x3000, 0x04)
+if _zobj and _zobj < 0x100000000:
+    # make sure it is readable/writable and zeroed
+    _zero = b"\x00" * 0x1000
+    _got = ctypes.c_size_t()
+    k.WriteProcessMemory(h, ctypes.c_void_p(_zobj),
+                         ctypes.create_string_buffer(_zero, len(_zero)),
+                         len(_zero), ctypes.byref(_got))
+    TABLE_BASE = 0x1988B50
+    ENTRIES = 256
+    _blob = struct.pack("<I", _zobj) * ENTRIES
+    _prot = W.DWORD()
+    k.VirtualProtectEx(h, ctypes.c_void_p(TABLE_BASE), len(_blob), 0x40, ctypes.byref(_prot))
+    _okw = k.WriteProcessMemory(h, ctypes.c_void_p(TABLE_BASE),
+                                ctypes.create_string_buffer(_blob, len(_blob)),
+                                len(_blob), ctypes.byref(_got))
+    k.VirtualProtectEx(h, ctypes.c_void_p(TABLE_BASE), len(_blob), _prot.value, ctypes.byref(_prot))
+    print(f"  TABLE fill: obj={_zobj:#x} entries={ENTRIES} ok={_okw}")
+else:
+    print(f"  TABLE fill FAILED: {_zobj}")
+
+
 va = k.VirtualAllocEx(h, None, 256, 0x3000, 0x04)
 if va and va < 0x100000000:
     s = b"mp_crash_tropical\x00"
