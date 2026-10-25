@@ -21457,3 +21457,80 @@ gs: stats = 2 / in = 18
 | 74 | 手工 arm 下 `net=8`、地图 fastfile 出现（但偶发失败） |
 | 75 | 同配置下次失败 ⇒ 瓶颈是 `stats` 能否稳定发出 |
 | **76** | **🎯 不再手工写 `net_state` ⇒ 客户端自己 1→3→4→5→8，请求 11 个完整 fastfile（含 gametype），gs 收到 `gamestateupdate`；确认手工 arm 是干扰源** |
+
+## 336. 2026-10-31 04:00–05:00：**不 arm 也有波动 —— `net=4` 之后回 0（`connectResponse` 时机问题仍未解）**
+
+### 336.1 本轮配置（与 Round 76 相同，仅把窗口拉长到 50~55 秒）
+
+```
+ui_mapname 改写（成功）
+两个补丁 + fastfile 收集器
+只写 flag=0 + conn adr，**不 arm**
+forward-first（--retry-seconds 0，--seconds 50）
+轮询 55 秒（60 ms）
+```
+
+### 336.2 结果：`net=4` 之后回 0
+
+```
+t+ 0.00 net=1  table=0  gate=0  ff_count=0
+t+ 1.03 net=1  …                ff_count=2
+t+ 1.15 net=1  …                ff_count=4
+t+ 1.27 net=3                   ← 自己到 3
+t+ 2.78 net=3  …                ff_count=6
+t+ 6.40 net=4                   ← 自己到 4
+t+ 7.25 net=0                   ← **回 0，未到 5**
+t+ 7.55 net=0  …                ff_count=8（ui_mp 重复）
+t+ 8.70 net=0  table=973        ff_count=10
+t+ 8.76 net=0  table=1135
+ALIVE（未崩溃 —— 因为根本没到 net=8）
+
+gs: stats = 0 ; in = connect 1 / getchallenge 2 / oob 3
+```
+
+### 336.3 与 Round 76 的对比
+
+| 轮次 | `net=3` | `net=4` | 之后 | `stats` | `ff` 地图项 |
+|---|---|---|---|---|---|
+| 76（r293） | t+1.22 | t+5.98 | **→5 →8** | 2 | **有（3 个）** |
+| **77（r294）** | t+1.27 | t+6.40 | **→0** | 0 | 无 |
+
+两次的 `net=3` 与 `net=4` 到达时间几乎一样（1.2s / 6s），
+**差异发生在 `net=4` 之后**：Round 76 推进到 5，本轮直接回 0。
+
+### 336.4 结论
+
+即使"不 arm"，成功率仍非 100%。此前把原因归为"手工 arm 是干扰源"是对的
+（Round 76 证明了不 arm 能走得更远、ff 列表更完整），
+但**它不是唯一因素** —— `net=4`（`CA_CONNECTING`）之后的这一步
+仍然取决于 `connectResponse` 是否在客户端超时之前送达。
+
+而 `connectResponse` 的送达时机，此前已确认受 `forward` 主循环是否被
+`invoke_sequence` 打断的影响（Round 63），现在用 `--retry-seconds 0` + 无 `--pump`
+把那个干扰也去掉了，但仍有残余波动。
+
+⇒ **残余波动可能来自 `--start-challenge` 那一次 `invoke_sequence` 本身的时机**：
+它必须发生在客户端进入 `CA_CONNECTING` 之前或刚好其时；
+若发生在之后，客户端已经在等 `connectResponse`，而 gs 的响应还没到，
+就会先超时回 0。
+
+### 336.5 下一轮（更彻底的消除时序竞争）
+
+思路：**让 `forward` 在启动时就先完成一次 `--start-challenge`，
+然后再循环注入**，而不是"启动后等 3 秒再 arm"。
+
+具体：
+1. 启动 `forward` 时**不**用 `--start-challenge`，改为**手动**在
+   `net_state` 刚变成 3（用 60 ms 轮询检测）的那一刻**立刻**
+   调用 `invoke_sequence` 触发 `0x5C05F0`；
+2. 这样能保证"触发 connect"与"客户端进入 CHALLENGING"几乎同时发生，
+   把窗口压到最小；
+3. 若多次实验仍波动，则说明 `connectResponse` 本身的处理路径
+   还有一个未知的时序要求，需要进一步在 `0x5C05F0` 内部打点。
+
+### 336.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 76 | 不 arm ⇒ 客户端自己走完 1→3→4→5→8，ff 完整（含 gametype），gs 收到 `gamestateupdate` |
+| **77** | **同配置下 `net=4` 之后回 0、`stats=0` ⇒ 不 arm 不是唯一因素；`net=4`→5 这一步仍取决于 `connectResponse` 是否赶在超时前送达，残余波动可能与 `--start-challenge` 的触发时机有关** |
