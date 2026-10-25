@@ -32734,3 +32734,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **cbuf 通道整体失效（§593）**：`cl_demo_play testdemo` 注入返回 injected 但 `state` 仍为 0、命令未执行；与 §579 的 `connect` 情况一致——cbuf 注入只能当"可能生效"的辅助，不能用于必须执行的验证。下一轮改用 `launch_1649370.py` 启动参数 `+cl_demo_play testdemo`。
 
 **cl_demo_play 执行了但没进 ACTIVE（§594）**：修好 PowerShell `[]` 通配符陷阱（用 `-LiteralPath`）后，`testdemo.demo` 就位；在 `launch` 的 `GAME_ARGUMENTS` 追加 `+cl_demo_play testdemo`，启动后 `state` 确实从 0 变 1（命令生效），但 8 秒后退回 0——demo 加载失败。下一轮用 6.9 MB 的官方 `officialdemo.demo` 复试。
+
+**官方 demo 也进不了 ACTIVE（§595）**：`+cl_demo_play officialdemo` 后 `state` 短暂到 1（加载中）再退回 0，与 testdemo 表现一致；画面暗一下就恢复正常大厅。两个 demo 都无法到 7，怀疑 demo 文件版本/资源不匹配或 `cl_demo_play` 有前置条件。下一轮检查 demo 文件头与版本匹配。
