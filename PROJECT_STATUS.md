@@ -21933,3 +21933,80 @@ def start_challenge(self) -> dict:
 |---|---|
 | 79/80/81 | 三次基于错误归因的尝试（invoke_sequence / 进程分离 / 端口） |
 | **82** | **⚠⚠ `start_challenge()` 只是写 `STATE=3`（无 invoke_sequence）；固定端口后 `state` 仍为 0 ⇒ 三个归因全部作废；真正瓶颈是"客户端读 ring B 的时机"与 0.84 秒超时的竞争** |
+
+## 342. 2026-10-31 10:00–11:00：**🎯 根本矛盾量化 —— 客户端 tick 是秒级，而连接窗口是亚秒级**
+
+### 342.1 forward 事件时间戳（r300）
+
+```
+t=0.0        arm  (challenge_armed, state=3)     ← 代码里写死的哨兵值
+t=149741.906 state=3, stage=5                    ← 绝对 monotonic
+t=149746.454 out  getchallenge                   ← **距上一条 4.55 秒**
+t=149746.507 out  getchallenge（第二个）
+```
+
+`arm` 把 `state=3` 写进去是在 `t=0.0`，但客户端**第一次因为该状态而动作**
+发生在 **4.55 秒之后**。
+
+### 342.2 包内容完全正确（关键排除项）
+
+从 events 的 ascii 字段提取：
+
+```
+getchallenge ×2
+challengeResponse ×2（1905886573 / 1905886627）
+connect a731af49a6a2c7e2
+connectResponse \mapname\mp_crash_tropical        ← **内容正确**
+gamestate 分片 ×5
+```
+
+**`connectResponse` 的内容没有问题**（`mapname` 正是我们改写后的 `mp_crash_tropical`）。
+
+### 342.3 根本矛盾（本轮最重要的量化结论）
+
+| 量 | 数值 | 来源 |
+|---|---|---|
+| 客户端从 `state=3` 到发出 `getchallenge` | **4.55 秒** | forward events |
+| `net=4`（等待 connectResponse）持续 | **0.84 秒** | 采样 |
+| gs 从收到 `connect` 到发出 `connectResponse` | **0.0006 秒** | gs 日志 |
+
+**客户端的处理节奏是秒级的，而它给 `connectResponse` 的接收窗口只有 0.84 秒。**
+
+这意味着：`connectResponse` 必须在客户端**进入 `net=4` 的那一刻就已经在 ring B 里**，
+否则无论 `forward` 多快都来不及 —— 因为客户端只在它自己的 tick 上读 ring B，
+而那个 tick 可能整个窗口期都不出现。
+
+### 342.4 这也解释了 Round 76 为什么"成功"
+
+那一次只是**恰好**客户端在 0.84 秒窗口内碰上一个 tick，读到了 ring B。
+**成功与否取决于客户端 tick 与窗口的对齐，不取决于我们的任何开关。**
+这也解释了为什么同样的配置时而到 8、时而到 4。
+
+### 342.5 两条可行的出路
+
+**出路 A：延长客户端的等待窗口**
+找到 `net=4 → 0` 的判定处（很可能是 `0x5C05F0` 里一个计数器或超时比较），
+把它从"0.84 秒后放弃"改成"30 秒后放弃"。这样客户端有足够多 tick 去读 ring B。
+
+**出路 B：让 connectResponse 提前就位**
+在客户端发出 `connect` 之前就把 `connectResponse` 写进 ring B。
+但 `connectResponse` 里含 challenge 值（`1905886573`），而该值由客户端生成 ——
+不过从 events 看，`challengeResponse` 里已经带回了这个值，
+`forward` 完全可以在转发 `challengeResponse` 时**缓存**它，
+并**预先构造** `connectResponse` 写入 ring B。
+
+**出路 A 更直接**，且我们已有 hook/patch 能力。
+
+### 342.6 下一轮
+
+1. 在 `0x5C05F0`（connect 状态机）里找 `net_state` 4→0 的判定；
+   或在 `[conn+0x34]`/`[conn+0x38]` 这类"重试计数"字段上找递减逻辑；
+2. 若能定位，就用 patch 把"放弃"改成"继续等"（例如把比较阈值调大）；
+3. 观察 `net` 是否能在 `4` 停留足够久，让 `connectResponse` 被读到。
+
+### 342.7 里程碑
+
+| Round | 结论 |
+|---|---|
+| 79–82 | 三个归因（invoke_sequence / 进程分离 / 端口）全部被推翻 |
+| **83** | **🎯 量化确认：客户端从 state=3 到发 getchallenge 需 4.55 秒，而 net=4 窗口仅 0.84 秒；connectResponse 内容完全正确 ⇒ 纯粹是"秒级 tick 与亚秒级窗口"的矛盾；下轮应延长客户端等待窗口** |
