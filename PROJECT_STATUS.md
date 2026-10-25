@@ -32938,3 +32938,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **98 字节正确 gamestate 也崩（§692）**：state 仍 4→5→7→0、connection 仍变 0xd362501f——gamestate 格式问题确实存在（6411 字节那份是错的）但不是致命原因。崩溃模式：进入 ACTIVE 后处理第一个后续包时崩。下一轮 hook CL_InitCGame(0x5BEB50)。
 
 **崩溃模式稳定重现（§693）**：state=7 后正好 164ms 崩、connection 变 0xd362501f，第四次重现；CL_InitCGame hook 读不到（进程崩）。下一轮改用 launch --breakpoint 捕获 0x5BEB50 + 崩溃前截图。
+
+**CL_InitCGame 未命中（§694）**：--breakpoint 0x5BEB50 无命中记录、截图 CODO 窗口已消失——崩溃发生在 cgame 初始化之前、进入 ACTIVE 后那段。下一轮 hook 0x472D80/0x471E90 + state7 后 10ms 高频截图。
