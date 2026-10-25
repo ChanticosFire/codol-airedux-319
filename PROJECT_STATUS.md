@@ -20310,3 +20310,86 @@ t+6.87 net=0     ← 0.84 秒后回 0
 | 56 | 观察到 net=8（CA_PRIMED） |
 | 59 | 后台 forward → net=4 |
 | **60** | **严格照搬 Round 56 配置仍只到 net=4 ⇒ net=8 不可复现，是亚秒级时序巧合；应转向"为什么 net 在 4 之后回 0"** |
+
+## 320. 2026-10-30 12:00–13:00：**发现端口不匹配的疑点 —— `forward` 收发端口与 gs 目标端口不一致**
+
+### 320.1 本轮做的两件事
+
+1. 用 `forward --dump-in` 把每个注入包写成 JSONL；
+2. 采样器改成 **1 ms** 粒度。
+
+### 320.2 注入包的 `state` 分布（决定性证据）
+
+```
+注入包数: 10
+  len=32    state=3   ffffffff challengeResponse 19…    ← 时机正确
+  len=32    state=4   ffffffff challengeResponse 19…    ← 时机正确
+  len=109   state=0   ffffffff connectResponse \map…    ← **state 已经是 0**
+  len=1172  state=0   03000080 0005…（gamestate 分片）
+  …
+```
+
+**`connectResponse` 被注入时 `state=0`** —— 客户端早已判定连接失败。
+
+### 320.3 gs 侧确认它自己是立即发送的
+
+```
+gs: connect at:          1792905119.827811
+    connectResponse:     1792905119.82841      ← 仅晚 0.6 毫秒
+```
+
+⇒ **延迟不在 gs 侧，而在 `forward` 的接收/注入环节**。
+
+### 320.4 关键疑点：端口不匹配
+
+`forward` 的套接字创建（`ring_bridge_1649370.py:734-738`）：
+
+```python
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+bind_port = int(getattr(args, "bind_port", 0) or 0)
+sock.bind(("127.0.0.1", bind_port))     # --bind-port 默认 0 => 随机端口
+sock.setblocking(False)
+```
+
+而本轮 gs 日志显示：
+
+```
+gs 发往的端口:      64774 (x10)
+gs 收到的来源端口:  64774 (x6)
+```
+
+**gs 收发的对端都是 64774（客户端自己的端口），而 `forward` 绑的是随机端口。**
+按这个配置，`forward` 本不该收到 gs 的回复 —— 但它报告了 `received=10`。
+
+**这两者必有一个需要澄清**：
+- 要么 `forward` 实际上通过某种方式用到了客户端端口（例如 `--bind-port` 被隐式设置）；
+- 要么它收到的 `10` 个包并非来自 gs 的回复，而是其它来源（例如客户端自身的回环包）。
+
+### 320.5 采样轨迹（1 ms 粒度，净变化）
+
+```
+t+0.00 net=3
+t+5.94 net=4
+t+6.78 net=0            ← 4 维持 0.84 秒后回 0
+t+8.27 net=0 table=123  ← 之后 table 从 0 逐步涨到 1135（大厅资源逐个重建）
+t+8.29 net=0 table=1135
+```
+
+`table` 的那一串递增（123→250→373→…→1135）说明客户端在**回滚到大成大厅状态**，
+这是"连接失败后卸载并恢复大厅"的典型表现。
+
+### 320.6 下一轮
+
+1. **确认 `forward` 实际绑定端口**：在它的输出里加一项
+   `sock.getsockname()`，或在启动时显式传 `--bind-port 64774`（客户端端口），
+   并对比 `received` 的数值与注入包的 `state` 分布是否改善；
+2. 若显式绑定客户端端口后 `connectResponse` 能在 `state=4` 时注入，
+   则说明此前的延迟确实是端口/时序问题；
+3. 同时保留 `--dump-in`，用于逐字节比对注入内容与 gs 实际发送内容。
+
+### 320.7 里程碑
+
+| Round | 结论 |
+|---|---|
+| 60 | `net=8` 不可复现，转向查 "4→0" |
+| **61** | **`--dump-in` 证明 `connectResponse` 注入时 `state` 已是 0；gs 侧仅晚 0.6ms 即发送 ⇒ 延迟在 forward；并发现 forward 绑定随机端口、而 gs 收发对端是 64774 的端口疑点** |
