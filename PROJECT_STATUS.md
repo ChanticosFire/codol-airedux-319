@@ -32864,3 +32864,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **突破：ring-a-drain block 是罪魁祸首（§655）**：`0x674F30` 被我们自己的 `ring-a-drain block` 补丁成 `31 C0 C3`（xor eax,eax/ret），导致客户端永远无法从 ring_a 取包；`ring-a-drain restore` 后 `read` 立即从 2887 追到 3464。下一轮用全新客户端做「不 block drain」的完整连接，验证解析链/ps/画面是否终于跑通。
 
 **恢复 drain 后客户端正常收包（§656）**：不 block drain 的完整连接下 `ring_a` 的 read/write **完全同步**（14/14），对比旧状态（2887/3464 卡 577 块）——证实 `31 C0 C3` 补丁就是"不收包"的唯一原因。但 state 停在 4 未到 5，ps 仍 0。下一轮保持此方式等 gamestate 发完，看 state 能否升 5、0x471E90 是否被调用。
+
+**state=4 原因是 forward 没绑定端口（§657）**：gs 与 bridge 进程都在，但 `Get-NetTCPConnection -LocalPort 29126` 为空（无监听），gs 日志只有 start。客户端包发不到 gs，永远停在连接中。下一轮换 29127 端口并先验证端口监听再 connect。
