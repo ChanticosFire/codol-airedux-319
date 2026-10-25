@@ -33394,3 +33394,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Command table is a linked list at 0x4F2C92 (916)**: nodes hold a name at +4, lookup tracks a 0x7FFFFFFF best-match distance (console-style partial matching), 0x4F2D0D is the not-found exit. Next round read how the matched node is executed to find a legitimate way to run room.* commands.
 
 **0x4F2C60 is the argument fallback (917)**: it adjusts running offsets and prints an error when argv is exhausted - a console argument helper, not the executor. Three console helpers are now identified (lookup 0x4F37A0, argument fallback 0x4F2C60, registration 0x4F2D70) without the dispatcher. Next round find the call site that invokes a node's handler (call through [node+8]).
+
+**Command nodes: only one call [reg+8] in the image (918)**: scan found exactly one site (0x58754D) and it is unrelated to console code, so the handler is not at node+8; nodes hold {next, name} and the table is a name registry. Execution belongs to the UI script engine (consistent with 874). Next round read the UI caller of 0x4F37A0 near 0x604686 to see how lookup becomes invocation.
