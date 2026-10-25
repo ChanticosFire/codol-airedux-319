@@ -32924,3 +32924,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **方案 A 成功到 state=7（§685）**：block drain 后 bridge 独占 ring_a，sent=3/received=96/injected=10；状态轨迹 4→5（stats）→**7（ACTIVE）**→不到 1 秒掉到 0，之后注入全 write_failed、connection 变垃圾值 0xd362501f。这是首次到达 CA_ACTIVE。下一轮查 7→0 那一秒发生了什么（Com_Error/进程存活）。
 
 **state=7 后崩溃（§686）**：launch 记录 `stop_reason: unhandled_exception`，客户端进程消失、无异常详情；崩溃发生在 state=7 后约 160ms（200728.709→200728.872），正是开始按 ACTIVE 跑帧/消费 snapshot 的时刻。疑为 snapshot 数据缺 ACTIVE 必需字段。下一轮用 Com_Error hook + 崩溃前截图确认。
+
+**崩溃点在 CL_ParseServerMessage（§687）**：崩溃后 `connection=0xd362501f`，正是 `0x471E90` 里的 XOR 常量——说明栈/上下文被解析器写坏，崩溃发生在 CL_ParseServerMessage 内部。state=7 后客户端确实开始解析，但越界写坏 cl。下一轮在 0x471E90 内分 svc 分支 hooks + 用最小合法 snapshot 试验。
