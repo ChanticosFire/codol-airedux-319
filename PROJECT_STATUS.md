@@ -33096,3 +33096,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x6F850000 是纯转发层（§767）**：其导出地址指向 "ws2_32.WSAA..." 转发字符串，真实实现在 0x77820000。下一轮在该模块用三表映射找 WSAAsyncSelect，并处理 AddressOfFunctions 的 0x80000000 转发标志。
 
 **找到全部真实网络函数（§768）**：0x77820000 的导出全是 code（非转发）：WSAAsyncSelect=0x77838990、WSARecvFrom=0x7783B670、WSASendTo=0x77858AB0、WSAEventSelect=0x7783AC00、select=0x7783AE80。下一轮 hook WSAAsyncSelect 记录 socket/hWnd/wMsg/lEvent，再用 PostMessage 驱动收包。
+
+**WSAAsyncSelect also never called (769)**: count=0 and all args zero, so the async window message model is ruled out. Client calls neither sendto/recvfrom nor WSAAsyncSelect. Next round hook WSARecvFrom/select/WSAEventSelect to find the real send/recv mechanism.
