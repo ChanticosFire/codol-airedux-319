@@ -33296,3 +33296,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Correction: 0x5C01C0 is snd_restart (867)**: its command name is 0xDC06D8 'snd_restart', so 0x5BFCE0 is a voice/media reconnect and the CL_InitNetchan path traced was the audio transport, not the game session. Next round locate the real `connect` command registration and follow that handler.
 
 **Real connect command found (868)**: "connect" at 0xDC5694 has 8 refs; two .rdata records pair handlers 0x94CFB0/0x94CF10 with it, and 0x604686 loads the name then calls 0x60D540 (lookup/dispatch). This is entirely separate from the snd_restart path. Next round disassemble 0x60D540 then handler 0x94CFB0.
+
+**Both connect handlers are script bindings (869)**: 0x94CFB0 and 0x94CF10 only forward into indirect engine calls ([0xE81CCC]/[0xE81C4C], all .bss script-VM tables) - the real connect lives in UI script resources (ui_mp/scriptmenu). So a real connect must run the UI script's connect action, not a native function. Next round locate UI script action dispatch.
