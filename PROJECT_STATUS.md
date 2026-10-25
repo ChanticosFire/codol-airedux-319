@@ -33294,3 +33294,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **DECISIVE: 0x5C01C0 is a console command handler (866)**: registered via 0x4F2D70 (Cmd_AddCommand-style, table at [0x331D408]) with name string at 0xDC06D8, desc 0xE9C6A50. So a legitimate console command starts the connect. Next round read 0xDC06B8/DC06C4/DC06D8/DC06E4 to find that command's name.
 
 **Correction: 0x5C01C0 is snd_restart (867)**: its command name is 0xDC06D8 'snd_restart', so 0x5BFCE0 is a voice/media reconnect and the CL_InitNetchan path traced was the audio transport, not the game session. Next round locate the real `connect` command registration and follow that handler.
+
+**Real connect command found (868)**: "connect" at 0xDC5694 has 8 refs; two .rdata records pair handlers 0x94CFB0/0x94CF10 with it, and 0x604686 loads the name then calls 0x60D540 (lookup/dispatch). This is entirely separate from the snd_restart path. Next round disassemble 0x60D540 then handler 0x94CFB0.
