@@ -33152,3 +33152,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **vtable gate needs edi which hook_any cannot capture (795)**: bytes show 0x621EA0..0x621EA9 is mov edx,[edi]; mov eax,[edx+0x20]; mov ecx,edi; call eax; cmp eax,1; jne. A --len 10 hook fits instruction-wise, and --capture-src ecx may yield edi because 0x621EA5 loads ecx from edi. Next round try that and resolve the vtable slot +0x20.
 
 **DECISIVE: frame function 0x4F8CF0 never runs (796)**: probes show 0x4F8CF0=0, 0x621E50=0, 0x621EA0=0 while the window renders - so the client runs a different loop than the one we analysed; its only caller is inside itself, meaning it was mis-identified as the frame function. Next round find the real top-level loop via PeekMessage/DispatchMessage and Present/EndScene hooks.
+
+**Main thread spins in CRT, not blocked (797)**: PeekMessageW/DispatchMessageW/GetMessageW all 0; 70 threads wait at 0x77D9826C except main 20916, whose EIP cycles through 0xC3Cxxx-0xC4Fxxx (CRT) with ESP pinned near 0x18D6FC - a shallow-stack CRT spin, consistent with a long parse/format loop, explaining why the frame loop never fires. Next round dump the main-thread stack to find the repeating caller.
