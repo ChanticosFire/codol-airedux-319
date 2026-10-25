@@ -33160,3 +33160,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Main thread runs a configstring write + 0x7A69 hash loop (799)**: at 0x4F94AF a string is copied then hashed with multiplier 0x7A69 into a msg_t, which is exactly configstring registration; 0x81E717 shows a 1.3MB bulk write. So the client IS processing configstrings (a server-message path), just long enough to look stuck. Next round capture the string/len at 0x4F94AF to see the indices and values.
 
 **Stack scan was misleading (800)**: 0x4F94AF and 0x4A0060 probes both 0; and 0x4A01B6 / 0x75B17E55 on the stack are data values (the latter beyond shell32's code range, covered by no export), not return addresses. Next round hook the CRT helpers that actually run (0xC44350/0xC3C266/0xC49DD8/0xC49E1E) and capture [esp] to get true callers one level at a time.
+
+**Stack walk validates 0x4A01B6 (801)**: new stack_walk_1649370.py keeps a candidate only when preceded by a call encoding; it found [esp+0x60]=0x4A01B6 (FF /2 6-byte) inside function 0x4A0060, so the main thread does execute that function's body but not via its prologue (entry hook 0). Next round re-verify the hook bytes and disassemble 0x4A01A0..0x4A01F0.
