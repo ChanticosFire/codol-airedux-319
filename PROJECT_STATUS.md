@@ -33400,3 +33400,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Correction: node+8 IS the handler (919)**: the insertion code stores [ebx+8]=[ebp+8], so nodes are {next, name, handler} and 918's conclusion was wrong. The mistake was only scanning `call [reg+8]`, which cannot see the usual `mov eax,[node+8]; call eax` shape - a negative result from a narrow scan is not evidence of absence. Next round scan for that pattern.
 
 **Dispatch site inside console area: 0x4F2CFE (920)**: the mov+call scan gave 2633 raw matches; filtering by location leaves one candidate in the console block (0x4F2CFE), near lookup 0x4F37A0 and registration 0x4F2D70 - very likely the command-handler invocation. Next round disassemble its enclosing function.
+
+**BREAKTHROUGH: 0x4F2C60 registers AND invokes (921)**: its tail links a command node then does mov eax,[eax+8] / call eax with no arguments, so it is the missing dispatcher and is directly callable (name in EDI, handler in [ebp+8], desc in [ebp+0xC]). Handler signature is void f(void), which matches room.startgame's no-arg path. Next round call it with room.startgame and watch ring_a.
