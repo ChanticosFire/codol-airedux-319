@@ -33018,3 +33018,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **清零 0x3381398 反而立即崩溃（§728）**：写 1→0 成功但客户端马上 state=0、sent=0——它是真实的"正在加载关卡"状态，清零破坏状态机。§727 观察仍有效：0x5C83D0 被跳过导致 [CL+0x109244] 未初始化，说明 state=7 是"加载被中断的残留状态"而非"连接成功"。下一轮转去反汇编 0x472D80（gamestate 解析器）找正常进入 ACTIVE 的路径。
 
 **CL_ParseGamestate 分析（§729）**：0x472D80 先 memset(0xC86DD28,0,0xC764)（与 0x5BE90A 的 0x2C768 清零同一区域）、读 2 字节 count、逐条解析 configstring，0x472ED6 有 cmp ebx,0x31D9/jl 边界检查、越界走 Com_Error(0x4F82E0)；我们 index 0/1/2 安全。下一轮看 0x472F92 分支与返回路径，确认解析成功后如何进入 ACTIVE。
+
+**0x472C70 是写入全局表的 configstring 处理函数（§730）**：0x472F92 循环里以 (index, string) 调用它；index 边界 0x31D9、越界 Com_Error。下一轮反汇编 0x472C70，确认 slot type 判断（0x77D8250+index 需 >=0x17 或 ==0x15），决定我们发的 configstring 是否被接受。
