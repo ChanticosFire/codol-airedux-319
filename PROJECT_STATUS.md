@@ -33340,3 +33340,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **0x63E510 is the match-request initialiser (889)**: sets up global request struct 0xC39B108 with 132-byte params at 0x330B8A0 (memset), then submits after a check. Next round disassemble the submission after 0x63E5CE to find the network call.
 
 **0x63BCB0 constructs the match object, vtable 0xDC795C (890)**: it clears fields 0x20..0x100 and constructs members at +0x110..+0x128; the network submission is elsewhere. Next round resolve vtable 0xDC795C to find the request method.
+
+**DECISIVE: match state machine at [0x84ABA50] (891)**: 0x63E100 does cmp eax,5 / jmp [eax*4+0x63E178], i.e. six state handlers for a real game-session state variable. Next round read the switch table and check [0x84ABA50]'s runtime value and writers.
