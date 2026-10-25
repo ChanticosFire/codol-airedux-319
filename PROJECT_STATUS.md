@@ -32926,3 +32926,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **state=7 后崩溃（§686）**：launch 记录 `stop_reason: unhandled_exception`，客户端进程消失、无异常详情；崩溃发生在 state=7 后约 160ms（200728.709→200728.872），正是开始按 ACTIVE 跑帧/消费 snapshot 的时刻。疑为 snapshot 数据缺 ACTIVE 必需字段。下一轮用 Com_Error hook + 崩溃前截图确认。
 
 **崩溃点在 CL_ParseServerMessage（§687）**：崩溃后 `connection=0xd362501f`，正是 `0x471E90` 里的 XOR 常量——说明栈/上下文被解析器写坏，崩溃发生在 CL_ParseServerMessage 内部。state=7 后客户端确实开始解析，但越界写坏 cl。下一轮在 0x471E90 内分 svc 分支 hooks + 用最小合法 snapshot 试验。
+
+**最小 snapshot 也崩（§688）**：单字节 svc0 的 snapshot 下 state 仍到 7 后崩（connection=0xd362501f）——问题不在 snapshot 内容而在 gamestate 处理。下一轮完全停掉 snapshot 只发 gamestate 验证。
