@@ -33092,3 +33092,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **set-state 5 导致崩溃（§765）**：写入成功但 2 秒内 state=0、CL 地址变动（重启），说明 CA_PRIMED 需要 netchan 预初始化，硬跳必崩；state 门槛假设否决。下一轮改扫 ws2_32 完整导出（含按序号）找 WSARecvFrom/WSASendTo/select/WSAEventSelect。
 
 **重大突破线索：WSAAsyncSelect（§766）**：ws2_32 转发层完整导出含 WSAAsyncSelect(0x6f85381a)/select/recvfrom/sendto，但无 WSARecvFrom/WSASendTo；WSAAsyncSelect 说明客户端用窗口消息异步收包，解释 recvfrom=0。下一轮 hook WSAAsyncSelect 记录 socket/窗口/消息号，再用 PostMessage 驱动其收包。
+
+**0x6F850000 是纯转发层（§767）**：其导出地址指向 "ws2_32.WSAA..." 转发字符串，真实实现在 0x77820000。下一轮在该模块用三表映射找 WSAAsyncSelect，并处理 AddressOfFunctions 的 0x80000000 转发标志。
