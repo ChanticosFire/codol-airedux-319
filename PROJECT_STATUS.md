@@ -22796,3 +22796,79 @@ Windows 事件日志里暂未取到 `APPCRASH` 记录（可能需要管理员权
 |---|---|
 | 88–92 | 定位超时链路：`[0x84B0E54]` → `cmp ebx,9` → `0x5C2589` → 唯一调用者 `0x5C265F` |
 | **93** | **🎯🎯🎯 把 `0x5C265F` 的 `call 0x5C24D0` 改成 NOP ⇒ `EXE_ERR_SERVER_TIMEOUT` 彻底消失；`net` 稳定到 8、`gate`/`table` 稳定为 1、gs `stats=7`、`oob=66`；暴露出独立的新问题：`unhandled_exception`** |
+
+## 353. 2026-10-31 21:00–22:00：**解出超时阈值 = 硬编码 60 秒，且判断方向是"不足 60 秒就报错"**
+
+### 353.1 两个 dvar-like 引用的真实内容
+
+```
+[0x33395E0] = 0x8114B78
+  [0x8114B78 + 0x0C] = **0x42700000**      ← 这不是指针，是 float 60.0 的位模式
+[0x33D64A0] = 0x8114C10
+  [0x8114C10 + 0x0C] = 0x19                （重试上限 = 25）
+
+[0xDE7B98] = 1000.0 (f64)                  ← 秒→毫秒换算
+```
+
+**阈值 = 60.0 × 1000 = 60000 ms = 60 秒。**
+
+### 353.2 浮点比较的方向（关键）
+
+```asm
+0x5C2639  eax = now
+0x5C263E  eax -= [conn+0xC]        ; elapsed (ms)
+0x5C264A  fild dword [ebp-4]       ; ST0 = elapsed
+0x5C264D  fld  dword [ecx+0xC]     ; ST0 = 60.0, ST1 = elapsed
+0x5C2650  fmul qword [0xDE7B98]    ; ST0 = 60000
+0x5C2656  fcompp                   ; 比较 60000 (ST0) 与 elapsed (ST1)
+0x5C265A  test ah, 5
+0x5C265D  jp 0x5C266A              ; C0/C2 置位 -> 安全出口
+0x5C265F  call 0x5C24D0            ; 否则 -> 报超时
+```
+
+`fcompp` 设置 C0/C2/C3。当 `60000 > elapsed` 时 C0=C2=0，
+`test ah,5` 得 0 → `jp` 不跳 → **落到 `0x5C265F` 报超时**。
+
+⇒ **"连接开始后不足 60 秒" 就会报超时。** 这与实测的 0.84 秒完全吻合。
+
+### 353.3 解释了一个长期困惑
+
+启动参数里一直带着：
+
+```
++set cl_timeout 600  +set cl_connectTimeout 600
+```
+
+但完全没有用 —— 因为这处判定用的是**硬编码的 60.0**（`[0x8114B78+0xC]`），
+**根本不读 dvar**。所以设多少秒都不影响。
+
+### 353.4 该问题已在上轮被彻底切断
+
+Round 93 已把 `0x5C265F` 的 `call 0x5C24D0` 改成 `90 90 90 90 90`，
+因此这条"不足 60 秒就报超时"的逻辑如今**永远不会执行**。
+本轮的 dvar 解读是为了**完整记录成因**，不再需要额外修补。
+
+### 353.5 当前唯一剩下的是 `unhandled_exception`
+
+```
+r308-launch.out: "stop_reason": "unhandled_exception"
+```
+
+`net` 稳定到 8、`gate`/`table` 稳定为 1、gs `stats=7`/`oob=66`，
+然后约 0.14 秒后进程以未处理异常结束。
+
+### 353.6 下一轮
+
+1. 用 `hook_any` 在 `0x49E600`（地图加载入口）与 `0x49ED40`（`FS_LoadFastfile`）
+   之后的位置打点，确定最后执行到哪；
+2. 或在目标进程里装一个 vectored exception handler（可复用 cave 机制）记录
+   异常码与出错 EIP —— 这是最直接的方式；
+3. 若装 handler 成本高，可先试**把 `0x5C24D0` 内部也改成直接 `ret`**
+   （万一崩溃是由该处理器的残留清理引发）。
+
+### 353.7 里程碑
+
+| Round | 结论 |
+|---|---|
+| 93 | NOP `0x5C265F` ⇒ 超时消失；`net=8`、`gate`/`table`=1、`stats=7` |
+| **94** | **解出阈值：硬编码 60.0 秒（`[0x8114B78+0xC]`=0x42700000） × 1000；判断方向是"不足 60 秒即报超时"，且不读 `cl_timeout`/`cl_connectTimeout` ⇒ 解释了为何那两个 dvar 无效；该路径已被 Round 93 切断；下轮转向定位 `unhandled_exception`** |
