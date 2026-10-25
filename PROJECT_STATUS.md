@@ -33334,3 +33334,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **Session object dump: state 5 plus a lock array (886)**: 0x810E63C has vtable 0xDB59D8, +8=5 (state), and repeated 0x12/0x77D725E0 pairs suggesting Windows locks/callbacks - a live synchronising structure, not a netchan session. Next round resolve vtable 0xDB59D8 and find who reads +8.
 
 **Correction: 0xDB59D8 is a string table, not a vtable (887)**: hexdump shows ASCII ids "3265","3266","1014" etc., so 0x810E63C is a data record with an id-table pointer, +8 is an index, and xsessionupdate is a bookkeeping id-diff, not a network handshake. Two false leads in two rounds. Next round disassemble the handlers for connect/join/server/room/party commands directly.
+
+**DECISIVE: found the match-management command table (888)**: room.create/list/join/leave/startgame/servers/changeteam/changemap/jumpgame and room.match.quick/ranked/coop/cancel plus party.*, with concrete handlers (startgame 0x6398A0, changemap 0x639700, match.quick 0x63A720). This is the real game-session layer. Next round disassemble 0x63A720 and 0x639700.
