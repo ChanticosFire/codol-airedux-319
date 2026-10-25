@@ -33268,3 +33268,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **CL_InitNetchan has two natural callers (853)**: 0x51587D (push ebx) and 0x515AE4 (stack arg), both in the session layer near state write mov [esi],9 and timeout 0xffffd8f1 - i.e. the connect/restart path. Next round find where ebx is computed in 0x51587D's enclosing function; that is the argument CL_InitNetchan expects.
 
 **Netchan argument is the enclosing function's first parameter (854)**: 0x51535B mov ebx,[ebp+8] is the only ebx write; the rest reads it. So CL_InitNetchan takes whatever the session layer passes to 0x515340 - likely an address/connection descriptor. Next round find callers of 0x515340.
+
+**Session-layer callers sit in the pump region (855)**: 0x515340's callers 0x5C004D/0x5C0553 are just before the network pump 0x5C05F0, completing the chain 0x5C0xxx -> 0x515340 -> CL_InitNetchan -> pump -> CL_ReadPackets -> Netchan_Process -> CL_ParseGamestate. Earlier failures came from calling CL_InitNetchan with arg 0. Next round read the argument at 0x5C004D and call 0x515340 instead.
