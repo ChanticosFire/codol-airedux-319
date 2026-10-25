@@ -21768,3 +21768,87 @@ ALIVE
 |---|---|
 | 79 | `--dump-in` 证明 `connectResponse` 在 `state=0` 注入 |
 | **80** | **否定结果：不用 `--start-challenge` 时客户端完全不动（`net` 停在 1）⇒ 触发是必需的；但触发与转发在同一循环里互相拖累 ⇒ 下轮把"触发"和"纯转发"拆成两个进程** |
+
+## 340. 2026-10-31 08:00–09:00：**进程分离引入端口不匹配 —— A 与 B 用了不同随机端口**
+
+### 340.1 本轮做法
+
+```
+PHASE A: forward --start-challenge --retry-seconds 0 --seconds 3    （仅触发，前台，退出）
+PHASE B: forward --retry-seconds 0 --dump-in … --seconds 40         （纯转发，后台）
+```
+
+### 340.2 结果
+
+```
+PHASE A: injected=0（3 秒内没有注入任何包）
+PHASE B: 注入 10 个包
+  len=32   state=3
+  len=32   state=4        ← challengeResponse 时机改善
+  len=109  **state=0**     ← connectResponse 仍是 0
+  …
+
+轮询：
+t+1.21 net=3
+t+6.22 net=4
+t+7.07 net=0              ← 仍然失败
+gs: stats = 0 ; in/connect=1 / getchallenge=2 / oob=3
+ALIVE
+```
+
+### 340.3 根因：两个进程用了不同的随机端口
+
+`ring_bridge_1649370.py:734-738`：
+
+```python
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+bind_port = int(getattr(args, "bind_port", 0) or 0)
+sock.bind(("127.0.0.1", bind_port))     # 默认 0 => 随机端口
+```
+
+于是：
+
+```
+gs 收到 connect（来源 = A 的端口）
+  → gs 把 connectResponse 发回 A 的端口
+     → **A 已经退出，端口关闭**
+        → 包丢失
+           → B（另一个新端口）永远收不到
+```
+
+**`connectResponse` 在 `state=0` 注入，不是 `invoke_sequence` 的问题，
+而是我拆分进程时没有固定端口，导致 gs 的回复发到了一个已关闭的端口。**
+
+### 340.4 修复：用 `--bind-port` 固定同一个端口
+
+```
+先选一个固定端口（例如 28970），A 与 B 都用：
+  A: forward … --bind-port 28970 --start-challenge --seconds 3
+  B: forward … --bind-port 28970 --seconds 40
+```
+
+注意：B 必须等 A **完全退出**（释放端口）后再绑定，否则会 `OSError: address already in use`。
+实现上可以在 A 退出后 `Start-Sleep 1` 再启动 B。
+
+**但更简单的做法**：既然问题出在端口，那**根本不需要拆进程** ——
+只要在**同一个 `forward` 里**把 `--start-challenge` 执行完之后
+**继续用同一个 socket 转发**即可，而这本来就是当前的行为（不拆进程时 `injected` 能到 10~45）。
+
+⇒ **重新审视 Round 79 的结论**：那次 `connectResponse @ state=0` 也许**同样不是**
+`invoke_sequence` 造成的，而是别的原因（例如 gs 的 `connectResponse` 发出时，
+客户端已经因为**没有收到 challengeResponse 之后的某个包**而超时）。
+
+### 340.5 下一轮（关键：确认 gs 的回复打到了哪个端口）
+
+1. 保持**单进程** `forward`（不拆），但加 `--bind-port` 固定端口；
+2. 同时打印 `sock.getsockname()`，并在 gs 日志里核对 `to` 的端口是否一致；
+3. 若一致而 `connectResponse` 仍 `state=0`，则说明延迟确实在 `forward` 的接收循环，
+   需要看它在那 0.85 秒里到底在干什么（可加时间戳日志）。
+
+### 340.6 里程碑
+
+| Round | 结论 |
+|---|---|
+| 79 | `--dump-in` 显示 `connectResponse @ state=0`；当时归因于 `invoke_sequence` |
+| 80 | 不用 `--start-challenge` ⇒ 客户端完全不动 |
+| **81** | **拆进程后 `state` 仍是 0；定位到根因是 A/B 用了不同随机端口，gs 的回复发到了已关闭的 A 端口 ⇒ 应固定 `--bind-port`，并重新审视"`invoke_sequence` 导致延迟"这个归因** |
