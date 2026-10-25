@@ -97,6 +97,9 @@ class ClientOriginReader:
             return None
         return struct.unpack("<I", buf.raw)[0]
 
+    def is_active(self) -> bool:
+        return self._u32(self.NET_STATE) == 10
+
     def cmd_number(self):
         """The client's current outgoing command number (cl + 0x3B94)."""
         enc = self._u32(self.CL_PTR)
@@ -181,6 +184,7 @@ class GameServer:
                  connect_extra: str | None = None,
                  snapshot_preserve_time: bool = False,
                  follow_client_pid: int | None = None,
+                 client_state_pid: int | None = None,
                  server_command_every: int = 0,
                  server_command_seq: int = 0,
                  server_command_text: str | None = None):
@@ -227,6 +231,8 @@ class GameServer:
         self.pending_oob: list[tuple[float, tuple, str]] = []
         self.origin_reader = (ClientOriginReader(follow_client_pid)
                               if follow_client_pid else None)
+        self.state_reader = (ClientOriginReader(client_state_pid)
+                             if (client_state_pid and not follow_client_pid) else None)
         self.command_every = int(server_command_every or 0)
         self.command_seq = int(server_command_seq or 0)
         self.command_text = (server_command_text or "").encode("latin-1")
@@ -545,7 +551,9 @@ class GameServer:
                               "seq": self.snapshot_seq + index,
                               "origin": list(struct.unpack("<fff", payload[0x0F:0x0F + 12]))})
             seq = self.snapshot_seq + index
-            if self.command_every and index % self.command_every == 0:
+            gate = self.state_reader or self.origin_reader
+            ready = True if gate is None else gate.is_active()
+            if self.command_every and index % self.command_every == 0 and ready:
                 # svc_serverCommand: [0x05][sequence u32][text NUL].  Without it
                 # the client's serverCommandSequence never advances, the
                 # unconfirmed-command window exceeds the prediction limit and
@@ -728,6 +736,8 @@ def main() -> int:
                         help="keep the snapshot body's recorded serverTime")
     parser.add_argument("--follow-client-pid", type=int, default=None,
                         help="mirror this client process's predicted origin into every snapshot")
+    parser.add_argument("--client-state-pid", type=int, default=None,
+                        help="read-only client pid used to gate server commands on net_state==10")
     parser.add_argument("--server-command-every", type=int, default=0,
                         help="send one svc_serverCommand every N snapshots (0 = never)")
     parser.add_argument("--server-command-seq", type=int, default=0,
@@ -793,7 +803,7 @@ def main() -> int:
                         args.gamestate_gametype, args.oob_command,
                         args.oob_delay if args.match_duration is None else args.match_duration,
                         args.gamestate_file, args.connect_extra, args.snapshot_preserve_time,
-                        args.follow_client_pid, args.server_command_every,
+                        args.follow_client_pid, args.client_state_pid, args.server_command_every,
                         args.server_command_seq, args.server_command_text)
     try:
         server.serve()

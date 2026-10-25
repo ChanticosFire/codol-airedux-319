@@ -32594,3 +32594,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **svc 枚举已静态确认**：跳转表 `0x473C50` 给出 svc 0=snapshot、**1=serverCommand**、2=u32+处理、3=gamestate、5=无操作返回。正确格式 `[0x01][seq u32][text NUL]`，sequence 必须递增（`0x47384E` 比较 `[conn+0x8014C]`）。此前 `svc=5` 的假设被否定（svc 5 是无操作返回，会截断消息）。代码已改为 0x01；r457 仍因环境问题在 10 s 内崩溃，需洁净 runtime 复测。第 5 项未达成。
 
 **r458–r459 基线复现与副本关系（§530）**：与 r446 相同的服务端参数可稳定到 `CA_ACTIVE(10)`，说明 r450–r457 的崩溃来自 servercmd/跟随两个新变量（servercmd 在 net=8 就发送，写入尚未就绪的连接对象）。新测得：`cl+0x3C` 是 `snapShot.ps.origin`（写入保留），`cl+0x3C80` 是 `predictedPlayerState.origin`（每帧从 snapShot 重建，写入无效），`conn+0x8014C` 是 serverCommandSequence（初值 1，与 cmdNumber 差数百），`ps.commandTime` 恒 0。停掉服务端后按键仍无位移，证明预测被完全跳过。下一步：服务端从 `cl->cmds` 读 usercmd 做权威移动，或让 commandTime 随快照推进。第 5 项未达成。
+
+**相机位置源确认（§531）**：游戏窗口真正前台后 SendInput 按住 W 三秒，`predictedPlayerState` 完全不动，排除输入通道问题、确认预测不产出。停服后写入实验证明 `cl+0x3C` 的 x/z 分量驱动相机水平位置（画面平移），y 分量无效（改 120 画面不变）；相机高度字段仍未找到，`cl+0x58`/`ps+0x2C` 均不是。武器可由 `ps+0x4C`（快照不传）直接设置。新增 `--client-state-pid` 门控（未验证）。第 5 项未达成。
