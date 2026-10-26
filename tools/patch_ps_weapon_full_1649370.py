@@ -31,9 +31,13 @@ TARGET = 0x472406
 ORIGINAL = bytes.fromhex("8b55b483c4")     # mov edx,[ebp-0x4c]; add esp,0xc
 PS_FROM_EBP = -0x3BB0                      # local snapshot + 0x20 = ps
 
-WEAPON = 1          # ps+0x4C  (word)  current weapon
-OWNED = 1 << 1      # ps+0x55C (dword) bit 1 => weapon 1 owned
-MODEL = 1           # ps+0x81C (byte)  weaponmodels[0]
+# Weapon indices come from 他人文件参考/CODOL_3.19_武器索引表.xlsx:
+#   0 = none, 1 = defaultweapon_mp (a placeholder with no model), 583 = m4_mp.
+# 583 exceeds the 128-bit owned bitmap at ps+0x55C, but weaponmodels is one byte
+# per weapon, so model[583] lives at ps+0x81C+583.  Override with --weapon.
+WEAPON = 583        # ps+0x4C  (word)  current weapon: m4_mp
+OWNED = 0           # 583 >= 128, so it has no bit in the four-dword bitmap
+MODEL = 1           # ps+0x81C+WEAPON (byte)  weaponmodels[weapon]
 
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 
@@ -44,7 +48,7 @@ def build_cave(cave: int) -> bytes:
     code += b"\x8d\x8d" + struct.pack("<i", PS_FROM_EBP)   # lea ecx,[ebp-0x3BB0]
     code += b"\x66\xc7\x41\x4c" + struct.pack("<H", WEAPON)  # mov word [ecx+0x4C], n
     code += b"\xc7\x81" + struct.pack("<I", 0x55C) + struct.pack("<I", OWNED)
-    code += b"\xc6\x81" + struct.pack("<I", 0x81C) + bytes([MODEL & 0xFF])
+    code += b"\xc6\x81" + struct.pack("<I", 0x81C + WEAPON) + bytes([MODEL & 0xFF])
     code += b"\x61\x9d"                                    # popad; popfd
     code += ORIGINAL
     resume = TARGET + len(ORIGINAL)
