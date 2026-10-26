@@ -34341,3 +34341,8 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 三条事实：①G_SetupWeaponDef 用 G_GetWeaponIndexForName("defaultweapon_mp") 按名字注册；②ps.weapon 是 wire 格式(0..2047，CODOL_WeaponToWire)；③武器槽在 ps+0x544+4*slot。
 - 解释了此前失败：ps.weapon=1 / viewmodelIndex=1 都不是有效 wire 值 ⇒ 拿不到 WeaponDef ⇒ 不渲染或全黑。
 - 下一步：在 _bg_weapons.asm 找 CODOL_WeaponToWire 实现；用 defaultweapon_mp 的 wire 值填 ps.weapon 与 ps+0x544；必要时先触发 G_SetupWeaponDef。
+
+### 第 73 轮：社区源码给出武器字段完整布局（关键突破）
+- ps.weapons(owned)@0x55C、weaponold@0x56C、weaponrechamber@0x57C、weaponmodels@0x81C(每武器1字节)、usercmd.weapon@+0x18+0x23(10位)。
+- 解释此前全部失败：只设了 ps.weapon(0x4C)，从未设 owned 位图与 weaponmodels ⇒ 客户端查不到模型。
+- 下一步：同时写 0x55C(bit1)、0x81C(模型字节)、0x4C，先读回验证，并确认三偏移在字段表内。
