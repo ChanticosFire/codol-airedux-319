@@ -34472,3 +34472,11 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 补丁写 cl+0x0C：installed 不崩，pred.commandTime 从 148692→608192（持续更新），但 weapon 仍 0。
 - 结论：0x472406 解码目标不是 cl+0x0C 而是栈上临时 ps，随后被拷贝/预测重写；第92轮的 snap=ps+0x20 推断可同时成立（cl+0x2C 是快照子结构，解码写栈副本再拷到 cl+0x0C）。
 - 下一步：定位 CL_PredictMovement（从 commandTime 写入点或 Com_Frame 调用点），把洞穴挂其返回之后；或用定时器每帧强写 cl+0x0C 快速验证"值对了会不会出模型"。
+
+### 第 94 轮：强写 ps 成功但仍无武器模型 ⇒ 第5b渲染侧卡在资源层
+- 新工具 force_ps_weapon（100Hz 外部强写 ps+0x4C/0x55C bit/0x81C+w），writes=1645、final weapon=1 确认写入保留。
+- 截图 r626-force1.png：场景正常、HUD 完整、但无任何第一人称武器/手臂，弹药仍显示 0。
+- 结论：渲染不只依赖 ps 三字段；WeaponDef 的 gunXModel 很可能为空（本镜像离线会话未加载武器 xmodel）。
+- 旁证一致：gamestate 无武器表(77轮)、客户端0处[reg+0x55C](81轮)、viewmodelIndex=1 全黑(63轮)。
+- 第5b最终：输入链路完整✅；渲染资源层不可达❌。
+- 下一步：写入验收表；停止在 ps 字段投入；唯一方向是让客户端加载武器资源（需真实 gamestate 或改资源加载路径）。
