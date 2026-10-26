@@ -66,6 +66,28 @@ Root cause chain (all measured, see the evidence index):
    no effect - cgame consumes a per-snapshot copy
    (`20261023-codex-ring-write-no-effect.json`).
 
+### Two independent paths, two different obstacles (added 2026-10-26)
+
+The chain above describes the **server-snapshot path**: how far the client can be
+driven by the `server1649370` wire protocol. A later investigation
+([`1649370-STATUS.md` §1000–§1084](1649370-STATUS.md)) examined a **second,
+independent path** - whether the client's own map-loading code can be entered at
+all - and found a different obstacle:
+
+| Path | Obstacle | Sections |
+|---|---|---|
+| server snapshots → client scene | per-field playerState encoding has one unmodelled component; the delivered playerState is empty, so cgame has no camera or local player | this file, §3 |
+| client's own map load | the loader and all its helpers exist, but the only function that drives them (`0x4F8CF0`) is unexported, unreferenced, and pointed at from none of the eight sections | 1070/1071/1072/1083 |
+
+**These are not contradictory findings; they are two independent roads, both of
+which fail.** The server path fails inside the wire encoding we have not fully
+modelled. The client path fails before it starts, because the layer that would
+invoke it is absent from this image. Neither failure makes the other easier.
+
+Acceptance item 5 (a controllable player in `mp_crash_tropical`) therefore
+remains unmet under both approaches, and no client binary was modified.
+
+
 ## 4. Components
 
 | Path | Role |
