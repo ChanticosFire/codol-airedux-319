@@ -33965,3 +33965,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 运行时 `FindWindowW("CODO")` 得 hwnd=0x5414B4、HINSTANCE=0x400000，但 `GWLP_WNDPROC`/`USERDATA` 跨进程返回 0（Win32 限制）。
 - 下一步：静态找 `RegisterClassEx` 的 IAT 槽并回溯 `lpfnWndProc`；或运行时读 tagWND。
 - 战略判断：输入链路已连续排除预测层、keys[] 置位（1.29 GB 0 命中）、cbuf、UI 吞键、dvar。社区用 native engine 才做到出生与移动，应评估是否改走该路线（需确认能否接受本客户端、资源/证书需求、启动器能否绕开 Rust 平台）。
+
+### 第 22 轮：输入链路前半段完整定位
+- `RegisterClassExA` IAT `0xCA8470` → 调用点 `0x77D91E`（紧接 `push "CODO"`），反汇编确认 **WNDPROC = 0x780860**。
+- `0x780860` 的 `WM_KEYDOWN` 跳到 `0x780CA3`：保存 vk/lParam → `call 0x780650`（扫描码/虚拟键→引擎键号，映射表 `0xE511C0`，兜底 `MapVirtualKey`）→ 非 0 则 `call 0x77CC70` 入队 `SE_KEY`（队列对象 `[0x81AA76C]`）。
+- 结论：键事件**确实进了 SE_KEY 队列**，"窗口层丢弃"也排除。唯一断点在队列消费端（`Sys_GetEvent` → `CL_KeyEvent`）。
+- 下一步：顺 `0x77CC70` 找出队函数与其调用者，定位 `CL_KeyEvent` 里提前 return 的条件。
