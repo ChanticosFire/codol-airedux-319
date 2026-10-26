@@ -105,11 +105,13 @@ def main() -> int:
             continue
         ctx = ctypes.create_string_buffer(CTX_SIZE)
         struct.pack_into("<I", ctx, 0, 0x10017)  # + CONTEXT_DEBUG_REGISTERS(0x10)  # CONTEXT_FULL-ish flag
+        kernel32.SuspendThread(ht)
         if kernel32.GetThreadContext(ht, ctx):
             struct.pack_into("<I", ctx, CTX_DR0, watch)
             struct.pack_into("<I", ctx, CTX_DR7, dr7)
             if kernel32.SetThreadContext(ht, ctx):
                 stamped += 1
+        kernel32.ResumeThread(ht)
         kernel32.CloseHandle(ht)
     print(f"threads stamped: {stamped}")
 
@@ -122,6 +124,7 @@ def main() -> int:
                 continue
             ctx = ctypes.create_string_buffer(CTX_SIZE)
             struct.pack_into("<I", ctx, 0, 0x10017)  # + CONTEXT_DEBUG_REGISTERS(0x10)
+            kernel32.SuspendThread(ht)
             if kernel32.GetThreadContext(ht, ctx):
                 dr6 = struct.unpack_from("<I", ctx, CTX_DR6)[0]
                 if dr6 & 0xF:
@@ -131,6 +134,7 @@ def main() -> int:
                     struct.pack_into("<I", ctx, CTX_DR0, watch)
                     struct.pack_into("<I", ctx, CTX_DR7, dr7)
                     kernel32.SetThreadContext(ht, ctx)
+            kernel32.ResumeThread(ht)
             kernel32.CloseHandle(ht)
         time.sleep(0.02)
 
