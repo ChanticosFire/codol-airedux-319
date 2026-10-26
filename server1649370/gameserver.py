@@ -271,19 +271,22 @@ class RebuildFollower:
         stamp = server_time if server_time is not None else 72192 + self.counter * 100
         values = {
             0x00: stamp, 0x04: 0, 0x2C: 0, 0xA4: 800, 0xB0: 190, 0xC0: 1023,
-            0x158: 0, 0x16C: 60, 0x15C: 1023, 0x170: _word(0.3125),
+            0x158: 0, 0x16C: 60, 0x170: _word(0.3125),
             # Same distinctive 32-bit marker r546-markers.bin carries; without it
             # the frame is 68 bytes instead of 73 and the client rejects it.
             0x174: 0x12345678,
             # weapon id: the demo gamestate reports alias/recipe counts of 0, so
             # every non-zero id was rejected historically.  Retry now that the
             # client runs a real playerState and a stable session.
-            0x4C: 1,
-            # viewangles: ps+0x10..0x18 is uninitialised garbage in this build,
-            # which is why the camera pointed into a wall.  yaw/pitch/roll = 0
-            # looks straight down -x, matching the direction the movement code
-            # drives.
-            0x10: 0, 0x14: 0, 0x18: 0,
+            0x4C: 1,          # weapon index
+            0x15C: 1023,      # viewmodel index: keep the sentinel, 1 broke the frame
+
+            # Only 0x10 exists in the playerState table; 0x14/0x18 are NOT fields,
+            # and passing them raised ValueError inside build_snapshot, which made
+            # frame() throw and silently fall back to the static file.  That is why
+            # --rebuild-follow looked "enabled" while the client kept receiving
+            # static frames.
+            0x10: 0,
             0x30: _word(origin[0]), 0x34: _word(origin[1]), 0x38: _word(origin[2]),
         }
         # position_base must stay (0,0,0): it is the delta codec's reference for

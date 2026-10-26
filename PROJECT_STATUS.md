@@ -34252,3 +34252,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结论：黑条不是 --rebuild-follow 或 ps 字段造成，属离线镜像本身的渲染表现；不应计入我们实现的缺陷。
 - 附带价值：排查过程中修好了 ps.viewangles 未初始化（相机穿模）的真实 bug。
 - 待办：在验收表 5a 备注注明黑条为镜像固有；停止在黑条上投入，转向第 5b（武器/射击）。
+
+### 第 61 轮：发现 0x14/0x18 非合法字段，rebuild-follow 曾静默回退
+- 加 0x3F8/0x15C/0x10/0x14/0x18 后会话异常：weapon 读回 0、viewmodelIndex 1023；直接调用 frame() 抛 ValueError: offset 0x14 is not in the playerState table。
+- 含义：playerState 字段表只有 0x10 合法（特殊编码 -102），0x14/0x18 不存在；而 send_due_snapshots 调用 frame() 无 try/except，异常即中断，动态帧全部发不出、客户端继续收静态帧。
+- **需重新评估第 57 轮结论**："viewangles=0 修好相机"很可能是静态帧的效果，而非我设的 viewangles。
+- 已收敛 values 为合法键；0x10:0 会使帧长 73→75，是否被接受未实测。
+- 下一步：给 frame() 加 try/except 与日志（避免静默回退），再单字段分别验证。
