@@ -33861,3 +33861,11 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 100 ms 采样 26 次、2 ms 采样 404+1214 次、注入 `cl_predict 1` 后重测：`origin` 始终只有一个值 `(111.5,222.5,333.5)`。
 - 排除采样混叠（2 ms 采样与服务端 0.1 秒重置不同步）与 `cl_predict` 关闭。
 - 结论：客户端在采样命令（每秒 +10），但 `CL_PredictMovement` 没有推进 origin。下一步验证 `cl.cmds[].forwardmove` 是否非零、`ps.commandTime` 与命令时钟是否对齐、`pm_flags`/`groundEntityNum` 是否满足 pmove 前置。
+
+### 第 9 轮：客户端启动卡在 WFP 守卫之后（环境阻塞）
+- 连续四次启动都停在 `[startup] process-and-uac-guard` 之后，没有 `engine-init`；客户端进程 CPU 0.48–0.58 秒、无窗口、`events.jsonl` 0 字节。
+- 带 `--loopback-tcp-guard` 时 `guard-ready.json` 正常但客户端不启动；去掉后默认 `offline-deny-all` guard 直接报"动态 WFP 守卫未确认 ready"。
+- 已排除：权限（`isAdmin=True`）、磁盘（剩余 259 GB）、runtime 文件与 EXE 哈希、残留 launcher（清理 5 个后仍失败）。
+- 最可能：第 8 轮多次强杀 guard 导致 WFP 动态过滤器残留。清空 `runtime/temp` 无效。
+- 下一步：读 guard 源码确认过滤器安装/清理路径并精确清理（不重启机器、不重启 BFE，除非用户同意）；对照 `main/`、`players/` 最近改写文件。
+- 这是运行环境阻塞，与编码器/快照/ps 布局无关；第 7、8 轮能力不受影响。
