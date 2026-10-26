@@ -34388,3 +34388,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 更可能：-57 不是 delta codec，而是走 playerState extension 的特殊字段（社区注释："arrays moved into the playerState extension"）。武器位图很可能本就不通过快照授权。
 - 意义：在 write_delta_value 补 -57 是方向错误；应在 gamestate/extension 阶段提供武器数据。
 - 下一步：查 codol_playerstate_ext.h / codol_weapon_bits.c 的存储定位；若 gamestate 也不提供（77 轮已证无武器表），则离线镜像下此路不可达。
+
+### 第 81 轮：客户端 0 处 [reg+0x55C] 引用 ⇒ 武器位图不在 playerState_t，快照授权不成立
+- 社区源码 array_of() 返回 ext->weapons（codol_ps_ext_t），注释明说位图 moved into playerState extension。
+- 本镜像搜 [reg+0x55C] 访问：0 处。
+- 结论：0x55C 不是客户端武器位图地址；player_fields164 里该条与武器授权无关；服务端无法通过快照授权武器。
+- 第5b 最终：输入侧完整；渲染侧经证实不可达（位图走 extension 不在快照字段集；gamestate 无武器表）。
