@@ -12,6 +12,7 @@ This module is transport-agnostic: it only produces/consumes bits.
 
 from __future__ import annotations
 
+import os
 import struct
 
 
@@ -111,8 +112,17 @@ def write_field(writer: BitWriter, codec: int, value: int) -> None:
     elif codec == -94:
         raise NotImplementedError("-94 event payload needs the event table")
     elif codec == -97:
-        writer.bit(1)
-        writer.le32(value & 0xFFFFFFFF)
+        # The decoder (0x66F9E0) has TWO forms for -97:
+        #   gate bit 0 -> read 8 more bits, value = previous - decoded8
+        #   gate bit 1 -> read 32 bits (little endian), absolute
+        # Historically we only emitted the 32-bit form. PS97_GATE0 selects the
+        # 8-bit delta form so both can be compared in one experiment.
+        if os.environ.get("PS97_GATE0") == "1":
+            writer.bit(0)
+            writer.bits(int(value) & 0xFF, 8)
+        else:
+            writer.bit(1)
+            writer.le32(value & 0xFFFFFFFF)
     elif codec == -100:
         writer.bit(1)
         writer.bit(1)
@@ -143,8 +153,9 @@ def read_field(reader: BitReader, codec: int) -> int:
     if codec == -75:
         return reader.byte()
     if codec == -97:
-        if reader.bit() != 1:
-            raise ValueError("-97 expects a 1 gate bit")
+        # Two forms, mirroring 0x66F9E0: gate 0 -> 8-bit delta, gate 1 -> 32-bit.
+        if reader.bit() == 0:
+            return -reader.bits(8)
         return reader.le32()
     if codec == -100:
         reader.bits(2)
