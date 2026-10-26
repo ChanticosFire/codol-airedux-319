@@ -34197,3 +34197,11 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - r596 发出 7 个 opcode（seq 4-10），客户端 net=10/ui=0/table=11 全程未变，画面无变化。
 - 已排除 opcode 2,3,4,6,7,8,9,10（8 个）；已知 snapshot=0/serverCommand=1/EOF=5。
 - 下一步：继续扫 11-20；若都不中则断开需特定载荷；更可靠的是用 svc_serverCommand handler 0x4737E0 反查 CL_ParseServerMessage 的分发表。
+
+### 第 54 轮：opcode 11-20 全无效；serverCommand "disconnect" 也无效
+- r597 发出 opcode 11-20 共 10 个（seq 4-13），客户端 net=10/ui=0/table=11 全程未变。
+- 已排除 18 个 opcode（2-4、6-20）。
+- 新增 --server-command-text，r599 用 "disconnect" 作 svc_serverCommand 文本：servercmd 片段确实发出(length 30)，客户端仍 net=10。
+- 静态反查受挫：0x4737E0 在镜像中 0 引用；jmp[op*4+table] 有 200 个候选。
+- 现状：唯一能回大厅的仍是 OOB disconnect（带不可关闭的"服务器连接断开"弹窗）。
+- 建议调整策略：不再盲扫；接受 OOB 版本并标注瑕疵；若要干净版应换锚点找 CL_ParseServerMessage 入口。
