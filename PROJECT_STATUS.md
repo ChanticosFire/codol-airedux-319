@@ -34503,3 +34503,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 首次运行：threads stamped=69，distinct eip hits=0。
 - 两种解释：①客户端确实不读 ps.weapon（渲染走 viewmodelIndex 或别的源）；②CONTEXT 结构偏移写错(DR0=0x04/DR7=0x18/EIP=0xB8/DR6=0x14 未在本Windows版本验证)。
 - 下一步：用 ps+0x00(commandTime，确定每帧递增)做对照实验确认断点机制；有效则测 0x4C/0x15C；无效则先修 CONTEXT 偏移。
+
+### 第 99 轮：修 ContextFlags(0x10007→0x10017) 后断点仍0命中
+- 原 ContextFlags 不含 CONTEXT_DEBUG_REGISTERS，SetThreadContext 从不写调试寄存器 ⇒ 断点从未生效。改 0x10017 后对照 ps+0x00 仍 0 命中。
+- 第二个缺陷：未挂起线程；SuspendThread 补丁因 anchor 不匹配未应用。
+- 结论：第98轮"ps+0x4C 不被读"的推断暂不成立(对照也不命中⇒工具问题)。
+- 下一步：手工在 stamp 循环加 Suspend/Resume；再用 ps+0x00 对照；仍不行则检查 DR7 编码。

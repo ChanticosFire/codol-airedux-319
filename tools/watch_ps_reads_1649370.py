@@ -104,7 +104,7 @@ def main() -> int:
         if not ht:
             continue
         ctx = ctypes.create_string_buffer(CTX_SIZE)
-        struct.pack_into("<I", ctx, 0, 0x10007)  # CONTEXT_FULL-ish flag
+        struct.pack_into("<I", ctx, 0, 0x10017)  # + CONTEXT_DEBUG_REGISTERS(0x10)  # CONTEXT_FULL-ish flag
         if kernel32.GetThreadContext(ht, ctx):
             struct.pack_into("<I", ctx, CTX_DR0, watch)
             struct.pack_into("<I", ctx, CTX_DR7, dr7)
@@ -121,7 +121,7 @@ def main() -> int:
             if not ht:
                 continue
             ctx = ctypes.create_string_buffer(CTX_SIZE)
-            struct.pack_into("<I", ctx, 0, 0x10007)
+            struct.pack_into("<I", ctx, 0, 0x10017)  # + CONTEXT_DEBUG_REGISTERS(0x10)
             if kernel32.GetThreadContext(ht, ctx):
                 dr6 = struct.unpack_from("<I", ctx, CTX_DR6)[0]
                 if dr6 & 0xF:
