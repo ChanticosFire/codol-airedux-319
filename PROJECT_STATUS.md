@@ -34739,3 +34739,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 已清空全部监测进程(端口全空闲)，启动纯净端 session_up --name clean --server-seconds 7200 --bridge-seconds 7200(不带--rebuild-follow)：ok/net=10/client=20960/server=24236/bridge=19376；截图 mean=55.39。
 - 进程：LSG 7284(TCP28969)、gameserver 24236(UDP28969)、launcher 4492、客户端 20960、bridge 19376。
 - 已交给用户手动操作(无自动点击/按键注入/动态帧重编码)。
+
+### 第 136 轮：RELEASE.md 的"build-level limitation"与我实测矛盾
+- codex 结论：可见3D/移动 not achieved、黑屏、ui_state 恒5、只有 mp_cross_fire；失败点是 playerState 逐字段 delta 有未建模分量(约4.3bits/字段)→交付ps为空→无相机。
+- 我实测相反：r581-moved.png/r601-t2.png 有完整街景；ui_state 恒0；r601 四采样点 origin 111.5→-819.5 真实按键驱动；mp_crash_tropical(32MB ff)可进。
+- 差异原因：codex 卡在编码未完全建模；我用 r546-markers.bin + wire164.py 位精确重建(identical to r546: True)，绕开未建模分量 ⇒ ps 非空、有相机、能渲染能移动。
+- 仍缺：武器模型(ps 三字段写对也不渲染)、背包/购买(档案快照尚未同步)；两者可能同源于 LSG 认证/档案同步未建立(auth_request 后立刻 SSLEOFError)。
+- 下一步：用户手动操作纯净端观察；若需修 LSG 按 §12 完整 stage 配方(hosts+7文件+带标记CA+TLS1.0)。
