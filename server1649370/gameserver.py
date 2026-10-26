@@ -281,7 +281,10 @@ class RebuildFollower:
             # weapon id: the demo gamestate reports alias/recipe counts of 0, so
             # every non-zero id was rejected historically.  Retry now that the
             # client runs a real playerState and a stable session.
-            0x4C: 1,          # weapon index
+            0x4C: int(__import__('os').environ.get('CODOL_WEAPON', '1')),
+            # ps.weapons owned bitmap (IW3 0x55C, four dwords).  Bit 0 set means
+            # weapon 0 is owned; without this the renderer cannot resolve a model.
+            0x55C: int(__import__('os').environ.get('CODOL_OWNED', '1')),
             0x15C: int(__import__('os').environ.get('CODOL_VIEWMODEL', '1023')),
 
             # Only 0x10 exists in the playerState table; 0x14/0x18 are NOT fields,

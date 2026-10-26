@@ -34346,3 +34346,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - ps.weapons(owned)@0x55C、weaponold@0x56C、weaponrechamber@0x57C、weaponmodels@0x81C(每武器1字节)、usercmd.weapon@+0x18+0x23(10位)。
 - 解释此前全部失败：只设了 ps.weapon(0x4C)，从未设 owned 位图与 weaponmodels ⇒ 客户端查不到模型。
 - 下一步：同时写 0x55C(bit1)、0x81C(模型字节)、0x4C，先读回验证，并确认三偏移在字段表内。
+
+### 第 74 轮：0x55C codec -57 未实现，武器字段不可写
+- owned 位图四 dword 在表内(0x55C/-57、0x560/-90、0x564/17、0x568/-70)，但 0x81C(weaponmodels) 不在表内。
+- 写 0x55C 抛 ValueError: unsupported integer width -57 ⇒ 编码器未实现。
+- 结论：当前编码器无法授予武器，解释此前所有尝试为何不可能成功。
+- 下一步：实现 codec -57；或放弃并更新第5b原因为"codec未实现+字段缺失"。
