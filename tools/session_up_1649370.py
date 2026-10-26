@@ -111,6 +111,8 @@ def main() -> int:
     ap.add_argument("--runtime", default="r107flow")
     ap.add_argument("--gamestate", default="runs/gamestate-player1735.bin")
     ap.add_argument("--snapshot", default="runs/r546-markers.bin")
+    ap.add_argument("--snapshot-dir", default=None,
+                    help="send a directory of snapshot frames in name order instead of one file")
     ap.add_argument("--server-seconds", type=float, default=3600.0,
                     help="how long the game server keeps serving")
     ap.add_argument("--bridge-seconds", type=float, default=1500.0)
@@ -152,21 +154,26 @@ def main() -> int:
         time.sleep(2)
     if not args.keep_server:
         step("starting game server", seconds=args.server_seconds)
-        subprocess.Popen([sys.executable, "-X", "utf8", "-B", "-m", "server1649370.gameserver",
-                          "--port", "28969", "--delay-send", "1",
-                          "--gamestate-source", "file", "--gamestate-file", args.gamestate,
-                          "--gamestate-gametype", "war",
-                          "--gamestate-map", "mp_crash_tropical",
-                          "--snapshot-file", args.snapshot, "--snapshot-delay", "1",
-                          "--snapshot-seq", "4", "--snapshot-repeat", "30000",
-                          "--snapshot-interval", "0.1",
-                          "--server-command-every", "10", "--server-command-seq", "4",
-                          "--server-command-text", " ",
-                          "--match-duration", str(int(args.server_seconds)),
-                          "--log", f"runs/{args.name}-gs.jsonl"],
+        server_args = [sys.executable, "-X", "utf8", "-B", "-m", "server1649370.gameserver",
+                       "--port", "28969", "--delay-send", "1",
+                       "--gamestate-source", "file", "--gamestate-file", args.gamestate,
+                       "--gamestate-gametype", "war",
+                       "--gamestate-map", "mp_crash_tropical",
+                       "--snapshot-delay", "1",
+                       "--snapshot-seq", "4", "--snapshot-repeat", "30000",
+                       "--snapshot-interval", "0.1",
+                       "--server-command-every", "10", "--server-command-seq", "4",
+                       "--server-command-text", " ",
+                       "--match-duration", str(int(args.server_seconds)),
+                       "--log", f"runs/{args.name}-gs.jsonl"]
+        if args.snapshot_dir:
+            server_args += ["--snapshot-dir", args.snapshot_dir, "--snapshot-interval", "0.25"]
+        else:
+            server_args += ["--snapshot-file", args.snapshot, "--snapshot-interval", "0.1"]
+        subprocess.Popen(server_args,
                          cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         wait_for("game server UDP 28969", lambda: _udp_owner("", 28969), 20)
-        step("game server listening", pid=_udp_owner("", 28969))
+        step("game server listening", pid=_udp_owner("", 28969), snapshot_dir=bool(args.snapshot_dir))
 
     # -------------------------------------------------------------- client
     pid = None if not args.skip_client else _client_pid()

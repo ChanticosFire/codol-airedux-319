@@ -34043,3 +34043,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - `cmds[]` 偏移 `0x3CD0` 的常量访问（mov/cmp/lea）**全 0 命中** ⇒ 该路径只用指针/索引访问，静态常量搜索无效（解释 §1144 三次落空）。
 - 缺口收窄到单一函数：`CL_PredictMovement`/`Pmove`。
 - 下一步：找写 `playerState_t.origin`(0x30) 的 Pmove；或改服务端让快照 origin 单调递增做行为验证。
+
+### 第 34 轮：验证客户端跟随 ps.origin（111.5→301.5）
+- 用 build_snapshot 生成 20 帧，origin.x 从 111.5 每帧 +10；给 session_up 新增 `--snapshot-dir`；一次启动 `ok:true, net=10`。
+- 采样结果 origin 恒为 **(301.5, 222.5, 333.5)** = 序列最后一帧 ⇒ 客户端完全跟随服务端位置。
+- 结论：ps.origin 通路正常；origin 不动是固定帧覆盖所致；**服务端权威移动的前提已具备**（客户端会跟随服务端位置）。
+- 下一步：服务端按 usercmd（forwardmove=127）推进 origin 并动态回送；或先做 origin 递增的最小可视验证。
