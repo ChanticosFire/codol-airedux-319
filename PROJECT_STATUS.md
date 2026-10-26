@@ -34528,3 +34528,8 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结论：WL_ 系列不是脚本注册表也不是导出接口，无法按名调用。对比 disconnect 能执行是因注册在命令表。
 - 第5b渲染侧八条路径全部试过：快照字段/内存强写/代码洞穴/硬件断点/字符串反查/脚本接口/gamestate武器表/C++接口，均不可达。
 - 第5b最终：输入侧完整；渲染侧在当前环境不可达。
+
+### 第 103 轮：服务端不解析usercmd；武器状态字段测试因客户端在厅作废
+- gameserver.py 搜 buttons/usercmd/forwardmove 仅一行注释，无解析逻辑 ⇒ 服务端不记录 buttons。
+- 读 ps+0x2C0/0x2BC/0x2CC/0x2C4/0x2D4：net=0(已在厅)、全为0、foreground_matches=false，测试无效。
+- 下一步：起新会话(net=10且窗口前台)再测这五个字段；若 weaponShotCount/weaponstate 变化，可作"客户端确实执行射击"的第二独立证据。
