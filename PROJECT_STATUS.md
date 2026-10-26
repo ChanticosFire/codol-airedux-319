@@ -34178,3 +34178,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - r590-op2：gs.jsonl 仅两条 start 无 peer；launch.out 有 child_terminated/engine_close_status=0 但无 stop_reason ⇒ 客户端被正常关闭（脚本超时清理）。
 - 疑因：--server-seconds 120 太短（客户端启动约 60s + 补丁 + 桥），断言 net=10 前窗口已到期。
 - 下一步：恢复 server-seconds 900 重跑；先做一次不带 --send-opcode 的基准会话，确认工具本身没问题。
+
+### 第 51 轮：基准会话与移动正常；--send-opcode 未生效
+- 基准会话 r591 ok:true/net=10 ⇒ 上轮 8 次失败确系 --server-seconds 120 过短。
+- 移动仍有效：按 W 3 秒 origin 111.5→-230.5，19 个不同位置。
+- --send-opcode 2 批量跑两次 ok:null，但手动跑成功(ok:true/net=10)；等 10 秒 net 仍 10 且 **raw_opcode 日志为空** ⇒ send_due_opcode 根本没执行，opcode 2 的"无反应"不能说明它无效。
+- 可能是 on_connect 未设 opcode_due 或 serve 循环调用点不在常见分支。
+- 下一步：修触发链（入口加无条件日志），单次验证工具链能否影响客户端，再解决连续会话不可靠问题。
