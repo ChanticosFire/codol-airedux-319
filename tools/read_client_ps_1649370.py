@@ -29,8 +29,11 @@ CL_PTR = 0x76638F4
 CL_XOR = 0x6891D1C7
 NET_STATE = 0x76446B0
 PS_ORIGIN = 0x3C80
-PS_ORIGIN_FIELD = 0x30
-PS_BASE = PS_ORIGIN - PS_ORIGIN_FIELD
+# Measured 2026-10-26 by marker search: the live playerState starts at
+# cl + 0x0C, not at cl + 0x3C80 - 0x30. ps+0x170/ps+0x174 markers written by a
+# snapshot were found at 0x13080cc0/0x13080cc4 with ps_base = 0x13080b50 and
+# cl = 0x13080b44, and every field then read back exactly what the frame sent.
+PS_BASE = 0x0C
 COMMAND_NUMBER = 0x3B94
 
 FIELDS = (

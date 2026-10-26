@@ -33847,3 +33847,11 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 实测（r545，`r533` 帧 + `--server-command-every 10`，`net=10`）：`command_number` 1011→1016→1020 **持续递增** ⇒ 客户端一直在发 usercmd，确实处于活动玩家状态。
 - 同时发现格式认知纠正：字段表的 `offset` 是协议逻辑地址，不等于客户端 ps 的 C 结构偏移（写 0 的 `0x15C` 读回 57 万并变化，`commandTime` 读回 0）。
 - 下一步：用独特 origin 钉死 `ps_base`，再逐一标定 `0x4C/0x158/0x15C/0x3F8` 的真实落点，直接读取客户端认为有效的模型/武器索引。
+
+### 第 7 轮：客户端 playerState 布局打通，origin 可精确写入
+- 用独特标记（`0x170=0.3125f` + `0x174=0x12345678`，8 字节签名 `0000a03e78563412`）全内存搜索，定位 `ps_base = cl + 0x0C = 0x13080b50`，命中处步长恒为 0x3BBC 的快照数组。
+- 按字段表 offset 回读：`pm_type/weapon/clientNum/viewmodelIndex(1023)/viewHeightTarget(60)/viewHeightCurrent(0.3125)/viewHeightLerpTime(0x12345678)/gravity(800)/speed(190)/groundEntityNum(1023)` 与帧**逐字段一致**；热替换 `origin=(111.5,222.5,333.5)` 也被完整接受。
+- **纠正上轮误判**：字段表 offset 就是客户端 ps 的结构偏移。`ClientOriginReader` 的 `cl+0x3C80` 是快照数组另一元素，不是当前 ps。
+- 新增只读工具 `read_client_ps_1649370.py`（PS_BASE 已改为 0x0C）与 `scan_client_value.py`。
+- 按键 W 2 秒后 origin/commandTime 未变，但当时桥与快照已停止（commandTime 冻结），**实验条件不成立**，需在活跃连接下重测。
+- 下一步：活跃连接窗口内重做按键实验；若仍不动再查 `cl_predict` 与 pmove 前置条件。
