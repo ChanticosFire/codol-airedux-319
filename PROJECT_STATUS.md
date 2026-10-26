@@ -34308,3 +34308,11 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结合前面：空串作心跳正常、disconnect 无效、map_restart 无效 ⇒ svc_serverCommand 只接受白名单命令或命令名与COD4不同。
 - "先结束比赛再断开"这条思路未走通；唯一回大厅手段仍是 OOB disconnect（带不可关闭弹窗+角色模型丢失）。
 - 下一步可选：接受现状做记录整理；或静态分析 svc_serverCommand 白名单(0x4737E0)；或找 CL_ParseServerMessage 分发表确认 svc_disconnect。
+
+### 第 69 轮：阶段小结（第 1-58 轮）
+- 达成：connect/stats ✅、CA_ACTIVE=10 ✅、自行移动+HUD ✅（证据见 r558/r576/r581/r601）
+- 带瑕疵：回大厅（OOB disconnect 有效但弹不可关闭错误框 + 角色模型丢失）
+- 未达成：无错误弹窗 ❌；武器渲染 ❌（但射击输入侧完整：keys[0xC8]/buttons/forwardmove 均实测）
+- 已提交关键工具：session_up（断言net=10）、gameserver（RebuildFollower/自动发现PID/send-opcode）、wire164、hold_key/hold_mouse、hook_any
+- 关键内存事实已整理（cl/ps/keys/cmds/cls/ui_state、svc opcode、黑条为镜像固有、字段表无名字）
+- 剩余两项需专门静态分析：svc_serverCommand 白名单 / R_RegisterModel model 表
