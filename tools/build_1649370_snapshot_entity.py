@@ -27,11 +27,38 @@ from pathlib import Path
 SERVER_TIME = 72192
 SNAP_FLAGS = 0x0C
 
+# The 24-entry playerState field table at 0xDA63E8: offset -> codec.
+# Needed to emit a real delta decoder payload (see 1649370-STATUS.md 1090/1091).
+FIELD_CODECS: dict[int, int] = {
+    76: -58, 80: -100, 84: -100, 65: -57, 68: -97, 72: 16,
+    66: -57, 67: -100, 12: 10,  56: 12,  60: -97, 64: -57,
+    52: 32,  20: 10,   24: 10,  40: 6,   28: 10,  44: 6,
+    32: 10,  48: 6,    4: 11,   8: 11,   16: 11,  36: 6,
+}
+
+
+def _write_ps_deltas(writer, ps_fields: dict[int, int],
+                     field_table: dict[int, int] | None) -> None:
+    """Emit one delta-decoder payload: a gap to each requested offset, the
+    field value via its codec, then a terminating gap (continuation bit 0)."""
+    from server1649370.ps_codec import write_field, write_gap
+
+    table = field_table or FIELD_CODECS
+    current = 0
+    for offset in sorted(ps_fields):
+        codec = table.get(offset)
+        if codec is None:
+            raise ValueError(f"no codec known for offset {offset}")
+        write_gap(writer, offset - current)
+        write_field(writer, codec, ps_fields[offset])
+        current = offset
+    writer.bit(0)     # continuation bit 0 terminates the delta loop
+
 
 class BitWriter:
     def __init__(self) -> None:
         self.data = bytearray()
-        self.bit = 0
+        self.position = 0
 
     def raw(self, payload: bytes) -> None:
         self.data.extend(payload)
@@ -40,16 +67,21 @@ class BitWriter:
         if value < 0 or value >= 1 << width:
             raise ValueError(f"{value} does not fit in {width} bits")
         for shift in range(width):
-            if self.bit & 7 == 0:
-                self.bit = len(self.data) * 8
+            if self.position & 7 == 0:
+                self.position = len(self.data) * 8
                 self.data.append(0)
-            self.data[self.bit >> 3] |= ((value >> shift) & 1) << (self.bit & 7)
-            self.bit += 1
+            self.data[self.position >> 3] |= ((value >> shift) & 1) << (self.position & 7)
+            self.position += 1
+
+    def bit(self, value: int) -> None:
+        self.bits(value & 1, 1)
 
 
 def build(*, server_time: int = SERVER_TIME, entity_ids: tuple[int, ...] = (),
           has_base: int = 0, flags: int = SNAP_FLAGS,
-          ps_entries: int = 1) -> bytes:
+          ps_entries: int = 1,
+          ps_fields: dict[int, int] | None = None,
+          field_table: dict[int, int] | None = None) -> bytes:
     writer = BitWriter()
     writer.raw(b"\x00")
     writer.raw(struct.pack("<I", server_time))
@@ -65,7 +97,12 @@ def build(*, server_time: int = SERVER_TIME, entity_ids: tuple[int, ...] = (),
         writer.bits(0, 1)                  # five-bit count form (0x471A4D)
         writer.bits(ps_entries, 5)
         for _ in range(ps_entries):
-            writer.bits(1, 1)              # 0x471B9E: 1 skips the field deltas
+            if ps_fields:
+                # present = 0 -> the delta decoder runs for this frame
+                writer.bits(0, 1)
+                _write_ps_deltas(writer, ps_fields, field_table)
+            else:
+                writer.bits(1, 1)              # 0x471B9E: 1 skips the field deltas
         writer.bits(0, 1)                  # 0x471A3E: next bit 0 ends the ps block
     # Empty actor / sub / glass blocks, matching the verified baseline's tail.
     writer.bits(0, 1)
