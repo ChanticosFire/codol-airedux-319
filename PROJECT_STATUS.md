@@ -34265,3 +34265,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - r608 实测：rebuild_follow 日志 4 条、rebuild_error 0 条、net=10、按住 W 2.5s 得到 17 个不同 origin ⇒ 移除非法字段后 --rebuild-follow 真正工作（此前多轮静默回退）。
 - 发现我的临时检查脚本读错偏移：用了 cl+0x4C / cl+0x15C，正确应为 cl+0x0C+0x4C=cl+0x58 / cl+0x168。因此本轮 weapon=0/viewmodel=0 不作结论。
 - 下一步：用 ps=cl+0x0C 正确偏移重读字段；在 rebuild-follow 真正生效的新条件下重做武器实验；并重评第 57 轮 viewangles 结论（同样在静默回退条件下得出，不可信）。
+
+### 第 63 轮：viewmodelIndex 可写且生效，但值1导致全黑
+- 正确偏移重读：ps+0x4C weapon=1（确认上轮读错地址）、ps+0x15C viewmodelIndex=1023、primary=0。
+- 0x15C 改为读 CODOL_VIEWMODEL 环境变量；设 1 后读回 viewmodelIndex=1（写入成功），rebuild_follow 12条无错误，但截图**全黑**。
+- 结论：viewmodelIndex 字段可写，但 1 不是有效 model 索引 ⇒ 渲染失败全黑；与历史 0x15C=0..287 全无效一致，说明索引需从客户端 model 表读取而非猜。
+- 下一步：回退为 1023；从客户端运行时读 model 表，或参考大厅角色渲染时的有效索引。

@@ -279,7 +279,7 @@ class RebuildFollower:
             # every non-zero id was rejected historically.  Retry now that the
             # client runs a real playerState and a stable session.
             0x4C: 1,          # weapon index
-            0x15C: 1023,      # viewmodel index: keep the sentinel, 1 broke the frame
+            0x15C: int(__import__('os').environ.get('CODOL_VIEWMODEL', '1023')),
 
             # Only 0x10 exists in the playerState table; 0x14/0x18 are NOT fields,
             # and passing them raised ValueError inside build_snapshot, which made
