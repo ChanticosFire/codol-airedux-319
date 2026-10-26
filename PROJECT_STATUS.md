@@ -34639,3 +34639,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 约束：单条 configstring 值最长 1014 字节(strlen+1 > 0x3f7 被拒)。
 - 意义：第116轮用 5362 搜代码自然找不到——数字错了。这次有了正确索引。
 - 下一步：用 5960(0x1748) 重搜代码；或直接在 gamestate 加 (5960, b"ak47_mp") 试发，观察 bg_weaponDefs 是否被填充。
+
+### 第 121 轮：CS_WEAPONS 试发被 --gamestate-source file 挡住
+- 生成 runs/cs-weapons-try1.json（[5960]="ak47_mp"）；给 session_up 加 --configstring-file 透传。
+- 试发：net=10 但仍 source:"file"；日志显示 configstrings 含 [5960,"ak47_mp"] 却未被使用。
+- 原因：session_up 第170行硬编码 --gamestate-source file → 文件模式原样发 bin，完全忽略 configstrings。
+- 下一步：传了 --configstring-file 时改用 --gamestate-source native；但需验证 native 模式 net=10 是否仍可达成(历史多次踩坑)；再查 bg_weaponDefs 真实地址。

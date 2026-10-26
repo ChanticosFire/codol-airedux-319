@@ -121,6 +121,8 @@ def main() -> int:
     ap.add_argument("--skip-client", action="store_true")
     ap.add_argument("--match-disconnect", type=float, default=None,
                     help="send the OOB disconnect command this many seconds after connect to end the match")
+    ap.add_argument("--configstring-file", default=None,
+                    help="JSON [[index,value],...] replacing the built-in configstrings")
     ap.add_argument("--server-command-text", default=None,
                     help="override the svc_serverCommand text sent during the match")
     ap.add_argument("--send-opcode", default=None,
@@ -173,6 +175,7 @@ def main() -> int:
                            "--snapshot-interval", "0.1",
                            "--server-command-every", "10", "--server-command-seq", "4",
                            "--server-command-text", args.server_command_text or " ",
+            *( ["--configstring-file", args.configstring_file] if args.configstring_file else [] ),
                            "--match-duration", str(int(args.server_seconds)),
                            "--log", f"runs/{args.name}-gs.jsonl"]
             if follow_pid:
