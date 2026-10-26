@@ -42,6 +42,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .native_gamestate import DEFAULT_CONFIGSTRINGS, build_native_gamestate
+from .wire164 import build_snapshot, _word
 
 PROTOCOL_GENERATION = "1.1.1.13"
 DEFAULT_MAP = "mp_cross_fire"
@@ -143,6 +144,38 @@ class ClientOriginReader:
         return bytes(result)
 
 
+class RebuildFollower:
+    """Encode a fresh snapshot from the client's own predicted origin.
+
+    ``ClientOriginReader.apply`` patched bytes inside an already encoded frame.
+    The playerState section is bit packed, so the origin float is not byte
+    aligned and the patch desynchronised every following field; the client died
+    with ``unhandled_exception`` about 1.5 s after reaching ``net=10``.
+    Re-encoding keeps each field on its own bit boundary, and the client has
+    been shown to follow a server supplied origin exactly (111.5 -> 301.5).
+    """
+
+    def __init__(self, pid: int):
+        self.reader = ClientOriginReader(pid)
+        self.counter = 0
+        self.last_origin = None
+
+    def frame(self, server_time: int | None = None) -> bytes | None:
+        origin = self.reader.origin()
+        if origin is None:
+            return None
+        self.last_origin = [round(v, 3) for v in origin]
+        self.counter += 1
+        stamp = server_time if server_time is not None else 72192 + self.counter * 100
+        values = {
+            0x00: stamp, 0x04: 0, 0x2C: 0, 0xA4: 800, 0xB0: 190, 0xC0: 1023,
+            0x158: 0, 0x16C: 60, 0x15C: 1023, 0x170: _word(0.3125),
+            0x30: _word(origin[0]), 0x34: _word(origin[1]), 0x38: _word(origin[2]),
+        }
+        return build_snapshot(values, server_time=stamp, position_base=tuple(origin),
+                              entities=[(0, 1, {2: _word(200.0)})])
+
+
 GAMESTATE_PLAINTEXT = _load_gamestate_plaintext()
 
 
@@ -193,7 +226,8 @@ class GameServer:
                  server_command_seq: int = 0,
                  server_command_text: str | None = None,
                  snapshot_dir: str | None = None,
-                 snapshot_frame_repeat: int = 1):
+                 snapshot_frame_repeat: int = 1,
+                 rebuild_follow_pid: int | None = None):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -253,6 +287,8 @@ class GameServer:
         self.pending_oob: list[tuple[float, tuple, str]] = []
         self.origin_reader = (ClientOriginReader(follow_client_pid)
                               if follow_client_pid else None)
+        self.rebuild_follower = (RebuildFollower(rebuild_follow_pid)
+                                 if rebuild_follow_pid else None)
         self.state_reader = (ClientOriginReader(client_state_pid)
                              if (client_state_pid and not follow_client_pid) else None)
         self.command_every = int(server_command_every or 0)
@@ -568,6 +604,13 @@ class GameServer:
             if not self.snapshot_preserve_time and len(payload) >= 9 and payload[4] == 0:
                 server_time = 72192 + index * 500
                 payload = payload[:5] + struct.pack("<I", server_time) + payload[9:]
+            if self.rebuild_follower is not None:
+                dynamic = self.rebuild_follower.frame(server_time=72192 + index * 500)
+                if dynamic is not None:
+                    payload = b"\x00\x00\x00\x00" + dynamic
+                    if index % 25 == 0:
+                        self.log({"dir": "meta", "kind": "rebuild_follow",
+                                  "origin": self.rebuild_follower.last_origin, "index": index})
             if self.origin_reader is not None:
                 before = payload[0x0F:0x1C]
                 payload = self.origin_reader.apply(payload)
@@ -759,6 +802,8 @@ def main() -> int:
     parser.add_argument("--snapshot-seq", type=int, default=4)
     parser.add_argument("--snapshot-preserve-time", action="store_true",
                         help="keep the snapshot body's recorded serverTime")
+    parser.add_argument("--rebuild-follow-pid", type=int, default=None,
+                        help="encode each snapshot from the client predicted origin")
     parser.add_argument("--follow-client-pid", type=int, default=None,
                         help="mirror this client process's predicted origin into every snapshot")
     parser.add_argument("--client-state-pid", type=int, default=None,
@@ -839,7 +884,8 @@ def main() -> int:
                         args.gamestate_file, args.connect_extra, args.snapshot_preserve_time,
                         args.follow_client_pid, args.client_state_pid, args.server_command_every,
                         args.server_command_seq, args.server_command_text,
-                        args.snapshot_dir, args.snapshot_frame_repeat)
+                        args.snapshot_dir, args.snapshot_frame_repeat,
+                        args.rebuild_follow_pid)
     try:
         server.serve()
     except KeyboardInterrupt:

@@ -34062,3 +34062,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 原因：`apply()` 用 `SLOTS=(0x0F,0x14,0x18)` 做**字节级替换**，但 playerState 段是**位打包**的（origin 浮点不字节对齐，y 前还夹着相邻字段的位），替换破坏后续所有字段的位对齐。
 - 结论：镜像客户端位置思路正确，但"直接改已编码字节"不可行；上轮修 PS_ORIGIN 只解决读值，崩溃是另一层问题。
 - 正确做法：服务端每帧用 `build_snapshot(values, position_base=客户端origin)` **重新编码**再发（§1124 已验证位级无损、§1147 已验证客户端会跟随）。
+
+### 第 37 轮：rebuild-follow 实现完成且稳定，但 origin 不累积
+- 新增 `RebuildFollower` 类 + `--rebuild-follow-pid`：每帧用 build_snapshot 重新编码（不再改字节），日志 `rebuild_follow origin=[111.5,222.5,333.5]` 正常，**客户端不再崩溃**。
+- 但按住 W 4 秒、383 次采样，`ps.origin` 恒为 (111.5,222.5,333.5)。
+- 原因：镜像源头 `ps.origin` 本身就是被覆盖的字段，形成闭环；真正该镜像的 `cl.predictedOrigin` 实测不动。
+- ⇒ 根因收回：**`CL_PredictMovement` 在本镜像里没跑**（输入与 forwardmove 均正常）。
+- 下一步：找 CL_PredictMovement 调用点与前置条件；或改用"服务端按 keys[K_W] 驱动积分"（框架已就绪，成本最低，且位移仍由玩家按键产生）。
