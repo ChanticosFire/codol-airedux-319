@@ -34689,3 +34689,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结论：客户端报档案版本并期望服务端确认/同步，我们的服务端只回快照不做档案同步 ⇒ 客户端认为"档案快照尚未同步" ⇒ 购买失败、装备状态不可信、武器模型不显示。
 - 用户判断正确："用了错误的连接方式"。这比我之前追的 CS_WEAPONS/ps.weapon 更靠前。
 - 下一步：找客户端处理 statver 响应的协议；服务端 connect 后回确认让客户端认为档案已同步。
+
+### 第 128 轮：task230已实现(playerdata)，但"档案快照"可能是另一个task
+- lsg.py 注释：lobby needs svc80/task230 playerdata answer（u64 txn|u32 err|u8 task|u32 nres|u32 nres|level|prestige|gp|cp|n_ent|n_flags），已实现(level70/wallet999999999)。
+- 但 task230 是 playerdata(等级/钱包/解锁数)，不等于"档案快照"(profile snapshot，购买/装备时校验并带 statver 版本比对)。
+- 关键线索：connect 里 statver\19 1248641861(secure.version+public.checksum)，服务端必须回匹配版本，否则客户端认为"档案快照尚未同步"。LSG 回了 task230，但没回 statver 相关确认。
+- 下一步（需观测）：抓客户端购买时发出的 LSG 请求，看是哪个 task、是否带 statver；再补对应响应并回显版本号；重试购买。
