@@ -34131,3 +34131,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 但截图无第一人称武器/手臂；viewmodelIndex 仍为 1023、primary=0。
 - 判断：weapon 只是索引，模型需 viewmodelIndex/primary 配合 gamestate 武器别名表；历史已两次证伪"补武器表"。
 - 下一步：用 weapon=1 配合有限候选的 viewmodelIndex(0/1/2/1023)+primary 再试；否则回到 gamestate alias_count=0 的根因。
+
+### 第 45 轮：viewmodelIndex 0-9 扫描无武器模型，且受 origin=0 干扰
+- 生成 10 帧（weapon=1, viewmodelIndex 0-9），session_up --snapshot-dir 播放；读回 net=10、weapon=1、viewmodelIndex=9、**origin=(0,0,0)**。
+- 右下方仍无武器/手臂 ⇒ viewmodelIndex 单独无效（与历史 0..287 全无效一致）。
+- 但截图画面严重错乱（建筑漂浮/地面错位/黑色多边形），因帧未设 origin，玩家在世界原点；判断不完全可靠。
+- 流程教训：viewmodelIndex 类扫描必须同时设 origin 与 serverTime。
+- 下一步：武器需 weapon+viewmodelIndex+primary+gamestate 非零别名表协同，障碍在资源定义；建议分精力到验收第3项（对局结束回大厅）。
