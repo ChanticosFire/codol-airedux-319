@@ -33828,3 +33828,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 重启 LSG（`--seconds 5400`）后用**同一份** `runs/r537-entity-arms.bin` 重测为 r540：`net=10`/`ui=0`、`connect=1`/`stats=303`、快照 166 帧、**无任何错误弹窗**，画面与 r536 相同且没有手臂。
 - 修正结论：`0x15C=1` 被安全接受但解析不到模型；该槽必须是客户端 model 表真实注册的 wire 索引。`gamestate-client0.bin` 的 291 条 configstring 中 model 条目为 **0**，模型注册表只能来自 fastfile 或运行时内存。
 - 流程教训：每次实验前必须先确认 LSG/TCP 28969 在监听，否则会把认证失败误判成快照字段错误。
+
+### 第 4 轮：稀疏快照失败与第一人称资源索引不可得
+- r541 用 8 帧、间隔 3 秒扫描 `0x15C`：客户端停在 `net=9` 未进对局。原因是快照太稀疏；此前成功的实验都是单帧 + `--snapshot-repeat` 连续重发。
+- 在 `common_gametype_mp.ff` / `mp_crash_tropical.ff` 中搜索模型名：`.xmodel`/`viewmodel`/`models/`/`weapon_` 全部 0 命中；游戏目录无 `.csv` 数据表。
+- 结论：第一人称手臂/武器依赖客户端运行时 NCS 资源表，gamestate 的 291 条 configstring 无 model 条目，磁盘侧也无名字清单。下一步只能从 demo 播放的运行时读有效 `PS+0x15C` 与武器 wire id。
+- 在拿到运行时有效索引前，不再继续猜 `0x15C`/`0x3F8`/`0x4C` 的数值。
