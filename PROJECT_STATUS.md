@@ -34701,3 +34701,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结论：回归。客户端连 LSG 握手失败 ⇒ 从未完成认证 ⇒ 无 playerdata ⇒ 档案未同步 ⇒ 购买报"档案快照尚未同步"、装备不可信、武器不显示。与用户"连接方式不对"判断一致。
 - 文件：tls-active/auth.crt(2026-10-24)、system-trust-cert.pem、runtime/client-1649370/cacert.pem(2026-10-26 07:15 可疑)、lsg.py 用 TLSv1-TLSv1_2。
 - 下一步：确认 cacert.pem 是否被改坏；把 system-trust-cert.pem 合入 cacert.pem；重启验证是否重现 auth_response 200；再试购买。
+
+### 第 130 轮：按用户指引回退存档到社区原版(revision 1241→50)
+- 对比：我们的 local.sqlite3 sha256=06f7a93bc8f81846/revision=1241；社区原版 ab23a7dca8efcaab/revision=50；public/secure blob 哈希均不同 ⇒ 我们的存档被改了1241次。
+- 已回退：备份到 resources/1649370/local/profile/backup-before-revert-20261026-232301.sqlite3；用社区原版覆盖；验证 sha256/revision/哈希均为社区原版。
+- 重启：net=10 正常进对局；但 r638-lsg.jsonl 不存在 ⇒ 本次会话没经过 LSG(session_up 未启动 LSG 监听)。
+- 下一步：手动启动 LSG(TCP 28969 Auth)或让 session_up 支持；重启检查 lsg.jsonl 是否出现 auth_response 200；若恢复 TLS 再进大厅看武器模型与购买。
