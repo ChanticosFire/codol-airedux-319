@@ -34572,3 +34572,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结论：ps 层面所有可写字段都试过（weapon/owned/weaponmodels/weapAnim/weaponstate/weaponTime 同时正确）仍不渲染 ⇒ 排除"靠ps伪造武器"。
 - 原因：渲染需要已加载的 xmodel 指针 + 动画树实例 + cg侧状态机联动，都不是 ps 整数能伪造的。
 - 第5b最终：输入侧完整✅；ps字段侧❌；对象侧❌(无武器实例)。
+
+### 第 110 轮：大厅武器走UI层(ps.weapon恒0)；黑屏是截图时机问题
+- cbuf disconnect 后：net=0/table=1353，ps.weapon=0、owned=0、model78=0。
+- 但第83轮截图里大厅角色手持武器 ⇒ 大厅武器渲染不经过 playerState，是 UI/CEF 用 local.sqlite3 装备配置渲染的3D预览。所以"大厅有武器"不能作为"客户端有对局武器对象"的证据。
+- 异常：首次截图全黑(10143B)，等6秒后 mean=95.02 正常 ⇒ 黑屏是截图太早(cbuf disconnect 后需5-10秒重建)。
+- 对第5b：大厅与对局是两条独立渲染路径，对局武器对象仍无法伪造。
