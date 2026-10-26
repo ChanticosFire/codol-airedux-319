@@ -33889,3 +33889,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - W vs S 三态差分：**opposite_pairs = 0** ⇒ `forwardmove` 始终为 0，键盘输入没有进入 usercmd。
 - 与历史 §256–258 一致（无 DirectInput/XInput/RawInput、GetKeyboardState 计数 0、PostMessage 无效果），且在已有完整 ps 的条件下再次确认。
 - 问题不在预测层也不在 ps 数据，而在客户端不认为自己是可操作玩家。下一步：重建 gamestate 追加玩家名 configstring（1735），观察 `cl.cmds` 是否出现非零 `forwardmove`。
+
+### 第 12 轮：gamestate 无损重建成功；1735=Player 仍无法让输入进 usercmd
+- 用 `native_gamestate` 的 Writer/Reader 重建 `gamestate-client0.bin`：**6411 B 与原文件逐字节一致**，首次确认可位级精确重建。
+- 插入 `(1735, "Player")` 生成 `runs/gamestate-player1735.bin`（6420 B/292 条），`parse_native_gamestate` 复核通过。
+- 实测（r557，PID 27756）：`engine-init 5.975s`、`net=10`/`ui=0`、ps 与帧一致；W/S 三态差分 **opposite_pairs=0**。
+- 结论：`1735=Player` 在完整 ps + serverCommand 条件下依然无效，`forwardmove` 恒 0，问题在输入采集层而非预测层。
+- 下一步：扩大差分范围到 0x40000；查 `cl` 内"本地客户端有效"标志；静态看 `Sys_GetEvent`→`CL_KeyEvent` 是否只在非观战分支写 usercmd。
