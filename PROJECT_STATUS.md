@@ -34110,3 +34110,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - r578 出现首条动态帧日志 origin=[111.5,222.5,333.5] index=100；但 20 秒后客户端 net=0/table=1353。
 - 关键对比：r576（静态帧）net=10 保持且 inband_short=556；r578（动态帧）回大厅。顺序/客户端/gamestate 均相同 ⇒ 首要嫌疑是动态帧编码不符。
 - 下一步：把 RebuildFollower 首帧与 r546-markers.bin 逐字节对比（重点 position_base 自洽性、serverTime 一致性、段边界）。
+
+### 第 42 轮：修正 RebuildFollower 两个编码 bug（帧已与 r546 逐字节一致）
+- bug1：`position_base` 必须为 (0,0,0)，传客户端 origin 会让末两字节不同；
+- bug2：缺 `0x174=0x12345678` marker，帧只有 68B 而非 73B；
+- 两处修复后 `RebuildFollower.frame(server_time=72192)` 输出 **73B 且与 r546 完全一致**。
+- 但实测仍失败：r579 断言 net=10 后 20 秒回大厅，且 `rebuild_follow` 日志 0 条 ⇒ frame() 在 net=10 窗口内从未返回有效帧，实际仍发静态帧。
+- 剩余差异只有 `--rebuild-follow-pid -1` 的每秒进程枚举；下一步先验证"显式 PID + 正确帧"，再改自动发现为事件触发。

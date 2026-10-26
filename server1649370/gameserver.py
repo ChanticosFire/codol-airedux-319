@@ -272,9 +272,18 @@ class RebuildFollower:
         values = {
             0x00: stamp, 0x04: 0, 0x2C: 0, 0xA4: 800, 0xB0: 190, 0xC0: 1023,
             0x158: 0, 0x16C: 60, 0x15C: 1023, 0x170: _word(0.3125),
+            # Same distinctive 32-bit marker r546-markers.bin carries; without it
+            # the frame is 68 bytes instead of 73 and the client rejects it.
+            0x174: 0x12345678,
             0x30: _word(origin[0]), 0x34: _word(origin[1]), 0x38: _word(origin[2]),
         }
-        return build_snapshot(values, server_time=stamp, position_base=tuple(origin),
+        # position_base must stay (0,0,0): it is the delta codec's reference for
+        # _position(), and passing the live origin produced a frame that differed
+        # from the known-good r546-markers.bin in its last two bytes -- the client
+        # answered that by dropping back to the lobby within seconds.  With the
+        # default base the encoded frame is byte-identical to r546 whenever the
+        # origin is unchanged.
+        return build_snapshot(values, server_time=stamp,
                               entities=[(0, 1, {2: _word(200.0)})])
 
 
