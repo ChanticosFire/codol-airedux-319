@@ -33914,3 +33914,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - `body_dec_challenge` 用 `peer["challenge"]` 解出仍是密文（前 4 字节跨包重复、首字节 0x26/0x23 非 clc opcode）⇒ XOR key 与客户端实际使用的不一致。
 - 与历史 §450–§454 一致：客户端在 `connection+0x08` 保留自己的 token，connect userinfo 回显 0。
 - 下一步：读客户端真实 token，用 `--challenge-override` 启动服务端，把 inband body 解成明文确认 `clc_move`/`forwardmove`；这是"服务端权威移动"的前置条件。
+
+### 第 14 轮：上行报文很可能未加密，服务端 XOR 反而弄乱
+- 重连后 `conn+0x08=0x882B4`、`conn+0x0c=0x88284`、`conn+0x10=0xA`；`conn+0x08` 是小整数，不是服务端发的 challenge(0x76d1aabc)。
+- 原始 `inband.body_head` 开头 `01 00 00 00` + `ef ff ef ff` 重复模式，是位打包特征而非加密特征；四个候选 key 做 XOR 后反而更乱。
+- **修正**：不是"XOR key 不对"，更可能是这一层根本不该 XOR——服务端 `_xor_cycle` 把明文 body 弄成了密文。
+- 下一步：按 COD4 netchan inband 格式直接解析原始 body，确认 `clc_move`/`forwardmove`；并检查 `handle()` 里 `body` 与 `data` 的取用，避免拿已 XOR 副本当原始。
