@@ -34758,3 +34758,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 承认思考过程出现严重重复退化，已停止，改为一次性整理。
 - 重写 DELIVERY-1649370.md 为「当前状态与卡点」六节：①已达成8项(附证据路径；标注场景/移动两项超出codex判定；纠正"大厅持枪=对局武器"的错误) ②卡点(武器模型8条证伪+推断/购买档案快照未同步/ LSG TLS 不读cacert.pem 且CA不匹配/缺失hosts+7配置+带标记CA) ③我犯过并已修复的5条错误 ④复现命令+内存布局 ⑤若要继续(先修LSG认证，判据auth_request后不再SSLEOF) ⑥诚实总结。
 - 关键结论：武器/购买/档案同步三者共同上游是 LSG 认证未建立，不是武器代码没写；不要再用 cacert.pem / ps 试值 / cg_weapon。
+
+### 第 139 轮：修复实际复用运行时的 TLS 信任；枪模缺失另有原因
+- r640/r641 设置并传入 `SSL_CERT_FILE` 仍 `unknown ca`。发现之前改的是 `319/runtime/client-1649370/cacert.pem`，而实际运行的 `r107flow/runtime/cacert.pem` 只有 175 张证书，不含现用 LSG 自签证书。先备份实际文件至忽略的 `resources/1649370/local/tls-active/`，再补入匹配证书；r643 实机收到 `POST /auth/`、200、LSG 业务 task。`tools/launch_1649370.py` 复用分支做成幂等自动补证，恢复原 175 张后 r644 再次实机通过。未复制新运行时。
+- r644 地图/HUD 可见但仍无枪模；断开回大厅 `net=0`、角色可见，账号库 integrity=ok、revision1241、哈希仍与试前备份一致。用户确认“仍然是没枪模”。认证恢复不等于武器或档案同步成功。
+- r645 对局 `net=10`：武器表只有 11 条（1 个 defaultweapon + 10 个 defaultknife），`ps.weapon=0`、`primary=0`、`viewmodelIndex=1023`；大厅表曾有 1353 条。r646 在完整 gamestate 加 `(5960,ak47_mp)` 后表仍 11；r647 把 zone/serverinfo/connectResponse 的 gametype 都改成 `mp` 后也仍 11、枪模仍无。单条 configstring 与单改 gametype 两条假说均被实机排除；继续查 fastfile 注册与玩家装备下发。脱敏证据 `evidence/experiments/20261027-r640-r647-auth-weapon-summary.json`，原始截图/日志留在忽略的 `runs/`。
+- r647 退出时客户端自动把 public 档案改写 240 字节、revision1242；已完整隔离试验后库到忽略的 `local/profile/quarantine-post-r647-revision1242.sqlite3`，再**整库**恢复试前 revision1241 基线，SHA-256 与试前一致、SQLite integrity=ok。勿将试验库当用户活档。

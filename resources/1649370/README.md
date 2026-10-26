@@ -2,6 +2,10 @@
 
 更新：2026-10-26。项目根目录：`E:\GAME\COD\codol-airedux\319`。
 
+2026-10-27 运行补充：当前活库 revision **1241**、SHA-256 `06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70`，实验前完整副本为 `local/profile/pre-r640-certenv.sqlite3`；下段 revision 1227 是旧交接时点。实际复用运行时的 `r107flow/runtime/cacert.pem` 原件独立备份为 `local/tls-active/r107flow-cacert-pre-r643.pem`（SHA-256 `05c420b36c179989cb83997cced3603c95285377f3528d861d0cd9d8f28c1aac`）。现用 LSG 服务端证书已由启动器幂等补入**这个实际运行时文件**；r643/r644 两次真实 `POST /auth/` 获 200。`319/runtime/client-1649370/cacert.pem` 与它不是同一文件，零售客户端的默认证书路径结论不应套用到离线 EXE。脱敏证据见 `evidence/experiments/20261027-r640-r647-auth-weapon-summary.json`。
+
+r647 退出时自动保存产生的 revision 1242 档案已整库隔离在 `local/profile/quarantine-post-r647-revision1242.sqlite3`（SHA-256 `e74cfe2664ff6b7bfdf22a1ea6f56f97bba6770f1e98e956f57e189d3889330b`）；活库随后由试前**完整数据库**恢复，不采用只替换 `profiles` 的旧错误做法。
+
 交接时活账号库已恢复到 revision 1227（角色 570）；`manifest.json` 的哈希记录资源**建表时的副本**，并非会变化的活库当前哈希。r528 完整测试库隔离在 `local/profile/quarantine-r528-weapon-test.sqlite3`；184 B 武器候选独立副本在 `local/unverified/r528-weapon1-codec11.bin`，**尚未证明有效**。最新执行交接见 `docs/1649370-DEEPSEEK-LONGTERM-GOAL.md`。
 
 本页是接手入口：[已验证启动流程](../../docs/1649370-KNOWN-GOOD-STARTUP.md) → 本页 → [逐文件清单及 SHA-256](manifest.json)。`local/` 是资源备份目录，已被 `.gitignore` 整体排除；其中有**私钥、账号数据库及客户端二进制**，不要加入 Git 或公开分发。代码和表格可提交，秘密字节不能提交。

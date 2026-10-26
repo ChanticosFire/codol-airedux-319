@@ -110,6 +110,8 @@ def main() -> int:
     ap.add_argument("--name", required=True, help="run name, used for every log file")
     ap.add_argument("--runtime", default="r107flow")
     ap.add_argument("--gamestate", default="runs/gamestate-player1735.bin")
+    ap.add_argument("--gametype", default="war",
+                    help="gametype in the game server's connect response")
     ap.add_argument("--snapshot", default="runs/r546-markers.bin")
     ap.add_argument("--snapshot-dir", default=None,
                     help="send a directory of snapshot frames in name order instead of one file")
@@ -171,7 +173,7 @@ def main() -> int:
             server_args = [sys.executable, "-X", "utf8", "-B", "-m", "server1649370.gameserver",
                            "--port", "28969", "--delay-send", "1",
                            "--gamestate-source", args.gamestate_source, "--gamestate-file", args.gamestate,
-                           "--gamestate-gametype", "war",
+                           "--gamestate-gametype", args.gametype,
                            "--gamestate-map", "mp_crash_tropical",
                            "--snapshot-delay", "1",
                            "--snapshot-seq", "4", "--snapshot-repeat", "30000",

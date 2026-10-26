@@ -2,6 +2,8 @@
 
 记录日期：2026-10-26。工作目录：`E:\GAME\COD\codol-airedux\319`。
 
+2026-10-27 更新：r523 的 LSG TLS 失败是该历史运行的事实。现有复用路径 `tools/launch_1649370.py --reuse-runtime r107flow --local-auth-lsg` 会核对**实际运行时** `r107flow/runtime/cacert.pem`，缺少当前 LSG 自签证书时先备份原件到 `resources/1649370/local/tls-active/`，再幂等追加。r643/r644 均实测 `POST /auth/`、`auth_response 200`；r644 仍无第一人称枪模，不能把认证成功写成第 5 项达成。见 `1649370-STATUS.md` §1260。
+
 ## 已验证的结果及边界
 
 - 本次使用 `E:\GAME\COD\1649370\workspaces\offline-runs\r107flow\runtime\codol1649370-offline.exe`。用户现场确认：没有拉起 TP，没有出现“100 大厅连接错误”，进入大厅和 `mp_crash_tropical` 对局画面；画面里尚无可控玩家。

@@ -3689,6 +3689,30 @@ def main(argv=None) -> int:
         def reuse_prepare(args, run_dir, actual_stage, log, phase_done):
             if actual_stage.resolve() != stage.resolve() or args.image.resolve() != IMAGE.resolve():
                 raise ValueError("runtime or base image changed during reuse")
+            if LOCAL_AUTH_LSG:
+                # Reuse mode skips patched_prepare(), which normally stages
+                # local Auth configuration.  This offline EXE reads the cert
+                # bundle in the actual reused runtime.  Keep the exact file
+                # that the child will open in sync with the LSG server cert.
+                bundle = stage / "cacert.pem"
+                cert_path = Path(__file__).resolve().parents[1] / "runs/20261020-live-derived01/tls/auth.crt"
+                if not bundle.is_file() or not cert_path.is_file():
+                    raise FileNotFoundError("local Auth trust bundle or certificate missing")
+                original = bundle.read_bytes()
+                cert = cert_path.read_bytes().strip()
+                if cert not in original:
+                    backup_dir = Path(__file__).resolve().parents[1] / "resources/1649370/local/tls-active"
+                    backup_dir.mkdir(parents=True, exist_ok=True)
+                    backup = backup_dir / ("r107flow-cacert-before-" + hashlib.sha256(cert).hexdigest()[:12] + ".pem")
+                    if not backup.exists():
+                        backup.write_bytes(original)
+                    bundle.write_bytes(original + b"\n" + cert + b"\n")
+                    log["local_auth_trust_backup"] = str(backup)
+                log["local_auth_trust"] = {
+                    "bundle": str(bundle),
+                    "cert_sha256": hashlib.sha256(cert).hexdigest(),
+                    "bundle_sha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),
+                }
             settings = SettingsSession(OriginalSettingsStore(SETTINGS_DB), stage / "players")
             log["input_image"] = {"path": str(IMAGE), "sha256": hashlib.sha256(IMAGE.read_bytes()).hexdigest()}
             log["runtime_image_sha256"] = expected

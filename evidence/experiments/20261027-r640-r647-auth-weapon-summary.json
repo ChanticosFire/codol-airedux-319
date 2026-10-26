@@ -1,0 +1,45 @@
+{
+  "date_local": "2026-10-27",
+  "build": 1649370,
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+  "tls_control": {
+    "r640": "SSL_CERT_FILE in launcher parent; TLSV1_ALERT_UNKNOWN_CA",
+    "r641": "SSL_CERT_FILE passed to isolated child; TLSV1_ALERT_UNKNOWN_CA",
+    "r642": "system cert.pem write denied; file hash unchanged; no client experiment",
+    "r643": "actual reused runtime cacert.pem appended with matching LSG certificate; POST /auth/ and auth_response 200",
+    "r644": "launcher reuse_prepare added matching certificate automatically from original 175-certificate bundle; POST /auth/ and auth_response 200",
+    "log": "runs/r640-certenv-lsg.jsonl",
+    "bundle_original_sha256": "05c420b36c179989cb83997cced3603c95285377f3528d861d0cd9d8f28c1aac",
+    "bundle_patched_sha256": "0d156a0aafadfee5a88ffc900e80dc463406e1ab025a1e9837ff8405747440f7",
+    "original_backup_private": "resources/1649370/local/tls-active/r107flow-cacert-pre-r643.pem"
+  },
+  "r644": {
+    "client_net_state_match": 10,
+    "game_server_connect": 1,
+    "auth_request": "POST /auth/ HTTP/1.1",
+    "auth_response_status": 200,
+    "lsg_business_tasks_observed": ["71/4", "102/5", "68/8"],
+    "scene_screenshot_private": "runs/r644-autotrust-screen.png",
+    "scene_screenshot_sha256": "78452584e5e0a2045b2c5ad592a4454ec4e329d1a6ca030b4537b7b1e0e764d2",
+    "first_person_weapon_visible": false,
+    "disconnect_net_state": 0,
+    "lobby_screenshot_private": "runs/r644-autotrust-lobby.png",
+    "lobby_screenshot_sha256": "e276b246c593930d127ff4c5afccfd023becc7ca3b130e828d7402a170689777",
+    "profile_integrity": "ok",
+    "profile_revision": 1241
+  },
+  "weapon_controls": {
+    "r645_baseline": {"net_state": 10, "weapon_table_count": 11, "weapon_count": 0, "ps_weapon": 0, "ps_primary": 0, "viewmodel_index": 1023},
+    "r646_add_configstring_5960_ak47_mp": {"net_state": 10, "weapon_table_count": 11, "ps_weapon": 0, "gamestate_sha256": "410da1558dd53dc344e19b68c7ead153623c34ef06090ce84879ac85d8a9ecaa"},
+    "r647_gametype_mp": {"net_state": 10, "connect_response_gametype": "mp", "weapon_table_count": 11, "weapon_count": 0, "ps_weapon": 0, "gamestate_sha256": "d64f07f4066a3eded94f7f5cb47de2f21517315e974c92447b2b86794698f379", "scene_screenshot_private": "runs/r647-game.png", "first_person_weapon_visible": false}
+  },
+  "profile_recovery": {
+    "observation": "After r647 quit, account revision became 1242 and 240 bytes of the public blob differed from the pretest baseline; the secure blob and entitlement row hashes did not change.",
+    "quarantine_private": "resources/1649370/local/profile/quarantine-post-r647-revision1242.sqlite3",
+    "quarantine_sha256": "e74cfe2664ff6b7bfdf22a1ea6f56f97bba6770f1e98e956f57e189d3889330b",
+    "final_live_database_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "final_live_revision": 1241,
+    "integrity_check": "ok"
+  },
+  "limits": "TLS authentication and map render are verified. Profile snapshot synchronization, a first-person weapon, self-driven movement and shooting remain unverified. Screenshots and raw logs stay in ignored runs/ because the screen and protocol traces may contain account identifiers."
+}
