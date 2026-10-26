@@ -34364,3 +34364,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - weapon_phase() 写字段：0x2BC(animation)、0x2C0(weaponTime)、0x2C4(weaponDelay)、0x2C8(kickTime)、0x2CC(state)、0x2D4(shotCount)。
 - 确认 weapon=1 方向正确，但缺 owned 位(0x55C bit1)，而该字段 codec -57 未实现。
 - 核心障碍未变：0x55C 的 -57 编码。
+
+### 第 77 轮：gamestate 无武器定义表（292 条中仅3条本地化字符串）
+- 搜 weapon/defaultweapon/m4：仅 SF_WEAPON_SPARROW_MP_NAME/DESC、MP_WEAPON_PICKUP_HINT 三条字符串键，无 alias/recipe/定义表。
+- 结论：第2条替代路线（从 configstring 取武器定义）也堵死；武器定义只能来自 fastfile（与历史两次证伪一致）。
+- 武器渲染只剩一条路：实现 codec -57 写 ps.weapons(0x55C) bit1。
+- 逆向 -57 最可靠做法：反汇编客户端 CL_ParseDeltaPlayerState 里对 bits==-57 的分支。
