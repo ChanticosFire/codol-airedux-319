@@ -33800,3 +33800,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 坑：换快照必须重启客户端（桥固定源端口导致服务端新 peer 不建立）；热替换快照文件对视角模式无效。
 - 档案保护实测：`local_profile_sample_skipped` 63 次未终止客户端；活库仍 revision 1227 / character 570 / 7208 项。
 - 下一步：静态确认 `0x471DE3` per-entity `changed=1` 分支的位宽 N 与 52 字节实体布局，再构造 entity count=1 的自洽快照。
+
+### 社区规格带来的关键纠正（第 1 轮末）
+- 用户提供社区协作包 `他人文件参考/CODOL-Member-Preview-20261026/`；其 README 确认已实现 1649370 `mp_crash_tropical / war` 单人真实入图、出生、手臂/M4/准星、前进与转向（真实引擎 + 投影路线）。
+- 只读该包，提炼出权威线格式到 `docs/1649370-COMMUNITY-WIRE-SPEC.md`：帧头 `00 + u32 serverTime + u8 delta + u8 flags + 1bit has_base`；段序 playerState→anim→actors→entities→clients→glass→EOF；**ps 段头是 8 位 `last+1` 而不是 5 位**；实体段 `index_code + present/changed/origin(3bit) + 6bit last + 3位gap + 值`；空 anim/actors/clients 各 1 位。
+- 生成 `server1649370/player_fields164.py`（246 项权威字段表，保持线序）；第 57 项 `(0x4C,11,0,1)` 与我们从客户端二进制读到的 weapon 描述符完全一致，第 83 项 `(0x4,8,0,1)` 对应当前实测可切换观战/自由相机的那个字节。
+- 未运行其原生引擎、未复制其二进制或源码；仅按协议事实重写。
+- 下一步：按规格重写 ps 段与实体段编码，构造带本地玩家实体（id = 本地 clientNum）的自洽快照。
