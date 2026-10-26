@@ -34721,3 +34721,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 可能：①客户端缓存了"不可信"判断需清缓存；②只在首次启动/登录流程连 LSG 而 --queue-main-menu 跳过登录；③LSG 连接发生在 launcher 更早阶段，session_up 快捷路径绕过了。
 - 下一步：对比有 LSG 日志的会话(r633 2条/r637 1条)与本次启动差异；查 launch_1649370.py 的 --local-auth-lsg；或模拟完整首次启动。
 - 注：信任链已补但尚未被检验。
+
+### 第 133 轮（重大进展）：证书附加生效——LSG 日志出现 auth_request
+- 同一个 LSG(PID3552) 服务所有会话(its --log 是 r637-lsg.jsonl，--seconds 5400)，故 r638/r639 的日志写在这里而非各自文件。
+- r637-lsg.jsonl：15:12:47 unknown ca；15:23:36 unknown ca；**15:26:06 auth_request**；15:26:06 io_error SSLEOFError；15:28:19 unknown ca。
+- 结论：①证书附加确实生效过一次(15:26:06 握手成功并发出 auth_request)；②但认证流程立即失败(SSLEOFError，客户端主动断开)；③之后又变回 unknown ca(可能客户端重载旧CA库或回退内置信任表)。
+- 下一步：确认 cacert.pem 修改还在(有没被 launcher 覆盖)；用 --evidence 看 auth_request 内容；修认证响应格式让客户端不再 SSLEOF。
