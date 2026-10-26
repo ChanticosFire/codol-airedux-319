@@ -34659,3 +34659,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 第②条：ps.origin 固定(111.5,222.5,333.5)可能不在地图可玩区。
 - 数据位置：profiles 表 blob 列(public size=15767 version=233 / secure size=15124 version=19)，二进制可能加密；account_initialization.state 是明文 JSON(含 owned_ids)。
 - 下一步：优先解决"背包为空"——弄清 profiles.blob 格式，或找"服务端下发 loadout"的协议字段。
+
+### 第 123 轮续：profiles.blob 结构初探——名字表存在、武器数据为空
+- 头部明文：public version=233/checksum=1248641861；secure version=19/checksum=2739108020；与 identity JSON 一致。
+- 非零极少：public 2584/32764 字节、secure 2269/32764，大部分为0 ⇒ 印证背包空。
+- 已识别：0x0F20 起 20字节/项的 ID 列表(前16字节固定、后4字节递增)；0x21F0 起 5个 "Loadout N" 名字(32字节/槽)。
+- 结论：blob 是明文结构+零填充，可解析；需定位每个 loadout 的武器槽位置。
+- 下一步：定位 5 个 loadout 结构体；或更可靠——让客户端自己写(装备界面选武器后观察 blob 变化)。
