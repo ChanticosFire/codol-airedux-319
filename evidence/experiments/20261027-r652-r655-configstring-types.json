@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-27",
+  "runtime": "reused r107flow/runtime",
+  "client_image_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+  "text_5961": {
+    "rounds": ["r652", "r653"],
+    "value": "ak47_mp",
+    "result": "net_state 5 to 0; cannot join session dialog",
+    "com_error_message": "XBOXLIVE_CANTJOINSESSION",
+    "com_error_caller": "0x472E69",
+    "parser_type_at_5961": "0x0d",
+    "parser_type_at_5960": "0xff",
+    "conclusion": "text configstring 5961 rejected by gamestate parser type validation"
+  },
+  "simple_5961": {
+    "round": "r655",
+    "entry": [5961, 1],
+    "result_net_state": 10,
+    "peak_weapon_count": 0,
+    "peak_weapon_table_count": 11,
+    "player_state": {"weapon": 0, "primary": 0, "viewmodelIndex": 1023},
+    "conclusion": "accepted gamestate encoding did not register a usable weapon or display a first-person model"
+  },
+  "static_parser": {
+    "simple_string_format": "* %i",
+    "complex_string_format": "** %i %i %i",
+    "first_weapon_slot_pass": "0x454A52, flag 1",
+    "second_weapon_slot_pass": "0x454B53, flag 0",
+    "registration_result": "not yet observed directly"
+  },
+  "profile": {
+    "post_test_copy": "resources/1649370/local/profile/quarantine-post-r655.sqlite3 (ignored, private)",
+    "restored_baseline_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "sqlite_integrity": "ok"
+  },
+  "acceptance": "first-person weapon model and shooting remain unverified"
+}
