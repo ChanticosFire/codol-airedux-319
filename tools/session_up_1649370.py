@@ -121,6 +121,8 @@ def main() -> int:
     ap.add_argument("--skip-client", action="store_true")
     ap.add_argument("--match-disconnect", type=float, default=None,
                     help="send the OOB disconnect command this many seconds after connect to end the match")
+    ap.add_argument("--send-opcode", type=lambda v: int(v, 0), default=None,
+                    help="send one raw inband body with this opcode after connect")
     ap.add_argument("--rebuild-follow", action="store_true",
                     help="start the client first, then let the server encode snapshots from its held keys")
     args = ap.parse_args()
@@ -172,6 +174,8 @@ def main() -> int:
                            "--log", f"runs/{args.name}-gs.jsonl"]
             if follow_pid:
                 server_args += ["--rebuild-follow-pid", str(follow_pid)]
+            if args.send_opcode is not None:
+                server_args += ["--send-opcode", str(args.send_opcode)]
             if args.match_disconnect:
                 # --match-duration overrides --oob-delay in gameserver.main(),
                 # so drop it or the disconnect would wait server_seconds.

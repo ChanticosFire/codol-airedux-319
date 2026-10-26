@@ -34171,3 +34171,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 新增 --send-opcode <n>：on_connect 后约 2 秒用 _send_fragments 发 [4字节 ack]+[opcode] 并记录 raw_opcode 日志；编译/导入均通过。
 - 未完成：本轮未实际扫描 opcode（每会话约 60 秒）。
 - 下一步：扫 opcode 2,3,4,6,7,8,9,10 看哪个能无弹窗回大厅；否则用 0x4737E0 反查 svc 分发表。
+
+### 第 50 轮：opcode 批量扫描失败，疑因 server-seconds 过短
+- session_up 新增 --send-opcode 透传。
+- 对 opcode 2,3,4,6,7,8,9,10 逐个跑（--server-seconds 120 --bridge-seconds 90），8 次全部 ok:null。
+- r590-op2：gs.jsonl 仅两条 start 无 peer；launch.out 有 child_terminated/engine_close_status=0 但无 stop_reason ⇒ 客户端被正常关闭（脚本超时清理）。
+- 疑因：--server-seconds 120 太短（客户端启动约 60s + 补丁 + 桥），断言 net=10 前窗口已到期。
+- 下一步：恢复 server-seconds 900 重跑；先做一次不带 --send-opcode 的基准会话，确认工具本身没问题。
