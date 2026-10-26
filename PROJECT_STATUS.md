@@ -34296,3 +34296,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 全内存 910MB 搜索：viewmodel/xmodel 命中均在 .rdata（字段名/字符串）；weapon_m4/weapon_mp5 命中在堆，但内容是 XML 本地化文本（@SF_WEAPON_M4_MP_DESC）与字符串表（@sf_weapon_mp5sd_mp_name 等），非 model 索引。
 - 结论：客户端加载了武器数据（名字/描述/图标键），但拿不到可用于 ps.viewmodelIndex 的 model 索引。
 - 后续可选：找 R_RegisterModel 返回表；或从大厅角色渲染（CEF，可能不走引擎 model 表）；或接受"渲染侧受限于资源定义"。
+
+### 第 67 轮：字段表无名字；0x2C 设非零导致全黑
+- player_fields164.py 的 246 项只有 (offset, codec_bits, hint, words)，无字段名，找语义字段只能猜偏移试值。
+- 0x2C（hint=3 强制写）改为环境变量并设 100：会话 ok/net=10，但截图 overall mean=0.0 全黑，与 viewmodelIndex=1 现象一致。
+- 结论：0x2C 及同类 hint=3 字段（0x3C/0x40/0x44/0x100/0x568）大概是渲染/相机必需量，非零即黑屏；猜偏移试值成本高且危险。
+- 建议停止在该路试值；第5b 维持"输入侧达成、渲染侧未达成"。若要继续渲染侧，应先静态定位 R_RegisterModel 拿真实 model 索引表。

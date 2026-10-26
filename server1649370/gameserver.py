@@ -270,7 +270,10 @@ class RebuildFollower:
         self.counter += 1
         stamp = server_time if server_time is not None else 72192 + self.counter * 100
         values = {
-            0x00: stamp, 0x04: 0, 0x2C: 0, 0xA4: 800, 0xB0: 190, 0xC0: 1023,
+            0x00: stamp, 0x04: 0, 0xA4: 800, 0xB0: 190, 0xC0: 1023,
+            # 0x2C is hint=3 (always written).  Try a non-zero weapon time to
+            # see whether it drives any weapon animation.
+            0x2C: int(__import__('os').environ.get('CODOL_WEAPONTIME', '0')),
             0x158: 0, 0x16C: 60, 0x170: _word(0.3125),
             # Same distinctive 32-bit marker r546-markers.bin carries; without it
             # the frame is 68 bytes instead of 73 and the client rejects it.
