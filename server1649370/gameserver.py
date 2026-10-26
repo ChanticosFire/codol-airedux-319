@@ -187,7 +187,9 @@ class GameServer:
                  client_state_pid: int | None = None,
                  server_command_every: int = 0,
                  server_command_seq: int = 0,
-                 server_command_text: str | None = None):
+                 server_command_text: str | None = None,
+                 snapshot_dir: str | None = None,
+                 snapshot_frame_repeat: int = 1):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -216,6 +218,22 @@ class GameServer:
         self.snapshot_path = Path(snapshot_path) if snapshot_path else None
         self.snapshot_files = ([Path(part.strip()) for part in snapshot_path.split(",") if part.strip()]
                                if snapshot_path else [])
+        # A directory of frames plays as one continuous stream: every frame is
+        # repeated ``snapshot_frame_repeat`` times so the client keeps receiving
+        # snapshots while it steps through candidate values.  Sparse frames
+        # (one send per candidate) leave the client stuck in CA_CHALLENGING.
+        if snapshot_dir:
+            directory = Path(snapshot_dir)
+            if not directory.is_dir():
+                raise ValueError(f"snapshot directory does not exist: {directory}")
+            frames = sorted(directory.glob("*.bin"))
+            if not frames:
+                raise ValueError(f"snapshot directory has no *.bin frames: {directory}")
+            repeat = max(1, int(snapshot_frame_repeat or 1))
+            expanded: list[Path] = []
+            for frame in frames:
+                expanded.extend([frame] * repeat)
+            self.snapshot_files = expanded + self.snapshot_files
         self.snapshot_delay = snapshot_delay
         self.snapshot_seq = snapshot_seq
         self.snapshot_repeat = snapshot_repeat
@@ -420,7 +438,7 @@ class GameServer:
             peer["gamestate_count"] = peer.get("gamestate_count", 0) + 1
             peer["last_server_seq"] = seq
             self._send_fragments(addr, peer, payload, seq, "gamestate")
-            if self.snapshot_path:
+            if self.snapshot_files:
                 # Honour the configured delay so trials can separate early
                 # delivery from payload validity. The known hybrid control
                 # reaches state 10 with a 20-second delay.
@@ -751,6 +769,11 @@ def main() -> int:
                         help="total snapshot sends; 0 = send once")
     parser.add_argument("--snapshot-interval", type=float, default=0.5,
                         help="seconds between repeated snapshots")
+    parser.add_argument("--snapshot-dir", default=None,
+                        help="directory of *.bin frames sent in filename order; "
+                             "each frame is repeated --snapshot-frame-repeat times")
+    parser.add_argument("--snapshot-frame-repeat", type=int, default=1,
+                        help="how many consecutive sends each --snapshot-dir frame gets")
     parser.add_argument("--command-file", default=None,
                         help="server-command service stream sent before the snapshot")
     parser.add_argument("--command-delay", type=float, default=2.0,
@@ -792,6 +815,10 @@ def main() -> int:
         parser.error("--snapshot-repeat must be nonnegative")
     if args.snapshot_interval <= 0:
         parser.error("--snapshot-interval must be positive")
+    if args.snapshot_frame_repeat < 1:
+        parser.error("--snapshot-frame-repeat must be at least 1")
+    if args.snapshot_dir and not Path(args.snapshot_dir).is_dir():
+        parser.error(f"--snapshot-dir {args.snapshot_dir!r} is not a directory")
     if args.command_delay < 0:
         parser.error("--command-delay must be nonnegative")
     if not 0 < args.command_seq <= 0x7FFFFFFF:
@@ -807,7 +834,8 @@ def main() -> int:
                         args.oob_delay if args.match_duration is None else args.match_duration,
                         args.gamestate_file, args.connect_extra, args.snapshot_preserve_time,
                         args.follow_client_pid, args.client_state_pid, args.server_command_every,
-                        args.server_command_seq, args.server_command_text)
+                        args.server_command_seq, args.server_command_text,
+                        args.snapshot_dir, args.snapshot_frame_repeat)
     try:
         server.serve()
     except KeyboardInterrupt:

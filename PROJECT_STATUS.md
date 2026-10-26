@@ -33834,3 +33834,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 在 `common_gametype_mp.ff` / `mp_crash_tropical.ff` 中搜索模型名：`.xmodel`/`viewmodel`/`models/`/`weapon_` 全部 0 命中；游戏目录无 `.csv` 数据表。
 - 结论：第一人称手臂/武器依赖客户端运行时 NCS 资源表，gamestate 的 291 条 configstring 无 model 条目，磁盘侧也无名字清单。下一步只能从 demo 播放的运行时读有效 `PS+0x15C` 与武器 wire id。
 - 在拿到运行时有效索引前，不再继续猜 `0x15C`/`0x3F8`/`0x4C` 的数值。
+
+### 第 5 轮：目录序列扫描基础设施与 0x15C 小范围扫描
+- `server1649370/gameserver.py` 新增 `--snapshot-dir` + `--snapshot-frame-repeat`（目录帧按名排序展开成连续流，每帧重复 N 次）。
+- 修复真实缺陷：`snapshot_due` 原先只在 `snapshot_path` 存在时初始化，导致目录模式**一帧都不发**（r542 日志无任何 `snapshot_source`，客户端停在 net=9）。
+- r543 扫描 `0x15C=0..31`（32 值 × 20 帧 × 0.1 秒）：客户端全程进到 `net=10`，32 张截图逐值对齐；差异分析显示只有整体画面变化，下半屏恒为 52.49，**无一出现手臂**。
+- 结论：有效 NCS 模型索引不在 0..31；扫描基础设施就绪，下一步扩到 32..287。
