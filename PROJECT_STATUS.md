@@ -34606,3 +34606,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 核对 r558/r576 gs.jsonl、r546-markers.bin、r581-moved.png、r601-t0..t3、r615b-cbuf-disconnect、r630b-lobby-later、r628b/r629（后两条为失败路径证据）共12项，全部存在且大小符合预期。
 - git status --porcelain 为空，全部已提交推送。
 - 交付完整性：验收证据/状态记录(1200+条)/代码工具/远端同步 四项齐备。
+
+### 第 116 轮：找到武器注册真正入口——CS_WEAPONS configstring 窗口 5362-6061
+- 社区包 codol_weapon_slots.h 给出：bg_weaponDefs@0x0150D720(700指针)、BG_ClearWeaponDefs@0x0041F570、CG_Init@0x00450ADC 遍历1..699、BG_RegisterWeaponDef@0x0041F640、CS_WEAPONS 是 700 槽 configstring 窗口 5362..6061。
+- 解释此前全部失败：ps.weapon=78 不渲染因 bg_weaponDefs[78]=NULL(从未注册)；gamestate alias/recipe 是另一套；内存里有 viewmodel 资源但无 WeaponDef 指向它；大厅是 UI 层直渲不经过 bg_weaponDefs。
+- 关键：bg_weaponDefs 只有通过 CS_WEAPONS configstring 才会被 BG_RegisterWeaponDef 填充，而我们从未发送这些 configstring。
+- 而且 native_gamestate.build_native_gamestate 接受 configstrings 参数，默认只发3条 ⇒ 完全可以补上 5362 起的武器条目。
+- 下一步：确认 CS_WEAPONS 条目格式(反汇编 0x0041F640 或查社区源码)；补发 (5362, b"ak47_mp ...")；检查 bg_weaponDefs[78] 是否非零；再设 ps.weapon=78 观察渲染。
