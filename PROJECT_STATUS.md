@@ -34381,3 +34381,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 搜 0x670D30..0x671200 的 cmp ecx,负立即数：仅 -94(0x670d53)、-101(0x670d65)、-102(0x670e2c)，无 -57；cmp ecx,负imm32 为 0。
 - 含义：该函数只处理三类 codec；-57 可能由别的函数/跳转表处理，或是我对描述符 +4 字段的解读有误。
 - 下一步：完整反汇编 0x670D30 到 ret，标出所有 codec 分支；检查 0x670F90 之后是否有 jmp[reg*4+table]；若确无 -57，回到描述符结构本身核对 +4 的语义。
+
+### 第 80 轮：0x670D30 全函数只有 -94/-101/-102 三个分支，-57 不在 delta 解码路径
+- 完整反汇编确认：无 -57、无跳转表；主循环对非 hint==2 字段统一调此函数 ⇒ -57 字段不会被写。
+- 与实测一致（build_snapshot 也抛 unsupported width -57）。
+- 更可能：-57 不是 delta codec，而是走 playerState extension 的特殊字段（社区注释："arrays moved into the playerState extension"）。武器位图很可能本就不通过快照授权。
+- 意义：在 write_delta_value 补 -57 是方向错误；应在 gamestate/extension 阶段提供武器数据。
+- 下一步：查 codol_playerstate_ext.h / codol_weapon_bits.c 的存储定位；若 gamestate 也不提供（77 轮已证无武器表），则离线镜像下此路不可达。
