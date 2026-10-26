@@ -34727,3 +34727,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - r637-lsg.jsonl：15:12:47 unknown ca；15:23:36 unknown ca；**15:26:06 auth_request**；15:26:06 io_error SSLEOFError；15:28:19 unknown ca。
 - 结论：①证书附加确实生效过一次(15:26:06 握手成功并发出 auth_request)；②但认证流程立即失败(SSLEOFError，客户端主动断开)；③之后又变回 unknown ca(可能客户端重载旧CA库或回退内置信任表)。
 - 下一步：确认 cacert.pem 修改还在(有没被 launcher 覆盖)；用 --evidence 看 auth_request 内容；修认证响应格式让客户端不再 SSLEOF。
+
+### 第 134 轮：证书附加其实成功——我的检测方法有误
+- cacert.pem 296299 字节、179 个 BEGIN CERTIFICATE；回滚重加后 restored 293944(177)→final 296299(179)，增量 2355=1131+1224 精确吻合 ⇒ 证书确实写入。
+- body 检测 False 是测试写法问题(PEM base64 在文件里带换行，我用 join(split()) 去换行后比对自然 False)。
+- 所以：cacert.pem 已含 auth.crt 与 system-trust-cert.pem；第133轮 auth_request 很可能就是它生效的证据；随后 SSLEOFError 说明认证响应不对。
+- 下一步：重启并用 --evidence 记录 auth_request body；看请求路径/字段修响应；认证成功账号/档案体系才建立。
