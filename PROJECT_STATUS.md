@@ -33782,3 +33782,13 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 **仓库空白对照（2026-10-26，§1108）**：同一带档案保护的启动器、同一有效账号和现有 `r107flow/runtime` 全新启动 r527，进图前“仓库→背包”显示完整武器背包，“储物箱”显示物品网格及角色外观分类 190 件；客户端与 SQLite 均有 7,208 项。r525 入图后仓库空白发生在首次保存拦截之前，故保存保护不是原因；空白与回大厅后前端状态异常有关，具体转移点待查。无昵称对照证据：`evidence/experiments/20261026-r527-warehouse-control.json`。当前实例停在可见物品的大厅；玩家可移动/射击目标仍未达成。
 
 **≤10% 交接（2026-10-26，§1109）**：实查 5 小时额度剩余 9%，已写给 DeepSeek 的完整目标和约束 `docs/1649370-DEEPSEEK-LONGTERM-GOAL.md`。r528 依据当前客户端描述符 `ps.weapon codec=11` 做 13 位候选，真实连接中 `net=10` 约 0.4 秒后客户端终止；同一时点有原生访问违例和档案 `inspect_snapshot` 的 selected character 缺失异常，武器解析结果未判定。测试库 revision 1226 已私有隔离，活库恢复 revision 1227 / 角色 570；临时服务已结束，复用的 15 GiB 运行时未复制。第 5 项依旧未完成。
+
+## 2026-10-26 第 1 轮（DeepSeek 接手）：r530 基线 + 档案保护实测
+
+- 环境：HEAD `e2a668f`，工作树干净；按精确 PID 替换旧 UDP 28969 游戏服（11920 → 新 12356），LSG TCP 28969 为 PID 14728。
+- 活库备份 `resources/1649370/local/profile/backup-r1-20261026-110716.sqlite3`；实测 revision 1227 / index 0 / character 570 / owned_ids 7208 / integrity ok。
+- `tools/launch_1649370.py`：新增档案采样**有界跳过**（仅两条已知消息）与**选中索引稳定性门**（默认 6 秒，可用 `PROFILE_INDEX_HOLD` 覆盖）。
+- r530：真实客户端 `net=10`、`ui=0`；服务端 `connect=3`、`stats=304`、`gamestateupdate=5`、`inband_short=728`。截图 `runs/r530-shot-1.png` 有地图 + 小地图 + 计分板 + 弹药条。
+- 定性：真实按住 W 后 86.6% 像素变化、小地图箭头移动 → 可动的是**自由观战相机**，无本地玩家模型/数据（用户现场确认）。验收第 5 项仍未达成。
+- 新证据：运行时改写 `characterClasses.0.slots.0` 为垃圾值 `1052006403`，被目录校验拦住，磁盘档案未污染；本次 `selected_character_index` 未变化，说明"守索引"不足以守角色槽。
+- 下一步：定位客户端判定"本地 client"的来源（`connectResponse` 无 clientNum；快照 entity table 计数为 0），构造带本地玩家实体的自洽快照。

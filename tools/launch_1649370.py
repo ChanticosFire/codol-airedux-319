@@ -150,6 +150,14 @@ def profile_catalog_error(public: bytes, schema: dict, catalog_ids: set[int]) ->
         return f"profile field invalid: {error}"
     return None
 
+
+def character_at(fields, public: bytes, index):
+    """读取某个 characterClasses 槽位的角色 ID；仅用于日志，失败返回 None。"""
+    try:
+        return fields.read(public, f"characterClasses.{index}.slots.0")
+    except (ValueError, IndexError, KeyError, TypeError):
+        return None
+
 CREATION_FLAGS = 1030  # CREATE_SUSPENDED | CREATE_NEW_PROCESS_GROUP | CREATE_UNICODE_ENVIRONMENT
 
 ENV_KEYS = ("SystemRoot", "WINDIR", "COMSPEC", "SystemDrive",
@@ -3452,20 +3460,114 @@ def main(argv=None) -> int:
 
     original_profile_initialize = bridge_mod.LocalProfileBridge.initialize
 
+    # 运行时在对局/选角预览期间会把 currentCharacterIndex 指向没有角色 ID 的
+    # 槽位，AccountCodec.validate_snapshot 于是抛
+    # ValueError('Runtime selected character missing; refusing save')。
+    # 该异常发生在 inspect_snapshot，早于任何写盘，所以这里按**已知原因**有界
+    # 跳过：不写零/乱码 ID，保留最后有效磁盘档案，也不让一次采样异常终止客户端。
+    # 只放行这几条确定无害的消息，其余 ValueError 继续上抛。
+    BENIGN_PROFILE_SAMPLE_ERRORS = (
+        "Runtime selected character missing",
+        "Runtime profile schema changed",
+    )
+
+    def bounded_profile_save(self, force=False):
+        try:
+            return original_profile_save(self, force=force)
+        except ValueError as error:
+            message = str(error)
+            if not message.startswith(BENIGN_PROFILE_SAMPLE_ERRORS):
+                raise
+            count = int(getattr(self, "_profile_skip_count", 0)) + 1
+            self._profile_skip_count = count
+            summary = {"reason": message, "count": count}
+            try:
+                self.log["local_profile_sample_skipped"] = summary
+            except (AttributeError, TypeError):
+                pass
+            if count == 1 or count % 25 == 0:
+                self.record({"local_profile_sample_skipped": summary})
+            return None
+
+    original_profile_save = bridge_mod.LocalProfileBridge.save
+    bridge_mod.LocalProfileBridge.save = bounded_profile_save
+
+    # 客户端大厅预览会逐帧轮换 currentCharacterIndex，原生桥曾把这些临时值逐个
+    # 写盘（r527 的 revision 1220-1226），使下次启动的选中角色与用户选择不符。
+    # 因此只有「与磁盘一致」或「连续保持 PROFILE_INDEX_HOLD 秒」的索引才允许
+    # 落盘；其余只记录并保留磁盘值。hold 可用环境变量覆盖，便于实验对比。
+    try:
+        PROFILE_INDEX_HOLD_SECONDS = float(os.environ.get("PROFILE_INDEX_HOLD", "6.0"))
+    except ValueError:
+        PROFILE_INDEX_HOLD_SECONDS = 6.0
+
     def guarded_profile_initialize(self, schemas, tables, catalog):
+        from codol_rebuild.adapters.game.profile_format.fields import Fields
+
         account = original_profile_initialize(self, schemas, tables, catalog)
+        public_fields = Fields(schemas["public"])
+        catalog_ids = set(self.catalog)
         original_service_save = self.service.save
 
+        try:
+            stored_index = public_fields.read(account["profiles"]["public"], "currentCharacterIndex")
+        except (ValueError, IndexError, KeyError):
+            stored_index = None
+        self._profile_stable_index = stored_index
+        self._profile_pending_index = None
+        self._profile_pending_since = 0.0
+
         def save_only_catalog_items(blobs, balances=None):
-            reason = profile_catalog_error(blobs["public"], schemas["public"], set(self.catalog))
+            public = blobs["public"]
+            digest = hashlib.sha256(public).hexdigest()
+            reason = profile_catalog_error(public, schemas["public"], catalog_ids)
             if reason:
-                digest = hashlib.sha256(blobs["public"]).hexdigest()
                 if getattr(self, "_last_rejected_profile", None) != digest:
                     self._last_rejected_profile = digest
                     self.record({"local_profile_save_rejected": {
                         "reason": reason, "public_sha256": digest,
                     }})
                 return False
+            try:
+                index = public_fields.read(public, "currentCharacterIndex")
+            except (ValueError, IndexError, KeyError) as error:
+                if getattr(self, "_last_rejected_profile", None) != digest:
+                    self._last_rejected_profile = digest
+                    self.record({"local_profile_save_rejected": {
+                        "reason": f"selected index unreadable: {error}",
+                        "public_sha256": digest,
+                    }})
+                return False
+            if index != getattr(self, "_profile_stable_index", None):
+                if index != getattr(self, "_profile_pending_index", None):
+                    self._profile_pending_index = index
+                    self._profile_pending_since = time.monotonic()
+                    self.record({"local_profile_index_pending": {
+                        "index": index, "stable_index": self._profile_stable_index,
+                        "character": character_at(public_fields, public, index),
+                        "public_sha256": digest,
+                    }})
+                held_for = time.monotonic() - getattr(self, "_profile_pending_since", 0.0)
+                if held_for < PROFILE_INDEX_HOLD_SECONDS:
+                    if getattr(self, "_last_index_held", None) != index:
+                        self._last_index_held = index
+                        self.record({"local_profile_save_held": {
+                            "reason": "selected character index unstable",
+                            "index": index,
+                            "stable_index": getattr(self, "_profile_stable_index", None),
+                            "character": character_at(public_fields, public, index),
+                            "hold_seconds": PROFILE_INDEX_HOLD_SECONDS,
+                            "public_sha256": digest,
+                        }})
+                    return False
+                self._profile_stable_index = index
+                self._profile_pending_index = None
+                self.record({"local_profile_index_accepted": {
+                    "index": index,
+                    "character": character_at(public_fields, public, index),
+                    "held_seconds": round(held_for, 3),
+                    "public_sha256": digest,
+                }})
             return original_service_save(blobs, balances=balances)
 
         self.service.save = save_only_catalog_items
