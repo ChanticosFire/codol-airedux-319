@@ -1,0 +1,32 @@
+{
+  "build": 1649370,
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+  "comparison": {
+    "r525_after_match": {
+      "ui": "warehouse showed only 背包 heading; no submenu or item tiles",
+      "screenshot_local": "runs/r525-warehouse-blank.jpg",
+      "screenshot_sha256": "9f2c0c96ab8265c604bbad5ac52c94d6d768d30a6a3f02e6d378ecb82439794e",
+      "native_inventory_count": 7208,
+      "recorded_inventory_state": 9
+    },
+    "r527_fresh_before_match": {
+      "ui": "warehouse 背包 displayed equipped loadout; 储物箱 displayed item grid and 190 道具 in 角色外观 category",
+      "screenshot_local": "runs/r527-fresh-storage-loaded.jpg",
+      "screenshot_sha256": "5dd3e27c8dd5c5aad8b44a3d96209ca6d715ac2e17a81fa0630b2580438b3360",
+      "native_inventory_count": 7208,
+      "native_inventory_state": 0,
+      "native_initial_fetch_bits": 7,
+      "native_store_state": 3,
+      "native_viewer_initialized": 1,
+      "native_viewer_model_count": 1
+    }
+  },
+  "disk_account": {
+    "revision": 1219,
+    "owned_ids": 7208,
+    "sqlite_integrity": "ok",
+    "profile_catalog_error": null
+  },
+  "profile_guard": "same guarded launcher implementation in both runs; r525 empty warehouse was observed before first rejected save; fresh r527 warehouse displays items with guard active",
+  "inference": "The guard did not cause the empty warehouse. The blank view is associated with the post-match frontend/native state. Its exact transition fault is not yet isolated."
+}
