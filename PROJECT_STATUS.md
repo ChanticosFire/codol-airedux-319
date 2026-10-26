@@ -34733,3 +34733,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - body 检测 False 是测试写法问题(PEM base64 在文件里带换行，我用 join(split()) 去换行后比对自然 False)。
 - 所以：cacert.pem 已含 auth.crt 与 system-trust-cert.pem；第133轮 auth_request 很可能就是它生效的证据；随后 SSLEOFError 说明认证响应不对。
 - 下一步：重启并用 --evidence 记录 auth_request body；看请求路径/字段修响应；认证成功账号/档案体系才建立。
+
+### 第 135 轮：读 codex 交接文档纠正认知；纯净端已启动交给用户
+- 用户批评"把把重大突破把把没进展"成立；读 1649370-RESCUE-HANDOFF.md(464行)纠正：①客户端TLS不读cacert.pem(读SSL_CERT_FILE/SSL_CERT_DIR/Common Files\SSL\cert.pem)，我追加CA无效；②正确TLS=RSA2048+/TLS1.0/AES128-SHA:AES256-SHA；③需hosts黑洞10域名+7配置文件完整stage；④--oob-delay不存在只用--match-duration，--server-command-text空串被拒；⑤勿因静态call链宣布突破(已两次翻案)。
+- 已清空全部监测进程(端口全空闲)，启动纯净端 session_up --name clean --server-seconds 7200 --bridge-seconds 7200(不带--rebuild-follow)：ok/net=10/client=20960/server=24236/bridge=19376；截图 mean=55.39。
+- 进程：LSG 7284(TCP28969)、gameserver 24236(UDP28969)、launcher 4492、客户端 20960、bridge 19376。
+- 已交给用户手动操作(无自动点击/按键注入/动态帧重编码)。
