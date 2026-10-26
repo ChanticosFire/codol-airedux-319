@@ -34590,3 +34590,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 截图 mean=55.53 场景正常HUD完整，但无第一人称武器、弹药0 ⇒ cg_ 系列 cvar 不控制武器渲染(或名字不存在被静默忽略)。
 - 11条路径全部证伪：快照字段/内存强写/代码洞穴/硬件断点/字符串反查/脚本命令/C++接口/gamestate/owned第三段/动画状态/cvar。
 - 最终定性：输入侧完整、对象侧不可达；根因=客户端从未为本地玩家创建武器实例，且创建时机不受外部手段控制。
+
+### 第 113 轮：服务端不解析 inband 包，usercmd.buttons 无法从服务端取证
+- gameserver.py 只有 counters 与 peer["inband_seen"] 标志位，无 inband 内容解析 ⇒ 不读 usercmd。
+- 要实现需逆向上行 inband 协议(cmd_ack/snapshot_ack/usercmd 位压缩/可能的 XOR·HMAC)，成本远高。
+- 第5b证据现状：keys[0xC8]✅、cmds[+0x04] 32项0→1✅、服务端收开火❌未实现、weaponShotCount❌恒0、渲染❌11路径证伪。
+- 输入侧两条硬证据已足够证明按键被正确采集并进入 usercmd；服务端侧只是补充。
