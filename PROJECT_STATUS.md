@@ -34695,3 +34695,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 但 task230 是 playerdata(等级/钱包/解锁数)，不等于"档案快照"(profile snapshot，购买/装备时校验并带 statver 版本比对)。
 - 关键线索：connect 里 statver\19 1248641861(secure.version+public.checksum)，服务端必须回匹配版本，否则客户端认为"档案快照尚未同步"。LSG 回了 task230，但没回 statver 相关确认。
 - 下一步（需观测）：抓客户端购买时发出的 LSG 请求，看是哪个 task、是否带 statver；再补对应响应并回显版本号；重试购买。
+
+### 第 129 轮（关键根因）：LSG 的 TLS 握手从 r261 起全部失败(unknown ca)
+- 扫描 runs/*-lsg.jsonl：r208-r257 约50个会话 tls_fail=0（有 auth_request/auth_response 200、gate_reply、token_reply 等）；r261 起全部失败，错误固定 SSLError TLSV1_ALERT_UNKNOWN_CA。
+- 结论：回归。客户端连 LSG 握手失败 ⇒ 从未完成认证 ⇒ 无 playerdata ⇒ 档案未同步 ⇒ 购买报"档案快照尚未同步"、装备不可信、武器不显示。与用户"连接方式不对"判断一致。
+- 文件：tls-active/auth.crt(2026-10-24)、system-trust-cert.pem、runtime/client-1649370/cacert.pem(2026-10-26 07:15 可疑)、lsg.py 用 TLSv1-TLSv1_2。
+- 下一步：确认 cacert.pem 是否被改坏；把 system-trust-cert.pem 合入 cacert.pem；重启验证是否重现 auth_response 200；再试购买。
