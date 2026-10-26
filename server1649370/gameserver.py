@@ -185,6 +185,10 @@ class RebuildFollower:
             if origin is None:
                 return None
             self.pos = list(origin)
+        elif not self.reader.is_active():
+            # Client left the match: stop emitting dynamic frames rather than
+            # repeating a stale position (that produced garbage like 0000e013).
+            return None
         # The client's own prediction never advances in this build, so the
         # held key drives the position here: this is server-authoritative
         # movement whose *input* is still the player's real key state.

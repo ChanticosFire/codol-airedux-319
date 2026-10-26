@@ -34082,3 +34082,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 但客户端 8960 `net=0`、`keys[W]=0`、`origin=(0,0,0)`；桥 `state=0` ⇒ 未进对局，按键驱动未验证。
 - 隐患：客户端 net=0 时 frame() 仍用旧 self.pos 发帧（payload 出现 `0000e013` 异常值），应改为 origin() 为 None 时不发动态帧。
 - 连续第二轮因手工编排五进程失败 ⇒ 下一步扩展 session_up 支持 --rebuild-follow（先起客户端拿 PID 再起服务端），并修 frame() 的 None 处理。
+
+### 第 39 轮：session_up 支持 --rebuild-follow；会话 net=10 后数秒断连
+- 修复 RebuildFollower.frame()：客户端非 active 时返回 None（避免陈旧位置发帧）。
+- session_up 新增 --rebuild-follow：顺序改为 客户端→补丁→服务端(带PID)→桥，py_compile 与 --help 验证通过。
+- 实测：断言 ok:true net=10，但随后客户端 net=0；服务端与桥进程均存活、桥 state=0、服务端回退发静态帧（origin 111.5）。
+- 判断：客户端在 net=10 后数秒内断连（本轮首次明确定位该现象），断连原因未查。
+- 下一步：抓 net=10→0 前后服务端日志（seq 连续性、重传、messageAck），排查超时/节奏问题；在此之前按键驱动无法验证。

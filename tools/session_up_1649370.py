@@ -119,6 +119,8 @@ def main() -> int:
     ap.add_argument("--keep-server", action="store_true")
     ap.add_argument("--keep-bridge", action="store_true")
     ap.add_argument("--skip-client", action="store_true")
+    ap.add_argument("--rebuild-follow", action="store_true",
+                    help="start the client first, then let the server encode snapshots from its held keys")
     args = ap.parse_args()
 
     logs = ROOT / "runs"
@@ -145,35 +147,40 @@ def main() -> int:
     else:
         step("LSG already listening")
 
-    # ---------------------------------------------------------- game server
-    owner = _udp_owner("", 28969)
-    if owner:
-        step("stopping existing game server", pid=owner)
-        subprocess.run(["powershell", "-NoProfile", "-Command", f"Stop-Process -Id {owner} -Force"],
-                       capture_output=True, text=True)
-        time.sleep(2)
-    if not args.keep_server:
-        step("starting game server", seconds=args.server_seconds)
-        server_args = [sys.executable, "-X", "utf8", "-B", "-m", "server1649370.gameserver",
-                       "--port", "28969", "--delay-send", "1",
-                       "--gamestate-source", "file", "--gamestate-file", args.gamestate,
-                       "--gamestate-gametype", "war",
-                       "--gamestate-map", "mp_crash_tropical",
-                       "--snapshot-delay", "1",
-                       "--snapshot-seq", "4", "--snapshot-repeat", "30000",
-                       "--snapshot-interval", "0.1",
-                       "--server-command-every", "10", "--server-command-seq", "4",
-                       "--server-command-text", " ",
-                       "--match-duration", str(int(args.server_seconds)),
-                       "--log", f"runs/{args.name}-gs.jsonl"]
-        if args.snapshot_dir:
-            server_args += ["--snapshot-dir", args.snapshot_dir, "--snapshot-interval", "0.25"]
-        else:
-            server_args += ["--snapshot-file", args.snapshot, "--snapshot-interval", "0.1"]
-        subprocess.Popen(server_args,
-                         cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        wait_for("game server UDP 28969", lambda: _udp_owner("", 28969), 20)
-        step("game server listening", pid=_udp_owner("", 28969), snapshot_dir=bool(args.snapshot_dir))
+    def start_server(follow_pid=None):
+        owner = _udp_owner("", 28969)
+        if owner:
+            step("stopping existing game server", pid=owner)
+            subprocess.run(["powershell", "-NoProfile", "-Command", f"Stop-Process -Id {owner} -Force"],
+                           capture_output=True, text=True)
+            time.sleep(2)
+        if not args.keep_server:
+            step("starting game server", seconds=args.server_seconds)
+            server_args = [sys.executable, "-X", "utf8", "-B", "-m", "server1649370.gameserver",
+                           "--port", "28969", "--delay-send", "1",
+                           "--gamestate-source", "file", "--gamestate-file", args.gamestate,
+                           "--gamestate-gametype", "war",
+                           "--gamestate-map", "mp_crash_tropical",
+                           "--snapshot-delay", "1",
+                           "--snapshot-seq", "4", "--snapshot-repeat", "30000",
+                           "--snapshot-interval", "0.1",
+                           "--server-command-every", "10", "--server-command-seq", "4",
+                           "--server-command-text", " ",
+                           "--match-duration", str(int(args.server_seconds)),
+                           "--log", f"runs/{args.name}-gs.jsonl"]
+            if follow_pid:
+                server_args += ["--rebuild-follow-pid", str(follow_pid)]
+            if args.snapshot_dir:
+                server_args += ["--snapshot-dir", args.snapshot_dir, "--snapshot-interval", "0.25"]
+            else:
+                server_args += ["--snapshot-file", args.snapshot, "--snapshot-interval", "0.1"]
+            subprocess.Popen(server_args,
+                             cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            wait_for("game server UDP 28969", lambda: _udp_owner("", 28969), 20)
+            step("game server listening", pid=_udp_owner("", 28969), snapshot_dir=bool(args.snapshot_dir))
+
+    if not args.rebuild_follow:
+        start_server()
 
     # -------------------------------------------------------------- client
     pid = None if not args.skip_client else _client_pid()
@@ -217,6 +224,9 @@ def main() -> int:
     if "ok=0" in result.stdout:
         raise SystemExit(f"r336 patch reported a failure: {result.stdout[:400]}")
     step("r336 patches applied")
+
+    if args.rebuild_follow:
+        start_server(pid)
 
     # --------------------------------------------------------------- bridge
     owner = _udp_owner("", 29023)
