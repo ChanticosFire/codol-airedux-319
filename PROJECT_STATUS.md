@@ -34485,3 +34485,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 全内存搜 viewmodel_m4 命中堆地址 0x1410f49e/0x48f4f69e/0x48f4f6f9；转储证实为 viewmodel_m4a1tech_idle、viewmodel_acr_fire/reload/pullout 等真实动画资源名。
 - 结论：资源不缺失，上轮"WeaponDef 模型指针为空"的推断错误。问题在绑定/索引：ps.weapon 可能是 wire 值不是直接索引；或渲染靠 viewmodelIndex+客户端状态机；或需 weaponstate/weapAnim 同步。
 - 下一步：从 viewmodel_m4a1tech_idle 字符串引用点反查渲染路径读哪个 ps 字段；或对比大厅(能渲染武器)与对局两条路径差异。
+
+### 第 96 轮：viewmodel 名非静态格式串，反查渲染路径未成功
+- viewmodel_%s / viewmodel_%s_%s / weapon_%s 均 0 命中；viewmodel 仅 1 处(0x9b222f 资源路径表 riotshield_viewmodel_hit)。
+- 结论：viewmodel_m4a1tech_idle 等名字是运行时从资源/动画表取出的，无静态引用点可循。
+- 剩余两条路：A 对比大厅(能渲染武器)与对局差异；B 挂钩 CG_AddViewWeapon 看它读哪个字段、在哪个条件提前返回。
+- 建议优先 B：通过 ps+0x4C / ps+0x15C 的读取点在渲染调用链里定位 CG_AddViewWeapon。
