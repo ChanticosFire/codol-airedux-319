@@ -342,7 +342,8 @@ class GameServer:
                  server_command_text: str | None = None,
                  snapshot_dir: str | None = None,
                  snapshot_frame_repeat: int = 1,
-                 rebuild_follow_pid: int | None = None):
+                 rebuild_follow_pid: int | None = None,
+                 send_opcode: int | None = None):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -365,6 +366,7 @@ class GameServer:
         self.map_name = self.gamestate_map.decode("ascii")
         self.gamestate_gametype = (gamestate_gametype or DEFAULT_GAMETYPE).encode("ascii")
         self.oob_command = oob_command
+        self.send_opcode = send_opcode
         self.oob_delay = float(oob_delay or 0.0)
         self.registration_checksum = registration_checksum
         self.challenge_override = challenge_override
@@ -621,6 +623,22 @@ class GameServer:
                 continue
             self.send_oob(addr, self.oob_command)
             peer["oob_due"] = None
+
+    def send_due_opcode(self) -> None:
+        """Send one raw inband body (a single opcode byte) to each peer."""
+        if self.send_opcode is None:
+            return
+        for addr, peer in self.state.peers.items():
+            due = peer.get("opcode_due")
+            if due is None or time.monotonic() < due:
+                continue
+            seq = peer.get("opcode_seq", self.snapshot_seq)
+            body = bytes([self.send_opcode & 0xFF])
+            self._send_fragments(addr, peer, b"\x00\x00\x00\x00" + body, seq, "opcode")
+            peer["opcode_seq"] = seq + 1
+            peer["opcode_due"] = None
+            self.log({"dir": "out", "kind": "raw_opcode", "opcode": self.send_opcode,
+                      "to": f"{addr[0]}:{addr[1]}", "seq": seq})
 
     def send_due_commands(self) -> None:
         """Send the captured server-command stream once per configured repeat."""
@@ -881,6 +899,7 @@ class GameServer:
                 self.send_due_commands()
                 self.send_due_snapshots()
                 self.send_due_oob()
+                self.send_due_opcode()
                 continue
             except OSError:
                 break
@@ -924,6 +943,8 @@ def main() -> int:
     parser.add_argument("--snapshot-seq", type=int, default=4)
     parser.add_argument("--snapshot-preserve-time", action="store_true",
                         help="keep the snapshot body's recorded serverTime")
+    parser.add_argument("--send-opcode", type=lambda v: int(v, 0), default=None,
+                        help="send one raw inband body with this opcode byte after connect")
     parser.add_argument("--rebuild-follow-pid", type=int, default=None,
                         help="encode each snapshot from the client predicted origin")
     parser.add_argument("--follow-client-pid", type=int, default=None,
@@ -1007,7 +1028,7 @@ def main() -> int:
                         args.follow_client_pid, args.client_state_pid, args.server_command_every,
                         args.server_command_seq, args.server_command_text,
                         args.snapshot_dir, args.snapshot_frame_repeat,
-                        args.rebuild_follow_pid)
+                        args.rebuild_follow_pid, args.send_opcode)
     try:
         server.serve()
     except KeyboardInterrupt:

@@ -34164,3 +34164,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 客户端 20100 仍存活、Responding、CPU 261s；net=0/ui=0/table=1353（逻辑仍在大厅）。
 - 结论：该"服务器连接断开"弹窗非普通 UI，点击与键盘都关不掉，且触发黑屏；OOB disconnect 虽能回大厅但会引发此弹窗，故"干净回大厅"不成立。
 - 下一步：①找 inband svc_disconnect（更正常断连方式）；②或先发"对局结束"类 serverCommand 让客户端进入结算再断开；③黑屏与之前垂直黑条可能同源，值得单独记。
+
+### 第 49 轮：新增 --send-opcode 工具用于扫描干净断开指令
+- 确认本 build svc opcode 与标准 COD4 不同：实际用 svc_snapshot=0、svc_serverCommand=1、svc_EOF=5。
+- 重读 send_due_snapshots 注释：缺 svc_serverCommand 会让 serverCommandSequence 不前进、未确认窗口超预测上限、CL_PredictMovement 被跳过 —— 为客户端自身不动提供了独立解释。
+- 新增 --send-opcode <n>：on_connect 后约 2 秒用 _send_fragments 发 [4字节 ack]+[opcode] 并记录 raw_opcode 日志；编译/导入均通过。
+- 未完成：本轮未实际扫描 opcode（每会话约 60 秒）。
+- 下一步：扫 opcode 2,3,4,6,7,8,9,10 看哪个能无弹窗回大厅；否则用 0x4737E0 反查 svc 分发表。
