@@ -1,125 +1,140 @@
-# CODOL Build 1649370 — 离线联机交付说明
+# CODOL Build 1649370 — 当前状态与卡点（2026-10-26 收尾版）
 
-本文档总结 `server1649370` 自建服务端与 Build 1649370 离线客户端联调的成果、证据与边界。
-所有结论都可在 `1649370-STATUS.md` 的对应小节中找到原始记录与截图路径。
+> 本文档替代此前所有"交付说明"性质的内容。只写**可验证的当前状态**、**确切卡点**、**已修复的自身错误**。
+> 历史流水见 `1649370-STATUS.md`；逐轮摘要见 `PROJECT_STATUS.md`；codex 的完整交接见 `1649370-RESCUE-HANDOFF.md`。
 
-## 一、最终验收状态
+---
 
-| # | 验收要求 | 状态 | 关键证据 |
-|---|---|---|---|
-| 1 | 服务端日志出现真实 `connect` 与 `stats` | ✅ 达成 | `runs/r558-gs.jsonl`（connect=2, stats=2）、`runs/r576-gs.jsonl`（connect=1, stats=4） |
-| 2 | 客户端网络状态经握手进入有效对局（`CA_ACTIVE=10`） | ✅ 达成 | 多轮稳定保持；`r581` 持续数分钟并产出 12+ 条 `rebuild_follow` 日志 |
-| 3 | 对局结束回到功能完整大厅 | ✅ 达成 | 客户端命令 `disconnect`（经 `cbuf` 注入）→ `net=0`、`table=1353`；`runs/r615b-cbuf-disconnect.png` 显示完整大厅、无弹窗、角色手持武器 |
-| 4 | `ui_state != 5` 且无错误弹窗 | ✅ 达成 | `ui_state` 恒为 0；第 3 项路径无任何弹窗 |
-| 5a | 玩家自行移动、有相应 HUD、非 demo/空图/黑屏/外部脚本 | ✅ 达成 | 见下文"移动证据链"与"四项排除" |
-| 5b | 有相应武器、能射击 | ◐ 输入侧达成、对象侧不可达 | 输入链路逐环实测（见下）；武器对象八条路径证伪 |
+## 一、已达成（有截图/日志/内存读数支撑）
 
-**五项完全达成，一项半达成。**
-
-## 二、移动证据链（逐环可复现）
-
-1. **真实按键**：`tools/hold_key_1649370.py` 用 `SendInput` 级输入，非内存写入。
-2. **客户端采集**：`keys[]`（基址 `0x7508CBC`，12 字节/项）中 W 键（`0x77`）按下时 `[1,1,33]`、松开时 `[0,0,33]`。
-3. **进入 usercmd**：`usercmd_t.forwardmove`（`cl+0x3CD0` 起，44 字节/项，`+0x1A`）实测 `127`。
-4. **位置变化**：`ps.origin`（`ps+0x30`）随按键单调变化。
-   - `r601` 四采样点：`111.5 → -116.5 → -477.5 → -819.5`（累计 931 单位，约 155 单位/秒，与 `ps.speed=190` 同量级）
-   - 松开立即停止；按 S 反向。
-5. **画面同步**：`runs/r581-moved.png`、`runs/r601-t2.png` 显示实时视角与完整 HUD（雷达/计分板/生命值/"战术团队竞技模式"），雷达箭头随移动变化。
-
-### 四项排除（对应验收第 5 项的否定条件）
-
-- **非 demo 播放器**：demo 是回放、不响应输入；而位移随按键单调变化、松开即停，与 `keys[]` 实时同步。
-- **非空地图**：`r601-t2.png` 可见建筑、柱子、管道、电线、远景山、地面阴影、路边轮胎。
-- **非黑屏**：正常状态截图 mean ≈ 55；仅异常状态（`r588`/`r609`）为 0。
-- **非外部脚本单方面移动镜头**：位移只在按键期间发生，方向与按键一致。
-
-## 三、射击的输入侧（完整）
-
-| 环节 | 证据 |
-|---|---|
-| 鼠标左键被采集 | `keys[0xC8]` 按住时 0→1（`tools/hold_mouse_1649370.py`） |
-| 进入 usercmd 按钮位 | `usercmd_t.buttons`（`+0x04`）32 项**全部** 0→1（全字节三态对比，唯一变化偏移） |
-| 前进值 | `usercmd_t.forwardmove`（`+0x1A`）= 127 |
-
-**从按键到 `usercmd.buttons` 的每一环都独立实测过。**
-
-## 四、武器对象侧（不可达，原因已定位）
-
-### 已证伪的八条路径
-
-| 路径 | 结果 |
-|---|---|
-| 服务端快照写 `ps.weapons` | ❌ 武器位图在 `codol_ps_ext_t`（extension），且 `0x55C` 的 codec `-57` 不在 delta 解码路径 |
-| 客户端内存强写 `ps` 字段 | ✅ 写入成功（1645 次），但**不渲染** |
-| 代码洞穴 hook 解码 | ✅ 稳定不崩，但写入被预测流程覆盖 |
-| 硬件读断点观测 | ❌ 环境不支持（对照 `ps+0x00` 也 0 命中） |
-| 字符串/格式串反查 | ❌ `viewmodel_%s` 不存在；`viewmodel_m4a1tech_idle` 等是运行时表项 |
-| 客户端命令 `give`/`enableWeapon` | ❌ 客户端无此命令 |
-| C++ 接口 `WL_SetCurrentWeaponID` | ❌ 只有名字（0 引用），非注册表/导出 |
-| gamestate 提供武器表 | ❌ 292 条 configstring 仅 3 条本地化字符串 |
-
-### 根因：实例缺失，不是资源缺失
-
-**先纠正一个容易误解的说法**：本项目早期记录里写过"资源缺失"，这是不准确的。实际情况是：
-
-| 层次 | 状态 | 说明 |
+| # | 项 | 证据 |
 |---|---|---|
-| 资源文件 | ✅ **齐全** | `offline-resources/client_shipretail/chinese/` 下有 `common_mp.ff`(76 MB)、`common_gametype_mp.ff`(34 MB)、`mp_crash_tropical.ff`(32 MB) 等 20+ 个 fastfile |
-| 武器定义 `WeaponDef` | ✅ **存在** | 就在 `common_mp.ff` 里（社区源码称之为 `common_mp.zone`） |
-| 武器**实例** | ❌ **缺失** | 客户端从未为本地玩家创建武器对象 |
-| 触发实例创建的条件 | ❌ 未知 | 无法从外部满足 |
+| 1 | 协议层全通：`getchallenge` → `connect` → `stats` → `gamestate` → `snapshot` | `runs/r558-gs.jsonl`（connect=2, stats=2）、`runs/r576-gs.jsonl` |
+| 2 | 客户端进入 `net_state = 10`（`CA_ACTIVE`） | 多轮 `_sample_state.py` 实测，稳定保持 |
+| 3 | **3D 场景可见** | `runs/r581-moved.png`、`runs/r601-t2.png`：完整街景、建筑、柱子、阴影、电线、远景山 |
+| 4 | **玩家可由真实按键驱动移动** | `runs/r601` 四采样点：`origin.x` `111.5 → -116.5 → -477.5 → -819.5`（累计 931 单位）；松开即停；按 S 反向 |
+| 5 | HUD 完整 | 雷达（箭头随移动变化）、计分板、生命值条、"战术团队竞技模式" |
+| 6 | `ui_state = 0`（非 5） | 多轮实测 |
+| 7 | 干净回大厅 | `cbuf "disconnect"` → `net=0`、`table=1353`、`runs/r615b-cbuf-disconnect.png`（mean≈92，无弹窗） |
+| 8 | 大厅角色模型可见 | `runs/restored-session2.png`（存档恢复后，角色完整渲染） |
 
-### 为什么"填字段"填不出武器
-`CG_AddViewWeapon` 要画的是一个**对象**，不是整数：
-1. 已加载的 xmodel 指针（`WeaponDef.gunXModel` 指向的资源）；
-2. 绑定到该对象的动画树实例（`viewmodel_m4a1tech_idle` 等动画已注册，但需要实例承载）；
-3. `cg` 侧状态机（当前武器索引、切换进度）。
+**第 3、4 两项是 codex `RELEASE.md` §3 判定为 "build-level limitation / not achieved" 的部分。**
+它未做到的原因：playerState 逐字段 delta 编码有未建模分量（约 4.3 bits/字段），交付的 ps 是空的。
+本项目用 `r546-markers.bin` 静态帧 + `wire164.py` **位精确重建**（`identical to r546: True`）绕开该分量，ps 非空，故有相机、能渲染、能移动。
 
-我们能做到的只是"告诉客户端这个玩家拿着 78 号武器"（`ps.weapon`、owned 位、`weaponmodels`、`weaponstate` 全部写对），但客户端**没有为这个玩家创建过武器对象**——所以没有东西可画，武器状态机也不会启动。
+**注意**：大厅里"角色手里似乎有武器"**不是**对局武器渲染的证据——那是 UI/CEF 用本地存档渲染的预览，`ps.weapon` 在大厅同样是 0（已实测）。
 
-### 附带修正
-- `ps.weapons`（owned 位图）在 `playerState` 的 **extension** 里，不在固定偏移；extension 的定位依赖客户端内部的存储映射，外部无法复现。
-- 大厅里角色能显示武器**不能**作为"客户端有武器实例"的证据——那是 UI/CEF 层用本地存档数据渲染的 3D 预览，与对局渲染是两条独立路径（`ps.weapon` 在大厅里同样是 0）。
+---
 
-**结论：在当前离线镜像与当前环境下，武器实例不可达；11 条路径全部证伪。**
+## 二、卡点（当前真实阻塞）
 
-## 五、关键工具
+### 2.1 武器模型不显示（核心卡点）
+- 进地图：无手臂、无武器模型；
+- 大厅：人物模型有，**手里没有枪模**；
+- 仓库：**有贴图、无模型**；
+- 装备界面的连杀技能图标错用武器贴图（数据错乱的表征）。
 
-| 工具 | 用途 |
+已排除的解释（均有实测记录）：
+| 尝试 | 结果 |
 |---|---|
-| `tools/session_up_1649370.py` | 一条命令拉起完整会话并**断言 `net=10`**；支持 `--rebuild-follow` / `--match-disconnect` / `--send-opcode` / `--server-command-text` |
-| `server1649370/gameserver.py` | 自研服务端：`RebuildFollower`（按键驱动位移 + 每帧重编码）、`ClientOriginReader`（自动发现 PID） |
-| `server1649370/wire164.py` | 位精确快照编码器（与 `r546-markers.bin` 逐字节一致） |
-| `tools/hold_key_1649370.py` / `hold_mouse_1649370.py` | 真实键盘/鼠标输入 |
-| `tools/cbuf_1649370.py` | 向客户端命令行注入命令（回大厅的关键） |
-| `tools/patch_ps_weapon_full_1649370.py` | 代码洞穴写 `ps` 字段（可稳定装卸，`--noop` 可自检） |
-| `tools/probe_ps_pointer_1649370.py` | 验证 hook 看到的 `ps` 指针是否与真实值一致 |
+| `ps.weapon = 78`（ak47_mp）+ `ps+0x564` owned bit + `ps+0x81C+78` model 三者同时写对 | ✅ 写入成功、❌ 仍不渲染（第 108/109 轮） |
+| 追加 `weaponstate`/`weapAnim`/`weaponTime` | ✅ 全对、❌ 仍不渲染 |
+| 服务端快照写 `ps.weapons`（`0x55C`） | ❌ codec `-57` 不在 delta 解码路径；客户端 0 处 `[reg+0x55C]` 引用 |
+| 客户端 cvar `cg_weapon*` | ❌ 注入成功、无效果 |
+| 客户端命令 `give` | ❌ 客户端无此命令 |
+| C++ 接口 `WL_SetCurrentWeaponID` | ❌ 只有字符串名、0 处代码引用 |
+| gamestate 的 292 条 configstring | ❌ 只有 3 条本地化字符串，无武器定义表 |
+| `common_mp.ff`（76 MB，武器定义所在） | ❌ `IWff0100` 格式、非 zlib、内容不可直接读 |
 
-## 六、关键内存布局（本 build 实测）
+**推断（未验证）**：武器渲染需要客户端内部存在**完整武器实例**（xmodel 句柄 + 动画树实例 + cg 状态机联动），`ps` 整数字段无法伪造该实例。
 
+### 2.2 购买报错"档案快照尚未同步"
+- 客户端 `connect` 包带 `statver\19 1248641861`、`secureProfileReady\1`；
+- 服务端**没有任何 profile/stat 同步响应**；
+- LSG 日志：`auth_request` 曾成功一次（`15:26:06`），随即 `io_error: SSLEOFError`，之后又回到 `tls_handshake_failed / unknown ca`。
+
+### 2.3 LSG TLS 信任链未建立
+- 客户端内置 **OpenSSL 0.9.8zg**，信任锚是 `SSL_CERT_FILE` / `SSL_CERT_DIR` / `C:\Program Files (x86)\Common Files\SSL\cert.pem`；
+- **不读 `cacert.pem`**（codex 文档明确记录，实测也确认）；
+- 我们的证书（`runs/20261020-live-derived01/tls/auth.crt`，DER sha256 `bd56e356…`）与客户端信任的 CA（`CN=127.0.0.1, O=offline-research`，sha256 `08:9F:0E:09…`）**不匹配**，该 CA 私钥不在仓库内；
+- 客户端期望 TLS：**RSA2048+ / TLS1.0 / AES128-SHA:AES256-SHA**。
+
+### 2.4 缺失的 stage 配置（codex 文档 §12）
+- **hosts 黑洞**：10 个腾讯域名（`login.codol.qq.com` 等）当前一条都没写；
+- **7 个配置文件**：`dwauth.ini`、`iips.ini`、`stun.ini`、`IIPS/IIPSFilelist.ini`、`IIPS/IIPSHostApp.ini`、`TCLS/config/dirserver.xml`；
+- **带 `# CODOL-LOCAL-CA` 标记的 CA 块**（注入客户端真实读取的信任库）。
+
+---
+
+## 三、我犯过并已修复的错误（记录以免重蹈）
+
+| 错误 | 后果 | 状态 |
+|---|---|---|
+| 把 `data/v1649370/local.sqlite3` 的 `profiles` 替换成社区原版（revision 50），其余表保持原样 | **存档数据自相矛盾**：仓库空、大厅无模型、连杀技能错用武器贴图 | ✅ 已从 `backup-before-revert-20261026-232301.sqlite3` 完整恢复（`revision 1241`、`owned_ids 7208`、原 sha256），大厅模型已回来 |
+| 往 `runtime/client-1649370/cacert.pem` 追加 CA | 客户端根本不读该文件，**完全无效操作** | 已记录，不再做 |
+| 用"重大突破"描述没有实质进展的尝试 | 误导判断、浪费轮次 | 已在文档中改为只写可验证结论 |
+| `--oob-delay` / `--server-command-text ""` | 前者参数不存在，后者被 argparse 拒绝 | 已更正为 `--match-duration`；空文本用默认值 |
+| 只改 `local.sqlite3` 的部分表做"回退" | 制造了比原问题更难查的数据不一致 | 已恢复；教训写入本文档 §3 |
+
+---
+
+## 四、复现当前状态的命令
+
+```powershell
+cd E:\GAME\COD\codol-airedux\319
+
+# 完整会话（含按键驱动、动态帧重编码）
+python tools\session_up_1649370.py --name <name> --rebuild-follow
+
+# 纯净会话（无按键驱动、无动态帧重编码，供人工操作）
+python tools\session_up_1649370.py --name <name> --server-seconds 7200 --bridge-seconds 7200
+```
+
+`session_up` 会断言 `cls.state == 10`，失败即非零退出。
+
+关键环境：
+```
+服务端  server1649370  UDP 28969
+LSG     server319.lsg  TCP 28969
+桥      tools/ring_bridge_1649370.py forward --target 127.0.0.1:28969  UDP 29023
+客户端  codol1649370-offline.exe（经 tools/launch_1649370.py 启动）
+存档    data/v1649370/local.sqlite3（revision 1241，owned_ids 7208）
+```
+
+关键内存布局（本 build 实测）：
 ```
 cl          = *(0x76638F4) ^ 0x6891D1C7
 ps          = cl + 0x0C          （cl+0x2C 是 ps+0x20，不是 ps 起点）
 ps.origin   = ps + 0x30
 ps.weapon   = ps + 0x4C
-ps.buttons  = usercmd + 0x04
-keys[]      = 0x7508CBC（12 字节/项，active 在 +0/+4）
-cmds[]      = cl + 0x3CD0（44 字节/项；commandTime +0x00, forwardmove +0x1A）
+usercmd.buttons = +0x04
+usercmd.forwardmove = +0x1A
+keys[]      = 0x7508CBC（12 字节/项，active 在 +0/+4；鼠标左键 0xC8）
+cmds[]      = cl + 0x3CD0（44 字节/项）
 cls.state   = 0x76446B0
 ui_state    = 0x84ABA50
 ```
 
-## 七、已知瑕疵
+---
 
-- **垂直暗带**：画面左侧约 16%（列 308–613）有一条贯穿全高的暗带，RGB 偏暗红。**静态帧与动态帧完全相同**，属镜像固有表现，非本项目实现缺陷，不影响移动/HUD 判读。
-- **大厅角色模型**：OOB `disconnect` 路径会导致大厅角色模型丢失（已改用客户端命令 `disconnect`，此问题不再出现）。
+## 五、若要继续（按优先级）
 
-## 八、若要继续
+1. **先解决 LSG 认证**（§2.2/§2.3）——它是"账号/档案体系"的入口，武器/背包/购买都是其下游表现。
+   - 方向 A：按 codex §12 做完整 stage（hosts + 7 文件 + 带标记 CA + TLS1.0/RSA2048/AES-SHA）；
+   - 方向 B：找回 `CN=127.0.0.1` 那张 CA 的私钥，重签服务端证书；
+   - 验证判据：`lsg.jsonl` 出现 `auth_request` 后**不再 `SSLEOFError`**，而是完整的 `auth_response`。
+2. **武器实例问题**（§2.1）——在 LSG 通了之后再看；"玩家没有装备武器"可能是档案体系未建立的下游后果。
+3. **不要再投入**：`cacert.pem` 追加 CA、`ps` 字段试值、`cg_weapon` cvar —— 均已证伪。
 
-第 5b 若要保持推进，需要变更环境条件：
+---
 
-1. **允许挂调试器**（硬件断点在本环境不可用，已实测）；
-2. 或**修改客户端代码**（hook 掉武器拥有检查，让它无条件认为有武器）；
-3. 或**从 fastfile 层面提供武器资源与 gamestate 武器表**。
+## 六、诚实的总结
 
-在当前离线镜像 + 当前环境下，以上三条都超出工具链能力。
+**做成了的**：真连接、进图、可见 3D 场景、真实按键移动、完整 HUD、干净回大厅、`ui_state=0`。
+均有截图和内存读数，且第 3/4 项是 codex 判定为不可能的部分。
+
+**没做成的**：武器模型、购买、档案同步。
+三者共同上游是 **LSG 认证未建立**，而不是"武器代码没写"。
+
+**教训**：在武器线上花了约 60 轮反复试 `ps` 字段值，而真正的断点在**最开始的 TLS 握手**。
+如果早查 `lsg.jsonl` 的统计（`r208`–`r257` 全成功、`r261` 起全失败），可以省下大量时间。
