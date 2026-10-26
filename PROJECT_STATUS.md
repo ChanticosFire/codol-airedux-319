@@ -34565,3 +34565,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 但截图仍无第一人称武器、弹药仍0。
 - 结论：渲染还依赖第四条件（可能是 weaponstate/weapAnim 初值、weaponmodels 值1不是有效句柄、或 viewmodel 由 cg 侧状态机驱动而非直接读 ps）。
 - 意义：排除"缺 owned 位"假设，范围收窄到"渲染状态机本身"。九条路径全部证伪。
+
+### 第 109 轮：第10条路径也失败——连 weaponstate/weapAnim 一起设仍不渲染
+- 加 --force-anim：ps+0x2BC=1(weapAnim)、ps+0x2CC=0(weaponstate)、ps+0x2C0=100(weaponTime)，叠加 weapon=78/own bit14/model78=1。
+- 实测：net10 weapon78 own2=16384 model78=01 writes=1296，截图仍无武器、弹药0。
+- 结论：ps 层面所有可写字段都试过（weapon/owned/weaponmodels/weapAnim/weaponstate/weaponTime 同时正确）仍不渲染 ⇒ 排除"靠ps伪造武器"。
+- 原因：渲染需要已加载的 xmodel 指针 + 动画树实例 + cg侧状态机联动，都不是 ps 整数能伪造的。
+- 第5b最终：输入侧完整✅；ps字段侧❌；对象侧❌(无武器实例)。

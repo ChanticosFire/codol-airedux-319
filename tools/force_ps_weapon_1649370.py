@@ -44,6 +44,8 @@ def main() -> int:
     ap.add_argument("--model", type=int, default=1)
     ap.add_argument("--seconds", type=float, default=15.0)
     ap.add_argument("--hz", type=float, default=100.0)
+    ap.add_argument("--force-anim", action="store_true",
+                    help="also force weapAnim/weaponstate/weaponTime")
     args = ap.parse_args()
 
     h = kernel32.OpenProcess(0x1F0FFF, False, args.pid)
@@ -85,6 +87,12 @@ def main() -> int:
             ok &= write(ps + 0x55C + 4 * word, struct.pack("<I", bit))
         ok &= write(ps + 0x81C + (args.weapon & 0x7FF),
                     bytes([args.model & 0xFF]))
+        # weaponstate/weapAnim are what CG_AddViewWeapon normally gates on; with
+        # no weapon object they stay 0 forever (§104), so try forcing them too.
+        if args.force_anim:
+            ok &= write(ps + 0x2BC, struct.pack("<I", 1))   # weapAnim = 1 (idle)
+            ok &= write(ps + 0x2CC, struct.pack("<I", 0))   # weaponstate = 0 (ready)
+            ok &= write(ps + 0x2C0, struct.pack("<I", 100))  # weaponTime
         if ok:
             writes += 1
         time.sleep(period)
