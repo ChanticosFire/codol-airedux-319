@@ -34707,3 +34707,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 已回退：备份到 resources/1649370/local/profile/backup-before-revert-20261026-232301.sqlite3；用社区原版覆盖；验证 sha256/revision/哈希均为社区原版。
 - 重启：net=10 正常进对局；但 r638-lsg.jsonl 不存在 ⇒ 本次会话没经过 LSG(session_up 未启动 LSG 监听)。
 - 下一步：手动启动 LSG(TCP 28969 Auth)或让 session_up 支持；重启检查 lsg.jsonl 是否出现 auth_response 200；若恢复 TLS 再进大厅看武器模型与购买。
+
+### 第 131 轮：LSG一直在跑，问题是证书信任而非未启动
+- TCP 28969 已有监听(PID 3552)，手动再起报 Errno 10048 ⇒ LSG 一直在运行。
+- session_up 第151-156行确实启动 LSG(用 runs/20261020-live-derived01/tls/auth.crt)，但 stderr 被 DEVNULL 丢弃。
+- TLS 探测端口可拿到证书 DER sha256 bd56e356e3d0861f(794B)；auth.crt 文件 PEM sha256 0f7f5eb2cfbc9f95(1131B)，两处 tls-active 与 live-derived01 内容相同。
+- 根因是信任：LSG 在跑、证书能取到，但客户端拒绝(unknown ca)，因 cacert.pem 里没有签发该证书的 CA。
+- 下一步：提取 auth.crt 的签发者 CA；把 system-trust-cert.pem 合入 runtime/client-1649370/cacert.pem；重启看 lsg.jsonl 是否出现 auth_response 200。
