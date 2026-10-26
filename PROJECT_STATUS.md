@@ -34682,3 +34682,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 ### 第 126 轮：大厅恢复正常，具备试装备界面的条件
 - 上一会话(net=10 但黑屏 mean=0.0)；重启 + cbuf disconnect 回大厅：net=0/table=1353/ui=0，mean=90.9 正常。
 - 下一步：进装备界面→点主武器格子→看是否弹武器列表；弹出则选一把并对比 profiles.blob 前后差异定位槽位；不弹则说明离线禁用装备选择。
+
+### 第 127 轮（用户线索）：找到"档案快照尚未同步"机制——客户端上报statver服务端无响应
+- connect userinfo 里：statver\19 1248641861（19=secure version、1248641861=public checksum，正是 local.sqlite3 的 profiles.identity）、secureProfileReady\1。
+- 服务端日志 kind 仅 inband_short/fragment/snapshot_source/oob/stats/gamestateupdate/getchallenge/inband/connect/gamestate_source/start，无 profile/stat/purchase/inventory。
+- 结论：客户端报档案版本并期望服务端确认/同步，我们的服务端只回快照不做档案同步 ⇒ 客户端认为"档案快照尚未同步" ⇒ 购买失败、装备状态不可信、武器模型不显示。
+- 用户判断正确："用了错误的连接方式"。这比我之前追的 CS_WEAPONS/ps.weapon 更靠前。
+- 下一步：找客户端处理 statver 响应的协议；服务端 connect 后回确认让客户端认为档案已同步。
