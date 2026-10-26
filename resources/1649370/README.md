@@ -2,6 +2,8 @@
 
 更新：2026-10-26。项目根目录：`E:\GAME\COD\codol-airedux\319`。
 
+交接时活账号库已恢复到 revision 1227（角色 570）；`manifest.json` 的哈希记录资源**建表时的副本**，并非会变化的活库当前哈希。r528 完整测试库隔离在 `local/profile/quarantine-r528-weapon-test.sqlite3`；184 B 武器候选独立副本在 `local/unverified/r528-weapon1-codec11.bin`，**尚未证明有效**。最新执行交接见 `docs/1649370-DEEPSEEK-LONGTERM-GOAL.md`。
+
 本页是接手入口：[已验证启动流程](../../docs/1649370-KNOWN-GOOD-STARTUP.md) → 本页 → [逐文件清单及 SHA-256](manifest.json)。`local/` 是资源备份目录，已被 `.gitignore` 整体排除；其中有**私钥、账号数据库及客户端二进制**，不要加入 Git 或公开分发。代码和表格可提交，秘密字节不能提交。
 
 ## 当前使用的路线

@@ -1,0 +1,62 @@
+{
+  "build": 1649370,
+  "run": "r528-weapon-codec11",
+  "runtime_reused": "r107flow/runtime",
+  "source_snapshot": {
+    "path": "runs\\r522-clean-compact.bin",
+    "bytes": 182,
+    "sha256": "49736430cb02f0f1d2f46fcaa39cfb7c6915e386e5259c44c76c13d352457de6"
+  },
+  "candidate_snapshot": {
+    "path": "runs\\r528-weapon1-codec11.bin",
+    "bytes": 184,
+    "sha256": "5cd12dde23ad3f35d0da829374ea918a9a564dbb022a8cacd933996de77332ac",
+    "backup": "resources/1649370/local/unverified/r528-weapon1-codec11.bin"
+  },
+  "patch": {
+    "descriptor_address": "0xDA8520 + 57*12",
+    "descriptor": {
+      "offset": 76,
+      "codec": 11,
+      "hint": 0
+    },
+    "file_bit": 428,
+    "replaced": "changed=0",
+    "inserted_bits_lsb": "1110000000000",
+    "net_bit_growth": 12,
+    "descriptor_raw_hex": "4c0000000b00000000000000"
+  },
+  "server_counts": {
+    "getchallenge": 1,
+    "connect": 1,
+    "stats": 0,
+    "gamestateupdate": 5,
+    "snapshot_source": 50
+  },
+  "client": {
+    "net_state_peak": 10,
+    "duration_at_net10_approx_seconds": 0.4,
+    "stopped": true,
+    "profile_save_error": "Runtime selected character missing; refusing save",
+    "native_access_violation_observed": true,
+    "weapon_parse_verified": false,
+    "shooting_verified": false
+  },
+  "account_after_recovery": {
+    "revision": 1227,
+    "selected_index": 0,
+    "character_id": 570,
+    "owned_ids": 7208,
+    "sqlite_integrity": "ok"
+  },
+  "quarantined_database": {
+    "path": "resources/1649370/local/profile/quarantine-r528-weapon-test.sqlite3",
+    "sha256": "7acace493e243e938f39111681f7299d9016a126e1ac3a6406dd2caadd97ea3e"
+  },
+  "logs": [
+    "runs/r528-weapon-gs.jsonl",
+    "runs/r527-launch.out",
+    "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\r107flow\\reuse-c06359f6\\events.jsonl"
+  ],
+  "conclusion": "Test was interrupted by native AV plus host profile inspection error. Short net=10 is not proof that weapon bitstream parsed."
+}
