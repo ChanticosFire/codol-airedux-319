@@ -136,7 +136,7 @@ class ClientOriginReader:
             k32.CloseHandle(snap)
         return found
 
-    def _ensure_handle(self) -> bool:
+    def _ensure_handle(self, force: bool = False) -> bool:
         if self.handle:
             return True
         # Discovery walks the process list, which is far too slow to run once
@@ -144,7 +144,7 @@ class ClientOriginReader:
         # loop and the client times out (r577 never got past net=0).  Retry at
         # most once a second.
         now = time.monotonic()
-        if now - self._last_attempt < 1.0:
+        if not force and now - self._last_attempt < 1.0:
             return False
         self._last_attempt = now
         pid = self.pid
@@ -502,6 +502,8 @@ class GameServer:
             peer["gamestate_due"] = time.monotonic() + self.delay_send
             peer["gamestate_sent"] = False
             peer["inband_seen"] = False
+        if self.rebuild_follower is not None:
+            self.rebuild_follower.reader._ensure_handle(force=True)
         self.log({"dir": "in", "kind": "connect", "from": f"{addr[0]}:{addr[1]}",
                   "uid": uid, "userinfo_keys": sorted(info),
                   "name": info.get("name"), "xuid": info.get("xuid"),
@@ -716,12 +718,12 @@ class GameServer:
                 server_time = 72192 + index * 500
                 payload = payload[:5] + struct.pack("<I", server_time) + payload[9:]
             if self.rebuild_follower is not None:
-                # Keep serverTime in step with the real send cadence: a 500 ms
-                # jump every 100 ms frame made the client treat snapshots as
-                # out-of-order and die with unhandled_exception.
-                dynamic = self.rebuild_follower.frame(
-                    server_time=72192 + index * int(self.snapshot_interval * 1000),
-                    dt=self.snapshot_interval)
+                # The static path below stamps serverTime as 72192 + index*500 and
+                # that cadence is what the client accepts (r576 kept net=10 for
+                # minutes).  Using a different step here made consecutive frames
+                # disagree about time, and the client dropped to the lobby.
+                dynamic = self.rebuild_follower.frame(server_time=72192 + index * 500,
+                                                      dt=self.snapshot_interval)
                 if dynamic is not None:
                     payload = b"\x00\x00\x00\x00" + dynamic
                     if index % 25 == 0:
