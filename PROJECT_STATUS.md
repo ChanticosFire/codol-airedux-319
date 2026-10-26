@@ -34004,3 +34004,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 实测：按 W 时 `keys[0x77] = [1,1,0x21]`，松开 `[0,0,0x21]`；S/A/D/空格不误报。**按键状态确实被正确置位**。
 - **推翻 §1133**："keys[] 从未置位"的结论错误——全内存扫描判据（20 字节、active@+0x10）完全不对。
 - 真实缺口收窄为最后一环：`CL_KeyMove` 为何不产出非零 `forwardmove`。本次在大厅(net=0)实测，下一轮须在 net=10 下重测。
+
+### 第 28 轮：keys[] 基址仅 3 处引用，均非 CL_KeyMove
+- `0x7508CBC` 全部引用：`0x5B60E8`（CL_KeyEvent 内）、`0x5B684A`（`0x5B67D0` 另一事件处理）、`0x704EE0`。
+- 反汇编 `0x704EE0` 确认是"遍历按键表、对仍按下的键先 up 后 down 重放 CL_KeyEvent"，不是生成 usercmd 的 KeyMove。
+- 结论：本 build 的 KeyMove 不直接引用 keys[] 基址，很可能走 `in_forward` 类 dvar（与 COD4 一致）。这解释了 `+forward` 注入后 origin 不动——可能是读 dvar 的那段没运行。
+- 下一步：找 `CL_CreateNewCommands`/`CL_SendCmd`（command_number 稳定递增说明它在跑），看是否调用 KeyMove 等价物及其条件；并用 hook 在 CL_KeyEvent 与 CL_SendCmd 上同时计数确认时序。
