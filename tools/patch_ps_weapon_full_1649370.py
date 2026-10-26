@@ -1,0 +1,107 @@
+"""Force the client's playerState to look like it owns a weapon.
+
+`patch_ps_weapon_1649370.py` already installs a code cave at `0x472406` (right
+after the playerState block is decoded) that writes `ps+0x4C = 1`.  That alone
+is not enough to render a first-person weapon: the client also consults
+
+  * `ps+0x55C` — owned-weapon bitmap (four dwords, bit N = weapon N owned)
+  * `ps+0x81C` — one model byte per weapon
+
+and neither of those travels in the snapshot, which is why a server-side grant
+could never work (§1201, §1204: the bitmaps live in the playerState extension and
+the client never reads `[reg+0x55C]` from a snapshot).  Writing them directly in
+the client sidesteps that entirely.
+
+    python tools/patch_ps_weapon_full_1649370.py --pid 1234
+    python tools/patch_ps_weapon_full_1649370.py --pid 1234 --restore
+
+The cave is built as: save flags/regs, write the three fields relative to the
+decoded playerState, restore, then replay the two instructions we displaced.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ctypes
+import struct
+import sys
+from ctypes import wintypes as W
+
+TARGET = 0x472406
+ORIGINAL = bytes.fromhex("8b55b483c4")     # mov edx,[ebp-0x4c]; add esp,0xc
+PS_FROM_EBP = -0x3BB0                      # local snapshot + 0x20 = ps
+
+WEAPON = 1          # ps+0x4C  (word)  current weapon
+OWNED = 1 << 1      # ps+0x55C (dword) bit 1 => weapon 1 owned
+MODEL = 1           # ps+0x81C (byte)  weaponmodels[0]
+
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+
+def build_cave(cave: int) -> bytes:
+    code = bytearray()
+    code += b"\x9c\x60"                                    # pushfd; pushad
+    code += b"\x8d\x8d" + struct.pack("<i", PS_FROM_EBP)   # lea ecx,[ebp-0x3BB0]
+    code += b"\x66\xc7\x41\x4c" + struct.pack("<H", WEAPON)  # mov word [ecx+0x4C], n
+    code += b"\xc7\x81" + struct.pack("<I", 0x55C) + struct.pack("<I", OWNED)
+    code += b"\xc6\x81" + struct.pack("<I", 0x81C) + bytes([MODEL & 0xFF])
+    code += b"\x61\x9d"                                    # popad; popfd
+    code += ORIGINAL
+    resume = TARGET + len(ORIGINAL)
+    code += b"\xe9" + struct.pack("<i", resume - (cave + len(code) + 5))
+    return bytes(code)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--pid", type=int, required=True)
+    ap.add_argument("--restore", action="store_true")
+    args = ap.parse_args()
+
+    handle = kernel32.OpenProcess(0x1F0FFF, False, args.pid)
+    if not handle:
+        print(f"OpenProcess failed: {ctypes.get_last_error()}", file=sys.stderr)
+        return 1
+
+    def read(addr: int, size: int) -> bytes:
+        buf = ctypes.create_string_buffer(size)
+        got = ctypes.c_size_t()
+        if not kernel32.ReadProcessMemory(handle, ctypes.c_void_p(addr), buf, size,
+                                          ctypes.byref(got)) or got.value != size:
+            raise OSError(f"read {addr:#x} failed")
+        return buf.raw
+
+    def write(addr: int, data: bytes) -> None:
+        old = ctypes.c_ulong()
+        if not kernel32.VirtualProtectEx(handle, ctypes.c_void_p(addr), len(data),
+                                         0x40, ctypes.byref(old)):
+            raise OSError(f"protect {addr:#x} failed")
+        n = ctypes.c_size_t()
+        ok = kernel32.WriteProcessMemory(handle, ctypes.c_void_p(addr), data, len(data),
+                                         ctypes.byref(n))
+        kernel32.VirtualProtectEx(handle, ctypes.c_void_p(addr), len(data), old.value,
+                                  ctypes.byref(old))
+        if not ok or n.value != len(data):
+            raise OSError(f"write {addr:#x} failed")
+
+    if args.restore:
+        write(TARGET, ORIGINAL)
+        print(f"restored {TARGET:#x} to {ORIGINAL.hex(' ')}")
+        return 0
+
+    current = read(TARGET, len(ORIGINAL))
+    if current != ORIGINAL:
+        print(f"unexpected bytes at {TARGET:#x}: {current.hex(' ')}", file=sys.stderr)
+        return 1
+
+    cave = 0x472000  # free padding before the target, inside .text
+    code = build_cave(cave)
+    write(cave, code)
+    write(TARGET, b"\xe9" + struct.pack("<i", cave - (TARGET + 5)))
+    print(f"installed cave at {cave:#x} ({len(code)} bytes); "
+          f"weapon={WEAPON} owned={OWNED:#x} model={MODEL}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
