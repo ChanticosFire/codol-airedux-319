@@ -279,6 +279,11 @@ class RebuildFollower:
             # every non-zero id was rejected historically.  Retry now that the
             # client runs a real playerState and a stable session.
             0x4C: 1,
+            # viewangles: ps+0x10..0x18 is uninitialised garbage in this build,
+            # which is why the camera pointed into a wall.  yaw/pitch/roll = 0
+            # looks straight down -x, matching the direction the movement code
+            # drives.
+            0x10: 0, 0x14: 0, 0x18: 0,
             0x30: _word(origin[0]), 0x34: _word(origin[1]), 0x38: _word(origin[2]),
         }
         # position_base must stay (0,0,0): it is the delta codec's reference for
