@@ -34714,3 +34714,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - TLS 探测端口可拿到证书 DER sha256 bd56e356e3d0861f(794B)；auth.crt 文件 PEM sha256 0f7f5eb2cfbc9f95(1131B)，两处 tls-active 与 live-derived01 内容相同。
 - 根因是信任：LSG 在跑、证书能取到，但客户端拒绝(unknown ca)，因 cacert.pem 里没有签发该证书的 CA。
 - 下一步：提取 auth.crt 的签发者 CA；把 system-trust-cert.pem 合入 runtime/client-1649370/cacert.pem；重启看 lsg.jsonl 是否出现 auth_response 200。
+
+### 第 132 轮：证书已附加进 cacert.pem(179个PEM)，但本次会话未连LSG
+- 备份后附加 auth.crt 与 system-trust-cert.pem：293944→296299 字节，PEM 179个。
+- 重启 r639：ok/net=10，但 runs/r639-lsg.jsonl 不存在 ⇒ 本次启动客户端根本没向 TCP 28969 发起 TLS。
+- 可能：①客户端缓存了"不可信"判断需清缓存；②只在首次启动/登录流程连 LSG 而 --queue-main-menu 跳过登录；③LSG 连接发生在 launcher 更早阶段，session_up 快捷路径绕过了。
+- 下一步：对比有 LSG 日志的会话(r633 2条/r637 1条)与本次启动差异；查 launch_1649370.py 的 --local-auth-lsg；或模拟完整首次启动。
+- 注：信任链已补但尚未被检验。
