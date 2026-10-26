@@ -121,8 +121,9 @@ def main() -> int:
     ap.add_argument("--skip-client", action="store_true")
     ap.add_argument("--match-disconnect", type=float, default=None,
                     help="send the OOB disconnect command this many seconds after connect to end the match")
-    ap.add_argument("--send-opcode", type=lambda v: int(v, 0), default=None,
-                    help="send one raw inband body with this opcode after connect")
+    ap.add_argument("--send-opcode", default=None,
+                    help="comma separated raw inband opcodes to send after connect, "
+                         "three seconds apart")
     ap.add_argument("--rebuild-follow", action="store_true",
                     help="start the client first, then let the server encode snapshots from its held keys")
     args = ap.parse_args()

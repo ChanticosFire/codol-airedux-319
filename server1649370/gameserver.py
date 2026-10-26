@@ -366,7 +366,10 @@ class GameServer:
         self.map_name = self.gamestate_map.decode("ascii")
         self.gamestate_gametype = (gamestate_gametype or DEFAULT_GAMETYPE).encode("ascii")
         self.oob_command = oob_command
-        self.send_opcode = send_opcode
+        # A comma separated list lets one session try several opcodes;
+        # they are sent 3 s apart so each one can be attributed.
+        self.send_opcodes = ([int(part.strip(), 0) for part in str(send_opcode).split(",")
+                              if part.strip()] if send_opcode else [])
         self.oob_delay = float(oob_delay or 0.0)
         self.registration_checksum = registration_checksum
         self.challenge_override = challenge_override
@@ -609,11 +612,12 @@ class GameServer:
                 peer["command_count"] = 0
             if self.oob_command:
                 peer["oob_due"] = time.monotonic() + self.oob_delay
-            if self.send_opcode is not None:
+            if self.send_opcodes:
                 # Fire a couple of seconds after connect: earlier and the client
                 # is still loading the map and ignores the message.
-                peer["opcode_due"] = time.monotonic() + max(2.0, self.snapshot_delay)
+                peer["opcode_due"] = time.monotonic() + max(3.0, self.snapshot_delay)
                 peer["opcode_seq"] = self.snapshot_seq
+                peer["opcode_index"] = 0
             if self.gamestate_repeat and peer["gamestate_count"] < self.gamestate_repeat:
                 peer["gamestate_sent"] = False
                 peer["gamestate_due"] = time.monotonic() + self.gamestate_interval
@@ -630,20 +634,26 @@ class GameServer:
             peer["oob_due"] = None
 
     def send_due_opcode(self) -> None:
-        """Send one raw inband body (a single opcode byte) to each peer."""
-        if self.send_opcode is None:
+        """Send the next queued opcode to each peer, 3 s apart."""
+        if not self.send_opcodes:
             return
         for addr, peer in self.state.peers.items():
             due = peer.get("opcode_due")
             if due is None or time.monotonic() < due:
                 continue
+            index = peer.get("opcode_index", 0)
+            if index >= len(self.send_opcodes):
+                peer["opcode_due"] = None
+                continue
+            opcode = self.send_opcodes[index]
             seq = peer.get("opcode_seq", self.snapshot_seq)
-            body = bytes([self.send_opcode & 0xFF])
+            body = bytes([opcode & 0xFF])
             self._send_fragments(addr, peer, b"\x00\x00\x00\x00" + body, seq, "opcode")
             peer["opcode_seq"] = seq + 1
-            peer["opcode_due"] = None
-            self.log({"dir": "out", "kind": "raw_opcode", "opcode": self.send_opcode,
-                      "to": f"{addr[0]}:{addr[1]}", "seq": seq})
+            peer["opcode_index"] = index + 1
+            peer["opcode_due"] = time.monotonic() + 3.0
+            self.log({"dir": "out", "kind": "raw_opcode", "opcode": opcode,
+                      "index": index, "to": f"{addr[0]}:{addr[1]}", "seq": seq})
 
     def send_due_commands(self) -> None:
         """Send the captured server-command stream once per configured repeat."""
@@ -948,7 +958,7 @@ def main() -> int:
     parser.add_argument("--snapshot-seq", type=int, default=4)
     parser.add_argument("--snapshot-preserve-time", action="store_true",
                         help="keep the snapshot body's recorded serverTime")
-    parser.add_argument("--send-opcode", type=lambda v: int(v, 0), default=None,
+    parser.add_argument("--send-opcode", default=None,
                         help="send one raw inband body with this opcode byte after connect")
     parser.add_argument("--rebuild-follow-pid", type=int, default=None,
                         help="encode each snapshot from the client predicted origin")

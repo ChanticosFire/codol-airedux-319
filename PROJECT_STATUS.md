@@ -34191,3 +34191,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 修复后 615 设置/637 读取/644 清空三处齐备；r594 日志出现 raw_opcode opcode=2 seq=4。
 - 但 opcode 2 发出 10 秒后客户端仍 net=10/table=11、画面无变化 ⇒ 不是断开指令。
 - 下一步：扩展 --send-opcode 支持逗号列表（同会话每 3 秒依次发），一次会话扫完 3,4,6,7,8,9,10；注意真断开后后续就发不到了。
+
+### 第 53 轮：opcode 列表扫描完成，2/3/4/6/7/8/9/10 全部未断开
+- gameserver 的 send_opcode 支持逗号列表（间隔 3 秒、队列式），session_up 同步支持；一次会话即可扫多个。
+- r596 发出 7 个 opcode（seq 4-10），客户端 net=10/ui=0/table=11 全程未变，画面无变化。
+- 已排除 opcode 2,3,4,6,7,8,9,10（8 个）；已知 snapshot=0/serverCommand=1/EOF=5。
+- 下一步：继续扫 11-20；若都不中则断开需特定载荷；更可靠的是用 svc_serverCommand handler 0x4737E0 反查 CL_ParseServerMessage 的分发表。
