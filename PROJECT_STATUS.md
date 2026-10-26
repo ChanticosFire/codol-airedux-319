@@ -34302,3 +34302,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 0x2C（hint=3 强制写）改为环境变量并设 100：会话 ok/net=10，但截图 overall mean=0.0 全黑，与 viewmodelIndex=1 现象一致。
 - 结论：0x2C 及同类 hint=3 字段（0x3C/0x40/0x44/0x100/0x568）大概是渲染/相机必需量，非零即黑屏；猜偏移试值成本高且危险。
 - 建议停止在该路试值；第5b 维持"输入侧达成、渲染侧未达成"。若要继续渲染侧，应先静态定位 R_RegisterModel 拿真实 model 索引表。
+
+### 第 68 轮：map_restart 0 作为 serverCommand 无效
+- r612 用 --server-command-text "map_restart 0"：15 秒后仍 net=10/table=11，画面正常(mean 55.37)。
+- 结合前面：空串作心跳正常、disconnect 无效、map_restart 无效 ⇒ svc_serverCommand 只接受白名单命令或命令名与COD4不同。
+- "先结束比赛再断开"这条思路未走通；唯一回大厅手段仍是 OOB disconnect（带不可关闭弹窗+角色模型丢失）。
+- 下一步可选：接受现状做记录整理；或静态分析 svc_serverCommand 白名单(0x4737E0)；或找 CL_ParseServerMessage 分发表确认 svc_disconnect。
