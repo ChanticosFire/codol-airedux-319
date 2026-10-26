@@ -343,3 +343,118 @@ x 不要动客户端文件（尤其 cacert.pem）
 
 **协议层是通的，缺的是"让客户端愿意把画面画出来"以及"让它不触发 TP 门控地跑到那一步"。**
 **本仓库里价值最高的东西不是服务端代码，而是这份"哪些结论经过验证、哪些被翻过案"的记录 —— 请继续维持这个区分。**
+
+---
+
+## 12. 完整客户端 stage 配方（2026-10-26 补充，这是最关键的一节）
+
+### 12.0 结论先行
+
+**之前所谓的"进度倒退"其实不是倒退 —— 是从未做过完整的 stage。**
+
+上游参考实现 `_upstream/codol_launcher/tools/native-client/reference/launcher/core/prep.py`
+里的 `apply()` 才是完整配方：改 **7 个文件 + hosts + CA**。我们只处理了 4 个（其中 3 个写回原值），
+**完全没碰 `TCLS`、`IIPS` 的两个 ini、以及 hosts 黑洞** —— 所以客户端启动时仍去解析真实腾讯域名、
+尝试连外网、卡在 TCLS/TP 检查，根本不进网络流程。
+
+### 12.1 hosts 黑洞（10 个域名，当前一条都没有）
+
+上游 `HOSTS_DOMAINS`：
+
+```
+login.codol.qq.com
+tub.codol.qq.com
+stat.iips.qq.com
+ctrl.iips.qq.com
+iips.speed.qq.com
+rtstat.iips.qq.com
+down-update.qq.com
+stun.qq.com
+stun1-stn.codol.qq.com
+stun2-stn.codol.qq.com
+```
+
+需要以 `127.0.0.1 <domain>`（或 `::1`）形式写进 `C:\Windows\System32\drivers\etc\hosts`。
+**当前 hosts 里这 10 个域名一个都没有**（只有 steam 的条目）。
+
+> 注：改 hosts 会影响整机解析。上游的设计是把这些域名黑洞到回环，让客户端的请求落到本地服务。
+
+### 12.2 七个配置文件的正确内容
+
+```python
+# dwauth.ini —— 上游格式是「每个字段单独一行」
+'%s\r\n%s\r\n%s\r\n%s\r\n3ea\r\n' % (addr, port, addr, port)
+
+# iips.ini
+'iips_url="http://%s:8000/"' % addr          # 注意上游用 8000，不是 8099
+
+# stun.ini —— 三行 addr
+''.join('%s\n' % addr for _ in range(max(3, len(lines))))
+
+# IIPS/IIPSFilelist.ini —— 改写每个 FileUrl
+re.sub(r'(FileUrl\s*=\s*)(\S+)', fix, txt)
+#   fix: 'http://%s:8000/%s' % (addr, basename(url))
+
+# IIPS/IIPSHostApp.ini —— 改写 Address
+re.sub(r'Address=udp://[^\r\n]+', 'Address=udp://%s:8000' % addr, txt)
+
+# TCLS/config/dirserver.xml —— 改写 host 属性（TP 门控关键）
+re.sub(r'host="[^"]*"', 'host="%s"' % addr, txt)
+```
+
+### 12.3 cacert.pem 必须带标记
+
+```python
+CA_MARKER = '# CODOL-LOCAL-CA'
+
+# 注入方式：先找标记块并替换；找不到才 append
+pem = (CA_MARKER + '\n' + ca_pem.strip() + '\n').encode()
+# 追加时还要保证原文以 \n 结尾
+```
+
+**单纯的裸 PEM append 缺少标记行**（我们 round 520 的做法）。虽然上游的 fallback 也是 append，
+但补上标记才能被识别/替换，也便于 `restore`。
+
+### 12.4 TLS 参数必须匹配（`_upstream/codol_server/apps/codol-platform/src/native_config.rs:429`）
+
+```rust
+"tls10_loopback_explicit_certificate" => {
+    if key.id() != RSA || key.bits() < 2048 { bail!("requires project RSA2048 or stronger") }
+    tls.set_security_level(0);                        // TLS1.0 的 legacy 签名需要
+    tls.set_min_proto_version(TLS1);
+    tls.set_max_proto_version(TLS1);
+    tls.set_cipher_list("AES128-SHA:AES256-SHA");      // 只有这两套
+    tls.set_options(NO_RENEGOTIATION);
+}
+```
+
+注释说明：这个子集**正好交集**于实测的 1604220 ClientHello 的 RSA AES 套件。
+所以服务端必须是 **RSA2048+ / TLS1.0 / AES128-SHA 或 AES256-SHA**。
+Python 的 `ssl` 默认配置可能不支持 TLS1.0 或这三套 cipher —— 需要显式设置：
+`ssl.SSLContext(PROTOCOL_TLS_SERVER)` + `set_ciphers('AES128-SHA:AES256-SHA')` +
+`minimum_version=maximum_version=TLSv1` + `security_level` 下调。
+
+### 12.5 关于 `data/tls/auth.key`
+
+**不存在。** 全盘 `E:\GAME\COD` 搜 `auth.key` 只有 3 个，全部是本项目自己生成的：
+
+```
+1604220\runs\live-stage\tls\auth.key        2026-10-26 09:48
+1604220\runs\stage1\tls\auth.key            2026-10-26 07:15
+319\runs\20261020-live-derived01\tls\auth.key  2026-10-24 23:03
+```
+
+没有 `data\tls` 目录；`319\runtime` 与 `1604220\runtime` 下都没有 `auth.key`。
+客户端信任的那张 `CN=127.0.0.1, O=offline-research` CA 的私钥**仍不在仓库内**，
+但按 12.1-12.4 的完整配方，可以用我们自己新生成的 CA 重新走一遍（注入带标记的 CA 块即可）。
+
+### 12.6 修订后的第 1 步（替换 §9 的第 1 步）
+
+```
+按 12.1 ~ 12.4 做完整 stage（7 文件 + hosts + 带标记 CA + TLS1.0/RSA2048/AES-SHA），
+而不是只改 4 个文件。
+然后再看客户端是否：
+  a) 不再弹 "请使用腾讯游戏登录器启动游戏"
+  b) 开始尝试连接 4174（live-lsg.jsonl 出现非零行）
+只有 b) 成立，后面的快照/codec 工作才有意义。
+```
