@@ -129,7 +129,8 @@ ui_state    = 0x84ABA50
 ## 五、若要继续（按优先级）
 
 1. **继续验证档案同步协议**：r644 TLS 认证已恢复，但购买、仓库及玩家装备关系尚未实机确认。先记录缺失的业务 task/响应，再定位档案快照确认。
-2. **武器注册与玩家装备**：r645–r647 在真实连接 `net=10` 时，武器字符串表只剩 11 条（`defaultweapon_mp` + 10 个 `defaultknife_mp`），`ps.weapon=0`、`primary=0`、`viewmodelIndex=1023`。在现有完整 gamestate 里加 `(5960,"ak47_mp")`、或把 gametype 从 `war` 改为 `mp`，表仍为 11，枪模仍不显示。下一步需定位进入对局时为什么丢失大厅的 1353 条定义、哪个 fastfile 注册流程没有执行，并由服务端下发有效的玩家装备状态。
+2. **武器注册与玩家装备**：r645–r647 在真实连接 `net=10` 时，武器字符串表只剩 11 条（`defaultweapon_mp` + 10 个 `defaultknife_mp`），`ps.weapon=0`、`primary=0`、`viewmodelIndex=1023`。在现有完整 gamestate 里加 `(5960,"ak47_mp")`、或把 gametype 从 `war` 改为 `mp`，表仍为 11，枪模仍不显示。历史 §419 曾在 16 个 fastfile 已加载时观察到同样的表计数，因此下一步需**实测**当前加载列表与武器注册时序，并定位由服务端下发的有效玩家装备状态；不能单凭 11 项断言某个包缺失。
+   r648/r649 又实测：同时下发非零 `ps.weapon`、主副武器 ID 和尾部 inventory 后，ID 1 报 `174 defaultweapon_mp`、ID 2 报 `174 defaultknife_mp` 并退大厅；r650 零武器基底仍可进图但无枪模。尾部装备单独不足以修复。先确认实际注册了哪个可用武器定义及其 wire ID，之后再完成玩家装备、手臂模型与射击链。
 3. **保持实验边界**：不要再把单独的 `net=10`、认证 200、`ps` 强写或一条 configstring 视为武器可用；必须读表、读 `ps`、看画面并验证射击反馈。
 
 ---

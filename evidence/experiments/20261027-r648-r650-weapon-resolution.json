@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-27",
+  "runtime": "reused r107flow/runtime",
+  "baseline": {
+    "snapshot": "runs/r546-markers.bin",
+    "rebuild_byte_exact": true,
+    "bytes": 73
+  },
+  "experiments": [
+    {
+      "run": "r648",
+      "snapshot": "runs/r648-tail-weapon1.bin",
+      "weapon_id": 1,
+      "player_state": "weapon=1, primary=1, alt=1, inventory slot0=1, spawn event=1",
+      "session_reached_net_10": true,
+      "final_observation": "error 174 defaultweapon_mp; returned to lobby",
+      "first_person_weapon_visible": false
+    },
+    {
+      "run": "r649",
+      "snapshot": "runs/r649-tail-weapon2.bin",
+      "weapon_id": 2,
+      "player_state": "weapon=2, primary=2, alt=2, inventory slot0=2, spawn event=1",
+      "session_reached_net_10": true,
+      "final_observation": "error 174 defaultknife_mp; returned to lobby",
+      "first_person_weapon_visible": false
+    },
+    {
+      "run": "r650",
+      "snapshot": "runs/r546-markers.bin",
+      "session_reached_net_10": true,
+      "player_state": "weapon=0, primary=0, viewmodelIndex=1023",
+      "weapon_string_table_count": 11,
+      "fastfile_request_queue_sampled_count": 0,
+      "fastfile_global_gate": 1,
+      "first_person_weapon_visible": false
+    }
+  ],
+  "claim_limits": [
+    "An empty transient fastfile request queue does not prove no fastfile was loaded.",
+    "Error 174 establishes weapon name resolution failed for these IDs, but does not identify a specific missing package.",
+    "The optional inventory tail encoder has not produced a working first-person weapon."
+  ],
+  "profile": {
+    "experimental_copies": "ignored resources/1649370/local/profile/quarantine-post-r648,r649,r650.sqlite3",
+    "restored_live_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "sqlite_integrity": "ok"
+  }
+}
