@@ -71,7 +71,7 @@
 
 | 原路径（相对 `319/`） | 资源副本 | 状态 |
 |---|---|---|
-| `runs/snapshot-ps58.bin`、`snapshot-ps57.bin`、`snapshot-both.bin` | `local/unverified/` | 16 / 16 / 17 B；尚未送给客户端 |
+| `runs/snapshot-ps58.bin`、`snapshot-ps57.bin`、`snapshot-both.bin` | `local/unverified/` | 16 / 16 / 17 B；`ps58` 已在 r526 真实连接测试：`net=10`，但画面黑屏、无玩家，不能当可用快照；其余两个尚未送给客户端 |
 | `server1649370/ps_codec.py` | `local/unverified/ps_codec.py` | 新增 playerState codec，仅自洽验证 |
 | `tools/build_1649370_snapshot_entity.py` | `local/unverified/build_1649370_snapshot_entity.py` | `ps_fields` / `FIELD_CODECS` / `_write_ps_deltas`，未用于 r523 |
 | `runs/start_lobby_services.py`、`client_live_services.py` | `local/unverified/` | 手写启动脚本，未作为 r523 可靠配方 |

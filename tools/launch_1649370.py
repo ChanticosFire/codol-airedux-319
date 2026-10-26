@@ -123,6 +123,33 @@ _original_prepare = launch_mod.prepare
 # 这条 +set 是配套的 —— 少了它客户端会在普通文件打开处报 WIN_FILE_NOT_FOUND（文件名为空）。
 GAME_ARGUMENTS = ("+set", "2439", "0", "+set", "cl_timeout", "600", "+set", "cl_connectTimeout", "600")
 
+
+def profile_catalog_error(public: bytes, schema: dict, catalog_ids: set[int]) -> str | None:
+    """Refuse native profile snapshots whose selected character or guns are not items.
+
+    The game rewrites these IDs to transient values during a match. Saving that
+    runtime representation makes the next launch's lobby and loadout empty.
+    """
+    from codol_rebuild.adapters.game.profile_format.fields import Fields
+
+    fields = Fields(schema)
+    try:
+        selected = fields.read(public, "currentCharacterIndex")
+        character = fields.read(public, f"characterClasses.{selected}.slots.0")
+        if character not in catalog_ids:
+            return f"selected character {character} absent from catalog"
+        for slot in range(5):
+            prefix = f"weaponClasses.{slot}."
+            if not fields.read(public, prefix + "name"):
+                continue
+            for name in ("primaryBase", "secondaryBase"):
+                item = fields.read(public, prefix + name)
+                if item and item not in catalog_ids:
+                    return f"loadout {slot} {name} {item} absent from catalog"
+    except (ValueError, IndexError, KeyError) as error:
+        return f"profile field invalid: {error}"
+    return None
+
 CREATION_FLAGS = 1030  # CREATE_SUSPENDED | CREATE_NEW_PROCESS_GROUP | CREATE_UNICODE_ENVIRONMENT
 
 ENV_KEYS = ("SystemRoot", "WINDIR", "COMSPEC", "SystemDrive",
@@ -3422,6 +3449,29 @@ def main(argv=None) -> int:
             raise
 
     bridge_mod.GameSessionBridge.handle_exception = tolerant_handle_exception
+
+    original_profile_initialize = bridge_mod.LocalProfileBridge.initialize
+
+    def guarded_profile_initialize(self, schemas, tables, catalog):
+        account = original_profile_initialize(self, schemas, tables, catalog)
+        original_service_save = self.service.save
+
+        def save_only_catalog_items(blobs, balances=None):
+            reason = profile_catalog_error(blobs["public"], schemas["public"], set(self.catalog))
+            if reason:
+                digest = hashlib.sha256(blobs["public"]).hexdigest()
+                if getattr(self, "_last_rejected_profile", None) != digest:
+                    self._last_rejected_profile = digest
+                    self.record({"local_profile_save_rejected": {
+                        "reason": reason, "public_sha256": digest,
+                    }})
+                return False
+            return original_service_save(blobs, balances=balances)
+
+        self.service.save = save_only_catalog_items
+        return account
+
+    bridge_mod.LocalProfileBridge.initialize = guarded_profile_initialize
     if MAP_PROBE and MAP_COMMAND_MODE == "queue":
         menu_queue_mod.COMMAND = ("\nswitchtomainmenu\ndevmap " + MAP_PROBE + "\n").encode("ascii")
         print("[patched] map probe queued after main-menu transition:", MAP_PROBE, flush=True)

@@ -241,10 +241,13 @@ class GameServer:
     def log(self, event: dict) -> None:
         event = {"ts": round(time.time(), 6), **event}
         line = json.dumps(event, ensure_ascii=False, default=str)
-        print(line, flush=True)
         if self.log_path:
             with self.log_path.open("a", encoding="utf-8") as fh:
                 fh.write(line + "\n")
+        # Console encodings can be GBK even when the wire payload contains
+        # arbitrary Unicode. Keep the JSONL evidence in UTF-8 and escape only
+        # the console representation so logging cannot kill the UDP loop.
+        print(json.dumps(event, ensure_ascii=True, default=str), flush=True)
 
     # ------------------------------------------------------------------ sending
     def send_oob(self, addr: tuple, text: str) -> None:

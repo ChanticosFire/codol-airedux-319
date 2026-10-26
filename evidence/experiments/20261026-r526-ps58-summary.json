@@ -1,0 +1,36 @@
+{
+  "build": 1649370,
+  "run": "r526-ps58",
+  "runtime_reused": "r107flow/runtime",
+  "server_log": "runs/r526-ps58-gs.jsonl",
+  "snapshot_file": "runs/snapshot-ps58.bin",
+  "snapshot_bytes": 16,
+  "snapshot_sha256": "5b803a8291c7c685e643e77f7cc74d477e14446d69be367cafcdea282f00e01c",
+  "server_counts_after_utf8_restart": {
+    "getchallenge": 0,
+    "connect": 1,
+    "stats": 5,
+    "gamestateupdate": 5,
+    "snapshot_source": 50
+  },
+  "client_observation": {
+    "net_state": 10,
+    "ui_state": 0,
+    "ps_parse_flag": 0,
+    "player_origin": [
+      0,
+      0,
+      0
+    ],
+    "view": "black world; Esc loadout menu opened; no player movement or shooting",
+    "exit_to_lobby": true
+  },
+  "profile_save_rejected": [
+    {
+      "reason": "loadout 0 primaryBase 1900489201 absent from catalog",
+      "public_sha256": "bb785af1c4bc8f623a545d6c7bbb175dccc1338c7daa8fd7ccabd926d63fd637"
+    }
+  ],
+  "profile_db_revision_after_run": 1218,
+  "conclusion": "16-byte PS fixture was delivered over a real connection, but did not yield a playable world or player; client net state alone is insufficient."
+}

@@ -19,6 +19,8 @@
 
 **最新进展（§529）**：真正的玩法键盘窗口是 `CoD Splash Screen` / `Base_PowerMessageWindow`（向 `CODO` 投递无效）；`GetKeyboardState` 真实 IAT=`0xCA8394`，仅窗口过程 `0xA84E90` 在 WM_KEYDOWN/UP 调用。持续按键只让 origin 振荡 0.2–0.9 m，根因推断为 `cmdNumber - serverCommandSequence > 32` 使预测被跳过，服务端从未发 `svc_serverCommand`（推断 svc=5）。`gameserver.py` 已加 `--server-command-*` 与 `--follow-client-pid`，但尚未验证；第 5 项未达成。
 
+**当前实测（§1105–§1107，以上历史推断需按现状复核）**：已恢复 `r107flow/runtime/codol1649370-offline.exe` 的真实连接与进图路线，不能再因其为离线壳而否定其可进图能力。r526 首次把 16 B `snapshot-ps58.bin` 送到此客户端，虽到 `net=10/ui=0`，画面却全黑、无玩家；最小样本不能替换 182 B 的 `r522-clean-compact.bin`。入图时客户端会把有效武器 ID 改成不在目录中的瞬时值；档案保存保护已实机拒绝一次非法写盘，数据库仍有效。仍须在完整快照中编码正确玩家状态和实体并实测自主移动、射击。所有试验复用现存运行时。
+
 ### 最终目标
 
 客户端与服务端建立真实连接，`server1649370` 下发 gamestate/snapshot，
