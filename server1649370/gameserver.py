@@ -73,7 +73,11 @@ class ClientOriginReader:
 
     CL_PTR = 0x76638F4
     CL_XOR = 0x6891D1C7
-    PS_ORIGIN = 0x3C80
+    # ps = cl + 0x0C (verified by the 8-byte signature 00 00 a0 3e 78 56 34 12),
+    # and playerState_t.origin sits at ps+0x30, so the origin is at cl+0x3C.
+    # The previous value 0x3C80 pointed outside playerState and made the
+    # mirrored origin garbage.
+    PS_ORIGIN = 0x3C
     NET_STATE = 0x76446B0
     SLOTS = ((0x0F, 0), (0x14, 2), (0x18, 1))  # snapshot offset, origin component
 

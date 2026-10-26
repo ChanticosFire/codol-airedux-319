@@ -34049,3 +34049,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 采样结果 origin 恒为 **(301.5, 222.5, 333.5)** = 序列最后一帧 ⇒ 客户端完全跟随服务端位置。
 - 结论：ps.origin 通路正常；origin 不动是固定帧覆盖所致；**服务端权威移动的前提已具备**（客户端会跟随服务端位置）。
 - 下一步：服务端按 usercmd（forwardmove=127）推进 origin 并动态回送；或先做 origin 递增的最小可视验证。
+
+### 第 35 轮：发现并修复 --follow-client-pid 的偏移 bug（0x3C80→0x3C）
+- 服务端 `ClientOriginReader` docstring 明确：`--follow-client-pid` 会把客户端预测 origin 镜像进快照，让"按住移动累积而不是被归零"。
+- 但其 `PS_ORIGIN = 0x3C80` 是旧错误偏移；已按 §1119 结论修正为 **0x3C**（`ps=cl+0x0C`、origin@ps+0x30），py_compile 通过。
+- 另完成：生成 origin 递增 20 帧并**验证客户端跟随**（111.5→301.5）；`session_up` 新增 `--snapshot-dir`。
+- 实测未完成：客户端 11432 在服务端起来前已退出（cl pointer null），未拿到跟随数据。
+- 下一步：重启客户端记 PID → 服务端 `--follow-client-pid <pid>` → 桥重连 → 按住 W 采样 ps.origin 看是否累积。
