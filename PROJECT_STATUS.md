@@ -34460,3 +34460,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结果：cl=0x131FB11C 正确；cl+0x0C=predicted=0x131FB128 正确；cl+0x2C=snapShot.ps=0x131FB148 正确。三个地址全部精确命中。
 - 故写不进去不是地址错。predicted 每帧被 CL_PredictMovement 覆盖（解释第一次失败）；写 cl+0x2C 仍无效则可能是：0x472406 之后还有拷贝/清零，或 0x55C/0x81C 在该副本里偏移不同。
 - 下一步：先读回 cl+0x2C+0x4C / +0x55C 原始值确认偏移；或写哨兵 0xDEADBEEF 后全内存搜索反查真实偏移；或把写入点移到拷入 predicted 之后。
+
+### 第 92 轮：cl+0x0C 才是真正的 ps 起点，cl+0x2C 是 ps+0x20
+- 对比：pred(cl+0x0C) 字段全部合理(commandTime=148692/viewmodel=1023/origin=111.5)；snap(cl+0x2C) 全错位。
+- snap head 显示 origin 出现在 snap+0x10（0x42DF0000=111.5 等），而 pred 里 origin 在 ps+0x30，正好差 0x20。
+- 结论：snapShot.ps 起点是 cl+0x0C 不是 cl+0x2C；cl+0x2C = ps+0x20。patch_ps_commandtime 注释的"cl+0x2C"指 commandTime 的绝对地址，我误当成 ps 起点，导致所有写入偏移 0x20。
+- 所以应写 cl+0x0C；问题只剩每帧被 CL_PredictMovement 覆盖。
+- 下一步：探针确认 cl+0x0C 的 weapon/owned/model 值；定位 CL_PredictMovement 返回点并在其后挂钩写字段。
