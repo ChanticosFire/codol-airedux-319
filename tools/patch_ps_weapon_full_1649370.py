@@ -42,14 +42,15 @@ MODEL = 1           # ps+0x81C+WEAPON (byte)  weaponmodels[weapon]
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 
 
-def build_cave(cave: int) -> bytes:
+def build_cave(cave: int, noop: bool = False) -> bytes:
     code = bytearray()
-    code += b"\x9c\x60"                                    # pushfd; pushad
-    code += b"\x8d\x8d" + struct.pack("<i", PS_FROM_EBP)   # lea ecx,[ebp-0x3BB0]
-    code += b"\x66\xc7\x41\x4c" + struct.pack("<H", WEAPON)  # mov word [ecx+0x4C], n
-    code += b"\xc7\x81" + struct.pack("<I", 0x55C) + struct.pack("<I", OWNED)
-    code += b"\xc6\x81" + struct.pack("<I", 0x81C + WEAPON) + bytes([MODEL & 0xFF])
-    code += b"\x61\x9d"                                    # popad; popfd
+    if not noop:
+        code += b"\x9c\x60"                                    # pushfd; pushad
+        code += b"\x8d\x8d" + struct.pack("<i", PS_FROM_EBP)   # lea ecx,[ebp-0x3BB0]
+        code += b"\x66\xc7\x41\x4c" + struct.pack("<H", WEAPON)  # mov word [ecx+0x4C], n
+        code += b"\xc7\x81" + struct.pack("<I", 0x55C) + struct.pack("<I", OWNED)
+        code += b"\xc6\x81" + struct.pack("<I", 0x81C + WEAPON) + bytes([MODEL & 0xFF])
+        code += b"\x61\x9d"                                    # popad; popfd
     code += ORIGINAL
     resume = TARGET + len(ORIGINAL)
     code += b"\xe9" + struct.pack("<i", resume - (cave + len(code) + 5))
@@ -60,6 +61,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--pid", type=int, required=True)
     ap.add_argument("--restore", action="store_true")
+    ap.add_argument("--noop", action="store_true",
+                    help="install a cave that only replays the displaced instructions")
     args = ap.parse_args()
 
     handle = kernel32.OpenProcess(0x1F0FFF, False, args.pid)
@@ -99,7 +102,7 @@ def main() -> int:
         return 1
 
     cave = 0xC85623  # 221 bytes of int3 padding in .text (0x472000 is live code!)
-    code = build_cave(cave)
+    code = build_cave(cave, noop=args.noop)
     write(cave, code)
     write(TARGET, b"\xe9" + struct.pack("<i", cave - (TARGET + 5)))
     print(f"installed cave at {cave:#x} ({len(code)} bytes); "

@@ -34433,3 +34433,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 改用 int3 填充区 0xC85623，参数改自洽组合 weapon=1/owned=bit1/model[1]=1，安装后仍 client gone。
 - 结论：不能在快照解码后硬写这些字段。可能原因：PS_FROM_EBP=-0x3BB0 偏移不对（来自旧 commandTime 补丁注释）；或临时局部副本写入与其后校验冲突。
 - 下一步：只写 weaponmodels 不动 ps.weapon；先用哨兵验证偏移；转向脚本层武器启用接口。
+
+### 第 88 轮：连 noop 洞穴都崩溃 ⇒ 问题在洞穴机制本身
+- 加 --noop（洞穴只重放5字节原指令，不写字段）：installed 10 bytes 后 alive=False 仍崩。
+- 排除"写字段写坏内存"；根因可能是：ASLR导致VA错、0xC85623页不可执行、或e9跳转计算错位。
+- 历史 patch_ps_commandtime 用 0x472406 成功过，需读它怎么做基址与跳转。
+- 下一步：动态算基址(GetModuleHandle)、VirtualQueryEx 验证页可执行、先让 noop 不崩再谈写字段。
+- 注：三次尝试三次崩溃，此前归因"字段不自洽"是错的，先修机制。
