@@ -34089,3 +34089,11 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 实测：断言 ok:true net=10，但随后客户端 net=0；服务端与桥进程均存活、桥 state=0、服务端回退发静态帧（origin 111.5）。
 - 判断：客户端在 net=10 后数秒内断连（本轮首次明确定位该现象），断连原因未查。
 - 下一步：抓 net=10→0 前后服务端日志（seq 连续性、重传、messageAck），排查超时/节奏问题；在此之前按键驱动无法验证。
+
+### 第 40 轮：--rebuild-follow-pid 传入但 frame() 恒返回 None，动态帧从未生成
+- 断连本质：客户端 7024 存活且 Responding，自行回大厅（table=1353），无崩溃记录。
+- 入向统计：inband_short=2、**inband=0**（健康会话 8886/42）⇒ 从未进入发送 usercmd 阶段，12 秒后回大厅。
+- 服务端命令行含 --rebuild-follow-pid 7024，但日志 rebuild_follow **0 条** ⇒ frame() 恒返回 None，全程回退静态帧。
+- 排除权限/地址：同用户下 OpenProcess+ReadProcessMemory 成功。
+- 最可能：origin() 对全零 (0,0,0) 返回 None，而客户端在加载阶段 ps.origin 尚未被快照写入。
+- 下一步：net=10 期间采样 ps.origin 确认；改 RebuildFollower 用固定起点（111.5/222.5/333.5）而非依赖客户端值；并查"加载阶段退回大厅"这一更前置的阻塞。
