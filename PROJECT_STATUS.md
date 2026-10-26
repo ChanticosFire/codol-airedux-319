@@ -34335,3 +34335,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结论：弹窗文本非本地资源，可能来自远端 UI(CEF)或压缩/编码形式；也解释了 cbuf/键盘/鼠标都关不掉（它不属于引擎命令/菜单系统）。
 - 影响：从文案反查创建点的线索断了；剩余方式只能从引擎侧 UI 错误 API 入手，成本更高。
 - 建议：第3/4项到此为止（已确认能回大厅但不可交互、弹窗无法本地关闭或绕开）。
+
+### 第 72 轮：社区包源码揭示武器机制（按名字注册 + wire 索引 + ps+0x544 武器槽）
+- native-engine/source/src 下有完整武器源码：g_weapon.c、_bg_weapons.asm(243KB)、_xmodel*.asm、codol/player/codol_action_slots.c 等。
+- 三条事实：①G_SetupWeaponDef 用 G_GetWeaponIndexForName("defaultweapon_mp") 按名字注册；②ps.weapon 是 wire 格式(0..2047，CODOL_WeaponToWire)；③武器槽在 ps+0x544+4*slot。
+- 解释了此前失败：ps.weapon=1 / viewmodelIndex=1 都不是有效 wire 值 ⇒ 拿不到 WeaponDef ⇒ 不渲染或全黑。
+- 下一步：在 _bg_weapons.asm 找 CODOL_WeaponToWire 实现；用 defaultweapon_mp 的 wire 值填 ps.weapon 与 ps+0x544；必要时先触发 G_SetupWeaponDef。
