@@ -34746,3 +34746,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 差异原因：codex 卡在编码未完全建模；我用 r546-markers.bin + wire164.py 位精确重建(identical to r546: True)，绕开未建模分量 ⇒ ps 非空、有相机、能渲染能移动。
 - 仍缺：武器模型(ps 三字段写对也不渲染)、背包/购买(档案快照尚未同步)；两者可能同源于 LSG 认证/档案同步未建立(auth_request 后立刻 SSLEOFError)。
 - 下一步：用户手动操作纯净端观察；若需修 LSG 按 §12 完整 stage 配方(hosts+7文件+带标记CA+TLS1.0)。
+
+### 第 137 轮：撤销错误回退——存档已恢复，大厅模型回来
+- 我第130轮把 local.sqlite3 换成社区原版(revision50)但其余表仍是我们 的⇒数据自相矛盾：仓库空/模型丢/贴图错乱(用户原话"存档非常非常混乱")。
+- 已从 backup-before-revert-20261026-232301.sqlite3 恢复：sha256 06f7a93bc8f81846、revision 1241、owned_ids 7208、cp520、gp1999933120。
+- 重启 session_up --name restored：ok/net=10/client=3204；截图 mean=90.74 正常大厅；**角色模型回来了**(迷彩角色+Loadout武器图标)。
+- 教训：local.sqlite3 是整体，profiles.blob 与 account_initialization/accounts 相关联，不能只替换一部分——会制造更难的"数据自相矛盾"。
+- 仍缺：进地图后无手臂/无武器模型(原有问题，与本次误操作无关)。
