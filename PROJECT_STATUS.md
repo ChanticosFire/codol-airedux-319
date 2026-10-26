@@ -34515,3 +34515,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 对照 ps+0x00：stamped=69 但 distinct eip hits=0 ⇒ SetThreadContext 返回成功但断点从不触发。
 - 结论：环境限制(虚拟机/WOW64/反作弊占用调试寄存器)。运行时观测走不通；结合静态手段全部失败 ⇒ 当前环境无法确定渲染层读哪个字段。
 - 第5b收尾：输入侧完整✅；渲染侧未达成且当前环境无法进一步诊断❌。
+
+### 第 101 轮：发现 WL_SetCurrentWeaponID——客户端确有武器设置接口
+- 搜脚本接口名：enableCombatBot/freezeControls/pauseTimer/enableWeapon/giveWeapon 均 0；setWeapon 3 处命中。
+- 0xA77005 是 C++ 符号表：?AVWL_GetCurrentWeaponID@@ / ?AVWL_SetCurrentWeaponID@@ / WL_ResetWeaponRotation / WL_EquipWildcard。
+- 0x9D1ABC 有 setWeaponName/currentWeapon/weapons.leth；0x9DDADD 一串 WL_ 函数名。
+- 意义：WL_SetCurrentWeaponID 是客户端自己的武器设置入口，走完整流程(设ID→更新viewmodel→渲染)，比硬改 ps 更符合设计意图；也与用户提到"武器有单独接口"吻合。
+- 下一步：定位 WL_SetCurrentWeaponID 代码地址(符号表/字符串引用)，用 hook_any 调用它传入 m4_mp 的 ID，观察 viewmodel。
