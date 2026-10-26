@@ -179,8 +179,10 @@ def main() -> int:
             wait_for("game server UDP 28969", lambda: _udp_owner("", 28969), 20)
             step("game server listening", pid=_udp_owner("", 28969), snapshot_dir=bool(args.snapshot_dir))
 
-    if not args.rebuild_follow:
-        start_server()
+    # Always start the server first: that is the order that reliably reaches
+    # CA_ACTIVE (r576).  With --rebuild-follow the server discovers the client
+    # PID by name when it first needs it, so no ordering compromise is needed.
+    start_server(-1 if args.rebuild_follow else None)
 
     # -------------------------------------------------------------- client
     pid = None if not args.skip_client else _client_pid()
@@ -224,9 +226,6 @@ def main() -> int:
     if "ok=0" in result.stdout:
         raise SystemExit(f"r336 patch reported a failure: {result.stdout[:400]}")
     step("r336 patches applied")
-
-    if args.rebuild_follow:
-        start_server(pid)
 
     # --------------------------------------------------------------- bridge
     owner = _udp_owner("", 29023)

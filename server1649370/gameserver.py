@@ -82,6 +82,8 @@ class ClientOriginReader:
     NET_STATE = 0x76446B0
     SLOTS = ((0x0F, 0), (0x14, 2), (0x18, 1))  # snapshot offset, origin component
 
+    PROCESS_NAME = "codol1649370-offline.exe"
+
     def __init__(self, pid: int):
         self.pid = pid
         self.k32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -89,13 +91,75 @@ class ClientOriginReader:
         self.k32.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
         self.k32.ReadProcessMemory.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                                                ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)]
-        self.handle = self.k32.OpenProcess(0x438, False, pid)
+        self.handle = None
         self.failures = 0
+        self._last_attempt = 0.0
+        self._ensure_handle()
+
+    def _discover_pid(self):
+        """Find the game client by name, so the server need not know its PID.
+
+        Starting the server *before* the client is the order that reliably
+        reaches CA_ACTIVE (r576 kept net=10 while the client-first order in
+        r575 dropped back to the lobby within 12 s), so the PID cannot be a
+        constructor argument in the normal flow.
+        """
+        k32 = self.k32
+        class PROCESSENTRY32(ctypes.Structure):
+            _fields_ = [("dwSize", ctypes.c_uint32), ("cntUsage", ctypes.c_uint32),
+                        ("th32ProcessID", ctypes.c_uint32),
+                        ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)),
+                        ("th32ModuleID", ctypes.c_uint32), ("cntThreads", ctypes.c_uint32),
+                        ("th32ParentProcessID", ctypes.c_uint32),
+                        ("pcPriClassBase", ctypes.c_long), ("dwFlags", ctypes.c_uint32),
+                        ("szExeFile", ctypes.c_char * 260)]
+        k32.CreateToolhelp32Snapshot.restype = ctypes.c_void_p
+        k32.CreateToolhelp32Snapshot.argtypes = [ctypes.c_uint32, ctypes.c_uint32]
+        k32.Process32First.argtypes = [ctypes.c_void_p, ctypes.POINTER(PROCESSENTRY32)]
+        k32.Process32Next.argtypes = [ctypes.c_void_p, ctypes.POINTER(PROCESSENTRY32)]
+        k32.CloseHandle.argtypes = [ctypes.c_void_p]
+        snap = k32.CreateToolhelp32Snapshot(0x2, 0)
+        if not snap:
+            return None
+        entry = PROCESSENTRY32()
+        entry.dwSize = ctypes.sizeof(entry)
+        found = None
+        try:
+            if k32.Process32First(snap, ctypes.byref(entry)):
+                while True:
+                    if entry.szExeFile.decode("latin-1", "replace").lower() == self.PROCESS_NAME:
+                        found = int(entry.th32ProcessID)
+                        break
+                    if not k32.Process32Next(snap, ctypes.byref(entry)):
+                        break
+        finally:
+            k32.CloseHandle(snap)
+        return found
+
+    def _ensure_handle(self) -> bool:
+        if self.handle:
+            return True
+        # Discovery walks the process list, which is far too slow to run once
+        # per _u32() call: before the client exists that stalls the whole UDP
+        # loop and the client times out (r577 never got past net=0).  Retry at
+        # most once a second.
+        now = time.monotonic()
+        if now - self._last_attempt < 1.0:
+            return False
+        self._last_attempt = now
+        pid = self.pid
+        if not pid or pid < 0:
+            pid = self._discover_pid()
+            if not pid:
+                return False
+            self.pid = pid
+        self.handle = self.k32.OpenProcess(0x438, False, pid)
+        return bool(self.handle)
 
     def _u32(self, addr: int):
         buf = ctypes.create_string_buffer(4)
         got = ctypes.c_size_t()
-        if not self.handle:
+        if not self._ensure_handle():
             return None
         ok = self.k32.ReadProcessMemory(self.handle, ctypes.c_void_p(addr), buf, 4, ctypes.byref(got))
         if not ok or got.value != 4:
