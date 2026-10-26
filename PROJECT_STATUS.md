@@ -34185,3 +34185,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - --send-opcode 2 批量跑两次 ok:null，但手动跑成功(ok:true/net=10)；等 10 秒 net 仍 10 且 **raw_opcode 日志为空** ⇒ send_due_opcode 根本没执行，opcode 2 的"无反应"不能说明它无效。
 - 可能是 on_connect 未设 opcode_due 或 serve 循环调用点不在常见分支。
 - 下一步：修触发链（入口加无条件日志），单次验证工具链能否影响客户端，再解决连续会话不可靠问题。
+
+### 第 52 轮：修好 send_due_opcode 触发链；opcode 2 无效果
+- 根因：on_connect 从未设置 peer["opcode_due"]（上轮脚本条件写错导致该段未写入）。
+- 修复后 615 设置/637 读取/644 清空三处齐备；r594 日志出现 raw_opcode opcode=2 seq=4。
+- 但 opcode 2 发出 10 秒后客户端仍 net=10/table=11、画面无变化 ⇒ 不是断开指令。
+- 下一步：扩展 --send-opcode 支持逗号列表（同会话每 3 秒依次发），一次会话扫完 3,4,6,7,8,9,10；注意真断开后后续就发不到了。

@@ -609,6 +609,11 @@ class GameServer:
                 peer["command_count"] = 0
             if self.oob_command:
                 peer["oob_due"] = time.monotonic() + self.oob_delay
+            if self.send_opcode is not None:
+                # Fire a couple of seconds after connect: earlier and the client
+                # is still loading the map and ignores the message.
+                peer["opcode_due"] = time.monotonic() + max(2.0, self.snapshot_delay)
+                peer["opcode_seq"] = self.snapshot_seq
             if self.gamestate_repeat and peer["gamestate_count"] < self.gamestate_repeat:
                 peer["gamestate_sent"] = False
                 peer["gamestate_due"] = time.monotonic() + self.gamestate_interval
