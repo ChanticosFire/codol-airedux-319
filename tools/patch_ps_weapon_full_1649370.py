@@ -35,8 +35,8 @@ PS_FROM_EBP = -0x3BB0                      # local snapshot + 0x20 = ps
 #   0 = none, 1 = defaultweapon_mp (a placeholder with no model), 583 = m4_mp.
 # 583 exceeds the 128-bit owned bitmap at ps+0x55C, but weaponmodels is one byte
 # per weapon, so model[583] lives at ps+0x81C+583.  Override with --weapon.
-WEAPON = 583        # ps+0x4C  (word)  current weapon: m4_mp
-OWNED = 0           # 583 >= 128, so it has no bit in the four-dword bitmap
+WEAPON = 1          # ps+0x4C  (word)  weapon 1 = defaultweapon_mp (has a slot)
+OWNED = 1 << WEAPON  # ps+0x55C bit N = weapon N owned; must agree with WEAPON
 MODEL = 1           # ps+0x81C+WEAPON (byte)  weaponmodels[weapon]
 
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -98,7 +98,7 @@ def main() -> int:
         print(f"unexpected bytes at {TARGET:#x}: {current.hex(' ')}", file=sys.stderr)
         return 1
 
-    cave = 0x472000  # free padding before the target, inside .text
+    cave = 0xC85623  # 221 bytes of int3 padding in .text (0x472000 is live code!)
     code = build_cave(cave)
     write(cave, code)
     write(TARGET, b"\xe9" + struct.pack("<i", cave - (TARGET + 5)))
