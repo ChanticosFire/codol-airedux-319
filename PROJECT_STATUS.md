@@ -34407,3 +34407,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 原理：OOB disconnect 被客户端判为异常断线→弹错+大厅失效；客户端自己的 disconnect 走正常退出路径→干净。
 - **第3项达成**（回功能完整大厅）、**第4项达成**（无错误弹窗）。
 - 六项现状：1✅ 2✅ 3✅ 4✅ 5a✅ 5b◐（仅剩渲染侧）。
+
+### 第 84 轮：cbuf give m4_mp 无效（give 是服务端命令）
+- 注入成功(new_length 13)，但 ps: weapon=0、viewmodelIndex=1023、primary=0、owned位图四dword全0；画面 mean 55.94 无变化。
+- 结论：give 是服务端命令(PlayerCmd_giveWeapon)，客户端控制台无此命令，注入后被当未知命令丢弃。
+- 5b 渲染侧三条路(快照授权/本地give/gamestate武器表)均已证伪，离线镜像下第一人称武器不可达成立。
+- 对比：cbuf disconnect 有效是因为客户端本身有该命令；give 没有，属能力确实不存在。
