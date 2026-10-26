@@ -30,10 +30,10 @@ from __future__ import annotations
 import math
 import struct
 
+from .entity_fields164 import ENTITY_FIELDS164, ENTITY_FIELDS_PER_TYPE164, ENTITY_SENTINEL
 from .player_fields164 import PLAYER_FIELDS164
 
 PLAYER_FIELD_COUNT = len(PLAYER_FIELDS164)
-ENTITY_SENTINEL = 2047
 TAIL_SECTIONS = 17
 
 
@@ -253,6 +253,10 @@ def write_delta_value(m: MsgWriter, bits: int, from_word: int, to_word: int,
             raise ValueError("value outside the 30-bit absolute arm")
         m.write_bits(1, 1)
         m.write_bits(t, 30)
+    elif bits == -77:
+        if t > 255:
+            raise ValueError("value outside 0..255")
+        write_compressed(m, t, 8)
     elif bits == -75:
         delta = t - f
         if 1 <= delta <= 32:
@@ -382,6 +386,48 @@ def write_entities_empty(m: MsgWriter) -> None:
     write_index_code(m, ENTITY_SENTINEL, -1)
 
 
+def write_entities(m: MsgWriter, entities, ctx: DeltaContext) -> None:
+    """Write the entity section for ``[(number, type, {field_index: word})]``.
+
+    Each entity is ``index_code`` then a payload of
+    ``present(1) + changed(1) + origin_baseline(1) + last(6)`` followed by a
+    ``gap(3 位/7)`` + value sequence.  Only non-zero fields are emitted, so an
+    entity that carries just its type costs a handful of bits.
+    """
+    last_number = -1
+    for number, type_, fields in entities:
+        if not (0 <= number < ENTITY_SENTINEL):
+            raise ValueError(f"entity number {number} outside 0..{ENTITY_SENTINEL - 1}")
+        if not (0 <= type_ < len(ENTITY_FIELDS164)):
+            raise ValueError(f"entity type {type_} outside the 24 wire tables")
+        targets = [0] * ENTITY_FIELDS_PER_TYPE164
+        targets[0] = type_
+        for index, word in fields.items():
+            if not (0 <= index < ENTITY_FIELDS_PER_TYPE164):
+                raise ValueError(f"entity field index {index} outside 0..62")
+            targets[index] = word & 0xFFFFFFFF
+        last = 0
+        for index in range(1, ENTITY_FIELDS_PER_TYPE164):
+            if targets[index]:
+                last = index
+        write_index_code(m, number, last_number)
+        last_number = number
+        m.write_bits(0, 1)                 # present
+        m.write_bits(1, 1)                 # changed
+        m.write_bits(0, 1)                 # logical held origin as baseline
+        m.write_bits(last, 6)
+        write_gap(m, 1, chunk_bits=3)
+        write_delta_value(m, ENTITY_FIELDS164[type_][0][1], 0, targets[0], ctx)
+        previous = 0
+        for index in range(1, last + 1):
+            if not targets[index]:
+                continue
+            write_gap(m, index - previous, chunk_bits=3)
+            previous = index
+            write_delta_value(m, ENTITY_FIELDS164[type_][index][1], 0, targets[index], ctx)
+    write_index_code(m, ENTITY_SENTINEL, last_number)
+
+
 def write_empty_tail_sections(m: MsgWriter) -> None:
     """anim commands, actors, clients and glass: one zero bit each."""
     for _ in range(4):
@@ -390,7 +436,8 @@ def write_empty_tail_sections(m: MsgWriter) -> None:
 
 def build_snapshot(values: dict[int, int], *, server_time: int = 72192, delta: int = 0,
                    flags: int = 0, has_base: int = 0,
-                   position_base=(0, 0, 0), tail_zero: bool = True) -> bytes:
+                   position_base=(0, 0, 0), tail_zero: bool = True,
+                   entities=()) -> bytes:
     """Assemble one complete snapshot body (no leading ack bytes)."""
     ctx = DeltaContext(server_time=server_time, position_base=position_base)
     m = MsgWriter()
@@ -400,8 +447,12 @@ def build_snapshot(values: dict[int, int], *, server_time: int = 72192, delta: i
     m.write_byte(flags)
     m.write_bits(has_base & 1, 1)
     write_player_state(m, values, ctx, tail_zero=tail_zero)
-    write_empty_tail_sections(m)
-    write_entities_empty(m)
+    m.write_bits(0, 1)                  # anim commands
+    m.write_bits(0, 1)                  # actors
+    if entities:
+        write_entities(m, entities, ctx)
+    else:
+        write_entities_empty(m)
     m.write_bits(0, 1)                  # clients
     m.write_bits(0, 1)                  # glass
     m.write_byte(5)                     # svc_EOF

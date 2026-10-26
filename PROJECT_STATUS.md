@@ -33815,3 +33815,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - r535 用 r533 帧重启恢复：大厅背包（主/副武器、角色模型、仓库）显示完好。
 - 约束：补上 gamestate 武器表之前不得再把 ps 武器槽设为非零。
 - 下一步：补 gamestate 武器 alias/recipe 表；移植实体段（24 类型 × 63 字段）。
+
+### 第 3 轮：实体段实现与手臂槽索引约束
+- 新增 `server1649370/entity_fields164.py`（24 类型 × 63 字段 = 1512 条权威描述符）与 `wire164.write_entities`（index_code + 三段位 payload + 3 位 gap + 哨兵），并修正段序为 ps→anim→actors→entities→clients→glass。
+- r536（61 B，含 1 个实体 number 0/type 1/位置 x=200）：客户端 `net=10`/`ui=0`、**无错误**，左下首次出现"战术团队竞技模式"标签；实体段被接受但玩家模型不可见。
+- r537（r536 + `0x15C=1`）：弹「服务异常[742]」回大厅 ⇒ `0x15C` 必须是 fastfile 真实注册的 model 索引，不能猜。
+- 复核历史：gamestate 武器 alias/recipe 恒 0，武器定义来自 fastfile，"补武器表"路线已证伪两次，不再重试。
+- 下一步：从 `CODOL_ServerModelToWire` / `CODOL_WeaponToWire` 或小范围扫描取得有效 `0x15C` 模型索引与 `0x3F8` 武器 id；在此之前保持三个资源字段为 0。
