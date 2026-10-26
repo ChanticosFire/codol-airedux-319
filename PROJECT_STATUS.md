@@ -33855,3 +33855,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 新增只读工具 `read_client_ps_1649370.py`（PS_BASE 已改为 0x0C）与 `scan_client_value.py`。
 - 按键 W 2 秒后 origin/commandTime 未变，但当时桥与快照已停止（commandTime 冻结），**实验条件不成立**，需在活跃连接下重测。
 - 下一步：活跃连接窗口内重做按键实验；若仍不动再查 `cl_predict` 与 pmove 前置条件。
+
+### 第 8 轮：活跃连接下确证按键不产生本地移动
+- 条件：PID 4784，`net=10`，0.1 秒/帧、800 秒窗口，`commandTime` 每 100 ms +1000、`command_number` 92→1317，ps 逐字段与帧一致。
+- 100 ms 采样 26 次、2 ms 采样 404+1214 次、注入 `cl_predict 1` 后重测：`origin` 始终只有一个值 `(111.5,222.5,333.5)`。
+- 排除采样混叠（2 ms 采样与服务端 0.1 秒重置不同步）与 `cl_predict` 关闭。
+- 结论：客户端在采样命令（每秒 +10），但 `CL_PredictMovement` 没有推进 origin。下一步验证 `cl.cmds[].forwardmove` 是否非零、`ps.commandTime` 与命令时钟是否对齐、`pm_flags`/`groundEntityNum` 是否满足 pmove 前置。
