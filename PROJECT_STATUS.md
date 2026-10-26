@@ -33946,3 +33946,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 之后 ps 仍 `net=10`/`ui=0`、`origin` 恒为 (111.5,222.5,333.5)、`commandTime` 仍在递增。
 - 结论：cbuf 通路至少部分工作（有副作用），但 `+forward` 不驱动移动；`cg_drawFPS` 反而扰动渲染（黑条），提示 cbuf 注入会破坏渲染状态，后续需更保守。
 - 下一步回到主线：静态定位 `CL_KeyEvent`/`CL_KeyMove`/`CL_CreateNewCommands` 写 `forwardmove` 前的条件判断。
+
+### 第 19 轮：定位 +forward 命令串与引用点
+- `+forward`=`0xDB3588`、`+back`=`0xDB35AC`、`+moveleft`=`0xDB35C8`；`cl_predict` 字符串在镜像中 **0 命中**（该 build 无此 dvar，解释 cbuf 注入无效）。
+- 引用点 `0x45CC10..0x45CC97` 是"把命令名地址写进栈数组"，不是 `Cmd_AddCommand`，故尚未拿到处理函数。
+- `.data` 0xE58320 起是 `-xxx`/`+xxx` 成对字符串指针表（按键绑定/命令名清单），非函数表。
+- 下一步：在该函数后续找 `Cmd_AddCommand`（push 函数地址 + push 字符串 + call）；或换搜 `keys[]` 的 `lea+*4` 变体寻址。
