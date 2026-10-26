@@ -34016,3 +34016,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - `0x5B0CEE` 是快照解析（`cl.serverTime`/`cl.commandNumber` 直接取自快照字段）；`0x5142A9` 是快照实体/字符串处理 —— 均非命令生成。
 - **推论**：`command_number` 会被快照值覆盖，所以"命令号递增⇒命令生成路径在跑"此前推理不能直接成立，须先确认递增来源。
 - 下一步：反汇编 `0x4615F3`、`0x472885` 找客户端自增点（CL_CreateNewCommands 候选），再查它是否调用读 keys[]/in_forward 的移动计算。
+
+### 第 30 轮：cmds[] 定位在 cl+0x3CD0（44 字节/项），命令生成确在运行
+- 1 秒内 21 个字变化：`cl.serverTime` +3000、`commandNumber` +6，以及 `0x3CD0` 起间隔 0x2C 的等距结构首字段全部递增。
+- **`usercmd_t cmds[]` 在 `cl+0x3CD0`，每项 44 字节，`+0x00` = commandTime**。
+- 结论：`CL_CreateNewCommands` 确实在跑（commandTime 持续前进），但 `forwardmove` 仍为 0 ⇒ 缺口是"生成命令时没把按键变成移动"，不是"命令没生成"。
+- 下一步：以 `cmds[].commandTime` 写入点为锚点定位 `CL_CreateNewCommands`，反汇编看 `forwardmove`（约 +0x18）那段为何被跳过。
