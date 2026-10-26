@@ -111,6 +111,20 @@ def write_field(writer: BitWriter, codec: int, value: int) -> None:
         writer.byte(value & 0xFF)
     elif codec == -94:
         raise NotImplementedError("-94 event payload needs the event table")
+    elif codec == -58:
+        # Decoder 0x66FE90: one gate bit.
+        #   gate == 0 -> read 2 bits (integer 0..3), value = int * 10.0
+        #   gate == 1 -> the shared float path at 0x66EE60
+        # So only multiples of 10 in 0..30 can use the short form.
+        if value == 0 or (int(value) % 10) != 0 or (int(value) // 10) > 3:
+            writer.bit(1)
+            writer.le32(int(value) & 0xFFFFFFFF)
+        else:
+            writer.bit(0)
+            writer.bits((int(value) // 10) & 3, 2)
+    elif codec == -57:
+        # One bit boolean (dispatch at 0x6708E9, reads a single bit at 0x6708F0).
+        writer.bit(1 if value else 0)
     elif codec == -97:
         # The decoder (0x66F9E0) has TWO forms for -97:
         #   gate bit 0 -> read 8 more bits, value = previous - decoded8
@@ -152,6 +166,14 @@ def read_field(reader: BitReader, codec: int) -> int:
         return reader.bits(16)
     if codec == -75:
         return reader.byte()
+    if codec == -58:
+        # Mirror of 0x66FE90: gate 0 -> 2 bits * 10.0, gate 1 -> float path.
+        if reader.bit() == 0:
+            return reader.bits(2) * 10
+        return reader.le32()
+    if codec == -57:
+        # One bit boolean.
+        return 1 if reader.bit() else 0
     if codec == -97:
         # Two forms, mirroring 0x66F9E0: gate 0 -> 8-bit delta, gate 1 -> 32-bit.
         if reader.bit() == 0:
