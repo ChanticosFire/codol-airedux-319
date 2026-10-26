@@ -34613,3 +34613,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 关键：bg_weaponDefs 只有通过 CS_WEAPONS configstring 才会被 BG_RegisterWeaponDef 填充，而我们从未发送这些 configstring。
 - 而且 native_gamestate.build_native_gamestate 接受 configstrings 参数，默认只发3条 ⇒ 完全可以补上 5362 起的武器条目。
 - 下一步：确认 CS_WEAPONS 条目格式(反汇编 0x0041F640 或查社区源码)；补发 (5362, b"ak47_mp ...")；检查 bg_weaponDefs[78] 是否非零；再设 ps.weapon=78 观察渲染。
+
+### 第 117 轮：0x41F640 不是武器注册(社区地址不适用)，CS_WEAPONS 处理未定位
+- 反汇编 0x0041F640 得到 SSE 浮点指令(lddqu/andps/maxps/haddps)，非武器注册 ⇒ 社区包地址对应他们重编的引擎，不适用本镜像。
+- 搜 5362 的 9 处引用：0x61C38F/0x61C3A0 是 call 0x76B600(CG_ConfigString) 但索引为 2/3(CS_SERVERINFO/SYSTEMINFO)，不是 5362；其余未逐一验证，可能是无关立即数。
+- 现状：CS_WEAPONS 处理未定位；社区地址不适用(此前 0x4737E0 也踩过同类坑)。
+- 下一步：从字符串侧(给 ak47_mp 下内存断点)但硬件断点不可用受限；或解析 common_mp.ff 取武器条目真实格式。
