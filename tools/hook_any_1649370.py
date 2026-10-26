@@ -100,6 +100,9 @@ def main() -> int:
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--read", action="store_true")
     ap.add_argument("--restore", action="store_true")
+    ap.add_argument("--original-hex",
+                    help="real prologue bytes to restore, as hex; required when the target "
+                         "already holds the hook jump and no saved copy exists")
     args = ap.parse_args()
 
     pid = args.pid or find_pid()
@@ -171,14 +174,29 @@ def main() -> int:
         return 0
 
     if args.restore:
+        # The target may already hold the hook jump, so "current bytes" is NOT a
+        # valid original.  Prefer an explicit --original-hex, then the copy saved
+        # at install time, and refuse rather than leave the jump in place.
+        saved_path = Path(__file__).resolve().parents[1] / "runs" / f"hook-{args.target:x}-original.bin"
+        source = None
+        if args.original_hex:
+            original = bytes.fromhex(args.original_hex)
+            source = "--original-hex"
+        elif saved_path.is_file():
+            original = saved_path.read_bytes()
+            source = f"saved:{saved_path.name}"
         if not original:
             raise SystemExit("cannot read original bytes")
+        if source is None and entry and entry[0] == 0xE9:
+            raise SystemExit("refusing to restore: the target holds a jump (0xE9) and no saved "
+                             "original exists; pass --original-hex with the real prologue")
         old = W.DWORD()
         k32.VirtualProtectEx(handle, C.c_void_p(args.target), len(original), 0x40, C.byref(old))
         ok = write(args.target, original)
         k32.VirtualProtectEx(handle, C.c_void_p(args.target), len(original), old.value, C.byref(old))
         k32.FlushInstructionCache(handle, C.c_void_p(args.target), len(original))
-        report.update(restored=ok, bytes_after=read(args.target, len(original)).hex())
+        report.update(restored=ok, restore_source=source,
+                      bytes_after=read(args.target, len(original)).hex())
         print(json.dumps(report, indent=2))
         return 0 if ok else 1
 
@@ -187,6 +205,12 @@ def main() -> int:
         return 0
     if not original:
         raise SystemExit("cannot read original bytes")
+    try:
+        saved_dir = Path(__file__).resolve().parents[1] / "runs"
+        saved_dir.mkdir(parents=True, exist_ok=True)
+        (saved_dir / f"hook-{args.target:x}-original.bin").write_bytes(original)
+    except OSError:
+        pass
 
     cave = int(k32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40) or 0)
     if not cave:
