@@ -34151,3 +34151,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 实测 CODOL_CL_TIMEOUT=10：断言 net=10 后杀服务端+桥，16 秒后仍 net=10/table=11。
 - 结论：CA_ACTIVE 下客户端不依据 cl_timeout 检测丢连 ⇒ 必须由服务端主动发断开命令。
 - 下一步：确认 svc_disconnect（或本 build 等价 opcode）编号与载荷，让服务端在 match-duration 到期时发送，再验证回大厅后 ui_state/弹窗/可交互。
+
+### 第 47 轮：首次实现"对局结束→回大厅"（OOB disconnect），但带错误弹窗
+- 关键 bug：gameserver.main() 里 --match-duration 会覆盖 --oob-delay；session_up --match-disconnect 时移除 --match-duration 后修复。
+- r587 --match-disconnect 15：服务端发出 OOB "disconnect"，客户端 net=0/ui=0/table=1353 **回到大厅**。
+- 但截图显示弹出错误框「错误 / 服务器连接断开 / 退出」⇒ 不满足验收第4项"无错误弹窗"，第3项也只算骨架达成。
+- 原因：OOB disconnect 被客户端当作异常断开；应用 inband svc_disconnect 或先发对局结束指令。
+- 下一步：①点掉弹窗验证大厅是否可交互；②查 svc_disconnect opcode 走 inband 干净断连。

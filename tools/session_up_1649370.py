@@ -119,6 +119,8 @@ def main() -> int:
     ap.add_argument("--keep-server", action="store_true")
     ap.add_argument("--keep-bridge", action="store_true")
     ap.add_argument("--skip-client", action="store_true")
+    ap.add_argument("--match-disconnect", type=float, default=None,
+                    help="send the OOB disconnect command this many seconds after connect to end the match")
     ap.add_argument("--rebuild-follow", action="store_true",
                     help="start the client first, then let the server encode snapshots from its held keys")
     args = ap.parse_args()
@@ -170,6 +172,14 @@ def main() -> int:
                            "--log", f"runs/{args.name}-gs.jsonl"]
             if follow_pid:
                 server_args += ["--rebuild-follow-pid", str(follow_pid)]
+            if args.match_disconnect:
+                # --match-duration overrides --oob-delay in gameserver.main(),
+                # so drop it or the disconnect would wait server_seconds.
+                if "--match-duration" in server_args:
+                    cut = server_args.index("--match-duration")
+                    del server_args[cut:cut + 2]
+                server_args += ["--oob-command", "disconnect",
+                                "--oob-delay", str(args.match_disconnect)]
             if args.snapshot_dir:
                 server_args += ["--snapshot-dir", args.snapshot_dir, "--snapshot-interval", "0.25"]
             else:
