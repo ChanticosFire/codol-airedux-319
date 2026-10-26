@@ -275,6 +275,10 @@ class RebuildFollower:
             # Same distinctive 32-bit marker r546-markers.bin carries; without it
             # the frame is 68 bytes instead of 73 and the client rejects it.
             0x174: 0x12345678,
+            # weapon id: the demo gamestate reports alias/recipe counts of 0, so
+            # every non-zero id was rejected historically.  Retry now that the
+            # client runs a real playerState and a stable session.
+            0x4C: 1,
             0x30: _word(origin[0]), 0x34: _word(origin[1]), 0x38: _word(origin[2]),
         }
         # position_base must stay (0,0,0): it is the delta codec's reference for

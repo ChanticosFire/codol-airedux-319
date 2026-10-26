@@ -34125,3 +34125,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 截图 r581-moved.png：mp_crash_tropical 实时视角 + 完整 HUD（雷达/计分板/生命值/战术团队竞技模式）。
 - 性质：位移由玩家真实按键驱动（keys[K_W] 读出），非外部脚本推镜头。
 - 未达成：武器/射击（ps.weapon 仍 0、无第一人称武器模型）；对局结束回大厅；位移未按视角方向。
+
+### 第 44 轮：ps.weapon=1 可写入但无武器模型
+- 在 RebuildFollower.values 加 `0x4C: 1`，r582 会话 net=10/table=11 稳定，ps.weapon 读回 1（字段通路正常）。
+- 但截图无第一人称武器/手臂；viewmodelIndex 仍为 1023、primary=0。
+- 判断：weapon 只是索引，模型需 viewmodelIndex/primary 配合 gamestate 武器别名表；历史已两次证伪"补武器表"。
+- 下一步：用 weapon=1 配合有限候选的 viewmodelIndex(0/1/2/1023)+primary 再试；否则回到 gamestate alias_count=0 的根因。
