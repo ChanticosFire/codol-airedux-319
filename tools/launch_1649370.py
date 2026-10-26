@@ -2159,6 +2159,78 @@ def _room_command_injector(session, command: str) -> None:
         k32.CloseHandle(handle)
 
 
+def _dismiss_settings_prompt(session, seconds: float = 300.0) -> None:
+    """Answer the client's modal "image quality settings" prompt with "No".
+
+    Some launches show a `#32770` dialog titled 设置更新 whose body asks whether
+    to re-run the image quality setup.  Until a human answers, engine init is
+    blocked: measured once as `engine-init: 125.051s` with the process sitting
+    in system DLLs, no CODO window and an empty events.jsonl.  That looked like
+    a WFP/guard failure for two rounds before the dialog was found.  The
+    launcher answers "No" so the existing settings are kept.
+    """
+    user32 = C.WinDLL("user32", use_last_error=True)
+    callback = C.WINFUNCTYPE(W.BOOL, W.HWND, W.LPARAM)
+    user32.EnumWindows.argtypes = [callback, W.LPARAM]
+    user32.EnumChildWindows.argtypes = [W.HWND, callback, W.LPARAM]
+    user32.GetWindowThreadProcessId.argtypes = [W.HWND, C.POINTER(W.DWORD)]
+    user32.GetClassNameW.argtypes = [W.HWND, W.LPWSTR, C.c_int]
+    user32.GetWindowTextW.argtypes = [W.HWND, W.LPWSTR, C.c_int]
+    user32.PostMessageW.argtypes = [W.HWND, W.UINT, W.WPARAM, W.LPARAM]
+    try:
+        target_pid = int(session.info.pid)
+    except (AttributeError, TypeError):
+        return
+    deadline = time.monotonic() + max(1.0, seconds)
+    while time.monotonic() < deadline:
+        found = {"dialog": None}
+
+        def on_top(hwnd, _param):
+            owner = W.DWORD()
+            user32.GetWindowThreadProcessId(hwnd, C.byref(owner))
+            if owner.value != target_pid:
+                return True
+            name = C.create_unicode_buffer(64)
+            user32.GetClassNameW(hwnd, name, 64)
+            if name.value != "#32770":
+                return True
+            title = C.create_unicode_buffer(256)
+            user32.GetWindowTextW(hwnd, title, 256)
+            if "设置" in title.value or "setting" in title.value.lower():
+                found["dialog"] = hwnd
+                return False
+            return True
+
+        user32.EnumWindows(callback(on_top), 0)
+        dialog = found["dialog"]
+        if dialog:
+            button = {"hwnd": None}
+
+            def on_child(hwnd, _param):
+                name = C.create_unicode_buffer(64)
+                user32.GetClassNameW(hwnd, name, 64)
+                if name.value != "Button":
+                    return True
+                text = C.create_unicode_buffer(128)
+                user32.GetWindowTextW(hwnd, text, 128)
+                if text.value.startswith("否"):
+                    button["hwnd"] = hwnd
+                    return False
+                return True
+
+            user32.EnumChildWindows(dialog, callback(on_child), 0)
+            if button["hwnd"]:
+                user32.PostMessageW(button["hwnd"], 0x00F5, 0, 0)  # BM_CLICK
+                try:
+                    session.log["settings_prompt_dismissed"] = {
+                        "dialog": hex(dialog), "button": hex(button["hwnd"]), "time": time.time()}
+                except (AttributeError, TypeError):
+                    pass
+                print("[patched] dismissed the image-quality settings prompt with 'No'", flush=True)
+                return
+        time.sleep(1.0)
+
+
 def patched_start(self, exe, settings_session) -> None:
     """替换令牌派生；仍须等动态 WFP 守卫确认后才恢复客户端。"""
     self.settings = settings_session
@@ -2266,6 +2338,8 @@ def patched_start(self, exe, settings_session) -> None:
     self.resumed = True
     self.log["resumed"] = True
     self.log["lifetime"] = "until_client_exit" if self.args.until_close else "bounded_observation"
+    threading.Thread(target=_dismiss_settings_prompt, args=(self,),
+                     name="dismiss-settings-prompt", daemon=True).start()
     if ROOM_COMMAND:
         threading.Thread(target=_room_command_injector, args=(self, ROOM_COMMAND),
                          name="room-command", daemon=True).start()
