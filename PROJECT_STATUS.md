@@ -34358,3 +34358,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - owned 四位图：0x55C(-57,未实现)、0x560(-90,可)、0x564(17,可)、0x568(-70,可)。武器索引0在 0x55C 的 bit0，必须写它。
 - 结论：除非武器索引落在 64-95，否则无法设置 owned；-57 缺文档难以可靠实现。
 - 下一步：补 codec -57（需查其线上格式）；或接受限制，第5b 渲染侧不可达。
+
+### 第 76 轮：武器槽语义揭示——武器0被排除，有效武器从1起
+- equipment(): if(CODOL_WeaponBitsOwned(ps,0)) return 0; for(native=1;native<CODOL_WEAPON_SLOTS;++native) ⇒ 武器0是空手占位，真实武器从1开始。
+- weapon_phase() 写字段：0x2BC(animation)、0x2C0(weaponTime)、0x2C4(weaponDelay)、0x2C8(kickTime)、0x2CC(state)、0x2D4(shotCount)。
+- 确认 weapon=1 方向正确，但缺 owned 位(0x55C bit1)，而该字段 codec -57 未实现。
+- 核心障碍未变：0x55C 的 -57 编码。
