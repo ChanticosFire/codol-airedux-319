@@ -34480,3 +34480,8 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 旁证一致：gamestate 无武器表(77轮)、客户端0处[reg+0x55C](81轮)、viewmodelIndex=1 全黑(63轮)。
 - 第5b最终：输入链路完整✅；渲染资源层不可达❌。
 - 下一步：写入验收表；停止在 ps 字段投入；唯一方向是让客户端加载武器资源（需真实 gamestate 或改资源加载路径）。
+
+### 第 95 轮：推翻"资源缺失"结论——客户端已加载 viewmodel 资源
+- 全内存搜 viewmodel_m4 命中堆地址 0x1410f49e/0x48f4f69e/0x48f4f6f9；转储证实为 viewmodel_m4a1tech_idle、viewmodel_acr_fire/reload/pullout 等真实动画资源名。
+- 结论：资源不缺失，上轮"WeaponDef 模型指针为空"的推断错误。问题在绑定/索引：ps.weapon 可能是 wire 值不是直接索引；或渲染靠 viewmodelIndex+客户端状态机；或需 weaponstate/weapAnim 同步。
+- 下一步：从 viewmodel_m4a1tech_idle 字符串引用点反查渲染路径读哪个 ps 字段；或对比大厅(能渲染武器)与对局两条路径差异。
