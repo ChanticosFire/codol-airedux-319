@@ -34578,3 +34578,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 但第83轮截图里大厅角色手持武器 ⇒ 大厅武器渲染不经过 playerState，是 UI/CEF 用 local.sqlite3 装备配置渲染的3D预览。所以"大厅有武器"不能作为"客户端有对局武器对象"的证据。
 - 异常：首次截图全黑(10143B)，等6秒后 mean=95.02 正常 ⇒ 黑屏是截图太早(cbuf disconnect 后需5-10秒重建)。
 - 对第5b：大厅与对局是两条独立渲染路径，对局武器对象仍无法伪造。
+
+### 第 111 轮：fastfile 全在本地，common_mp.ff(76MB)就是武器定义来源
+- offline-resources/client_shipretail/chinese 下有完整 fastfile：common_mp.ff 76MB、common_gametype_mp.ff 34MB、mp_crash_tropical.ff 32MB 等 20+ 个。
+- 结论修正："资源缺失"说法不准确——文件都在且已加载(否则地图渲染不出来)。
+- 真正原因：WeaponDef(定义)与武器实例(对象)是两回事。common_mp.ff 提供定义数据；渲染需实例(xmodel句柄+动画树+cfg状态机)。我们只改了 ps 字段，客户端从未为本地玩家创建武器实例 ⇒ 没东西可画。
+- 第5b不可达原因最终确定为"实例缺失"而非"资源缺失"：资源✅ 定义✅ 实例❌ 触发实例创建的条件未知且无法外部满足。
