@@ -639,8 +639,12 @@ class GameServer:
                 server_time = 72192 + index * 500
                 payload = payload[:5] + struct.pack("<I", server_time) + payload[9:]
             if self.rebuild_follower is not None:
+                # Keep serverTime in step with the real send cadence: a 500 ms
+                # jump every 100 ms frame made the client treat snapshots as
+                # out-of-order and die with unhandled_exception.
                 dynamic = self.rebuild_follower.frame(
-                    server_time=72192 + index * 500, dt=self.snapshot_interval)
+                    server_time=72192 + index * int(self.snapshot_interval * 1000),
+                    dt=self.snapshot_interval)
                 if dynamic is not None:
                     payload = b"\x00\x00\x00\x00" + dynamic
                     if index % 25 == 0:

@@ -34076,3 +34076,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - **新信号**：上一版 RebuildFollower（镜像模式）运行约 1 分钟后也崩溃 ⇒ "每帧重编码"仍有崩溃风险，上轮"不崩溃"只覆盖前 1 分钟。
 - 最可疑：`serverTime` 双写不一致（payload 头 `[5:9]` 用 `72192+index*500`，而 `values[0x00]` 用 `stamp`）。
 - 下一步：先对齐时间并复现/修复崩溃，再启用按键驱动。
+
+### 第 38 轮附：rebuild-follow 生效但客户端未连上，验证未完成
+- 服务端持续发帧且 serverTime 按 100ms/帧递增（`0x01AD44 = 72192+377*100`）⇒ RebuildFollower 生效、节奏已修。
+- 但客户端 8960 `net=0`、`keys[W]=0`、`origin=(0,0,0)`；桥 `state=0` ⇒ 未进对局，按键驱动未验证。
+- 隐患：客户端 net=0 时 frame() 仍用旧 self.pos 发帧（payload 出现 `0000e013` 异常值），应改为 origin() 为 None 时不发动态帧。
+- 连续第二轮因手工编排五进程失败 ⇒ 下一步扩展 session_up 支持 --rebuild-follow（先起客户端拿 PID 再起服务端），并修 frame() 的 None 处理。
