@@ -28,7 +28,10 @@ import sys
 from ctypes import wintypes as W
 
 TARGET = 0x472406
-ORIGINAL = bytes.fromhex("8b55b483c4")     # mov edx,[ebp-0x4c]; add esp,0xc
+# 6 bytes, not 5: `mov edx,[ebp-0x4c]` (8b 55 b4) + `add esp,0xc` (83 c4 0c).
+# The earlier 5-byte version left the 0x0c byte behind, so the jump landed
+# mid-instruction -- that is what crashed every attempt, including --noop.
+ORIGINAL = bytes.fromhex("8b55b483c40c")
 PS_FROM_EBP = -0x3BB0                      # local snapshot + 0x20 = ps
 
 # Weapon indices come from 他人文件参考/CODOL_3.19_武器索引表.xlsx:
@@ -101,10 +104,20 @@ def main() -> int:
         print(f"unexpected bytes at {TARGET:#x}: {current.hex(' ')}", file=sys.stderr)
         return 1
 
-    cave = 0xC85623  # 221 bytes of int3 padding in .text (0x472000 is live code!)
+    # Allocate a private executable page instead of reusing .text int3 padding:
+    # patch_ps_commandtime_1649370.py does the same, and writing to .text pages
+    # without FlushInstructionCache (or into a non-executable page) is why every
+    # earlier attempt crashed -- even the --noop cave.
+    cave = int(kernel32.VirtualAllocEx(handle, None, 0x1000, 0x3000, 0x40) or 0)
+    if not cave:
+        print("VirtualAllocEx failed", file=sys.stderr)
+        return 1
     code = build_cave(cave, noop=args.noop)
     write(cave, code)
-    write(TARGET, b"\xe9" + struct.pack("<i", cave - (TARGET + 5)))
+    entry = b"\xe9" + struct.pack("<i", cave - (TARGET + 5)) + b"\x90"
+    write(TARGET, entry)
+    kernel32.FlushInstructionCache(handle, ctypes.c_void_p(cave), len(code))
+    kernel32.FlushInstructionCache(handle, ctypes.c_void_p(TARGET), 5)
     print(f"installed cave at {cave:#x} ({len(code)} bytes); "
           f"weapon={WEAPON} owned={OWNED:#x} model={MODEL}")
     return 0

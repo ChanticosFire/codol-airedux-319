@@ -34440,3 +34440,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 历史 patch_ps_commandtime 用 0x472406 成功过，需读它怎么做基址与跳转。
 - 下一步：动态算基址(GetModuleHandle)、VirtualQueryEx 验证页可执行、先让 noop 不崩再谈写字段。
 - 注：三次尝试三次崩溃，此前归因"字段不自洽"是错的，先修机制。
+
+### 第 89 轮：找到并修好崩溃根因（ORIGINAL 少一字节），补丁已不崩但字段位置不对
+- 根因：0x472406 实际是 6 字节 8b55b483c40c，旧 ORIGINAL 只有 5 字节漏了 0c；e9 覆盖5字节后 0c 残留在 0x47240B，跳回后从 0c 解码 → 栈错乱崩溃。解释了为何 --noop 也崩。
+- 修复：ORIGINAL 改6字节；入口 e9+nop(6字节)；洞穴改用 VirtualAllocEx(0x3000,0x40)+FlushInstructionCache。
+- 验证：--noop alive=True；完整补丁 alive=True（都不崩了）。
+- 但字段没写入：weapon=0、0x55C=0、viewmodel=1023，画面正常 ⇒ PS_FROM_EBP=-0x3BB0 偏移不对，写到了无关栈区。
+- 下一步：洞穴里改用全局 0x76638F4 取 cl 再取 cl+0x0C 作为 ps（不依赖 ebp 栈帧），或先泄出 ecx 反推真实偏移。
