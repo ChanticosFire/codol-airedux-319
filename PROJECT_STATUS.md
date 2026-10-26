@@ -34291,3 +34291,8 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 渲染侧未达成：weapon/viewmodelIndex 可写但值1致全黑、1023为哨兵、0-9扫描无模型。
 - 意义：不是"射击完全没做"，而是输入链路逐环实测通过、缺的只是模型索引（渲染资源受限）。
 - 下一步：从大厅角色渲染或 R_RegisterModel 返回表找有效模型索引。
+
+### 第 66 轮续：搜索武器/model 字符串，未找到 model 索引表
+- 全内存 910MB 搜索：viewmodel/xmodel 命中均在 .rdata（字段名/字符串）；weapon_m4/weapon_mp5 命中在堆，但内容是 XML 本地化文本（@SF_WEAPON_M4_MP_DESC）与字符串表（@sf_weapon_mp5sd_mp_name 等），非 model 索引。
+- 结论：客户端加载了武器数据（名字/描述/图标键），但拿不到可用于 ps.viewmodelIndex 的 model 索引。
+- 后续可选：找 R_RegisterModel 返回表；或从大厅角色渲染（CEF，可能不走引擎 model 表）；或接受"渲染侧受限于资源定义"。
