@@ -34010,3 +34010,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 反汇编 `0x704EE0` 确认是"遍历按键表、对仍按下的键先 up 后 down 重放 CL_KeyEvent"，不是生成 usercmd 的 KeyMove。
 - 结论：本 build 的 KeyMove 不直接引用 keys[] 基址，很可能走 `in_forward` 类 dvar（与 COD4 一致）。这解释了 `+forward` 注入后 origin 不动——可能是读 dvar 的那段没运行。
 - 下一步：找 `CL_CreateNewCommands`/`CL_SendCmd`（command_number 稳定递增说明它在跑），看是否调用 KeyMove 等价物及其条件；并用 hook 在 CL_KeyEvent 与 CL_SendCmd 上同时计数确认时序。
+
+### 第 29 轮：command_number 4 个写点；2 个属快照路径
+- 写点：`0x4615F3`、`0x472885`、`0x5142A9`、`0x5B0CEE`。
+- `0x5B0CEE` 是快照解析（`cl.serverTime`/`cl.commandNumber` 直接取自快照字段）；`0x5142A9` 是快照实体/字符串处理 —— 均非命令生成。
+- **推论**：`command_number` 会被快照值覆盖，所以"命令号递增⇒命令生成路径在跑"此前推理不能直接成立，须先确认递增来源。
+- 下一步：反汇编 `0x4615F3`、`0x472885` 找客户端自增点（CL_CreateNewCommands 候选），再查它是否调用读 keys[]/in_forward 的移动计算。
