@@ -121,7 +121,12 @@ _original_prepare = launch_mod.prepare
 
 # 社区 build_plan() 在参数末尾追加的游戏参数。补丁 0xDBCCF8 把 "set 2451" 改成 "set 2439"，
 # 这条 +set 是配套的 —— 少了它客户端会在普通文件打开处报 WIN_FILE_NOT_FOUND（文件名为空）。
-GAME_ARGUMENTS = ("+set", "2439", "0", "+set", "cl_timeout", "600", "+set", "cl_connectTimeout", "600")
+# cl_timeout is the only way the client leaves a match: it does not react to
+# the server going away (25 s with both the server and the bridge killed still
+# left net=10), so a short timeout is what makes a match "end" during tests.
+CL_TIMEOUT_SECONDS = os.environ.get("CODOL_CL_TIMEOUT", "600")
+GAME_ARGUMENTS = ("+set", "2439", "0", "+set", "cl_timeout", CL_TIMEOUT_SECONDS,
+                  "+set", "cl_connectTimeout", "600")
 
 
 def profile_catalog_error(public: bytes, schema: dict, catalog_ids: set[int]) -> str | None:

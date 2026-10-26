@@ -34145,3 +34145,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结论：历史上"回大厅"都是异常路径（崩溃/加载失败），从未验证过正常的"对局结束→回大厅"。
 - 下一步：①把 launcher 的 cl_timeout 改小（10-15s）验证超时回大厅路径；②查明 svc_disconnect 等价 opcode 让服务端主动结束对局。
 - 注意：客户端 26184 带着假连接状态，重开会话前需先结束该进程。
+
+### 第 46 轮续：cl_timeout=10 仍不触发回大厅
+- launcher 的 cl_timeout 改为环境变量 CODOL_CL_TIMEOUT（py_compile 通过）。
+- 实测 CODOL_CL_TIMEOUT=10：断言 net=10 后杀服务端+桥，16 秒后仍 net=10/table=11。
+- 结论：CA_ACTIVE 下客户端不依据 cl_timeout 检测丢连 ⇒ 必须由服务端主动发断开命令。
+- 下一步：确认 svc_disconnect（或本 build 等价 opcode）编号与载荷，让服务端在 match-duration 到期时发送，再验证回大厅后 ui_state/弹窗/可交互。
