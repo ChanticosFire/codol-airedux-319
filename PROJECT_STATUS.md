@@ -34467,3 +34467,8 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结论：snapShot.ps 起点是 cl+0x0C 不是 cl+0x2C；cl+0x2C = ps+0x20。patch_ps_commandtime 注释的"cl+0x2C"指 commandTime 的绝对地址，我误当成 ps 起点，导致所有写入偏移 0x20。
 - 所以应写 cl+0x0C；问题只剩每帧被 CL_PredictMovement 覆盖。
 - 下一步：探针确认 cl+0x0C 的 weapon/owned/model 值；定位 CL_PredictMovement 返回点并在其后挂钩写字段。
+
+### 第 93 轮：写 cl+0x0C 仍被覆盖，0x472406 解码目标是栈上临时 ps
+- 补丁写 cl+0x0C：installed 不崩，pred.commandTime 从 148692→608192（持续更新），但 weapon 仍 0。
+- 结论：0x472406 解码目标不是 cl+0x0C 而是栈上临时 ps，随后被拷贝/预测重写；第92轮的 snap=ps+0x20 推断可同时成立（cl+0x2C 是快照子结构，解码写栈副本再拷到 cl+0x0C）。
+- 下一步：定位 CL_PredictMovement（从 commandTime 写入点或 Com_Frame 调用点），把洞穴挂其返回之后；或用定时器每帧强写 cl+0x0C 快速验证"值对了会不会出模型"。
