@@ -1,0 +1,823 @@
+{
+  "schema": 1,
+  "created_utc": "2026-10-26T02:17:46.099377+00:00",
+  "project_root": "E:\\GAME\\COD\\codol-airedux\\319",
+  "note": "Private content lives under ignored local/; this metadata contains no secret bytes. Hardlinks survive source path deletion but share file content and disk with source.",
+  "critical_files": [
+    {
+      "id": "active_lsg_certificate",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\20261020-live-derived01\\tls\\auth.crt",
+      "backup": "local/tls-active/auth.crt",
+      "method": "independent_copy",
+      "bytes": 1131,
+      "sha256": "0f7f5eb2cfbc9f95a2d1cb7c3928b317519bedc6e647a85daba35d4c8e86b3e3"
+    },
+    {
+      "id": "active_lsg_private_key",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\20261020-live-derived01\\tls\\auth.key",
+      "backup": "local/tls-active/auth.key",
+      "method": "independent_copy",
+      "bytes": 1675,
+      "sha256": "921af9943f366651a79a9c844a60f1e70c5a6092a6212cc97b84437e732c6708"
+    },
+    {
+      "id": "client_openssl_trust_anchor",
+      "source": "C:\\Program Files (x86)\\Common Files\\SSL\\cert.pem",
+      "backup": "local/tls-active/system-trust-cert.pem",
+      "method": "independent_copy",
+      "bytes": 1224,
+      "sha256": "dd8f8d6d2bacff461218647be90d6665bd6b6c6fc5b63a6ee337ae6fd465946b"
+    },
+    {
+      "id": "local_account_database",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\data\\v1649370\\local.sqlite3",
+      "backup": "local/profile/local.sqlite3",
+      "method": "independent_copy",
+      "bytes": 204800,
+      "sha256": "86d97f6ac02a084108bb0fac2d9372ba22e66e12ea3c54a8d6ff3bf84019c4f5"
+    },
+    {
+      "id": "local_settings_database",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\data\\v1649370\\game-settings.sqlite3",
+      "backup": "local/profile/game-settings.sqlite3",
+      "method": "independent_copy",
+      "bytes": 200704,
+      "sha256": "d3368ac3fe3b5d506789e6d9ac8d7896ab314c7d3cc032b5374c4429bf4c9da2"
+    },
+    {
+      "id": "r523_gamestate",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\gamestate-client0.bin",
+      "backup": "local/fixtures/gamestate-client0.bin",
+      "method": "independent_copy",
+      "bytes": 6411,
+      "sha256": "737d3c5b99e91972cd9f4e689f810c290a5b89549ff496b401c38855dbfe6a79"
+    },
+    {
+      "id": "historical_gamestate",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\demo-outer-exact\\gamestate-network-ffb56d7e-6411.bin",
+      "backup": "local/fixtures/gamestate-network-ffb56d7e-6411.bin",
+      "method": "independent_copy",
+      "bytes": 6411,
+      "sha256": "40f2cddab752c450524ab087ae347d4099a07c8451f8a65db80b216227649612"
+    },
+    {
+      "id": "original_snapshot",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\demo-outer-exact\\baseline-outer17-245.bin",
+      "backup": "local/fixtures/baseline-outer17-245.bin",
+      "method": "independent_copy",
+      "bytes": 245,
+      "sha256": "6d03cde387571deb9362904055c3d69df54ab369ca0778218b8f507addb534a6"
+    },
+    {
+      "id": "historical_snapshot",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\snap-nospec-1.bin",
+      "backup": "local/fixtures/snap-nospec-1.bin",
+      "method": "independent_copy",
+      "bytes": 245,
+      "sha256": "07d195bd4a608965fd9f77fb90f6548cf7831b6b4f44b31f8350e2a64a29f440"
+    },
+    {
+      "id": "r523_snapshot",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\r522-clean-compact.bin",
+      "backup": "local/fixtures/r522-clean-compact.bin",
+      "method": "independent_copy",
+      "bytes": 182,
+      "sha256": "49736430cb02f0f1d2f46fcaa39cfb7c6915e386e5259c44c76c13d352457de6"
+    },
+    {
+      "id": "r523_runtime_patch",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\_patch_r336.py",
+      "backup": "local/helpers/_patch_r336.py",
+      "method": "independent_copy",
+      "bytes": 11724,
+      "sha256": "73ce6b4e68fba8a4ef666924ffa06f7ed7c9b68236984dfe82eadda8cdef5ec2"
+    },
+    {
+      "id": "state_probe",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\_sample_state.py",
+      "backup": "local/helpers/_sample_state.py",
+      "method": "independent_copy",
+      "bytes": 2449,
+      "sha256": "69fc85fa275c798f0a6c0413e0a5d65e2c88f6ca18b781476fec3eac0e00ecc6"
+    },
+    {
+      "id": "loopback_tcp_guard",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\guard-build\\client_loopback_tcp_guard-fixed.exe",
+      "backup": "local/helpers/client_loopback_tcp_guard-fixed.exe",
+      "method": "independent_copy",
+      "bytes": 952832,
+      "sha256": "1750566f914b9ac95e803cb48e452d35e3439ad1f608ab35375677230d0ee9e8"
+    }
+  ],
+  "mirrors": [
+    {
+      "id": "runtime-r107flow",
+      "source": "E:\\GAME\\COD\\1649370\\workspaces\\offline-runs\\r107flow\\runtime",
+      "backup": "local/mirrors/runtime-r107flow",
+      "method": "hardlink_mirror_with_mutable_files_copied",
+      "files": 88586,
+      "logical_bytes": 16055819091,
+      "hardlinks": 88569,
+      "independent_copies": 17,
+      "independent_copy_bytes": 316399,
+      "same_volume_only": true
+    },
+    {
+      "id": "community-resources-v1649370",
+      "source": "E:\\GAME\\COD\\1649370\\resources\\v1649370",
+      "backup": "local/mirrors/community-resources-v1649370",
+      "method": "hardlink_mirror_with_mutable_files_copied",
+      "files": 41739,
+      "logical_bytes": 8026367454,
+      "hardlinks": 41731,
+      "independent_copies": 8,
+      "independent_copy_bytes": 10244639,
+      "same_volume_only": true
+    },
+    {
+      "id": "original-client",
+      "source": "E:\\GAME\\COD\\Original Client",
+      "backup": "local/mirrors/original-client",
+      "method": "hardlink_mirror_with_mutable_files_copied",
+      "files": 2446,
+      "logical_bytes": 26805292119,
+      "hardlinks": 2351,
+      "independent_copies": 95,
+      "independent_copy_bytes": 3837040,
+      "same_volume_only": true
+    }
+  ],
+  "community_code": {
+    "id": "community_code_and_bin",
+    "source": "E:\\GAME\\COD\\1649370",
+    "backup": "local/community-code",
+    "method": "independent_copy",
+    "files": 157,
+    "bytes": 37322019,
+    "tree_sha256": "73b24747b91c78c9bbf368fe77b8d5723bbcba09d5e916528ae992e8693edb7f",
+    "included": [
+      "src",
+      "tools",
+      "manifests",
+      "bin",
+      "data",
+      "native",
+      "README.md",
+      "requirements.txt",
+      "run.py",
+      "start_client_local.cmd",
+      "start_client.cmd",
+      "test.py"
+    ]
+  },
+  "supplemental_files": [
+    {
+      "id": "upstream_complete_stage_recipe",
+      "source": "E:\\GAME\\COD\\codol-airedux\\_upstream\\codol_launcher\\tools\\native-client\\reference\\launcher\\core\\prep.py",
+      "backup": "local/reference/upstream/prep.py",
+      "method": "independent_copy",
+      "bytes": 10867,
+      "sha256": "182b8f9c9efb7a38cb3fa154fcfe5e346a5c65e26cfb789ebac6c555d35a4bde"
+    },
+    {
+      "id": "upstream_tls10_server_parameters",
+      "source": "E:\\GAME\\COD\\codol-airedux\\_upstream\\codol_server\\apps\\codol-platform\\src\\native_config.rs",
+      "backup": "local/reference/upstream/native_config.rs",
+      "method": "independent_copy",
+      "bytes": 29054,
+      "sha256": "1572c8acbf496eed8a9f0aa784ac21b5be8b41bbe5e3193eccacedf95fad8823"
+    },
+    {
+      "id": "upstream_dirserver_schema",
+      "source": "E:\\GAME\\COD\\codol-airedux\\_upstream\\codol_server\\crates\\protocol-codol\\src\\dir.rs",
+      "backup": "local/reference/upstream/dir.rs",
+      "method": "independent_copy",
+      "bytes": 2960,
+      "sha256": "ec59a3171c5e824eb6911ebab4e96abbb08d79070f2a7c9196daeb8b3b93fc3a"
+    },
+    {
+      "id": "upstream_client_preparation",
+      "source": "E:\\GAME\\COD\\codol-airedux\\_upstream\\codol_launcher\\docs\\CLIENT_PREPARATION.md",
+      "backup": "local/reference/upstream/CLIENT_PREPARATION.md",
+      "method": "independent_copy",
+      "bytes": 9859,
+      "sha256": "a0d9364b88af57e736de2606afd0b3d6ce9018268a58f8ce2ec67a339c980259"
+    },
+    {
+      "id": "upstream_smoke_native_launch",
+      "source": "E:\\GAME\\COD\\codol-airedux\\_upstream\\codol_server\\tools\\smoke_native_launch.py",
+      "backup": "local/reference/upstream/smoke_native_launch.py",
+      "method": "independent_copy",
+      "bytes": 78453,
+      "sha256": "0bbf817e05cddad2e55c59218ab759dda768b949237d2f7ed3788b0391a0c7af"
+    },
+    {
+      "id": "upstream_smoke_original",
+      "source": "E:\\GAME\\COD\\codol-airedux\\_upstream\\codol_server\\tools\\smoke_original1604220.py",
+      "backup": "local/reference/upstream/smoke_original1604220.py",
+      "method": "independent_copy",
+      "bytes": 40299,
+      "sha256": "9c591bc1e1c716c65952a8925b4b4ac4278df27ab0b44a6f48c15643d42c7515"
+    },
+    {
+      "id": "upstream_client_verification",
+      "source": "E:\\GAME\\COD\\codol-airedux\\_upstream\\codol_launcher\\tools\\verify_original_client.py",
+      "backup": "local/reference/upstream/verify_original_client.py",
+      "method": "independent_copy",
+      "bytes": 22032,
+      "sha256": "0c9777ab3844d8e658625e00a1e3e624bfc867f149d5f1e7a1ba2a235bf3ed23"
+    },
+    {
+      "id": "upstream_native_service_verification",
+      "source": "E:\\GAME\\COD\\codol-airedux\\_upstream\\codol_launcher\\tools\\verify_native_service.py",
+      "backup": "local/reference/upstream/verify_native_service.py",
+      "method": "independent_copy",
+      "bytes": 12431,
+      "sha256": "ab7f8eedc0d2bdc11ec87e30baa061c26687a13ece901c4558dba204e9b9a0bb"
+    },
+    {
+      "id": "historical_match_orchestration_not_r523_command",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\tools\\run_match.py",
+      "backup": "local/reference/run_match.py",
+      "method": "independent_copy",
+      "bytes": 15394,
+      "sha256": "101c2330a5265305c65a0c19e56291b7d4b1815b176e387fc5438841e9b560d1"
+    },
+    {
+      "id": "bisect_helper_range_current_semantics_unverified",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\_find_bisect_points.py",
+      "backup": "local/reference/_find_bisect_points.py",
+      "method": "independent_copy",
+      "bytes": 1850,
+      "sha256": "66d33e13d69c4031e1ed518e43471ab5cee7f59c07049fab12594a1bb02d068c"
+    },
+    {
+      "id": "untested_playerstate_fixture",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\snapshot-ps58.bin",
+      "backup": "local/unverified/snapshot-ps58.bin",
+      "method": "independent_copy",
+      "bytes": 16,
+      "sha256": "5b803a8291c7c685e643e77f7cc74d477e14446d69be367cafcdea282f00e01c"
+    },
+    {
+      "id": "untested_playerstate_fixture",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\snapshot-ps57.bin",
+      "backup": "local/unverified/snapshot-ps57.bin",
+      "method": "independent_copy",
+      "bytes": 16,
+      "sha256": "b227fc48217dea72ec98733623c163d943bf5647d0a4e61f996fbf4991c662aa"
+    },
+    {
+      "id": "untested_playerstate_fixture",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\snapshot-both.bin",
+      "backup": "local/unverified/snapshot-both.bin",
+      "method": "independent_copy",
+      "bytes": 17,
+      "sha256": "8e0466fed4cf064badd3f70bc0c8557ba823133bc0de990fb0cffa01b4bcaaec"
+    },
+    {
+      "id": "self_consistent_only_ps_codec",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\server1649370\\ps_codec.py",
+      "backup": "local/unverified/ps_codec.py",
+      "method": "independent_copy",
+      "bytes": 10164,
+      "sha256": "de067c7bb236340762ff03b9791be4af1fb45dab562de02abde03d26dfc1884a"
+    },
+    {
+      "id": "untested_playerstate_builder",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\tools\\build_1649370_snapshot_entity.py",
+      "backup": "local/unverified/build_1649370_snapshot_entity.py",
+      "method": "independent_copy",
+      "bytes": 5516,
+      "sha256": "1df2d3119bb078fc63a7af7b10cf05da1ec7794f4c823095705c48681a9fe3ef"
+    },
+    {
+      "id": "unverified_service_launcher",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\start_lobby_services.py",
+      "backup": "local/unverified/start_lobby_services.py",
+      "method": "independent_copy",
+      "bytes": 2175,
+      "sha256": "50beb8820fe3adb351e8d7af9962547672d2bc5d18cb5564497a893508205b00"
+    },
+    {
+      "id": "unverified_client_launcher",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\client_live_services.py",
+      "backup": "local/unverified/client_live_services.py",
+      "method": "independent_copy",
+      "bytes": 3795,
+      "sha256": "bd998d5a663ce24e0914b3ec0a3636dbed8b09d5de3d90566ed5029f99e50bb1"
+    },
+    {
+      "id": "alternate_tls_stage1_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\tls\\auth.crt",
+      "backup": "local/alternate-tls/stage1/auth.crt",
+      "method": "independent_copy",
+      "bytes": 1318,
+      "sha256": "ba469b8d9530a07b6aee89d63630e7d6051d06b4d339867e2adb5d9d949b7588"
+    },
+    {
+      "id": "alternate_tls_stage1_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\tls\\auth.csr",
+      "backup": "local/alternate-tls/stage1/auth.csr",
+      "method": "independent_copy",
+      "bytes": 940,
+      "sha256": "7716d8ccd02fd7b30346fd948151c489564f441de472eb4e5cca882052fe375b"
+    },
+    {
+      "id": "alternate_tls_stage1_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\tls\\auth.key",
+      "backup": "local/alternate-tls/stage1/auth.key",
+      "method": "independent_copy",
+      "bytes": 1704,
+      "sha256": "3e83f8db46fb2f4c8e46e3774aa8525e06fe91b2a0918086988ae65915fb5c19"
+    },
+    {
+      "id": "alternate_tls_stage1_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\tls\\ca.crt",
+      "backup": "local/alternate-tls/stage1/ca.crt",
+      "method": "independent_copy",
+      "bytes": 1220,
+      "sha256": "f33153a23e5f1a77d5f6037bcfb35dbc55b529de29baa719191302174b36cd0f"
+    },
+    {
+      "id": "alternate_tls_stage1_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\tls\\ca.key",
+      "backup": "local/alternate-tls/stage1/ca.key",
+      "method": "independent_copy",
+      "bytes": 1704,
+      "sha256": "7294b7cd7961437aecd44ae17521e78deff81b167a12520f52a93b696587f3b9"
+    },
+    {
+      "id": "alternate_tls_stage1_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\tls\\ca.srl",
+      "backup": "local/alternate-tls/stage1/ca.srl",
+      "method": "independent_copy",
+      "bytes": 41,
+      "sha256": "5f7fea670b8e86f09b84829a4736d5a14987c0f7c35b4f1d14c4a1d420ea6449"
+    },
+    {
+      "id": "alternate_tls_stage1_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\tls\\san.cnf",
+      "backup": "local/alternate-tls/stage1/san.cnf",
+      "method": "independent_copy",
+      "bytes": 164,
+      "sha256": "3bdb230a196ea1d3da0b454ad705a4c4f152b2d30be7021c80016980ce9a4dd5"
+    },
+    {
+      "id": "alternate_tls_live_stage_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\tls\\auth.crt",
+      "backup": "local/alternate-tls/live-stage/auth.crt",
+      "method": "independent_copy",
+      "bytes": 1318,
+      "sha256": "9f5ffd07bfefc04d828d9fd492baca8686b7f3b7f2af5c8e0913a880c458d46c"
+    },
+    {
+      "id": "alternate_tls_live_stage_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\tls\\auth.csr",
+      "backup": "local/alternate-tls/live-stage/auth.csr",
+      "method": "independent_copy",
+      "bytes": 940,
+      "sha256": "3fff847516ab8b1ec15781b87cfc8e3557d0fcd2975ba9845c48ed86dd7bd012"
+    },
+    {
+      "id": "alternate_tls_live_stage_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\tls\\auth.key",
+      "backup": "local/alternate-tls/live-stage/auth.key",
+      "method": "independent_copy",
+      "bytes": 1704,
+      "sha256": "dd719cfb5f1e6fc0de502e7f844f431ea0431f927504c43eb86c3e4724afa32c"
+    },
+    {
+      "id": "alternate_tls_live_stage_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\tls\\ca.crt",
+      "backup": "local/alternate-tls/live-stage/ca.crt",
+      "method": "independent_copy",
+      "bytes": 1220,
+      "sha256": "8a7acd6646d844658b91b1ac8d5f92bd583182510cfc207b4d4ae7d2aa5a3ee4"
+    },
+    {
+      "id": "alternate_tls_live_stage_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\tls\\ca.key",
+      "backup": "local/alternate-tls/live-stage/ca.key",
+      "method": "independent_copy",
+      "bytes": 1704,
+      "sha256": "9ec5737fcd53eba29b8a8e46e513ce32720a84ca88bcf977acfe49c87f576f43"
+    },
+    {
+      "id": "alternate_tls_live_stage_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\tls\\ca.srl",
+      "backup": "local/alternate-tls/live-stage/ca.srl",
+      "method": "independent_copy",
+      "bytes": 41,
+      "sha256": "8c00e40af984a6bf942302066079cf4cb6d0c39783357ef3039b6427decb156a"
+    },
+    {
+      "id": "alternate_tls_live_stage_unverified_for_r523",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\tls\\san.cnf",
+      "backup": "local/alternate-tls/live-stage/san.cnf",
+      "method": "independent_copy",
+      "bytes": 164,
+      "sha256": "3bdb230a196ea1d3da0b454ad705a4c4f152b2d30be7021c80016980ce9a4dd5"
+    },
+    {
+      "id": "stage1_original_configs",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\pre-image\\cacert.pem",
+      "backup": "local/pre-image/stage1/cacert.pem",
+      "method": "independent_copy",
+      "bytes": 291499,
+      "sha256": "a42bd87f3b4d2553e3519732928c3a40e803f514125721d0194bff385856160b"
+    },
+    {
+      "id": "stage1_original_configs",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\pre-image\\dwauth.ini",
+      "backup": "local/pre-image/stage1/dwauth.ini",
+      "method": "independent_copy",
+      "bytes": 38,
+      "sha256": "8a7dcb5eaf6f0bda021ff0059d3efff5193567fb738444299531df4ebe665a49"
+    },
+    {
+      "id": "stage1_original_configs",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\pre-image\\iips.ini",
+      "backup": "local/pre-image/stage1/iips.ini",
+      "method": "independent_copy",
+      "bytes": 46,
+      "sha256": "14defee97155dcf2e23281deffd43c533c0a8e25bb9fcb0a4a8724c16a4c68ab"
+    },
+    {
+      "id": "stage1_original_configs",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\stage1\\pre-image\\stun.ini",
+      "backup": "local/pre-image/stage1/stun.ini",
+      "method": "independent_copy",
+      "bytes": 33,
+      "sha256": "d860c73c0bfab98beb3357cd464eb67f4c45871801a6adf55ec3622f9cc8a227"
+    },
+    {
+      "id": "live_stage_original_configs",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\pre-image\\cacert.pem",
+      "backup": "local/pre-image/live-stage/cacert.pem",
+      "method": "independent_copy",
+      "bytes": 292720,
+      "sha256": "762d80d9e90d7640371d48ed54ffd45a6c795fc176872d1630f14bc5c7f41244"
+    },
+    {
+      "id": "live_stage_original_configs",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\pre-image\\dwauth.ini",
+      "backup": "local/pre-image/live-stage/dwauth.ini",
+      "method": "independent_copy",
+      "bytes": 38,
+      "sha256": "8a7dcb5eaf6f0bda021ff0059d3efff5193567fb738444299531df4ebe665a49"
+    },
+    {
+      "id": "live_stage_original_configs",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\pre-image\\iips.ini",
+      "backup": "local/pre-image/live-stage/iips.ini",
+      "method": "independent_copy",
+      "bytes": 50,
+      "sha256": "d3a80beeecfc673a27344c49ee0929eb36a1d29254108a0ae68fc4c5ff1b1dfa"
+    },
+    {
+      "id": "live_stage_original_configs",
+      "source": "E:\\GAME\\COD\\codol-airedux\\1604220\\runs\\live-stage\\pre-image\\stun.ini",
+      "backup": "local/pre-image/live-stage/stun.ini",
+      "method": "independent_copy",
+      "bytes": 33,
+      "sha256": "d860c73c0bfab98beb3357cd464eb67f4c45871801a6adf55ec3622f9cc8a227"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\3a4a615ce3dacc12738b\\character-bank2697.bin",
+      "backup": "local/reference/launcher-data/3a4a615ce3dacc12738b/character-bank2697.bin",
+      "method": "independent_copy",
+      "bytes": 28680,
+      "sha256": "6738d4bb870dacdd387707135ebe97d9815fad1a97e97318d763f5ef3a7354d9"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\3a4a615ce3dacc12738b\\identity.json",
+      "backup": "local/reference/launcher-data/3a4a615ce3dacc12738b/identity.json",
+      "method": "independent_copy",
+      "bytes": 56,
+      "sha256": "eac12f1a13c6c90dcbb3b08eae0da0aa0fe2cba0c7d6321414c82d6e0d3ee960"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\3a4a615ce3dacc12738b\\profile.json",
+      "backup": "local/reference/launcher-data/3a4a615ce3dacc12738b/profile.json",
+      "method": "independent_copy",
+      "bytes": 44012,
+      "sha256": "9510e32a685cb848974c1180aa9229d18be37032a3a07666ada2047bc04a7598"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\character-bank2697.bin",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/character-bank2697.bin",
+      "method": "independent_copy",
+      "bytes": 28680,
+      "sha256": "e501bfcd2752611cfbd76836c491967964de012ac7f7977e79eb2c8f00ff2d4c"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\identity.json",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/identity.json",
+      "method": "independent_copy",
+      "bytes": 53,
+      "sha256": "70f37d89a9db9921c6742f3101b7324662bc36eb655b98e6e237cbd072c816b2"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\profile.json",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/profile.json",
+      "method": "independent_copy",
+      "bytes": 44085,
+      "sha256": "449c443ea3dea946876d8df347fd97202d3aac5336670ee594f832afc1988648"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\profile.previous.json",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/profile.previous.json",
+      "method": "independent_copy",
+      "bytes": 44085,
+      "sha256": "289ecca874240f8610189408f8c244938458a215700f75f6392f899f3ee8a48f"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-04f3c42aa164aa8cf5d50b6a124facc944c0b4b18203ca22f11d9424595c12c7.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-04f3c42aa164aa8cf5d50b6a124facc944c0b4b18203ca22f11d9424595c12c7.cfg",
+      "method": "independent_copy",
+      "bytes": 7236,
+      "sha256": "04f3c42aa164aa8cf5d50b6a124facc944c0b4b18203ca22f11d9424595c12c7"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-0e34fb49d16f18679df3661065405185e5c056716a3d6d72ca83848a0e7594cc.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-0e34fb49d16f18679df3661065405185e5c056716a3d6d72ca83848a0e7594cc.cfg",
+      "method": "independent_copy",
+      "bytes": 7237,
+      "sha256": "0e34fb49d16f18679df3661065405185e5c056716a3d6d72ca83848a0e7594cc"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-11a8a38e270060f2ea991d1c758d4fdab0621a3c7d8176defbdbf564367a8e43.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-11a8a38e270060f2ea991d1c758d4fdab0621a3c7d8176defbdbf564367a8e43.cfg",
+      "method": "independent_copy",
+      "bytes": 7236,
+      "sha256": "11a8a38e270060f2ea991d1c758d4fdab0621a3c7d8176defbdbf564367a8e43"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-16ac5796c543fecf906c31c4036d8fde75ff719c587ba3a76337c54bb8d3cf05.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-16ac5796c543fecf906c31c4036d8fde75ff719c587ba3a76337c54bb8d3cf05.cfg",
+      "method": "independent_copy",
+      "bytes": 7236,
+      "sha256": "16ac5796c543fecf906c31c4036d8fde75ff719c587ba3a76337c54bb8d3cf05"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-1d9a0fcd5ddcff6ebdb49f34a441d529c6ff1a95e8bc9cd73973437cc552108e.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-1d9a0fcd5ddcff6ebdb49f34a441d529c6ff1a95e8bc9cd73973437cc552108e.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "1d9a0fcd5ddcff6ebdb49f34a441d529c6ff1a95e8bc9cd73973437cc552108e"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-22e4038be34fedff8ef949bb2f01b2d3902bab9c61e0f8cb1cc29f8707cfa2e0.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-22e4038be34fedff8ef949bb2f01b2d3902bab9c61e0f8cb1cc29f8707cfa2e0.cfg",
+      "method": "independent_copy",
+      "bytes": 7237,
+      "sha256": "22e4038be34fedff8ef949bb2f01b2d3902bab9c61e0f8cb1cc29f8707cfa2e0"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-27dd3b04b6d464cc5200b436ea73e972701e69e29649f15d484aedaebaba6d34.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-27dd3b04b6d464cc5200b436ea73e972701e69e29649f15d484aedaebaba6d34.cfg",
+      "method": "independent_copy",
+      "bytes": 7250,
+      "sha256": "27dd3b04b6d464cc5200b436ea73e972701e69e29649f15d484aedaebaba6d34"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-30fca4071fcbbe40297bdd293746205b9f2282bec0b53db6a11b9e8271d778db.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-30fca4071fcbbe40297bdd293746205b9f2282bec0b53db6a11b9e8271d778db.cfg",
+      "method": "independent_copy",
+      "bytes": 7236,
+      "sha256": "30fca4071fcbbe40297bdd293746205b9f2282bec0b53db6a11b9e8271d778db"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-3de55aa0845a440c7f2338ee754fbf5a81bed4338683fe53229ad324ee939d43.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-3de55aa0845a440c7f2338ee754fbf5a81bed4338683fe53229ad324ee939d43.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "3de55aa0845a440c7f2338ee754fbf5a81bed4338683fe53229ad324ee939d43"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-41619f383aeaceee5e0fb273b4d6bdc5a00ffb6c81210ab231947320422d1d13.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-41619f383aeaceee5e0fb273b4d6bdc5a00ffb6c81210ab231947320422d1d13.cfg",
+      "method": "independent_copy",
+      "bytes": 7251,
+      "sha256": "41619f383aeaceee5e0fb273b4d6bdc5a00ffb6c81210ab231947320422d1d13"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-4888ba368e5da9db03dab23054b5773c88a5f5bd01404729fb699b8c035faff2.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-4888ba368e5da9db03dab23054b5773c88a5f5bd01404729fb699b8c035faff2.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "4888ba368e5da9db03dab23054b5773c88a5f5bd01404729fb699b8c035faff2"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-4c6a025df10afac3247bce56651ac33d4eb09999a094e64e5cec4bd982e12e69.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-4c6a025df10afac3247bce56651ac33d4eb09999a094e64e5cec4bd982e12e69.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "4c6a025df10afac3247bce56651ac33d4eb09999a094e64e5cec4bd982e12e69"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-6aba14fe89cbe6fed57b91bc2331c5153c4cab721eaa45043c2cbd8293f7ce42.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-6aba14fe89cbe6fed57b91bc2331c5153c4cab721eaa45043c2cbd8293f7ce42.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "6aba14fe89cbe6fed57b91bc2331c5153c4cab721eaa45043c2cbd8293f7ce42"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-6e1ed789b9161b175cdc36e59713b952e2bf64277c26f54e737cd7583c89504f.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-6e1ed789b9161b175cdc36e59713b952e2bf64277c26f54e737cd7583c89504f.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "6e1ed789b9161b175cdc36e59713b952e2bf64277c26f54e737cd7583c89504f"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-715cad780796b1be41aab0ff18aee738d8427b00995aa207bd43979d9fd584d1.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-715cad780796b1be41aab0ff18aee738d8427b00995aa207bd43979d9fd584d1.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "715cad780796b1be41aab0ff18aee738d8427b00995aa207bd43979d9fd584d1"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-7a347f19e66ec3f796d479985661be46076c08321fc4beaab388997462f4e895.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-7a347f19e66ec3f796d479985661be46076c08321fc4beaab388997462f4e895.cfg",
+      "method": "independent_copy",
+      "bytes": 7235,
+      "sha256": "7a347f19e66ec3f796d479985661be46076c08321fc4beaab388997462f4e895"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-80bfdf94eb7457993a8ef7070f198546f0abc5b45ea20612d3c6c9a67ebe90ae.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-80bfdf94eb7457993a8ef7070f198546f0abc5b45ea20612d3c6c9a67ebe90ae.cfg",
+      "method": "independent_copy",
+      "bytes": 7237,
+      "sha256": "80bfdf94eb7457993a8ef7070f198546f0abc5b45ea20612d3c6c9a67ebe90ae"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-85ce302779b4cd4eab5cd378c5af5ebd9be06da9f4c900ec89849af7b011251f.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-85ce302779b4cd4eab5cd378c5af5ebd9be06da9f4c900ec89849af7b011251f.cfg",
+      "method": "independent_copy",
+      "bytes": 7229,
+      "sha256": "85ce302779b4cd4eab5cd378c5af5ebd9be06da9f4c900ec89849af7b011251f"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-897870e4eb079035d009656331416626f25f93797c6cc15e3b51033de8919fd0.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-897870e4eb079035d009656331416626f25f93797c6cc15e3b51033de8919fd0.cfg",
+      "method": "independent_copy",
+      "bytes": 7235,
+      "sha256": "897870e4eb079035d009656331416626f25f93797c6cc15e3b51033de8919fd0"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-8c86228565c59cfd09bc3704f3cd61e6bd1a7933c329ec11a92165e3b5509264.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-8c86228565c59cfd09bc3704f3cd61e6bd1a7933c329ec11a92165e3b5509264.cfg",
+      "method": "independent_copy",
+      "bytes": 7235,
+      "sha256": "8c86228565c59cfd09bc3704f3cd61e6bd1a7933c329ec11a92165e3b5509264"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-9437184e3d662d557956c98a4ec64e9a341ed4545c7ea3c671f21b4c698d76c7.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-9437184e3d662d557956c98a4ec64e9a341ed4545c7ea3c671f21b4c698d76c7.cfg",
+      "method": "independent_copy",
+      "bytes": 7236,
+      "sha256": "9437184e3d662d557956c98a4ec64e9a341ed4545c7ea3c671f21b4c698d76c7"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-9cf1bc4d9b73f456ffce6f9ab5cc587c75560ece87d946f8b049c0b5bbd07b52.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-9cf1bc4d9b73f456ffce6f9ab5cc587c75560ece87d946f8b049c0b5bbd07b52.cfg",
+      "method": "independent_copy",
+      "bytes": 7252,
+      "sha256": "9cf1bc4d9b73f456ffce6f9ab5cc587c75560ece87d946f8b049c0b5bbd07b52"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-a19b0dd29a50e0d7f914b95e3323f80c59fd39c12d7493b02f4fc311e018da32.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-a19b0dd29a50e0d7f914b95e3323f80c59fd39c12d7493b02f4fc311e018da32.cfg",
+      "method": "independent_copy",
+      "bytes": 7249,
+      "sha256": "a19b0dd29a50e0d7f914b95e3323f80c59fd39c12d7493b02f4fc311e018da32"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-b3b26163014c31044a109ac05a359bf45f6c23069c6e9871025e885ccfaf1358.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-b3b26163014c31044a109ac05a359bf45f6c23069c6e9871025e885ccfaf1358.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "b3b26163014c31044a109ac05a359bf45f6c23069c6e9871025e885ccfaf1358"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-b60276ac401412d24cf1ef824d8294164772f3a954d4d0422afebf4cd0256506.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-b60276ac401412d24cf1ef824d8294164772f3a954d4d0422afebf4cd0256506.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "b60276ac401412d24cf1ef824d8294164772f3a954d4d0422afebf4cd0256506"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-b6e7f57aad29521de6ad64cd343d9d0ee7d060bdd931f55998bc7e5f800cff45.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-b6e7f57aad29521de6ad64cd343d9d0ee7d060bdd931f55998bc7e5f800cff45.cfg",
+      "method": "independent_copy",
+      "bytes": 7237,
+      "sha256": "b6e7f57aad29521de6ad64cd343d9d0ee7d060bdd931f55998bc7e5f800cff45"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-f39dcd5044cfc002f6f3df11677ca72418203cf4d7a914fed95c0e31592d303b.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-f39dcd5044cfc002f6f3df11677ca72418203cf4d7a914fed95c0e31592d303b.cfg",
+      "method": "independent_copy",
+      "bytes": 7249,
+      "sha256": "f39dcd5044cfc002f6f3df11677ca72418203cf4d7a914fed95c0e31592d303b"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config-fc8a11e04b33dfdd75befa2535cf18e5455e87715b853dbd45eefbc302b45263.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config-fc8a11e04b33dfdd75befa2535cf18e5455e87715b853dbd45eefbc302b45263.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "fc8a11e04b33dfdd75befa2535cf18e5455e87715b853dbd45eefbc302b45263"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config_mp.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config_mp.cfg",
+      "method": "independent_copy",
+      "bytes": 7237,
+      "sha256": "0e34fb49d16f18679df3661065405185e5c056716a3d6d72ca83848a0e7594cc"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\config_mp.previous.cfg",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/config_mp.previous.cfg",
+      "method": "independent_copy",
+      "bytes": 7238,
+      "sha256": "1d9a0fcd5ddcff6ebdb49f34a441d529c6ff1a95e8bc9cd73973437cc552108e"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\64aee8c6cbd026d9ea92\\settings\\manifest.json",
+      "backup": "local/reference/launcher-data/64aee8c6cbd026d9ea92/settings/manifest.json",
+      "method": "independent_copy",
+      "bytes": 372,
+      "sha256": "04db519e58138a83405921fc0b657a2af1df00a36232340819af3b2c608b3676"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\3a4a615ce3dacc12738b\\settings\\config-85ce302779b4cd4eab5cd378c5af5ebd9be06da9f4c900ec89849af7b011251f.cfg",
+      "backup": "local/reference/launcher-data/3a4a615ce3dacc12738b/settings/config-85ce302779b4cd4eab5cd378c5af5ebd9be06da9f4c900ec89849af7b011251f.cfg",
+      "method": "independent_copy",
+      "bytes": 7229,
+      "sha256": "85ce302779b4cd4eab5cd378c5af5ebd9be06da9f4c900ec89849af7b011251f"
+    },
+    {
+      "id": "reference_launcher_data_not_r523_dependency",
+      "source": "E:\\GAME\\COD\\codol-airedux\\CODOL-2.6.9.7-Launcher\\data\\3a4a615ce3dacc12738b\\settings\\manifest.json",
+      "backup": "local/reference/launcher-data/3a4a615ce3dacc12738b/settings/manifest.json",
+      "method": "independent_copy",
+      "bytes": 371,
+      "sha256": "e05a34e35efa226ee3d9949c07c57cac0f737ef8ead98925c98d3d5aa7a8a55e"
+    },
+    {
+      "id": "qt_tls_backends_reference",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\他人文件参考\\codol-server-launcher-members-20261023\\launcher\\tls\\qcertonlybackend.dll",
+      "backup": "local/reference/qt-tls/qcertonlybackend.dll",
+      "method": "independent_copy",
+      "bytes": 106856,
+      "sha256": "5b79ac7d42cb27b291976fb53fd18452cca498b18556bf5598c0a48f7ced9301"
+    },
+    {
+      "id": "qt_tls_backends_reference",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\他人文件参考\\codol-server-launcher-members-20261023\\launcher\\tls\\qschannelbackend.dll",
+      "backup": "local/reference/qt-tls/qschannelbackend.dll",
+      "method": "independent_copy",
+      "bytes": 272744,
+      "sha256": "bb6a407ff07970cb2b459057d4a93b7ff4bdba9664d1a03bae4461f09e80bf65"
+    }
+  ]
+}

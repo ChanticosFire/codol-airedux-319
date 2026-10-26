@@ -121,7 +121,7 @@ _original_prepare = launch_mod.prepare
 
 # 社区 build_plan() 在参数末尾追加的游戏参数。补丁 0xDBCCF8 把 "set 2451" 改成 "set 2439"，
 # 这条 +set 是配套的 —— 少了它客户端会在普通文件打开处报 WIN_FILE_NOT_FOUND（文件名为空）。
-GAME_ARGUMENTS = ("+set", "2439", "0", "+set", "cl_timeout", "600", "+set", "cl_connectTimeout", "600", "+cl_demo_play", "testdemo")
+GAME_ARGUMENTS = ("+set", "2439", "0", "+set", "cl_timeout", "600", "+set", "cl_connectTimeout", "600")
 
 CREATION_FLAGS = 1030  # CREATE_SUSPENDED | CREATE_NEW_PROCESS_GROUP | CREATE_UNICODE_ENVIRONMENT
 

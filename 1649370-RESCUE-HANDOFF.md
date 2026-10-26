@@ -1,5 +1,7 @@
 # CODOL Build 1649370 — 救援交接（2026-10-26）
 
+> **2026-10-26 续修正**：本交接早先把零售客户端 `codoMP_client_shipRetail.exe` 的 TP/TCLS 故障与隔离离线客户端混为一谈。已验证的 `r107flow/runtime/codol1649370-offline.exe` 路线可进入大厅与 `mp_crash_tropical` 对局画面；用户现场确认未拉起 TP、未出现 100 大厅错误。当前仍**无可控玩家**。本文件中“3D 场景从不渲染”“可用私有客户端副本已丢失”等绝对表述仅可作为当时零售路径的历史判断，不能否定现存的 `r107flow`。另一次工作树清理错误地恢复了 `tools/launch_1649370.py` 的 `+cl_demo_play testdemo`，使后续启动误走 demo；现已移除。复现步骤见 [已验证启动流程](docs/1649370-KNOWN-GOOD-STARTUP.md)，资源副本见 [资源索引](resources/1649370/README.md)。
+
 > 用途：把当前状态交给下一个接手者（Codex）。本文件只写**可执行的结论**，不写流水账。
 > 长程目标已于第 521 轮**暂停**（goal revision 9, paused）。恢复前请先读完本文件。
 > 完整日志见 `1649370-STATUS.md`（1085+ 节，含 131 处更正标记）与 `PROJECT_STATUS.md`。

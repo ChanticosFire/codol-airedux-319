@@ -1,5 +1,7 @@
 # Phase Status and Evidence
 
+> **2026-10-26 [1649370 verified startup and resource archive]** Reused the existing `r107flow/runtime` and removed the accidentally restored `+cl_demo_play testdemo` from `tools/launch_1649370.py`. The user confirmed no TP launch and no lobby-100 error, with lobby and `mp_crash_tropical` match scene visible; there is still no controllable player. The last `r522-gs.jsonl` segment records real `getchallenge=1`, `connect=1`, `stats=9`, and `gamestateupdate=2`; client reached `net_state=10`, `ui_state=0`. LSG TLS authentication was not verified. Exact steps: `docs/1649370-KNOWN-GOOD-STARTUP.md`. Resource sources, independent copies of keys/profile/fixtures, and space-saving hardlink mirrors: `resources/1649370/README.md` and `manifest.json`. The ignored `resources/1649370/local/` contains private material and must stay out of Git. No player gameplay development was undertaken in this resource-organization turn.
+
 > **2026-10-24 [weapon registration path identified]** `0x42F3E0` is a lookup-or-create path; the first demo composite lands at 1136 against expected 1224, a gap of 88 prior registrations. See `docs/DEEPSEEK-HANDOFF.md` for evidence and next work. `mp_cross_fire` acceptance remains unmet.
 
 > **2026-10-24 [handoff ready]** `docs/DEEPSEEK-HANDOFF.md` consolidates verified protocol/demo findings, the weapon index blocker, failed approaches and the next experiments. The map acceptance criterion has not been met.
