@@ -34619,3 +34619,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 搜 5362 的 9 处引用：0x61C38F/0x61C3A0 是 call 0x76B600(CG_ConfigString) 但索引为 2/3(CS_SERVERINFO/SYSTEMINFO)，不是 5362；其余未逐一验证，可能是无关立即数。
 - 现状：CS_WEAPONS 处理未定位；社区地址不适用(此前 0x4737E0 也踩过同类坑)。
 - 下一步：从字符串侧(给 ak47_mp 下内存断点)但硬件断点不可用受限；或解析 common_mp.ff 取武器条目真实格式。
+
+### 第 118 轮：common_mp.ff 是压缩的 IWff0100，武器名不可直接搜
+- head = "IWff0100"，size 76MB；搜 ak47_mp/weapon_ak47/ak47/m4_mp 全 0 命中 ⇒ 内容压缩。
+- 要读 CS_WEAPONS 条目真实格式必须先实现 fastfile 解压（COD 系列通常 zlib 分块），工作量以天计。
+- 12条路径现状：1-11 全部证伪；12(填充CS_WEAPONS)机制已确认但条目格式未知；13(从fastfile读)需先解压。
+- 关键判断：第12条是目前唯一有明确机制支撑的方向——窗口5362-6061已确认、BG_RegisterWeaponDef会填充bg_weaponDefs、服务端有能力发任意configstring；唯一缺的是槽位字符串格式。
