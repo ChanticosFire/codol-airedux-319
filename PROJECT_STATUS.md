@@ -34533,3 +34533,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - gameserver.py 搜 buttons/usercmd/forwardmove 仅一行注释，无解析逻辑 ⇒ 服务端不记录 buttons。
 - 读 ps+0x2C0/0x2BC/0x2CC/0x2C4/0x2D4：net=0(已在厅)、全为0、foreground_matches=false，测试无效。
 - 下一步：起新会话(net=10且窗口前台)再测这五个字段；若 weaponShotCount/weaponstate 变化，可作"客户端确实执行射击"的第二独立证据。
+
+### 第 104 轮：开火时武器状态字段完全不变——没有武器状态机不跑
+- 本次条件正确：net=10、foreground_matches=true。
+- 按住左键2.5秒：weaponShotCount/weaponTime/weaponstate/weapAnim/weaponDelay 全部恒为0，distinct tuples=1，无任何变化。
+- 结论：这些字段由武器状态机驱动；ps.weapon==0 时状态机不启动 ⇒ 无开火动画/枪口闪光/弹药消耗，因为没有"枪"对象。
+- 与渲染侧连通：没有武器 → 状态机不跑 → 无射击动作与视觉；"射击"与"武器渲染"是同一问题的两面。
+- 第5b最终：输入侧完整(keys[0xC8]/buttons 均实测)、对象侧缺失(武器状态机不触发+渲染八路径证伪)。
