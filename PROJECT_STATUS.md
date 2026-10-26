@@ -33959,3 +33959,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 在确认 net=10 的客户端上扫 1.29 GB：**hits = 0** ⇒ 按键状态数组根本没被置位，移动键在到达 `keys[]` 之前就被丢弃。
 - 结合 cl/cls 区 0 命中、`forwardmove` 恒 0、`+forward` 无效：问题不在预测层、不在 keys[] 位置、不在 cbuf。
 - 下一步：静态读 `CL_KeyEvent` 入口的分支条件，而不是继续猜地址。
+
+### 第 21 轮：找 CL_KeyEvent 两锚点各走一半；提出评估 native engine 路线
+- `CODO` 字符串在 0xDDB974，引用点 0xBE4D40 一段是 `CreateWindowExA`（不是 RegisterClass），拿不到 WndProc。
+- 运行时 `FindWindowW("CODO")` 得 hwnd=0x5414B4、HINSTANCE=0x400000，但 `GWLP_WNDPROC`/`USERDATA` 跨进程返回 0（Win32 限制）。
+- 下一步：静态找 `RegisterClassEx` 的 IAT 槽并回溯 `lpfnWndProc`；或运行时读 tagWND。
+- 战略判断：输入链路已连续排除预测层、keys[] 置位（1.29 GB 0 命中）、cbuf、UI 吞键、dvar。社区用 native engine 才做到出生与移动，应评估是否改走该路线（需确认能否接受本客户端、资源/证书需求、启动器能否绕开 Rust 平台）。
