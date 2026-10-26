@@ -34497,3 +34497,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结论：字节模式筛 ps 字段访问不可行（0x4C 在指令里太常见）。
 - 推荐改运行时：在 ps+0x4C / ps+0x15C 下硬件读断点(DR0-DR3)，命中后取 EIP 与调用栈即知谁在读 weapon 字段。
 - 现状：第5b渲染侧静态手段(字符串引用/格式串/字节模式)已试尽，只剩运行时调试。
+
+### 第 98 轮：硬件读断点工具就绪，但 ps+0x4C 5秒0命中
+- 新工具 watch_ps_reads：DR0+DR7 硬件读/写断点，枚举69线程并逐个 SetThreadContext 打点，轮询 DR6 命中记录 EIP。
+- 首次运行：threads stamped=69，distinct eip hits=0。
+- 两种解释：①客户端确实不读 ps.weapon（渲染走 viewmodelIndex 或别的源）；②CONTEXT 结构偏移写错(DR0=0x04/DR7=0x18/EIP=0xB8/DR6=0x14 未在本Windows版本验证)。
+- 下一步：用 ps+0x00(commandTime，确定每帧递增)做对照实验确认断点机制；有效则测 0x4C/0x15C；无效则先修 CONTEXT 偏移。
