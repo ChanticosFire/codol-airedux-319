@@ -82,3 +82,153 @@
 2. 某个原件丢失时，先查看 `manifest.json` 的 `source`、`backup`、`sha256`，用 `Get-FileHash -Algorithm SHA256` 对照后再复制。镜像目录仅作恢复源，不当作第二个活运行时。
 3. 清理未提交文件前先看 `git diff` 的语义。曾把移除 `+cl_demo_play` 的修复误认为实验残留并 `git checkout --` 回滚，导致后续启动走 demo；`runs/_find_bisect_points.py` 的扫描范围也曾同样被误回滚。
 4. 此资源目录和原目录都在本机磁盘，能防误删路径，不能防整个磁盘损坏。私钥如需异机备份，应使用受控的加密存储，保持其不进入 Git。
+
+## 协议数据：重建 gamestate / 快照时直接照抄，不要重新逆推
+
+以下数值均来自静态反汇编或实测，**不是猜测**；但除 `-58`/`-57` 的实现外，尚未在客户端上验证。
+
+### playerState 字段表（`0xDA63E8`，24 项，每项 12 字节 `{offset, codec, hint}`）
+
+```
+offset:codec   offset:codec   offset:codec   offset:codec
+  76:-58         80:-100        84:-100        65:-57
+  68:-97         72:16          66:-57         67:-100
+  12:10          56:12          60:-97         64:-57
+  52:32          20:10          24:10          40:6
+  28:10          44:6           32:10          48:6
+   4:11           8:11          16:11          36:6
+```
+
+实现成字典即 `tools/build_1649370_snapshot_entity.py` 里的 `FIELD_CODECS`。
+
+### codec 位布局（`0x6701D0` 分派链，46 个比较）
+
+| codec | 形式 | 语义 |
+|---|---|---|
+| `-97` | 1 位门控；**gate=0** → 再读 8 位；**gate=1** → 再读 32 位小端 | gate=0 是**增量**：`value = current - decoded8`；gate=1 是**绝对值** |
+| `-58` | 1 位门控；**gate=0** → 再读 2 位(0..3) 后 × **10.0**；**gate=1** → 32 位浮点 | 比例常量在 `0xD599EC`，值 = `10.0`（已验证） |
+| `-57` | **1 位** | 布尔 |
+| `-100` | 2 位 + 32 位 | 浮点增量 |
+| `-101` | 2 位（须为 0）+ 16 位 | 角度 |
+| `-94` | —— | 事件负载，需要事件表 |
+| 正数 `N` | 1 位门控；0 → 值为 0 并结束；1 → 再读 `N` 位 LSB-first | 不是"先余数后整字节"的旧形式 |
+
+`-97` 的两种形式**语义不同**，用错会让之后每个字段的位游标错位；`-58` 的短形式只能表达 0/10/20/30，武器索引这类值必须走 gate=1。
+
+### `ps.weapon` 与 codec `-58` 的对应关系（重要）
+
+```
+ps.weapon = playerState 字段 57 / offset 0x4C = 十进制 76
+字段表第 1 项正是 offset=76 codec=-58
+```
+
+**结论**：`server1649370/ps_codec.py` 在 2026-10-26 之前没有 `-58` 分支，`write_field` 遇 `-58` 直接抛 `unsupported codec`——**服务端从来没有能力编码 `ps.weapon`**。这不是"忘了给值"，是缺少编码路径。分支现已补上，但**未在客户端验证**。
+
+### 武器定义索引 1136 vs 1224（历史结论）
+
+```
+demo 播放：武器表 0 -> 1258 -> 1266，weapon_count 35 -> 43，ui=0（正常）
+服务端 gamestate：1135 -> 0 -> 1136，weapon 1 -> 弹窗 181
+表结构：表基址 0x1988B50、计数 0x827F738、定义表 0x19E30F0（每项 0x1474）
+```
+
+差值 88 发生在 **gamestate 触发的清空重建阶段**：服务端的武器定义来源（configstring 7184–7218）比 demo 少。
+**试过删掉 7184–7218 的 35 条 → 不再弹数字错误，但 `0x58F3C0` 以 `ecx=0` 解引用缺失定义，所以删条目不是修复。**
+当前做法是 `_patch_r336.py` 把校验函数 `0x59B560` patch 成 `ret` 绕过，**根因未修**。
+
+### 零售路径完整 stage 配方（`prep.py::apply()`，7 个文件 + hosts）
+
+```python
+dwauth.ini                 addr
+
+port
+
+addr
+
+port
+
+3ea
+
+
+iips.ini                   iips_url="http://<addr>:8000/"        # 上游用 8000
+stun.ini                   三行 <addr>
+IIPS/IIPSFilelist.ini      FileUrl = http://<addr>:8000/<name>
+IIPS/IIPSHostApp.ini       Address=udp://<addr>:8000
+TCLS/config/dirserver.xml  host="<addr>"                        # TP/TCLS 门控所在
+cacert.pem                 插入带标记的块：
+# CODOL-LOCAL-CA
+<PEM>
+
+hosts                      10 个域名 -> 127.0.0.1
+```
+
+hosts 十个域名：
+
+```
+login.codol.qq.com   tub.codol.qq.com    stat.iips.qq.com    ctrl.iips.qq.com
+iips.speed.qq.com    rtstat.iips.qq.com  down-update.qq.com  stun.qq.com
+stun1-stn.codol.qq.com   stun2-stn.codol.qq.com
+```
+
+`restore()` 从 `<game_dir>/_launcher_backup/**/*.orig` 全量还原。
+
+### 零售 TLS 参数（`native_config.rs::tls_profile`）
+
+```rust
+"tls10_loopback_explicit_certificate" => {
+    要求 RSA >= 2048
+    set_security_level(0)
+    min = max = TLS1
+    cipher_list = "AES128-SHA:AES256-SHA"
+    NO_RENEGOTIATION
+}
+```
+
+注释说明该子集是实测 1604220 ClientHello 的 RSA AES 套件交集。Python 侧需要用
+`SSLContext(PROTOCOL_TLS_SERVER)` + `set_ciphers("AES128-SHA:AES256-SHA")` +
+`minimum_version = maximum_version = TLSv1` + 下调 security level，**默认配置不满足**。
+
+### 客户端 TLS 信任来源（零售 EXE 的 DLL）
+
+`codoMP_client_shipRetailBase.dll` 内含 OpenSSL **0.9.8zg**，默认 CA 路径：
+
+```
+SSL_CERT_FILE / SSL_CERT_DIR
+C:\Program Files (x86)\Common Files\SSL\cert.pem
+C:\Program Files (x86)\Common Files\SSL\certs\
+```
+
+`"cacert.pem"` 这个**文件名**在 DLL 中出现 0 次；上游 `prep.py` 仍会改写 `cacert.pem`，
+说明它服务于 libcurl 一类路径，**不是** Auth/LSG 的 TLS 信任源。两条不要混。
+
+## git 内必需工具（manifest 未逐文件收录，随仓库恢复）
+
+`manifest.json` 记录的是**易丢失的本机资源**（密钥、数据库、二进制、测试输入）。下面这些是**仓库内代码**，正常 `git checkout` 即可恢复，因此没有单独做字节副本；但其中两项有历史教训，需要显式核对。
+
+| 文件 | 作用 | 核对点 |
+|---|---|---|
+| `tools/launch_1649370.py` | 客户端启动器 | **`GAME_ARGUMENTS` 不能含 `+cl_demo_play`**（见下） |
+| `tools/ring_bridge_1649370.py` | UDP 桥（`forward` / `connect` / `drain-ring` 等子命令） | `forward --start-challenge` 是本流程用法 |
+| `tools/patch_retry_ms_1649370.py` | 把重试阈值改成 1 ms | 改的是 `0x5C06B3 cmp eax,0xBB8`，不是 nop |
+| `tools/drive_login_state_machine.py` | 推进登录状态机 | `--ticks 20 --interval 0.35 --set-ui-state 1` |
+| `tools/cbuf_1649370.py` | 控制台命令注入 | 用于 `screenshot` / `quit` 一类操作 |
+| `server319/lsg.py` + `lsg_derived.py` | LSG 服务（默认 CLI 走 `lsg_derived`） | `lsg.py` 里 `LsgServer` 是 legacy probe，只有 `--legacy-probe` 才用 |
+| `server1649370/gameserver.py` | UDP 游戏服 | 快照原样服务 `--snapshot-file`，不经过 `ps_codec` |
+
+### `launch_1649370.py` 的正确 `GAME_ARGUMENTS`
+
+```python
+GAME_ARGUMENTS = ("+set", "2439", "0",
+                  "+set", "cl_timeout", "600",
+                  "+set", "cl_connectTimeout", "600")
+```
+
+**不能出现 `+cl_demo_play` 或 `testdemo`。**
+
+- 历史回归：有人为真实连接**移除**了 `+cl_demo_play testdemo`，该改动作为未提交工作树被误判为"实验残留"并 `git checkout --` 回滚，导致之后每次启动都走 demo 回放。
+- 判据：客户端命令行应指向 `r107flow/runtime/codol1649370-offline.exe` 且不含 `+cl_demo_play`。
+- 同类误回滚：`runs/_find_bisect_points.py` 的 `LO/HI` 扫描范围也被同样回滚，**其正确范围语义尚未核实**，当前字节副本见 `local/reference/_find_bisect_points.py`。
+
+### `+set 2439 0` 为什么必须在
+
+配套的是一个 `0xDBCCF8` 的补丁（把 `"set 2451"` 改成 `"set 2439"`）。**少了这条 `+set`，客户端会在普通文件打开处报 `WIN_FILE_NOT_FOUND`（文件名称为空）。** 它不是可选装饰。
