@@ -34022,3 +34022,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - **`usercmd_t cmds[]` 在 `cl+0x3CD0`，每项 44 字节，`+0x00` = commandTime**。
 - 结论：`CL_CreateNewCommands` 确实在跑（commandTime 持续前进），但 `forwardmove` 仍为 0 ⇒ 缺口是"生成命令时没把按键变成移动"，不是"命令没生成"。
 - 下一步：以 `cmds[].commandTime` 写入点为锚点定位 `CL_CreateNewCommands`，反汇编看 `forwardmove`（约 +0x18）那段为何被跳过。
+
+### 第 31 轮：三种锚点均未命中 CL_CreateNewCommands
+- 常量偏移（0x3CD0/0x3CCC/0x3CD4/0x3CE4）写入：**0 命中** ⇒ usercmd 用指针/索引寻址写。
+- `imul ...,0x2C`：103 处，太宽泛，失败。
+- 读 `cl.serverTime` 4 处：`0x5AC457` 已排除（快照排序/抖动逻辑）；`0x54B649`、`0x5B224B`、`0x816576` 未查。
+- 判断：生成函数用寄存器里已算好的指针填 usercmd，故无常量偏移也无 0x2C 乘法。
+- 下一步：hook 未查的两处读 serverTime（看哪处每帧固定调用），或对 cmds[] 做 2ms 高频采样看 forwardmove 是否会瞬时非零再被回滚。
