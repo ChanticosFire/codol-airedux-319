@@ -34316,3 +34316,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 已提交关键工具：session_up（断言net=10）、gameserver（RebuildFollower/自动发现PID/send-opcode）、wire164、hold_key/hold_mouse、hook_any
 - 关键内存事实已整理（cl/ps/keys/cmds/cls/ui_state、svc opcode、黑条为镜像固有、字段表无名字）
 - 剩余两项需专门静态分析：svc_serverCommand 白名单 / R_RegisterModel model 表
+
+### 第 69 轮：svc_serverCommand 存储点已定位，执行点未找到
+- 0x4737E0 只存储：cmp/mov [conn+0x8014C](sequence)，and 0x1FF、shl 0xA、strncpy 到 conn+0x80154+slot（每槽1KB）。
+- 0x80154 缓冲基址 0 处直接引用（读取方走 lea/寄存器算术）；0x8014C 的 16 处引用中 0x4737xx 是存储侧、0x5AF640 是 gamestate 重置赋值，均非执行路径。
+- 结论：无法从静态侧回答"发什么命令能结束比赛"；需反汇编更大范围或运行时钩 Cbuf_AddText/Cbuf_Execute。
+- 建议：接受第3项现状（带瑕疵）并记录未解问题；后续优先用运行时钩子从正常流程反推应发命令。
