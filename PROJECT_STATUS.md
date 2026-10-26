@@ -34645,3 +34645,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 试发：net=10 但仍 source:"file"；日志显示 configstrings 含 [5960,"ak47_mp"] 却未被使用。
 - 原因：session_up 第170行硬编码 --gamestate-source file → 文件模式原样发 bin，完全忽略 configstrings。
 - 下一步：传了 --configstring-file 时改用 --gamestate-source native；但需验证 native 模式 net=10 是否仍可达成(历史多次踩坑)；再查 bg_weaponDefs 真实地址。
+
+### 第 122 轮（实质进展）：native模式成功发送CS_WEAPONS条目，net=10保持
+- session_up 新增 --gamestate-source {file,native}(默认file)。
+- r633：source=native、net=10、payload_length=104、configstrings含[5960,"ak47_mp"]；payload_head 尾部可见 74 01 61 6b 34 37 5f 6d 70 = "t\01ak47_mp"，条目确实进入 gamestate。
+- 意义：本项目第一次把 CS_WEAPONS 条目真正发给客户端并被接受(net=10)。之前13条路径都是改ps或找接口，这次是从源头(gamestate configstring)喂数据，符合客户端设计意图。
+- 下一步：定位 bg_weaponDefs 真实地址(社区0x0150D720未必适用)验证是否被填充；若填充则设ps.weapon观察渲染；若没被填充则说明条目格式需参数。

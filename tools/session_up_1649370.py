@@ -121,6 +121,9 @@ def main() -> int:
     ap.add_argument("--skip-client", action="store_true")
     ap.add_argument("--match-disconnect", type=float, default=None,
                     help="send the OOB disconnect command this many seconds after connect to end the match")
+    ap.add_argument("--gamestate-source", choices=("file", "native"), default="file",
+                    help="file sends the captured bin verbatim; native rebuilds it "
+                         "so --configstring-file takes effect")
     ap.add_argument("--configstring-file", default=None,
                     help="JSON [[index,value],...] replacing the built-in configstrings")
     ap.add_argument("--server-command-text", default=None,
@@ -167,7 +170,7 @@ def main() -> int:
             step("starting game server", seconds=args.server_seconds)
             server_args = [sys.executable, "-X", "utf8", "-B", "-m", "server1649370.gameserver",
                            "--port", "28969", "--delay-send", "1",
-                           "--gamestate-source", "file", "--gamestate-file", args.gamestate,
+                           "--gamestate-source", args.gamestate_source, "--gamestate-file", args.gamestate,
                            "--gamestate-gametype", "war",
                            "--gamestate-map", "mp_crash_tropical",
                            "--snapshot-delay", "1",
