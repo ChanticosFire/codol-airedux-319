@@ -34069,3 +34069,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 原因：镜像源头 `ps.origin` 本身就是被覆盖的字段，形成闭环；真正该镜像的 `cl.predictedOrigin` 实测不动。
 - ⇒ 根因收回：**`CL_PredictMovement` 在本镜像里没跑**（输入与 forwardmove 均正常）。
 - 下一步：找 CL_PredictMovement 调用点与前置条件；或改用"服务端按 keys[K_W] 驱动积分"（框架已就绪，成本最低，且位移仍由玩家按键产生）。
+
+### 第 38 轮：实现按键驱动位移，但客户端再次崩溃未验证
+- 新增 `key_active()`（读 `0x7508CBC+key*12`）与按键驱动积分（W/S/A/D → origin 位移，speed=190、dt=0.1），py_compile 通过。
+- 验证失败：客户端 17688 已退出（`r572-launch.out: unhandled_exception`）；新服务仅收到 getchallenge。
+- **新信号**：上一版 RebuildFollower（镜像模式）运行约 1 分钟后也崩溃 ⇒ "每帧重编码"仍有崩溃风险，上轮"不崩溃"只覆盖前 1 分钟。
+- 最可疑：`serverTime` 双写不一致（payload 头 `[5:9]` 用 `72192+index*500`，而 `values[0x00]` 用 `stamp`）。
+- 下一步：先对齐时间并复现/修复崩溃，再启用按键驱动。

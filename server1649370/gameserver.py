@@ -105,6 +105,18 @@ class ClientOriginReader:
     def is_active(self) -> bool:
         return self._u32(self.NET_STATE) == 10
 
+    # keys[] lives in the engine's .data at 0x7508CBC, 12 bytes per key and
+    # 0xD28 bytes per client; entry +0x00 and +0x04 both go 0 -> 1 while a key
+    # is held (verified live: keys[0x77] = [1,1,33] during W, [0,0,33] idle).
+    KEYS_BASE = 0x7508CBC
+    KEYS_CLIENT_STEP = 0xD28
+    KEYS_ENTRY = 12
+
+    def key_active(self, key: int, client: int = 0) -> bool:
+        address = self.KEYS_BASE + client * self.KEYS_CLIENT_STEP + key * self.KEYS_ENTRY
+        value = self._u32(address)
+        return bool(value)
+
     def cmd_number(self):
         """The client's current outgoing command number (cl + 0x3B94)."""
         enc = self._u32(self.CL_PTR)
@@ -155,15 +167,37 @@ class RebuildFollower:
     been shown to follow a server supplied origin exactly (111.5 -> 301.5).
     """
 
-    def __init__(self, pid: int):
+    def __init__(self, pid: int, speed: float = 190.0):
         self.reader = ClientOriginReader(pid)
         self.counter = 0
         self.last_origin = None
+        self.speed = speed
+        self.pos = None
 
-    def frame(self, server_time: int | None = None) -> bytes | None:
-        origin = self.reader.origin()
-        if origin is None:
-            return None
+    KEY_W = 0x77
+    KEY_S = 0x73
+    KEY_A = 0x61
+    KEY_D = 0x64
+
+    def frame(self, server_time: int | None = None, dt: float = 0.1) -> bytes | None:
+        if self.pos is None:
+            origin = self.reader.origin()
+            if origin is None:
+                return None
+            self.pos = list(origin)
+        # The client's own prediction never advances in this build, so the
+        # held key drives the position here: this is server-authoritative
+        # movement whose *input* is still the player's real key state.
+        step = self.speed * dt
+        if self.reader.key_active(self.KEY_W):
+            self.pos[0] -= step
+        if self.reader.key_active(self.KEY_S):
+            self.pos[0] += step
+        if self.reader.key_active(self.KEY_A):
+            self.pos[1] += step
+        if self.reader.key_active(self.KEY_D):
+            self.pos[1] -= step
+        origin = tuple(self.pos)
         self.last_origin = [round(v, 3) for v in origin]
         self.counter += 1
         stamp = server_time if server_time is not None else 72192 + self.counter * 100
@@ -605,7 +639,8 @@ class GameServer:
                 server_time = 72192 + index * 500
                 payload = payload[:5] + struct.pack("<I", server_time) + payload[9:]
             if self.rebuild_follower is not None:
-                dynamic = self.rebuild_follower.frame(server_time=72192 + index * 500)
+                dynamic = self.rebuild_follower.frame(
+                    server_time=72192 + index * 500, dt=self.snapshot_interval)
                 if dynamic is not None:
                     payload = b"\x00\x00\x00\x00" + dynamic
                     if index % 25 == 0:
