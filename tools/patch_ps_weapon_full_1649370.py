@@ -49,7 +49,14 @@ def build_cave(cave: int, noop: bool = False) -> bytes:
     code = bytearray()
     if not noop:
         code += b"\x9c\x60"                                    # pushfd; pushad
-        code += b"\x8d\x8d" + struct.pack("<i", PS_FROM_EBP)   # lea ecx,[ebp-0x3BB0]
+        # ecx = ps, derived from the fixed cl global instead of a guessed stack
+        # offset: cl = *(0x76638F4) ^ 0x6891D1C7, ps = cl + 0x0C.
+        code += b"\xa1" + struct.pack("<I", 0x76638F4)   # mov  eax,[0x76638F4]
+        code += b"\x35" + struct.pack("<I", 0x6891D1C7)  # xor  eax,0x6891D1C7
+                # 0x472406 decodes into cl->snapShot.ps, which patch_ps_commandtime
+        # documents at cl+0x2C.  cl+0x0C is predictedPlayerState and gets
+        # overwritten by the predictor every frame.
+        code += b"\x8d\x48\x2c"                          # lea  ecx,[eax+0x2C]
         code += b"\x66\xc7\x41\x4c" + struct.pack("<H", WEAPON)  # mov word [ecx+0x4C], n
         code += b"\xc7\x81" + struct.pack("<I", 0x55C) + struct.pack("<I", OWNED)
         code += b"\xc6\x81" + struct.pack("<I", 0x81C + WEAPON) + bytes([MODEL & 0xFF])

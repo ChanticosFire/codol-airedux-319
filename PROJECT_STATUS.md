@@ -34447,3 +34447,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 验证：--noop alive=True；完整补丁 alive=True（都不崩了）。
 - 但字段没写入：weapon=0、0x55C=0、viewmodel=1023，画面正常 ⇒ PS_FROM_EBP=-0x3BB0 偏移不对，写到了无关栈区。
 - 下一步：洞穴里改用全局 0x76638F4 取 cl 再取 cl+0x0C 作为 ps（不依赖 ebp 栈帧），或先泄出 ecx 反推真实偏移。
+
+### 第 90 轮：补丁稳定不崩但写不到 ps，需先泄出实际地址
+- 改全局cl算ps：mov eax,[0x76638F4]; xor; lea ecx,[eax+0x0C] → alive=True 但字段全0。
+- 改 cl+0x2C(snapShot.ps)：alive=True，predicted 与 snapShot 两处 weapon/owned/model 全为0。
+- 疑点：0x76638F4 在洞穴执行时可能未初始化，cl 算错写到别处（恰好可写故不崩）；或该处用的是另一个全局。
+- 下一步：洞穴里把算出的 ecx 写入自选的固定可写地址，外部读回比对真实 cl+0x0C/0x2C，一次性区分"地址对不对"与"偏移对不对"。
+- 现状：崩溃已解决（89轮），补丁可反复 restore/重装；唯一问题是"写哪里"。
