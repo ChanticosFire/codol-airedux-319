@@ -1,0 +1,477 @@
+"""Bit-exact 1649370 snapshot writer, rebuilt from the community wire spec.
+
+The layout and every codec here follow the protocol facts recorded in
+`docs/1649370-COMMUNITY-WIRE-SPEC.md`, which were read out of the build's own
+reader (0x6701D0 / 0x671170 / 0x671D80) by the community member preview
+package.  Nothing is copied from their C sources: this module only reproduces
+the wire behaviour.
+
+Two things make this writer different from `server1649370/ps_codec.py`:
+
+1. **Dual cursors.**  The 1649370 message keeps a byte cursor and a bit
+   cursor.  ``write_byte`` advances only the byte cursor; ``write_bits``
+   re-aligns to the byte cursor whenever the bit cursor is byte-aligned.
+   That is why the field stream can run "underneath" bytes written later.
+2. **Compressed positive-width fields.**  A positive width ``n`` writes
+   ``n & 7`` remainder bits with ``write_bits`` and then whole bytes with
+   ``write_byte``.  It is *not* a plain LSB-first run of ``n`` bits.
+
+Frame (after the 4-byte ack the server adds):
+
+    u8 0x00, u32 serverTime, u8 delta, u8 flags, 1 bit has_base
+    playerState section, anim section, actors, entities, clients, glass
+    u8 0x05
+
+Self-test: ``python -m server1649370.wire164``.
+"""
+
+from __future__ import annotations
+
+import math
+import struct
+
+from .player_fields164 import PLAYER_FIELDS164
+
+PLAYER_FIELD_COUNT = len(PLAYER_FIELDS164)
+ENTITY_SENTINEL = 2047
+TAIL_SECTIONS = 17
+
+
+class MsgWriter:
+    """Mirror of the 1649370 message writer: one buffer, two cursors."""
+
+    def __init__(self) -> None:
+        self.data = bytearray()
+        self.size = 0
+        self.bit = 0
+        self.failed = False
+
+    # ---------------------------------------------------------------- bytes
+    def write_data(self, payload: bytes) -> None:
+        if self.failed:
+            return
+        self.data.extend(payload)
+        self.size += len(payload)
+
+    def write_byte(self, value: int) -> None:
+        self.write_data(bytes((value & 0xFF,)))
+
+    def write_short(self, value: int) -> None:
+        self.write_data(struct.pack("<H", value & 0xFFFF))
+
+    def write_long(self, value: int) -> None:
+        self.write_data(struct.pack("<I", value & 0xFFFFFFFF))
+
+    # ----------------------------------------------------------------- bits
+    def write_bits(self, value: int, count: int) -> None:
+        if self.failed:
+            return
+        if count > 32 or count < 0:
+            self.failed = True
+            return
+        for index in range(count):
+            if not (self.bit & 7):
+                self.bit = self.size * 8
+                self.data.append(0)
+                self.size += 1
+            self.data[self.bit >> 3] |= ((value >> index) & 1) << (self.bit & 7)
+            self.bit += 1
+
+    # -------------------------------------------------------------- helpers
+    def to_bytes(self) -> bytes:
+        return bytes(self.data)
+
+
+# --------------------------------------------------------------------- codecs
+def _mask(width: int) -> int:
+    return 0xFFFFFFFF if width == 32 else (1 << width) - 1
+
+
+def _real(word: int) -> float:
+    return struct.unpack("<f", struct.pack("<I", word & 0xFFFFFFFF))[0]
+
+
+def _word(value: float) -> int:
+    return struct.unpack("<I", struct.pack("<f", value))[0]
+
+
+def _round_even(x: float) -> float:
+    base = math.floor(x)
+    part = x - base
+    if part > 0.5 or (part == 0.5 and math.fmod(base, 2.0) != 0):
+        return base + 1
+    return base
+
+
+class DeltaContext:
+    """Quantisation context: server clock and the position quantisation base."""
+
+    def __init__(self, server_time: int = 0, position_base=(0, 0, 0)) -> None:
+        self.server_time = server_time
+        self.position_base = tuple(int(v) for v in position_base)
+
+
+def write_gap(m: MsgWriter, distance: int, chunk_bits: int = 4) -> None:
+    """Distance coder used by the playerState section (4-bit chunks, max 15)."""
+    if distance < 1:
+        raise ValueError(f"gap distance must be >= 1, got {distance}")
+    if distance == 1:
+        m.write_bits(1, 1)
+        return
+    limit = (1 << chunk_bits) - 1
+    m.write_bits(0, 1)
+    rest = distance - 1
+    while rest >= limit:
+        m.write_bits(limit, chunk_bits)
+        rest -= limit
+    m.write_bits(rest, chunk_bits)
+
+
+def write_index_code(m: MsgWriter, number: int, last: int) -> None:
+    """Entity/client index coder (0x671170)."""
+    distance = number - last
+    if distance == 1:
+        m.write_bits(1, 1)
+        return
+    m.write_bits(0, 1)
+    if distance >= 512:
+        m.write_bits(1, 1)
+        m.write_bits(number, 11)
+    else:
+        m.write_bits(0, 1)
+        m.write_bits(distance, 9)
+
+
+def write_compressed(m: MsgWriter, value: int, width: int) -> None:
+    """Remainder bits with the bit cursor, then whole bytes with the byte cursor."""
+    low = width & 7
+    m.write_bits(value & _mask(low), low)
+    value >>= low
+    rest = width - low
+    while rest:
+        m.write_byte(value)
+        value >>= 8
+        rest -= 8
+
+
+def write_integer(m: MsgWriter, width: int, from_word: int, to_word: int,
+                  presence: bool = True) -> None:
+    """Positive/negative width integer codec (`integer()` in the reference)."""
+    if width == 0 or width < -32 or width > 32:
+        raise ValueError(f"unsupported integer width {width}")
+    bits = -width if width < 0 else width
+    if width > 0:
+        if to_word > _mask(bits):
+            raise ValueError(f"value {to_word:#x} does not fit {bits} bits")
+    else:
+        value = to_word - (1 << 32) if to_word & 0x80000000 else to_word
+        if value < -(1 << (bits - 1)) or value >= (1 << (bits - 1)):
+            raise ValueError(f"signed value {value} does not fit {bits} bits")
+    if presence:
+        m.write_bits(1 if to_word else 0, 1)
+        if not to_word:
+            return
+    write_compressed(m, (from_word ^ to_word) & _mask(bits), bits)
+
+
+def _angle(m: MsgWriter, value: float) -> None:
+    if not math.isfinite(value):
+        raise ValueError("angle is not finite")
+    quantised = math.fmod(math.fmod(_round_even(value * 182.04444885253906), 65536.0) + 65536.0, 65536.0)
+    m.write_short(int(quantised))
+
+
+def _position(m: MsgWriter, from_word: int, to_word: int, axis: int, ctx: DeltaContext) -> None:
+    lo = float(ctx.position_base[axis]) - 32768.0
+    hi = lo + 65535.0
+    f = math.floor(_real(from_word) + 0.5)
+    t = math.floor(_real(to_word) + 0.5)
+    if not (lo <= f <= hi) or not (lo <= t <= hi):
+        raise ValueError(f"position {f}/{t} outside the quantisation window {lo}..{hi}")
+    m.write_bits(1, 1)
+    m.write_bits((int(f - lo) ^ int(t - lo)) & 0xFFFF, 16)
+
+
+def _compressed_value(value: int, width: int) -> int:
+    return value & _mask(width)
+
+
+def write_delta_value(m: MsgWriter, bits: int, from_word: int, to_word: int,
+                      ctx: DeltaContext) -> None:
+    """Dispatch one descriptor codec (`CODOL_WriteDeltaValue`)."""
+    f = from_word & 0xFFFFFFFF
+    t = to_word & 0xFFFFFFFF
+    if bits in (-92, -83, -91, -82, -90, -81):
+        axis = 0 if bits in (-92, -83) else 1 if bits in (-91, -82) else 2
+        _position(m, f, t, axis, ctx)
+    elif bits in (-100, -79):
+        m.write_bits(0, 2)
+        _angle(m, _real(t))
+    elif bits == -87:
+        _angle(m, _real(t))
+    elif bits in (-97, -74, -72, -70):
+        delta = ctx.server_time - t
+        m.write_bits(1 if (delta < 0 or delta > 255) else 0, 1)
+        if 0 <= delta <= 255:
+            m.write_bits(delta, 8)
+        else:
+            m.write_long(t)
+    elif bits in (-80, -78, -73, -71):
+        m.write_long(t)
+    elif bits == -88:
+        m.write_long(f ^ t)
+    elif bits in (-93, -94, -84):
+        width = 11 if bits == -93 else 8 if bits == -94 else 7
+        if t > _mask(width):
+            raise ValueError(f"value {t} does not fit {width} bits")
+        if bits == -94:
+            m.write_byte(t)
+        else:
+            m.write_bits(t, width)
+    elif bits == -65:
+        if t % 100 or t // 100 >= 1024:
+            raise ValueError("value is not a valid hundredths codec value")
+        m.write_bits(t // 100, 10)
+    elif bits == -86:
+        scaled = _round_even(_real(t) * 10.0)
+        if not math.isfinite(scaled) or scaled < 0 or scaled > 63:
+            raise ValueError("scale value outside 0..6.3")
+        m.write_bits(int(scaled), 6)
+    elif bits == -96:
+        if t > 2047:
+            raise ValueError("value outside 0..2047")
+        m.write_bits(1 if t == 2046 else 0, 1)
+        if t == 2046:
+            return
+        m.write_bits(1 if t == 0 else 0, 1)
+        if not t:
+            return
+        m.write_bits(t & 7, 3)
+        m.write_byte(t >> 3)
+    elif bits == -98:
+        if t > 0x3FFFFFFF:
+            raise ValueError("value outside the 30-bit absolute arm")
+        m.write_bits(1, 1)
+        m.write_bits(t, 30)
+    elif bits == -75:
+        delta = t - f
+        if 1 <= delta <= 32:
+            m.write_bits(1, 1)
+            m.write_bits(delta - 1, 5)
+        else:
+            if t > 2047:
+                raise ValueError("value outside 0..2047")
+            m.write_bits(0, 1)
+            write_compressed(m, (f ^ t) & 2047, 11)
+    elif bits == -76:
+        delta = (t - (1 << 32) if t & 0x80000000 else t) - (f - (1 << 32) if f & 0x80000000 else f)
+        if -16 <= delta <= 15:
+            m.write_bits(1, 1)
+            m.write_bits(delta + 16, 5)
+        else:
+            m.write_bits(0, 1)
+            write_integer(m, -8, f, t, presence=False)
+    elif bits == -85:
+        frgb, trgb = f & 0xFFFFFF, t & 0xFFFFFF
+        fa, ta = f >> 24, t >> 24
+        if frgb == trgb and ((fa and ta == 0) or (not fa and ta == 255)):
+            m.write_bits(1, 1)
+            return
+        m.write_bits(0, 1)
+        if frgb == trgb:
+            m.write_bits(1, 1)
+        else:
+            m.write_bits(0, 1)
+            m.write_byte(t)
+            m.write_byte(t >> 8)
+            m.write_byte(t >> 16)
+        m.write_bits(ta >> 3, 5)
+    elif bits == 0:
+        if _real(t) == 0.0:
+            m.write_bits(0, 1)
+            m.write_bits(t >> 31, 1)
+        else:
+            m.write_bits(1, 1)
+            _trimmed(m, f, t, 13, 4096)
+    elif bits == -89:
+        _trimmed(m, f, t, 13, 4096)
+    elif bits == -99:
+        m.write_bits(1 if t else 0, 1)
+        if t:
+            _trimmed(m, f, t, 12, 2048)
+    elif bits == -102:
+        width = 31
+        if (f | t) > _mask(width):
+            raise ValueError("value outside the 31-bit arm")
+        m.write_bits(1 if f != t else 0, 1)
+        if f != t:
+            m.write_bits(t, width)
+    elif bits == -101:
+        width = 6
+        if (f | t) > _mask(width):
+            raise ValueError("value outside the 6-bit arm")
+        m.write_bits(1 if f != t else 0, 1)
+        if f != t:
+            m.write_bits(t, width)
+    else:
+        write_integer(m, bits, f, t, presence=True)
+
+
+def _trimmed(m: MsgWriter, from_word: int, to_word: int, width: int, bias: int) -> None:
+    f = _real(from_word)
+    t = _real(to_word)
+    if not math.isfinite(t) or not math.isfinite(f):
+        raise ValueError("trimmed codec value is not finite")
+    trunc = math.trunc(t)
+    if t == trunc and -bias <= t < bias and -bias <= math.trunc(f) < bias:
+        value = ((int(math.trunc(f)) + bias) ^ (int(trunc) + bias)) & _mask(width)
+        m.write_bits(0, 1)
+        write_compressed(m, value, width)
+    else:
+        m.write_bits(1, 1)
+        m.write_long(from_word ^ to_word)
+
+
+# ------------------------------------------------------------------- sections
+def write_player_tail_zero(m: MsgWriter) -> None:
+    """A tail whose every section equals the zero baseline: one 0 bit each."""
+    for _ in range(TAIL_SECTIONS):
+        m.write_bits(0, 1)
+
+
+def write_player_state(m: MsgWriter, values: dict[int, int], ctx: DeltaContext,
+                       tail_zero: bool = True) -> int:
+    """Write the playerState section; returns the wire index of ``last``."""
+    targets = [0] * PLAYER_FIELD_COUNT
+    for offset, word in values.items():
+        for index, (row_offset, _bits, _hint, _words) in enumerate(PLAYER_FIELDS164):
+            if row_offset == offset:
+                targets[index] = word & 0xFFFFFFFF
+                break
+        else:
+            raise ValueError(f"offset {offset:#x} is not in the playerState table")
+    selected = [False] * PLAYER_FIELD_COUNT
+    last = -1
+    for index, (_offset, _bits, hint, _words) in enumerate(PLAYER_FIELDS164):
+        if hint == 3:
+            selected[index] = True
+        else:
+            selected[index] = targets[index] != 0
+        if selected[index]:
+            last = index
+    m.write_bits(1, 1)                 # playerState present
+    m.write_bits(last + 1, 8)          # 8-bit last_changed + 1
+    previous = -1
+    for index in range(last + 1):
+        _offset, bits, hint, words = PLAYER_FIELDS164[index]
+        if not selected[index] or (hint == 2 and index != last):
+            continue
+        write_gap(m, index - previous)
+        write_delta_value(m, bits, 0, targets[index], ctx)
+        previous = index
+    for index in range(max(last, 0)):
+        _offset, bits, hint, _words = PLAYER_FIELDS164[index]
+        if hint == 2:
+            write_delta_value(m, bits, 0, targets[index], ctx)
+    if tail_zero:
+        write_player_tail_zero(m)
+    return last
+
+
+def write_entities_empty(m: MsgWriter) -> None:
+    write_index_code(m, ENTITY_SENTINEL, -1)
+
+
+def write_empty_tail_sections(m: MsgWriter) -> None:
+    """anim commands, actors, clients and glass: one zero bit each."""
+    for _ in range(4):
+        m.write_bits(0, 1)
+
+
+def build_snapshot(values: dict[int, int], *, server_time: int = 72192, delta: int = 0,
+                   flags: int = 0, has_base: int = 0,
+                   position_base=(0, 0, 0), tail_zero: bool = True) -> bytes:
+    """Assemble one complete snapshot body (no leading ack bytes)."""
+    ctx = DeltaContext(server_time=server_time, position_base=position_base)
+    m = MsgWriter()
+    m.write_byte(0)                     # svc_snapshot
+    m.write_long(server_time)
+    m.write_byte(delta)
+    m.write_byte(flags)
+    m.write_bits(has_base & 1, 1)
+    write_player_state(m, values, ctx, tail_zero=tail_zero)
+    write_empty_tail_sections(m)
+    write_entities_empty(m)
+    m.write_bits(0, 1)                  # clients
+    m.write_bits(0, 1)                  # glass
+    m.write_byte(5)                     # svc_EOF
+    if m.failed:
+        raise ValueError("snapshot writer failed")
+    return m.to_bytes()
+
+
+# ------------------------------------------------------------------ self test
+def _self_test() -> int:
+    failures = 0
+
+    def check(name, got, want) -> None:
+        nonlocal failures
+        if got != want:
+            failures += 1
+            print(f"FAIL {name}: got {got!r} want {want!r}")
+
+    # A byte write advances only the byte cursor; the bit cursor keeps running
+    # in the earlier byte.  This is the behaviour the compressed codec relies on.
+    m = MsgWriter()
+    m.write_bits(1, 3)
+    m.write_byte(0xAB)
+    m.write_bits(1, 2)
+    check("dual cursor bytes", m.to_bytes(), bytes((0b00001001, 0xAB)))
+
+    # compressed(0b101, 11) == 3 remainder bits then one whole byte
+    m = MsgWriter()
+    write_compressed(m, 0b00000000101, 11)
+    check("compressed 11 bytes", m.to_bytes(), bytes((0b00000101, 0x00)))
+
+    # positive-width field: presence bit 0 for a zero value costs one bit
+    m = MsgWriter()
+    write_integer(m, 11, 0, 0)
+    check("integer zero bits", m.bit, 1)
+
+    # a non-zero 8-bit field costs one presence bit; the value's 8 bits are
+    # written as a whole byte, so the *bit* cursor only advances by one
+    m = MsgWriter()
+    write_integer(m, 8, 0, 5)
+    check("integer 8 bit cursor", m.bit, 1)
+    check("integer 8 bytes", m.to_bytes(), bytes((0b00000001, 0x05)))
+
+    # gap code: distance 1 is a single 1 bit; distance 16 is 0 + 15 + 0
+    m = MsgWriter()
+    write_gap(m, 1)
+    check("gap 1", m.bit, 1)
+    m = MsgWriter()
+    write_gap(m, 16)
+    check("gap 16 bits", m.bit, 1 + 4 + 4)
+    check("gap 16 value", m.to_bytes(), bytes((0b00011110, 0b00000000)))
+
+    # index code: sentinel 2047 with last=-1 uses the 11-bit absolute arm
+    m = MsgWriter()
+    write_index_code(m, ENTITY_SENTINEL, -1)
+    check("sentinel bits", m.bit, 1 + 1 + 11)
+
+    # angle codec: 90 degrees -> 16384 -> 0x4000 little endian
+    m = MsgWriter()
+    write_delta_value(m, -87, 0, _word(90.0), DeltaContext())
+    check("angle 90", m.to_bytes(), b"\x00\x40")
+
+    # a full empty frame must end with the EOF byte and decode its own geometry
+    body = build_snapshot({0: 72192, 4: 0, 0x158: 0}, server_time=72192)
+    check("frame svc", body[0], 0)
+    check("frame eof", body[-1], 5)
+    print(f"frame bytes: {len(body)}  hex: {body.hex()}")
+    print(f"self-test failures: {failures}")
+    return failures
+
+
+if __name__ == "__main__":
+    raise SystemExit(1 if _self_test() else 0)
