@@ -767,8 +767,17 @@ class GameServer:
                 # that cadence is what the client accepts (r576 kept net=10 for
                 # minutes).  Using a different step here made consecutive frames
                 # disagree about time, and the client dropped to the lobby.
-                dynamic = self.rebuild_follower.frame(server_time=72192 + index * 500,
-                                                      dt=self.snapshot_interval)
+                try:
+                    dynamic = self.rebuild_follower.frame(server_time=72192 + index * 500,
+                                                          dt=self.snapshot_interval)
+                except Exception as error:  # noqa: BLE001 - must never kill the send loop
+                    # A raised frame used to abort this whole send pass silently, so
+                    # the client kept receiving the static file while --rebuild-follow
+                    # looked enabled.  Make that failure visible instead.
+                    dynamic = None
+                    if index % 25 == 0:
+                        self.log({"dir": "meta", "kind": "rebuild_error",
+                                  "error": f"{type(error).__name__}: {error}"})
                 if dynamic is not None:
                     payload = b"\x00\x00\x00\x00" + dynamic
                     if index % 25 == 0:

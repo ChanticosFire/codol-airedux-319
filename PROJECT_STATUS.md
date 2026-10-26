@@ -34259,3 +34259,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - **需重新评估第 57 轮结论**："viewangles=0 修好相机"很可能是静态帧的效果，而非我设的 viewangles。
 - 已收敛 values 为合法键；0x10:0 会使帧长 73→75，是否被接受未实测。
 - 下一步：给 frame() 加 try/except 与日志（避免静默回退），再单字段分别验证。
+
+### 第 62 轮：异常保护生效，动态帧完全恢复；发现自身偏移读取错误
+- frame() 调用加 try/except + rebuild_error 日志，异常不再中断发送。
+- r608 实测：rebuild_follow 日志 4 条、rebuild_error 0 条、net=10、按住 W 2.5s 得到 17 个不同 origin ⇒ 移除非法字段后 --rebuild-follow 真正工作（此前多轮静默回退）。
+- 发现我的临时检查脚本读错偏移：用了 cl+0x4C / cl+0x15C，正确应为 cl+0x0C+0x4C=cl+0x58 / cl+0x168。因此本轮 weapon=0/viewmodel=0 不作结论。
+- 下一步：用 ps=cl+0x0C 正确偏移重读字段；在 rebuild-follow 真正生效的新条件下重做武器实验；并重评第 57 轮 viewangles 结论（同样在静默回退条件下得出，不可信）。
