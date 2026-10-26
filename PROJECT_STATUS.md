@@ -33792,3 +33792,11 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 定性：真实按住 W 后 86.6% 像素变化、小地图箭头移动 → 可动的是**自由观战相机**，无本地玩家模型/数据（用户现场确认）。验收第 5 项仍未达成。
 - 新证据：运行时改写 `characterClasses.0.slots.0` 为垃圾值 `1052006403`，被目录校验拦住，磁盘档案未污染；本次 `selected_character_index` 未变化，说明"守索引"不足以守角色槽。
 - 下一步：定位客户端判定"本地 client"的来源（`connectResponse` 无 clientNum；快照 entity table 计数为 0），构造带本地玩家实体的自洽快照。
+
+### 第 1 轮续：观战者 HUD 与 byte 67 单变量
+- 245 B 真实 demo 基帧（`runs/r531-demo-base-245.bin`）让客户端出现观战者 HUD（"下一位玩家/上一位玩家/E-第一人称"），说明 playerState 被真实解析；这是本路线首次。
+- 仅改 offset 67（0x05→0x00）即让观战提示消失、退回自由相机，确认该字节是 playerState 数据字节（对应 compact 构造器的 `PLAYER_STATE_VALUE_OFFSET=0x43`）。
+- 两种取值下都**没有**本地玩家模型、第一人称武器或准星；验收第 5 项仍未达成。
+- 坑：换快照必须重启客户端（桥固定源端口导致服务端新 peer 不建立）；热替换快照文件对视角模式无效。
+- 档案保护实测：`local_profile_sample_skipped` 63 次未终止客户端；活库仍 revision 1227 / character 570 / 7208 项。
+- 下一步：静态确认 `0x471DE3` per-entity `changed=1` 分支的位宽 N 与 52 字节实体布局，再构造 entity count=1 的自洽快照。

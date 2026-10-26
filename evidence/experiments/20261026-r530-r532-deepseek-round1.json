@@ -1,0 +1,61 @@
+{
+  "build": 1649370,
+  "round": "deepseek-1",
+  "experiments": [
+    {
+      "name": "r530-baseline-compact",
+      "snapshot": "runs/r522-clean-compact.bin",
+      "snapshot_bytes": 182,
+      "snapshot_sha256": "49736430cb02f0f1d2f46fcaa39cfb7c6915e386e5259c44c76c13d352457de6",
+      "client_net_state": 10,
+      "client_ui_state": 0,
+      "server_counts": {"getchallenge": 2, "connect": 3, "stats": 304, "gamestateupdate": 5, "oob": 314, "inband_short": 728, "inband": 1},
+      "screen": "map + minimap + scoreboard + ammo bar, free-look camera",
+      "real_key_W_1.5s_changed_pixels": 1795828,
+      "real_key_W_1.5s_total_pixels": 2073600,
+      "player_model_present": false,
+      "first_person_weapon_present": false
+    },
+    {
+      "name": "r531-demo-base-245",
+      "snapshot": "runs/r531-demo-base-245.bin",
+      "snapshot_bytes": 245,
+      "snapshot_sha256": "6d03cde387571deb9362904055c3d69df54ab369ca0778218b8f507addb534a6",
+      "client_net_state": 10,
+      "client_ui_state": 0,
+      "screen": "spectator HUD: next-player / previous-player / E-first-person prompts",
+      "player_model_present": false,
+      "note": "first time this build shows the spectator prompt on this route; the demo base frame carries a real playerState"
+    },
+    {
+      "name": "r532-ps0-245",
+      "snapshot": "runs/r531-ps0-full-245.bin",
+      "snapshot_bytes": 245,
+      "snapshot_sha256": "19cbc632313c43f53dc00d16c8b64a752b1d7d94276368d6aa479e5d251fe95a",
+      "single_variable": "byte 67: 0x05 -> 0x00 (every other byte identical)",
+      "client_net_state": 10,
+      "client_ui_state": 0,
+      "server_counts": {"getchallenge": 1, "connect": 1, "gamestateupdate": 5, "snapshots": 72},
+      "screen": "back to the free-look camera; the spectator prompt disappears",
+      "player_model_present": false,
+      "conclusion": "byte 67 of the snapshot body is a playerState data byte that selects spectator-versus-freelook presentation; it is not yet the local player entity"
+    }
+  ],
+  "profile_guard": {
+    "bounded_skip_reason": "Runtime selected character missing; refusing save",
+    "skipped_samples_seen": 63,
+    "client_terminated_by_skip": false,
+    "catalog_reject_seen": "selected character 1052006403 absent from catalog",
+    "db_revision_after": 1227,
+    "db_selected_index_after": 0,
+    "db_character_after": 570,
+    "db_owned_ids_after": 7208
+  },
+  "acceptance": {
+    "item1_server_connect_and_stats": true,
+    "item2_net_state_10": true,
+    "item3_return_to_lobby_after_match": false,
+    "item4_ui_state_not_5": true,
+    "item5_player_moves_and_shoots": false
+  }
+}
