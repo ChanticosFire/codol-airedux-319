@@ -34522,3 +34522,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 0x9D1ABC 有 setWeaponName/currentWeapon/weapons.leth；0x9DDADD 一串 WL_ 函数名。
 - 意义：WL_SetCurrentWeaponID 是客户端自己的武器设置入口，走完整流程(设ID→更新viewmodel→渲染)，比硬改 ps 更符合设计意图；也与用户提到"武器有单独接口"吻合。
 - 下一步：定位 WL_SetCurrentWeaponID 代码地址(符号表/字符串引用)，用 hook_any 调用它传入 m4_mp 的 ID，观察 viewmodel。
+
+### 第 102 轮：WL_SetCurrentWeaponID 只是函数名字符串(0引用)，不可调用
+- 0x9dda38 是一串以 \0 分隔的 WL_ 函数名(GetWeaponType/GetWeaponInSlot/SetCurrentWeaponID/GetCurrentWeaponID/TryAbility...)，0xa76fdc 是 RTTI 符号；这些字符串 VA 的引用点 0 处。
+- 结论：WL_ 系列不是脚本注册表也不是导出接口，无法按名调用。对比 disconnect 能执行是因注册在命令表。
+- 第5b渲染侧八条路径全部试过：快照字段/内存强写/代码洞穴/硬件断点/字符串反查/脚本接口/gamestate武器表/C++接口，均不可达。
+- 第5b最终：输入侧完整；渲染侧在当前环境不可达。
