@@ -77,6 +77,9 @@ def main() -> int:
         ok = True
         ok &= write(ps + 0x4C, struct.pack("<H", args.weapon & 0xFFFF))
         if args.weapon < 128:
+            # The bitmap occupies four dwords at ps+0x55C.  Indices 64..95 map to
+            # the *third* dword (ps+0x564), whose snapshot codec is plain 17, so
+            # that range is actually writable from the server side too.
             word = args.weapon // 32
             bit = 1 << (args.weapon % 32)
             ok &= write(ps + 0x55C + 4 * word, struct.pack("<I", bit))
