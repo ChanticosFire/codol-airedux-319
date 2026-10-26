@@ -31,6 +31,7 @@ import ctypes as C
 import json
 import struct
 import subprocess
+from pathlib import Path
 from ctypes import wintypes as W
 
 import capstone

@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-27",
+  "run": "r651-loadhook",
+  "runtime": "reused r107flow/runtime",
+  "hook": {
+    "target": "FS_LoadFastfile 0x49ED40",
+    "installed_after_engine_init": true,
+    "call_count_at_net_8": 16,
+    "last_captured_name": "mp_crash_tropical",
+    "original_prologue_restored": true
+  },
+  "queue_residual_names": [
+    "common_mp_reload",
+    "patch_common_gametype_mp",
+    "common_gametype_mp",
+    "patch_localized_common_gametype_mp",
+    "localized_common_gametype_mp",
+    "patch_mp_crash_tropical",
+    "mp_crash_tropical_const",
+    "mp_crash_tropical",
+    "patch_localized_common_mp",
+    "localized_common_mp",
+    "patch_ui_mp",
+    "ui_mp",
+    "patch_localized_ui_mp",
+    "localized_ui_mp"
+  ],
+  "signed_runtime_files_sha256": {
+    "common_gametype_mp.ff": "13e7ec159501c5e20796b058fe56491fca14117f3d291b0f9f27e5bc050e7be8",
+    "localized_common_gametype_mp.ff": "1698ca866e8e711bd7306cbfa856368c6dae60d7b707b0ef38428c07e90e7006"
+  },
+  "client_after_load": {
+    "net_state": 10,
+    "weapon_string_table_count": 11,
+    "player_weapon": 0,
+    "first_person_weapon_visible": false
+  },
+  "claim_limit": "A request and a matching file hash do not establish that weapon definitions were loaded and registered.",
+  "profile_restored_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70"
+}
