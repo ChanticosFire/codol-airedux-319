@@ -33952,3 +33952,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 引用点 `0x45CC10..0x45CC97` 是"把命令名地址写进栈数组"，不是 `Cmd_AddCommand`，故尚未拿到处理函数。
 - `.data` 0xE58320 起是 `-xxx`/`+xxx` 成对字符串指针表（按键绑定/命令名清单），非函数表。
 - 下一步：在该函数后续找 `Cmd_AddCommand`（push 函数地址 + push 字符串 + call）；或换搜 `keys[]` 的 `lea+*4` 变体寻址。
+
+### 第 20 轮：端到端会话脚本 + kbutton 全内存扫描 0 命中
+- 新增 `tools/session_up_1649370.py`：一条命令完成 LSG→游戏服→客户端→三个补丁→桥→断言 `cls.state==10`，失败即非零退出，全部按精确 PID；首次运行 `{"ok": true, "net_state": 10}`。
+- 新增 `runs/_find_kbutton.py`：按住 W 扫描整个可读内存找 kbutton 形状（active==1 且 downtime 在近 8 秒）。
+- 在确认 net=10 的客户端上扫 1.29 GB：**hits = 0** ⇒ 按键状态数组根本没被置位，移动键在到达 `keys[]` 之前就被丢弃。
+- 结合 cl/cls 区 0 命中、`forwardmove` 恒 0、`+forward` 无效：问题不在预测层、不在 keys[] 位置、不在 cbuf。
+- 下一步：静态读 `CL_KeyEvent` 入口的分支条件，而不是继续猜地址。
