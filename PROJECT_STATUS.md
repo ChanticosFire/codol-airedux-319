@@ -33882,3 +33882,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 新增 `_dismiss_settings_prompt`：按客户端 PID 找 `#32770`「设置更新」对话框，点「否(&N)」，并写 `settings_prompt_dismissed` 日志。
 - 实测重启后 `engine-init: 6.075s`（此前被对话框拖到 125 秒），启动恢复正常。
 - 该对话框确实没有再次出现（上一轮点「否」后设置已保存），自动路径尚未被实际触发，代码在位。
+
+### 第 11 轮：确证输入未进入 usercmd
+- 环境恢复：`engine-init: 6.075s`，`net=10`/`ui=0`，ps 与帧逐字段一致。
+- W vs 静止差分：378 个变化字全是时间/序号类，无 127/-127；唯一非时间变化是 `cl+0x3c4c` 1→0。
+- W vs S 三态差分：**opposite_pairs = 0** ⇒ `forwardmove` 始终为 0，键盘输入没有进入 usercmd。
+- 与历史 §256–258 一致（无 DirectInput/XInput/RawInput、GetKeyboardState 计数 0、PostMessage 无效果），且在已有完整 ps 的条件下再次确认。
+- 问题不在预测层也不在 ps 数据，而在客户端不认为自己是可操作玩家。下一步：重建 gamestate 追加玩家名 configstring（1735），观察 `cl.cmds` 是否出现非零 `forwardmove`。
