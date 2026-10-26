@@ -34056,3 +34056,9 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 另完成：生成 origin 递增 20 帧并**验证客户端跟随**（111.5→301.5）；`session_up` 新增 `--snapshot-dir`。
 - 实测未完成：客户端 11432 在服务端起来前已退出（cl pointer null），未拿到跟随数据。
 - 下一步：重启客户端记 PID → 服务端 `--follow-client-pid <pid>` → 桥重连 → 按住 W 采样 ps.origin 看是否累积。
+
+### 第 36 轮：--follow-client-pid 实测导致客户端崩溃
+- 严格按序实测（PID 34220）：`net=10` 后约 1.5 秒客户端 `unhandled_exception` 崩溃。
+- 原因：`apply()` 用 `SLOTS=(0x0F,0x14,0x18)` 做**字节级替换**，但 playerState 段是**位打包**的（origin 浮点不字节对齐，y 前还夹着相邻字段的位），替换破坏后续所有字段的位对齐。
+- 结论：镜像客户端位置思路正确，但"直接改已编码字节"不可行；上轮修 PS_ORIGIN 只解决读值，崩溃是另一层问题。
+- 正确做法：服务端每帧用 `build_snapshot(values, position_base=客户端origin)` **重新编码**再发（§1124 已验证位级无损、§1147 已验证客户端会跟随）。
