@@ -34651,3 +34651,11 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - r633：source=native、net=10、payload_length=104、configstrings含[5960,"ak47_mp"]；payload_head 尾部可见 74 01 61 6b 34 37 5f 6d 70 = "t\01ak47_mp"，条目确实进入 gamestate。
 - 意义：本项目第一次把 CS_WEAPONS 条目真正发给客户端并被接受(net=10)。之前13条路径都是改ps或找接口，这次是从源头(gamestate configstring)喂数据，符合客户端设计意图。
 - 下一步：定位 bg_weaponDefs 真实地址(社区0x0150D720未必适用)验证是否被填充；若填充则设ps.weapon观察渲染；若没被填充则说明条目格式需参数。
+
+### 第 123 轮（用户反馈）：背包为空是根因；背包数据在 profiles.blob 二进制
+- 用户观察：①看不见手和武器 ②摄像机在地图外 ③背包没加载(主武器/副武器两栏空，只有战斗匕首有模型)。
+- 第③条是根因级：客户端认为玩家没装备主/副武器 ⇒ ps.weapon=0、状态机不启动、不渲染；CS_WEAPONS 注册了也没用，因为玩家"没装备它"。
+- 转向：之前一直在解决"武器定义"(bg_weaponDefs)，真正缺的是"装备关系"(loadout→玩家)。
+- 第②条：ps.origin 固定(111.5,222.5,333.5)可能不在地图可玩区。
+- 数据位置：profiles 表 blob 列(public size=15767 version=233 / secure size=15124 version=19)，二进制可能加密；account_initialization.state 是明文 JSON(含 owned_ids)。
+- 下一步：优先解决"背包为空"——弄清 profiles.blob 格式，或找"服务端下发 loadout"的协议字段。
