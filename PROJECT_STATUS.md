@@ -34632,3 +34632,10 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - 结论：需弄清 IWff 容器结构+私有压缩/加密算法，以天计，不适合当前节奏。
 - 13条路径：1-11全证伪；12(填充CS_WEAPONS)机制确认但格式未知；13(fastfile)非zlib需私有解析。
 - 建议第5b到此为止；将来重启起点：CS_WEAPONS窗口(5362-6061)+common_mp.ff容器解析。
+
+### 第 120 轮（重要修正）：CS_WEAPONS 真实位置是 5960（1700槽），不是 5362
+- 社区包 codol_configstrings.h：CODOL_CS_WEAPONS=5960、CODOL_WEAPON_CONFIGSTRING_SLOTS=1700；而 CODOL_WEAPON_SLOTS=700 是引擎内部表(bg_weaponDefs)ABI宽度，两个不同数。
+- 其他定位：CS_MODELS 2568(1024)、CS_TAGS 5896(64)、CS_WEAPONS 5960(1700)、CS_SOUNDS 3624(512)、CS_EFFECTS 4136(400)、CS_WEAPON_COUNT 12246。
+- 约束：单条 configstring 值最长 1014 字节(strlen+1 > 0x3f7 被拒)。
+- 意义：第116轮用 5362 搜代码自然找不到——数字错了。这次有了正确索引。
+- 下一步：用 5960(0x1748) 重搜代码；或直接在 gamestate 加 (5960, b"ak47_mp") 试发，观察 bg_weaponDefs 是否被填充。
