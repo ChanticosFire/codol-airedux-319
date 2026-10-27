@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r685-r686",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "r685_viewmodel_layout": {
+    "static_singleton": {
+      "va": "0x19efe58",
+      "note": "same layout as the heap table: bytes 0x00-0x3c zero, +0x40/+0x44 both hold 0x4989f764 = viewmodel_ak104_idle, +0x48 onward are further name pointers"
+    },
+    "heap_table": {
+      "stride": "0x4070",
+      "example": "0x2a04d60",
+      "note": "per-weapon name table; neighbours 0x2a00cf0 and 0x2a08dd0 have the same layout with different names"
+    },
+    "weapon_def_string_array": {
+      "base": "weapon def 0x2a392d4 + 0x7c",
+      "size_read": 256,
+      "content": "string pointers only (viewmodel_ak104_idle, viewmodel_ak104_fire, viewmodel_ak47_reload, ...); no numeric model handle appears in this block"
+    }
+  },
+  "r686_asset_lookup_0x661b80": {
+    "tool": "tools/sample_asset_lookup_1649370.py --target 0x661b80 --capture 40",
+    "calls_observed": 18186,
+    "missed_between_polls": 18180,
+    "unique_names": 7,
+    "samples": [
+      {"name": "mp_mantle_over_low_fr", "ecx": "0x12"},
+      {"name": "%security_guard_pillar_aim_6_add", "ecx": "0x12"},
+      {"name": "%riotshield_run_approach_3", "ecx": "0x12"},
+      {"name": "pb_saw_gunner_aim_level_right45", "ecx": "0x12"},
+      {"name": "%prop_mg4ss_base_pve", "ecx": "0x12"},
+      {"name": "o_monkey_bomb", "ecx": "0x12"}
+    ],
+    "reading": "0x661b80 is the typed asset lookup (ecx = asset type). Every captured name is a character/AI animation of type 0x12, so this run only proves the function identity; the 99.9% miss rate means the sample is not a complete census",
+    "restored": true
+  },
+  "r686_weapon_def_strings": {
+    "tool": "tools/probe_weapon_def_strings_1649370.py --weapon-def 0x2a392d4 --size 0x800",
+    "fields": {
+      "0x00": "ak47_mp",
+      "0x04": "SF_WEAPON_AK47_MP_NAME",
+      "0x08": "ak47_mp",
+      "0x80": "viewmodel_ak104_idle",
+      "0x84": "viewmodel_ak104_idle",
+      "0x88": "viewmodel_ak104_fire",
+      "0x98": "viewmodel_ak104_fire",
+      "0xa0": "viewmodel_knife_melee_slice",
+      "0xa4": "viewmodel_knife_melee_stab",
+      "0xa8": "viewmodel_ak47_reload",
+      "0xb0": "viewmodel_ak47_reload_empty",
+      "0xc0": "viewmodel_ak104_pullout",
+      "0xc4": "viewmodel_ak104_pullout_first",
+      "0xc8": "viewmodel_ak104_breach",
+      "0xcc": "viewmodel_ak104_putaway",
+      "0xec": "viewmodel_ak104_sprint_in",
+      "0xf0": "viewmodel_ak104_sprint_loop",
+      "0xf4": "viewmodel_ak104_sprint_out",
+      "0x11c": "viewmodel_ak104_fire_ads",
+      "0x120": "viewmodel_ak104_fire_ads",
+      "0x128": "viewmodel_common_ar_d2p_in",
+      "0x12c": "viewmodel_common_ar_d2p_loop",
+      "0x130": "viewmodel_common_ar_d2p_out",
+      "0x14c": "viewmodel_ak104_inspect",
+      "0x15c": "viewmodel_ak104_ads_up",
+      "0x160": "viewmodel_ak104_ads_down"
+    },
+    "find_viewmodel_ak47_pointer_offsets": [],
+    "conclusion": "weapon def 78 carries only animation names (ak104 family plus a few shared ones); it contains no first-person model name and no pointer to the loaded viewmodel_ak47 model"
+  },
+  "r686_string_census": {
+    "viewmodel_family_distinct": 279,
+    "raw_hits_scanned": 300,
+    "note": "census capped at 300 hits, so the list is not exhaustive",
+    "examples": ["viewmodel_small", "viewmodel_medium", "viewmodel_knife", "viewmodel_C4_idle",
+                 "viewmodel_ak47", "viewmodel_ak47_drum_gl_reload"],
+    "exact_viewmodel_ak47_addresses": ["0x150b5859", "0x4c7f77ec"],
+    "exact_viewmodel_ak104_addresses": [],
+    "viewmodel_ak104_raw_prefix_hits": 101,
+    "reading": "viewmodel_ak47 exists as an exact string and as a loaded-looking structure, while the exact string viewmodel_ak104 does not exist at all; all ak104 hits are animation names with suffixes"
+  },
+  "r686_loaded_model_structure": {
+    "address": "0x2311a40",
+    "fields": {
+      "0x0c": "0x100",
+      "0x10": "0x4c7f73e8 (string)",
+      "0x1c": "0x4c7f7414 (string)",
+      "0x20": "0x43ddb3d7 (float 443.4)",
+      "0x30": "256.0", "0x34": "255.99997", "0x38": "256.0",
+      "0x4c": "0x4c7f77ec = viewmodel_ak47 (name)",
+      "0x50": "0x108",
+      "0x54": "1.0",
+      "0x78-0x90": "five further string pointers",
+      "0x94": "1000.0", "0x98": "5", "0x9c": "0x1e06fc4", "0xa0": "0x4c7f7ab4 (string)"
+    },
+    "reading": "looks like the loaded view model asset: name at 0x4c, bounding extents, five LOD name pointers and geometry/skeleton pointers",
+    "reference_scan_of_0x2311a40": {"hits": 0},
+    "conclusion": "the view model asset data is resident in memory but no runtime structure points at it, so nothing in cgame currently owns this model"
+  },
+  "database": {
+    "final_state": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok"
+  },
+  "interpretation": [
+    "weapon def 78 supplies animation names only (ak104 family), never a model name",
+    "the exact string viewmodel_ak104 does not exist in the client, so no code path tried to load an ak104 model",
+    "the viewmodel_ak47 asset is loaded but unreferenced",
+    "therefore cgame never bound a first-person model to weapon 78, which is why the weapon and hands are absent"
+  ],
+  "next_focus": [
+    "find the code that binds a view model to a weapon (the CG_RegisterWeapon equivalent) and what name source it uses",
+    "check whether the binding uses a per-weapon table separate from the weapon def, and whether that table is empty for weapon 78"
+  ]
+}

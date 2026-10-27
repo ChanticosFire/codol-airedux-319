@@ -24,11 +24,12 @@ from ctypes import wintypes as W
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TARGET = 0x660B00
+DEFAULT_TARGET = 0x660B00
 ORIGINAL = "558bec81ec0c010000"
 SLOT = 0xE54BD00
 SLOT_COUNT = SLOT
 SLOT_ARG0 = SLOT + 8
+SLOT_ECX = SLOT + 0x10
 SLOT_CAPTURE = SLOT + 0x40
 
 
@@ -49,8 +50,18 @@ def main() -> int:
     ap.add_argument("--seconds", type=float, default=120)
     ap.add_argument("--interval", type=float, default=0.004)
     ap.add_argument("--capture", type=int, default=48)
+    ap.add_argument("--target", type=lambda text: int(text, 0), default=DEFAULT_TARGET,
+                    help="function entry to hook; 0x660b00 (weapon name lookup) or "
+                         "0x661b80 (asset lookup, type in ecx)")
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args()
+    target = args.target
+    original_hex = None
+    saved = ROOT / "runs" / f"hook-{target:x}-original.bin"
+    if saved.is_file():
+        original_hex = saved.read_bytes().hex()
+    if original_hex is None:
+        original_hex = ORIGINAL if target == DEFAULT_TARGET else None
 
     deadline = time.monotonic() + args.wait
     pid = args.pid
@@ -64,7 +75,7 @@ def main() -> int:
 
     install = subprocess.run(
         [sys.executable, "tools/hook_any_1649370.py", "--pid", str(pid),
-         "--target", hex(TARGET), "--len", "9", "--capture", str(args.capture),
+         "--target", hex(target), "--len", "9", "--capture", str(args.capture),
          "--capture-src", "arg0"],
         cwd=ROOT, capture_output=True, text=True)
     print(f"[sample] install rc={install.returncode}", flush=True)
@@ -82,21 +93,21 @@ def main() -> int:
     if not handle:
         raise SystemExit(f"OpenProcess failed for {pid}")
 
-    head = ctypes.create_string_buffer(8)
+    head = ctypes.create_string_buffer(0x14)
     got = ctypes.c_size_t()
     samples: list[dict] = []
-    seen: dict[str, dict] = {}
+    seen: dict[tuple[str, int], dict] = {}
     last_count = -1
     misses = 0
     reads = 0
     end = time.monotonic() + args.seconds
     while time.monotonic() < end:
-        if not k32.ReadProcessMemory(handle, ctypes.c_void_p(SLOT_COUNT), head, 8,
+        if not k32.ReadProcessMemory(handle, ctypes.c_void_p(SLOT_COUNT), head, 0x14,
                                      ctypes.byref(got)):
             time.sleep(args.interval)
             continue
         reads += 1
-        count, arg0 = struct.unpack("<2I", head.raw[:8])
+        count, _ret, arg0, _arg1, ecx = struct.unpack("<5I", head.raw[:0x14])
         if count != last_count:
             if last_count >= 0 and count - last_count > 1:
                 misses += count - last_count - 1
@@ -106,28 +117,33 @@ def main() -> int:
                                      args.capture, ctypes.byref(got)):
                 text = capture.raw[:got.value].split(b"\x00")[0]
                 name = text.decode("latin-1", "replace")
-                entry = seen.get(name)
+                key = (name, ecx)
+                entry = seen.get(key)
                 if entry is None:
-                    seen[name] = {"name": name, "first_count": count, "hits": 1}
+                    seen[key] = {"name": name, "ecx": ecx, "first_count": count, "hits": 1}
                     if len(samples) < 4000:
-                        samples.append({"count": count, "name": name, "arg0": hex(arg0)})
+                        samples.append({"count": count, "name": name,
+                                        "arg0": hex(arg0), "ecx": hex(ecx)})
                 else:
                     entry["hits"] += 1
         time.sleep(args.interval)
 
-    restore = subprocess.run(
-        [sys.executable, "tools/hook_any_1649370.py", "--pid", str(pid),
-         "--target", hex(TARGET), "--restore", "--original-hex", ORIGINAL],
-        cwd=ROOT, capture_output=True, text=True)
+    restore_args = [sys.executable, "tools/hook_any_1649370.py", "--pid", str(pid),
+                    "--target", hex(target), "--restore"]
+    if original_hex:
+        restore_args += ["--original-hex", original_hex]
+    restore = subprocess.run(restore_args, cwd=ROOT, capture_output=True, text=True)
+    ordered = sorted(seen.values(), key=lambda item: item["first_count"])
     report = {
         "pid": pid,
-        "target": hex(TARGET),
+        "target": hex(target),
         "reads": reads,
         "final_count": last_count,
         "missed_calls": misses,
         "unique_names": len(seen),
-        "names": [entry["name"] for entry in sorted(
-            seen.values(), key=lambda item: item["first_count"])][:4000],
+        "names": [entry["name"] for entry in ordered][:4000],
+        "entries": [{"name": entry["name"], "ecx": hex(entry["ecx"]),
+                     "hits": entry["hits"]} for entry in ordered][:4000],
         "restore_rc": restore.returncode,
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
