@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "If the community semantic local clientState reaches the client, its decoded 0x160-byte record changes with an otherwise identical team 1 vs team 2 frame; if it alone enables the viewmodel, the first-person gun or arms become visible.",
+  "asset_search": {
+    "status": "1649370-STATUS.md sections 1273 and 1307, and PROJECT_STATUS.md: prior minimum entity and empty client0 runs; section 1273 already observed ui_state=5 during an active match.",
+    "evidence": "20261026-r528-weapon-handoff.json had character 570 at old revision; 20261028-r731-r733-audit-followup.json established the empty-record A/B. Current revision 1241 was read directly before this probe.",
+    "community": "codol_client_projection164.c and codol_character164.c: typed character maps to client offsets 0x150=1, 0x154=team-1, 0x7c=marketplace character ID; team is offset 0x4.",
+    "tools": "Reused build_weapon_probe_snapshot_1649370.py, session_up_1649370.py, read_client_ps_1649370.py, read_client_memory_1649370.py, scan_client_memory_1649370.py and capture_window_bg.py; checked available help before use. No shared code changed."
+  },
+  "identity_and_profile": {
+    "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+    "exe_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+    "selected_character_direct_read": 570,
+    "profile_revision_before_and_after": 1241,
+    "profile_sha256_before_and_after": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "profile_integrity_after": "ok",
+    "private_backup": "resources/1649370/local/profile/pre-r735-typed-client.sqlite3"
+  },
+  "r735_team1": {
+    "snapshot": "runs/r735-typed-client570.bin",
+    "bytes": 102,
+    "sha256": "6f752dba54616edf49a5d810b82581c938998e8e8f3862d8eaa916b64f24bdbd",
+    "client_fields_by_descriptor": {"17": 1, "20": 570, "36": 1},
+    "server_snapshot_source_count": 835,
+    "server_connect": 1,
+    "server_stats": 4,
+    "bridge_inject_queued": 860,
+    "native": {"net_state": 10, "ps_weapon": 78, "ps_clientNum": 0, "ui_state_at_0x84aba50": 5},
+    "client_record_base": "0x13cd8bb4",
+    "client_record_offsets": {"0x4": 1, "0x7c": 570, "0x150": 1, "0x154": 0},
+    "screenshots": ["runs/r735-typed-client570-screen-net10.png"],
+    "visual": "Map and AK-47/30 HUD visible; no first-person gun or arms."
+  },
+  "r736_team2": {
+    "sole_semantic_difference_from_r735": "Client team offset 0x4 changed 1 to 2 and typed character team offset 0x154 changed 0 to 1. The same local character 570, playerState, entity, gamestate and startup options were retained.",
+    "snapshot": "runs/r736-typed-client570-team2.bin",
+    "bytes": 103,
+    "sha256": "a289aa902753d247493e224a3cea39a480862a45239d40ff8a3c3ec192ae47c2",
+    "client_fields_by_descriptor": {"17": 1, "18": 1, "20": 570, "36": 2},
+    "server_snapshot_source_count_at_cleanup": 1040,
+    "server_connect": 1,
+    "server_stats": 6,
+    "bridge_inject_queued": 643,
+    "native": {"net_state": 10, "ps_weapon": 78, "ps_clientNum": 0, "ui_state_at_0x84aba50": 5},
+    "client_record_base": "0x135c0300",
+    "client_record_offsets": {"0x4": 2, "0x7c": 570, "0x150": 1, "0x154": 1},
+    "memory_scan": "261 matching 0x160-byte candidate records among the first 300 hits for character 570, including snapshot history; these are not all distinct cgame clientInfo instances.",
+    "screenshots": ["runs/r736-typed-client570-team2-screen.png"],
+    "visual": "Map and AK-47/30 HUD visible; no first-person gun or arms."
+  },
+  "conclusion": "The team-dependent network clientState bytes are decoded/stored in native memory in two single sessions. These two populated records did not make the first-person gun or arms visible. The copy into cgame clientInfo, local entity adoption and viewmodel submit gate remain unmeasured; do not infer that the entire client rendering path accepted the record.",
+  "appearance_limit": "Only the community team, typed flag and marketplace character ID semantics were encoded. The r694 gamestate directly decodes to 294 text records and zero simple/complex model records; indices 3011-3016 name chameleon hand/arm models. Whether those models match character 570's default body parts and satisfy full appearance registration is unverified.",
+  "ui_state_correction": "Status section 1273 already showed 0x84aba50=5 coexisting with an active match handler and countdown. Direct r735/r736 reads remain 5, so the literal acceptance predicate !=5 is unmet, but 5 must not be described as proof that the current visible match is a loading screen.",
+  "rea_limitation": "REA bound the exact executable hash, but analyze_function was unavailable because no supported native disassembler provider is configured; community source and direct runtime reads were used instead.",
+  "cleanup": "Only verified r735 and r736 PIDs were terminated; no game or service process from either run remains. Profile hash and SQLite integrity stayed at baseline. Private screenshots, memory dumps and candidate frames remain in ignored runs/."
+}
