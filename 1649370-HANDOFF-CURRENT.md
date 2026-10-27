@@ -1,5 +1,7 @@
 # Build 1649370 离线对局：当前交接（2026-10-27）
 
+> **2026-10-28 r737 单字段追踪**：社区 `codol_player_projection164.c:190` 说明目标 `ps+0x15c` 是第一人称手臂的模型槽；当前 gamestate 的 `NCS2568+447` 是 `fja_chameleonlava_sc_m_02_vmchar`。在 r735 的 team1/角色570记录上仅把 `viewmodelIndex 1023→447`，服务端记录候选 1289 次，客户端 `net=10` 并直接回读 447，但截图仍无枪/手臂。这**不排除模型与角色 570 不匹配**，也不证明 cgame 的模型提交路径已运行。下一步先解析角色 570 的 marketplace 默认部件及其正确模型槽，再直接测 cgame clientInfo、本地实体与 view DObj 条件；证据 `1649370-STATUS.md` §1309、`evidence/experiments/20261028-r737-arm-model-slot447.json`。旧来源结构的 `0x144/0x148` 不应盲写为本 build 的 ps 偏移。
+
 > **2026-10-28 r735/r736 新边界**：当前活库 revision 1241 的选中角色直接读得 570。按社区 `codol_client_projection164.c` 的 team/character/typed 字段构造本地 client 0 记录，分别发送 team1 与 team2；服务端分别记录候选快照 835/1040 次，客户端 `net=10`，内存 0x160 字节记录随队伍位从 `(0x4=1,0x154=0)` 变为 `(2,1)`，均有 `0x7c=570,0x150=1`。这直接证明 **clients 段被原生客户端解析并缓存**，但尚未证明角色 570 的默认模型部件完整注册、cgame 的 clientInfo 已采用或本地实体满足渲染条件。两张场内截图仍无枪/手臂，射击未验收。直接读 `[0x84ABA50]=5` 仍不满足原验收字面条件；然而 §1273 早已显示值 5 与活跃 handler、对局倒计时并存，**不能再把 5 单独解释成加载页**。详细命令、哈希和边界见 `1649370-STATUS.md` §1308 与 `evidence/experiments/20261028-r735-r736-typed-clientstate.json`。活库与唯一运行时基线未变。
 
 > **2026-10-28 补证与撤销**：我按新增的项目规则复核了三件事，脱敏记录见 `evidence/experiments/20261028-r731-r733-audit-followup.json`。r731 注入 `cg_thirdPerson 0→1→0` 后，三张地图截图均无第一人称枪/手臂；但尚未读取 dvar 内部值，因此只能说画面阴性。r732/r733 加入社区格式的 **client 0 空记录**，两次独立连接均 `net=10`、AK-47/30 HUD 可见而枪模仍缺；r734 在无 cvar 注入时用默认快照作严格对照，同样无枪。**四次直接读取 `[0x84ABA50]` 均为 `ui_state=5`，即使地图画面可见，第 4 项仍不达标。**撤销本页旧“未测量 ui_state”与任何依据地图画面推定 `ui_state != 5` 的说法。旧“最小实体复核从未执行”也不准确：r696 快照生成器早已包含 `(0,type 1,{2:200.0})`，r731–r734 重复发送并进入 `net=10`；实体内部计数未读。客户端内部是否采用了空 client 记录未读，带有效外观的记录仍待测。后文若冲突，以此补证与原始日志为准。
@@ -95,7 +97,7 @@
 | `viewmodel_ak47` XModel 已加载（`0x2311A8C`，4 处引用） | 内存扫描 |
 | 真实 demo 帧可渲染 | 观战覆盖层 |
 
-**已尝试的局部变量**：`cg_drawGun 1`、`viewHeightCurrent`、`viewmodelIndex`（0/78/1023）、`pm_type`（0/5）、demo 差异字段、模型缓存表、`stats[0]`、configstring 武器名。审查 A2 已撤销“78→0→78 切换无效”：旧服务端只反复发送末帧，这项未形成有效循环实验。
+**已尝试的局部变量**：`cg_drawGun 1`、`viewHeightCurrent`、`viewmodelIndex`（0/78/1023；r737 又试了 gamestate 手臂槽 447，但未确认与角色 570 配套）、`pm_type`（0/5）、demo 差异字段、模型缓存表、`stats[0]`、configstring 武器名。审查 A2 已撤销“78→0→78 切换无效”：旧服务端只反复发送末帧，这项未形成有效循环实验。
 
 **待验证推断**：HUD 响应了 `ps.weapon`，但客户端列表/实体是否满足本地玩家条件、cgame 是否提交 viewmodel，均缺直接读数。
 

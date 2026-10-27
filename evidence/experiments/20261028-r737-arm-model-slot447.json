@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "If the missing first-person arms only require a registered arm slot in target playerState+0x15c, changing the r735 value 1023 to gamestate model slot 447 should make arms visible.",
+  "source_basis": {
+    "community_projection": "codol_player_projection164.c:190 maps server viewmodelIndex to target playerState+0x15c and documents that target 5903F0 resolves NCS2568+slot before the view DObj is built.",
+    "community_registration": "codol_player_appearance.c:440 requires default character body parts, registers arms and hands, and calls CODOL_PlayerStateSetViewmodels; playerstate_ext.c:571 stores the arm model in ps->viewmodelIndex.",
+    "gamestate_direct_read": "runs/r694-gamestate-start.bin has 294 text entries and zero simple/complex entries; index 3015 = NCS2568+447 = fja_chameleonlava_sc_m_02_vmchar; 3012 = NCS2568+444 = han_chameleon_sc_m_merged_02_vmchar.",
+    "limit": "The character 570 marketplace definition was not resolved, so the chameleon arm model's suitability for that character is unverified. The community codol_engine_state.c offsets 0x144/0x148 belong to its source representation and were not blindly written as target playerState fields."
+  },
+  "single_change_from_r735": "Only target playerState viewmodelIndex at offset 0x15c changed from 1023 to 447; same local client 0 typed/team1/character570, weapon78/clip30/health100, minimal entity, r694 gamestate, runtime and session flags.",
+  "snapshot": {"path": "runs/r737-arm447.bin", "bytes": 102, "sha256": "fbf180d3391970d9df9039ce56c29bad6ee0f0ca6687f8805ffad9f626c7e265"},
+  "server": {"log": "runs/r737-arm447-gs.jsonl", "snapshot_source_count_at_cleanup": 1289},
+  "bridge": {"log": "runs/r737-arm447-bridge.out", "inject_queued_count": 636},
+  "client": {"net_state": 10, "ps_weapon": 78, "ps_clientNum": 0, "ps_viewmodelIndex": 447, "ps_0x140_through_0x158": "all zero on direct read", "ui_state_0x84aba50": 5},
+  "screen": {"path": "runs/r737-arm447-screen.png", "observation": "Map, active countdown and AK-47/30 HUD are visible; first-person arms and gun are absent."},
+  "conclusion": "The proposed arm slot reached the target playerState but did not restore visible arms or gun in this one session. Character/model compatibility, cgame clientInfo adoption, local entity state and view DObj submission remain unverified. Do not generalize this negative result to all valid registered arm models.",
+  "safety": {"runtime": "reused r107flow/runtime", "profile_backup": "resources/1649370/local/profile/pre-r737-arm447.sqlite3", "profile_sha256_before_and_after": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70", "profile_revision_after": 1241, "profile_integrity_after": "ok", "cleanup": "Only verified r737 PIDs were stopped; no private file was staged."}
+}
