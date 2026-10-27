@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-27",
+  "runtime": "reused r107flow/runtime",
+  "trace_site": "0x59B591 after 0x42F3E0, before cmp eax,edi",
+  "r659": {
+    "first_mismatch": {"slot": 105, "returned_id": 106, "name": "ak47ssaltfire_mp"},
+    "previous_104_records": "slot == returned_id"
+  },
+  "r660": {
+    "prior_divergence": {"slot": 104, "returned_id": 104, "name": "ak47ss_mp", "table_count_after": 105},
+    "next": {"slot": 105, "returned_id": 106, "name": "ak47ssaltfire_mp", "table_count_after": 106},
+    "cached_index": 0
+  },
+  "r661": {
+    "gamestate_simple_entry": [6065, 105],
+    "result": "same slot 105 returned 106 mismatch; no match"
+  },
+  "r662": {
+    "experimental_process_local_patch": "NOP six-byte jne at 0x59B596 only after restoring 0x59B560",
+    "first_pass_names_traced": 1135,
+    "weapon_table_count": 2706,
+    "dialog": "147 altfirem4a1techssstar_mp ** 646 0 0 8738 9321",
+    "result": "returned to lobby, no match"
+  },
+  "limits": [
+    "Post-error lobby table is not a time-accurate copy of the pre-error table",
+    "Cause of duplicate registration and failed lookup remains unverified",
+    "No first-person weapon model or shooting was verified"
+  ],
+  "profile": {
+    "quarantine": "resources/1649370/local/profile/ (ignored, private)",
+    "restored_baseline_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "sqlite_integrity": "ok"
+  }
+}

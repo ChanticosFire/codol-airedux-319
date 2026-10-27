@@ -137,7 +137,15 @@ def main() -> int:
                     help="start the client first, then let the server encode snapshots from its held keys")
     ap.add_argument("--restore-weapon-handler", action="store_true",
                     help="after r336 compatibility patches, restore the original 0x59B560 weapon handler for a controlled probe")
+    ap.add_argument("--trace-weapon-registration", action="store_true",
+                    help="with --restore-weapon-handler, record each weapon slot and resolved ID before validation")
+    ap.add_argument("--tolerate-weapon-id-mismatch", action="store_true",
+                    help="with --restore-weapon-handler, bypass only its ID equality error branch for a controlled probe")
     args = ap.parse_args()
+    if args.trace_weapon_registration and not args.restore_weapon_handler:
+        ap.error("--trace-weapon-registration requires --restore-weapon-handler")
+    if args.tolerate_weapon_id_mismatch and not args.restore_weapon_handler:
+        ap.error("--tolerate-weapon-id-mismatch requires --restore-weapon-handler")
 
     logs = ROOT / "runs"
     report: dict = {"name": args.name, "steps": []}
@@ -263,6 +271,17 @@ def main() -> int:
         if '"restored": true' not in result.stdout or '"bytes_after": "558bec568db748170000"' not in result.stdout:
             raise SystemExit(f"weapon handler restore failed: {result.stdout[:400]} {result.stderr[:200]}")
         step("original weapon handler restored")
+        if args.tolerate_weapon_id_mismatch:
+            result = run(["tools/patch_weapon_assert_1649370.py", "--pid", str(pid)])
+            if result.returncode or '"applied": true' not in result.stdout:
+                raise SystemExit(f"weapon ID branch patch failed: {result.stdout[:400]} {result.stderr[:200]}")
+            step("weapon ID mismatch branch bypassed")
+        if args.trace_weapon_registration:
+            result = run(["tools/trace_weapon_registration_1649370.py", "--pid", str(pid),
+                          "--meta", f"runs/{args.name}-weapon-trace-meta.json", "--install"])
+            if result.returncode:
+                raise SystemExit(f"weapon trace install failed: {result.stdout[:400]} {result.stderr[:200]}")
+            step("weapon registration trace installed")
 
     # --------------------------------------------------------------- bridge
     owner = _udp_owner("", 29023)
