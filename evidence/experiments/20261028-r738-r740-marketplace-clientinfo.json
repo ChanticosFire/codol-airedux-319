@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "For selected character 570, registering its exact marketplace default SC first-person arms and hands should either restore visible arms or narrow the missing boundary to cgame clientInfo/model submission.",
+  "source": {
+    "catalog": "1649370/workspaces/offline-runs/r107flow/reuse-05935a6c/local-profile/capture.json (read only; private run artifact)",
+    "fastfile": "r107flow/runtime/client_shipretail/chinese/code_post_gfx_mp.ff",
+    "fastfile_sha256": "9c6f0c1c7dd31237f234210ff1593154756ecb6303245745ac76687d8b4b42ff",
+    "verification": "Publisher signature verified and zone inflated in memory; type-45 marketplace asset at zone offset 4265665, size 5321897. No large runtime or zone copy was made.",
+    "layout_reference": "CODOL-Member-Preview-20261026/native-engine/source/src/codol/assets/codol_marketplace164.c; codol_character164.c; codol_client_projection164.c",
+    "character": {
+      "item_id": 570,
+      "item_name": "cha_sniveterana",
+      "detail_index": 3,
+      "character_row_zone_offset": 9449129,
+      "selector": [0, 0, 2],
+      "default_parts_by_group": {
+        "1": [556, "fpa_sniprestigea", "fpa_sniprestigea_sc_m_00"],
+        "2": [525, "boo_infbasea", "boo_empty_ss_s"],
+        "3": [553, "fja_sniprestigea", "fja_sniprestigea_sc_m_00"],
+        "4": [1149, "han_sniprestigea00", "han_sniprestigea_sc_m_00"],
+        "5": [562, "hea_sniprestigea", "hea_sniprestigea_sc_m_00"],
+        "6": [567, "ves_sniprestigea", "ves_sniprestigea_sc_m_00"]
+      },
+      "sc_first_person_arms": "fja_ghillie_sc_m_vmchar_basic",
+      "sc_first_person_hands": "han_fingerless_ss_s_vmchar_20",
+      "part_array_zone_offset": 9470861,
+      "limit": "These are native marketplace strings, not proof that every XModel was registered or rendered in this custom match."
+    }
+  },
+  "candidate": {
+    "gamestate": "runs/r738-gamestate-sniprestigea.bin",
+    "gamestate_sha256": "00130dd56bda7bfd83b1770f2dd9662571c9d5d94191c58154c99b0c4f837c21",
+    "gamestate_change": "Added model configstrings 3050=arms, 3051=hands in previously vacant slots; preserved existing 3017..3049 weapon references. Model slots are 482 and 483 (NCS2568 base).",
+    "snapshot": "runs/r738-snapshot-sniprestigea.bin",
+    "snapshot_sha256": "ef0c42ade3d8acec78aa233dd3a4e9bb7e050f7dd9e2ace6fec20447cd5129cc",
+    "snapshot_change": "From r735: viewmodelIndex 1023 -> 482; same weapon 78, clip 30, health 100, client 0 team 1 typed character 570, and minimal entity."
+  },
+  "runs": {
+    "r738": {"real_connect": 1, "snapshot_source_count": 1477, "screen": "runs/r738-live.png", "screen_limit": "Captured after the 90-second game server had stopped; missing ammo HUD in this image is a timing artifact and not used to assess active-match rendering."},
+    "r739": {"real_connect": 1, "snapshot_source_count": 1323, "screen": "runs/r739-active.png", "screen_observation": "Active match map, timer and AK-47/30 HUD visible; no first-person gun or arms. No shooting proof."},
+    "r740": {"real_connect": 1, "snapshot_source_count": 1317, "client_pid": 12392, "direct_memory": {"global_cgs_pointer_at_0x827f730": "0x13d45ce4", "clientinfo0": "0x13df5034", "clientinfo0_plus_0x400": 1, "clientinfo0_plus_0x404": 1, "clientinfo0_plus_0x40c_character": 570, "clientinfo1_plus_0x400": 0, "weapon78_definition_pointer": "0x02a392d4", "weapon78_definition_plus_0x10": "0x01f69024"}, "memory_interpretation": "The cgame clientInfo for local client 0 adopted the typed/team1/character570 fields. Weapon 78's definition has a non-null +0x10 pointer, so the 0x590442 early exit for null +0x10 is not the explanation. This does not establish that 0x80E1D0 returned view models or that a view DObj was submitted."}
+  },
+  "target_static_check": "Current runtime EXE was read with PE RVA mapping and Capstone. 0x54180A reads clientState+0x150, 0x54181D/0x541830/0x541847 write team and character to clientInfo+0x400/+0x404/+0x40c; 0x5905A6 branches on clientInfo+0x400 and typed branch calls 0x80E1D0 at 0x5905B9. 0x590663 reads playerState+0x15c in the alternate branch.",
+  "conclusion": "Exact default character models are now identified and local cgame clientInfo adoption is directly measured. Correct arm/hands configstrings plus viewmodelIndex alone did not produce visible first-person models in the one active screenshot. Next decisive measurement: count/return value of 0x80E1D0 at 0x5905B9 and the subsequent DObj/model submission gate, with the existing runtime and profile protected.",
+  "safety": {"runtime": "reused r107flow/runtime, no new runtime", "profile_backup_directory": "resources/1649370/local/profile-backups (ignored and private)", "profile_sha256_before_after": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70", "profile_integrity_after": "ok", "cleanup": "Only verified r738/r739/r740 PIDs and own r738/r740 LSG processes were stopped; no private file staged."}
+}

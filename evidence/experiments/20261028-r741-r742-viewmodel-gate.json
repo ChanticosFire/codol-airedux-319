@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "With the correct character models and typed clientInfo present, determine whether the native first-person view builder reaches the marketplace model resolver at call site 0x5905B9.",
+  "source_side": {
+    "gamestate": "runs/r738-gamestate-sniprestigea.bin",
+    "snapshot": "runs/r738-snapshot-sniprestigea.bin",
+    "r741": {"connect": 1, "snapshot_source": 1736, "game_server_start_utc": "2026-10-27T18:45:20Z", "game_server_stop_utc": "2026-10-27T18:49:32Z"},
+    "r742": {"connect": 1, "snapshot_source": 1571, "game_server_start_utc": "2026-10-27T19:10:38Z", "game_server_stop_utc": "2026-10-27T19:14:32Z"}
+  },
+  "native_static": {
+    "runtime_exe": "r107flow/runtime/codol1649370-offline.exe",
+    "view_builder_entry": "0x5903F0",
+    "view_builder_call_site": "0x5538CE (call 0x5903F0; original e81dcb0300)",
+    "typed_model_resolver_call_site": "0x5905B9 (call 0x80E1D0; original e812dc2700)",
+    "pre_resolver_gate": "0x590435..0x590503 has weapon definition/cache checks and early returns before 0x5905B9; 0x590442 returns for null weapon definition+0x10, 0x590488 returns when selected weapon ID is zero, and 0x5904BD/0x590503 are cache paths.",
+    "view_builder_selection": "0x59040D chooses +0x3E4 if +0x400 bit 1 is set, else +0x3F8; this is the weapon ID consulted by the builder."
+  },
+  "r741": {
+    "active_match_screen": "runs/r741-hook-active.png (2026-10-27T18:48:40Z): map, timer and AK-47/30 HUD visible, no first-person gun or arms",
+    "model_resolver_hook": "runs/r741-viewmodel-call-count.json: zero hits at 2026-10-27T18:48:03Z while game server was active",
+    "late_builder_hook": "runs/r741-view-builder-count.json: 15962 hits at 2026-10-27T18:52:13Z, installed after server stop; proves only that the retained rendering path calls the builder, not that the count was measured during active server time",
+    "profile_post_sha256": "1b570b79111013d5ca41a7d40ec4d002989ce0af38778f178fd382e2159e9ee5",
+    "profile_action": "The intact but changed SQLite file was preserved privately at resources/1649370/local/profile-quarantine/r741-post-local.sqlite3; the exact baseline was restored from r741-before-local.sqlite3. The changed file was not discarded or committed."
+  },
+  "r742": {
+    "active_hook_read_utc": "2026-10-27T19:13:21Z (before the 19:14:32Z server stop)",
+    "view_builder_entry_count": 16426,
+    "model_resolver_call_count": 0,
+    "view_builder_cg_pointer_from_ecx": "0x133c2ec4",
+    "observed_cg_state": "At one live read, cg+0x15c was 482 and cg+0x3f8 was 0. At a later read after server stop, cl snapshot and cg both had weapon 78 at +0x4c/+0x3f8/+0x3fc. Thus cg+0x3f8=0 was transient; its value at the exact function-entry instant was not captured and no stable zero claim is made.",
+    "limit": "The current hooks count entry/call sites but do not record which early return fired or the resolver return value. Since the resolver call count was zero, its return value cannot be interpreted.",
+    "profile_sha256_before_after": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "profile_integrity_after": "ok"
+  },
+  "conclusion": "The native view builder is active during a real match, while the 0x80E1D0 typed model resolver is not entered. The missing first-person model is therefore blocked before that resolver in the observed run, despite typed clientInfo adoption. Next measure the exact early return/weapon-cache gate with time-correlated entry state before modifying wire fields or model strings.",
+  "safety": "Reused only r107flow/runtime. Existing hook_any_1649370.py and hook_call_count.py were used; all patched bytes were read back after restore (0x5903F0 558bec81eca0000000, 0x5905B9 e812dc2700, 0x5538CE e81dcb0300, 0x590525 e8c6f2ffff). Only verified exact run PIDs were stopped. Private profile backups and quarantine remain ignored."
+}
