@@ -34816,3 +34816,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 - r710：用与稳定期完全相同的配置复现掉线（`session_up` 报 net=10，6 秒后 `net=0`）。服务端计数 `client_acked_ours=2`（r706/r707 为 1）、`inband_sent=5358`、`inband_received=6783`、`oob_received=12`，说明客户端只确认了两个可靠包就离开——故障点缩小到 **gamestate 分片/首个快照的交互**。客户端可用（r709 已验证）与配置无关（r705/r707 已排除）。下一轮应记录每个 gamestate 分片的发送时刻与 ack 增长曲线，并与历史稳定会话对比，必要时用 `--delay-send` 降速做单变量。库被改写（`69B4FB33…`）已隔离 `quarantine-post-r710.sqlite3` 并恢复基线。
 
 - r711：两条对照均排除——①r702（稳定）与 r710（掉线）的 gamestate 分片逐字段一致（`count=6/stride=1162/chunk=1162/payload=6432/checksum=0xffb56d7e`，configstring 0 相同），"分片方式变了"不成立；②无任何 `offline_guard` 类进程，`netsh wfp show filters` 的 24 处 codol 命中**全部指向旧路径 `319\runtime\client-1649370\iips\iipshostapp.exe`**，与当前 `r107flow` 客户端无关，WFP 未阻断。至此服务端发送方式、客户端文件、配置、反作弊残留、WFP 五项全部排除；下一步需抓 UDP 层往返（28969/29023/4174）定位谁先停发。活库保持基线。
+
+- r712：结构化分析 r710 的桥日志——客户端方向入站 300 个包（`106B×272`、`21B×28`），forward outbox 首包是 **桥代发的 `getchallenge`**，且 `injected ≈ received`（r707: sent 6792/received 8397/injected 8381），**ring 注入没有丢包**。结合服务端 `client_acked_ours=2`，问题不在"包是否送到"，而在**客户端对注入内容的处理**：6 片 gamestate 未被当作完整消息收完。下一步应从 `ring_bridge_1649370.py` 注入侧记录每包注入前后的 ring 读写指针与客户端状态。无会话运行、无库改写。
