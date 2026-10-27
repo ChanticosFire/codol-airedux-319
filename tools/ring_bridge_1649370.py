@@ -89,6 +89,8 @@ RING_B_SLOTS = 16
 RING_B_READ = 0x7872C00
 RING_B_WRITE = 0x7872C04
 RING_B_PAYLOAD = 0x18
+# Bounded back-pressure for the 16-slot inbound ring (see _inject_raw).
+RING_B_WAIT_SECONDS = 30.0
 RING_B_LENGTH = 0x500
 
 RING_C_BASE = 0x7867768
@@ -943,14 +945,20 @@ def _adr_ip_bytes(args) -> bytes:
 def _inject_raw(self, data: bytes, adr_type: int = 2, port: int = 0,
                 ip: bytes = b"\0\0\0\0") -> dict:
     adr = struct.pack("<I4sHHIII", adr_type, ip, port & 0xFFFF, 0, 0, 0, 0x9D)
-    for _ in range(60):
+    # Ring B holds only 16 slots and the client drains it from its own frame
+    # loop.  While the client sits in CA_LOADING that drain can stall for
+    # seconds, so the old 60x10ms window dropped gamestate fragments; the client
+    # then waits forever for a complete gamestate and disconnects.  Wait for a
+    # free slot (bounded) instead of discarding the packet.
+    deadline = time.monotonic() + RING_B_WAIT_SECONDS
+    while True:
         write = self.u32(RING_B_WRITE)
         read = self.u32(RING_B_READ)
-        if write - read < RING_B_SLOTS:
+        if write is not None and read is not None and write - read < RING_B_SLOTS:
             break
+        if time.monotonic() >= deadline:
+            return {"status": "ring_b_full", "waited_seconds": RING_B_WAIT_SECONDS}
         time.sleep(0.01)
-    else:
-        return {"status": "ring_b_full"}
     slot = RING_B_BASE + (write & (RING_B_SLOTS - 1)) * RING_B_STRIDE
     ok = (self.write(slot, adr) and self.write(slot + RING_B_PAYLOAD, data)
           and self.write(slot + RING_B_LENGTH, struct.pack("<I", len(data)))
