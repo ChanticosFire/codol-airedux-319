@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-27",
+  "runtime": "existing r107flow/runtime",
+  "gamestate_source_sha256": "b5cc2de5a7cdb782db373681b8be9300f8d51a4f34591329317eddd568f78e99",
+  "gamestate_compact_sha256": "e8d3f983d8ec5b4904424fbc1d3528a117b6113b5beb277c8547666df855f8a0",
+  "gamestate_change": "Moved 35 composite weapon text configstrings from indices 7184..7218 (slots 1224..1258) to indices 7096..7130 (slots 1136..1170), preserving their values and the other fields. The rebuilt 6420-byte file round-trips byte-exact.",
+  "r670": {
+    "weapon_snapshot": "The known 73-byte zero-weapon baseline r546-markers.bin.",
+    "result": "Real connection reached net_state=10 and rendered mp_crash_tropical. All 2305 registration trace records had slot=returned; the last composite registered as ID 1170. The screenshot still had no first-person weapon.",
+    "player_state": "weapon=0, primary=0, viewmodelIndex=1023",
+    "private_screenshot": "runs/r670-composite-compact-screen.png"
+  },
+  "r671": {
+    "weapon_snapshot_sha256": "9cb284002e0e6d3c2062bacc6c69cf363d9f460f78feea84f369d1d3bd36c074",
+    "weapon_id": 78,
+    "registered_name": "ak47_mp",
+    "snapshot_fields": "weapon=78, primary=78, altWeapon=78, inventory slot 0=78, stats[3]=1",
+    "result": "The session briefly reached net_state=10, then error '174 ak47_mp' sent the client back to the lobby. Registration trace still had 2305 records with no ID mismatch. No first-person weapon or shooting was verified.",
+    "private_screenshot": "runs/r671-weapon78-screen.png"
+  },
+  "cleanup": "Process-local hooks were restored in each live client. Exact client/server/bridge PIDs were stopped. Complete post-test SQLite backups were quarantined under ignored resources/1649370/local/profile; the active profile was restored to SHA-256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70 and integrity_check=ok.",
+  "error_174_static_site": "In the verified original offline EXE (SHA-256 55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd), xref to the prefixed '174 %s' string leads to 0x58FCD4. The error call at 0x58FCEB is taken when dword [0x1C166E8 + weapon_id*16 + 4] is zero. This is a client-local per-weapon cache entry; the initializer and intended semantics still need tracing.",
+  "open_question": "Which normal initialization path should populate the client-local per-weapon cache entry before a nonzero snapshot weapon is consumed. Definition validity, model linkage, and tail semantics remain to be distinguished."
+}
