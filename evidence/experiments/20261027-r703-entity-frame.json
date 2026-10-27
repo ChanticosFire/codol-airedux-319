@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r703",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "attempt": "add player entities to the snapshot so the spectator has a target",
+  "new_tools": [
+    {"file": "tools/decode_entities_1649370.py",
+     "purpose": "decode the entity section of a snapshot frame",
+     "limit": "the real demo baseline frame has a non-zero tail, and the tail walk is not implemented, so the entity section cannot be reached in that frame; the tool works for frames with the zero tail"},
+    {"file": "tools/build_entity_frame_1649370.py",
+     "purpose": "build a frame carrying two player entities (type 1) with origins written through the position codecs"}
+  ],
+  "frame": {
+    "file": "runs/r703-entities.bin",
+    "bytes": 106,
+    "sha256": "d4502e4e66a37f136dd7525b36ef19a53fca4672acb43aa243be1dd5e5989704",
+    "player_state": {"weapon": 78, "clip": 30, "health": 100, "origin": [336.0, 60.0, 260.5]},
+    "entities": [
+      {"number": 0, "type": 1, "origin": [336.0, 60.0, 260.5]},
+      {"number": 1, "type": 1, "origin": [400.0, 60.0, 260.5]}
+    ],
+    "entity_field_mapping": "type 1: index 2 = codec -83 (position x), index 1 = -82 (y), index 6 = -81 (z)"
+  },
+  "result": {
+    "net_reached": 10,
+    "outcome": "the client died with stop_reason=unhandled_exception right after the entity frame started arriving",
+    "evidence": ["runs/r703-launch.out stop_reason=unhandled_exception",
+                 "capture_window_bg: window class CODO not found",
+                 "read_client_ps: OpenProcess failed"],
+    "server_view": "the game server kept sending (seq 4586) and logged connect=1 stats=2 before stopping"
+  },
+  "conclusion": "the entity section as produced by wire164.write_entities is not accepted by the client for player entities; history shows only a single (0, type 1, {2: 200.0}) probe ever reached net 10, so adding index 1/6 values and a second entity is beyond what has been validated",
+  "next_focus": [
+    "re-run with the historical minimal entity (0, 1, {2: 200.0}) to confirm the frame stays alive, then add one field at a time",
+    "if entities are needed only as a spectator target, consider instead giving the client a real second client through the clients section"
+  ],
+  "database": {
+    "final_state": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok"
+  }
+}
