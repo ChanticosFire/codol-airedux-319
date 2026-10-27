@@ -156,6 +156,9 @@ def main() -> int:
     ap.add_argument("--restore-weapon-cache-indexing", action="store_true",
                     help="restore original per-ID table access at 0x58EF76 after r336 "
                          "(inside the 0x58EF60 model-cache fill)")
+    ap.add_argument("--cbuf-command", default=None,
+                    help="inject one native cbuf command (for example a cvar set) "
+                         "through the launcher, before the client connects")
     args = ap.parse_args()
     if args.trace_weapon_registration and not args.restore_weapon_handler:
         ap.error("--trace-weapon-registration requires --restore-weapon-handler")
@@ -250,10 +253,13 @@ def main() -> int:
         step("reusing client", pid=pid)
     else:
         step("starting client")
-        subprocess.Popen([sys.executable, "-B", "-X", "utf8", "tools/launch_1649370.py",
-                          "--name", args.name, "--reuse-runtime", args.runtime,
-                          "--until-close", "--local-profile", "--full",
-                          "--local-auth-lsg", "--loopback-tcp-guard"],
+        launch_args = [sys.executable, "-B", "-X", "utf8", "tools/launch_1649370.py",
+                       "--name", args.name, "--reuse-runtime", args.runtime,
+                       "--until-close", "--local-profile", "--full",
+                       "--local-auth-lsg", "--loopback-tcp-guard"]
+        if args.cbuf_command:
+            launch_args += ["--cbuf-command", args.cbuf_command]
+        subprocess.Popen(launch_args,
                          cwd=ROOT, stdout=open(logs / f"{args.name}-launch.out", "w", encoding="utf-8"),
                          stderr=subprocess.STDOUT)
         pid = wait_for("client process", _client_pid, 60)

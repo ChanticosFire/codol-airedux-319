@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r682-r684",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused, not copied)",
+  "r682_cbuf_command": {
+    "purpose": "test whether a first-person draw cvar is the gate",
+    "command": "cg_drawGun 1",
+    "injection": {"status": "injected", "stage": 5, "old_length": 0, "new_length": 15,
+                  "log": "runs/r682-launch.out -> [patched] cbuf command"},
+    "screenshot": "runs/r682-drawgun-game.png (sha256 ba17e10d3e22f9d848aad11dec5441e1600f82751c4281325de61fd291abd2af)",
+    "result": "no visible change; either the cvar does not exist in this build or it was already 1",
+    "database": {
+      "note": "this round the client did rewrite the live profile on exit",
+      "post_run_sha256": "4d6a8ad374941c1c31fb64249313828d971a2fc3b60687622b2306f3e31d13a7",
+      "quarantine": "resources/1649370/local/profile/quarantine-post-r682.sqlite3",
+      "restored_from": "resources/1649370/local/profile/pre-r640-certenv.sqlite3",
+      "restored_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+      "integrity": "ok"
+    }
+  },
+  "r683_asset_lookup_sampling": {
+    "tool": "tools/sample_asset_lookup_1649370.py",
+    "target": "0x660b00",
+    "install": "transparent hook_any stub, 9 stolen bytes",
+    "calls_observed": 12625,
+    "missed_between_polls": 2091,
+    "unique_names": 17,
+    "names": ["", "m93dystopian_mp", "supply_limited", "pcb_default", "defaultknife_mp",
+              "fn2000_mp", "aa12destroyerzc_mp", "akbptechsupplydrop_mp", "cheytac_mp",
+              "glaivetech_mp", "m4a1techdeatheg_mp", "model1887totem_mp", "rpdornate_mp",
+              "strikerred_mp", "pp2000valentine_mp", "m4_mp", "ak47_mp"],
+    "conclusion": "0x660b00 is the weapon-name lookup used by the registration pass, not an asset lookup; it proves the client resolves ak47_mp by name while connected",
+    "restored": true
+  },
+  "r683_viewmodel_data": {
+    "static_structure_va": "0x199d00",
+    "layout": {
+      "0x00": "weapon def pointer for weapon 78 (0x2a392d4)",
+      "0x08": "0x26df65c (shared pointer)",
+      "0x0c": "0x19a094 (image pointer)",
+      "0x10": "0x45abaf (image address)",
+      "0x18": "per-session float that changes every run",
+      "0x2c": 0.15, "0x30": 0.17, "0x34": 0.5, "0x3c": -2.98958, "0x40": -45.33334,
+      "0x24": "self pointer +0x88", "0x4c": "heap pointer", "0x54": "heap pointer"
+    },
+    "reading": "static per-weapon view model configuration; the floats are view offsets, not runtime state"
+  },
+  "r683_heap_viewmodel_names": {
+    "array_element_size": "0x4070",
+    "example_element": "0x2a04d60",
+    "layout": {
+      "0x00-0x43": "all zero",
+      "0x44": "0x4b8af764 = 'viewmodel_ak104_idle' (weapon 78)",
+      "0x48": "same pointer again",
+      "0x4c": "0x4b8af779 = next animation name",
+      "0x50-0xc0": "further animation name pointers and a repeated separator string 0x4b36dd9c"
+    },
+    "neighbour_check": {
+      "previous_element": "0x2a00cf0, same layout, different name pointers (0x4980f69e ...)",
+      "next_element": "0x2a08dd0, same layout"
+    },
+    "conclusion": "the client already built a per-weapon view model animation-name table on the heap, so weapon definitions and their view model names are known to the client"
+  },
+  "r684_weapon_switch_sequence": {
+    "frames": ["runs/r684-seq/00-weapon78.bin (90 B, weapon 78, clip 30, sha256 e3f408d8069184072985f2d6b4ce9836a2d2a60ae898d63e620172947f019d79)",
+               "runs/r684-seq/01-weapon0.bin (73 B, weapon 0, sha256 204005f12fa4aad2d9a3865b65deda7ab5b05954fd3ec092b1132c9ef7b4dcbb)",
+               "runs/r684-seq/02-weapon78.bin (90 B, same bytes as frame 00)"],
+    "sent_via": "--snapshot-dir runs/r684-seq --snapshot-interval 0.25",
+    "net_state": 10,
+    "screenshots": ["runs/r684-seq-1.png", "runs/r684-seq-2.png", "runs/r684-seq-3.png"],
+    "result": "switching 78 -> 0 -> 78 did not create the first-person weapon",
+    "ps_copies": {
+      "tool": "tools/read_ps_copies_1649370.py",
+      "marker": 305419896,
+      "checked": ["cl->ps 0x13080874", "snapshot ring 0x1308b278", "cgame copies 0x139d8630 and 0x139dc208"],
+      "fields": {"weapon": 78, "weaponstate_guess": 0, "viewmodelIndex": 1023,
+                 "viewHeightTarget": 60, "viewHeightCurrent": 60.0, "groundEntityNum": 1023,
+                 "primary": 78, "altWeapon": 78, "clipWeapon": 78, "clipCount": 30,
+                 "inventory0": 78},
+      "conclusion": "every copy the client holds carries the same correct weapon and ammo values, so the missing first-person weapon is not a data problem"
+    }
+  },
+  "database": {
+    "final_state": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok",
+    "quarantine_kept": "resources/1649370/local/profile/quarantine-post-r682.sqlite3"
+  },
+  "next_focus": [
+    "locate the array that holds the per-weapon view model model handle, or the cgame draw gate itself",
+    "the animation-name table proves weapon definitions reach cgame; the remaining gap is between that table and the draw call"
+  ]
+}

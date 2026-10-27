@@ -50,6 +50,9 @@ def main() -> int:
     ap.add_argument("--image", type=Path, default=DEFAULT_IMAGE)
     ap.add_argument("--section", default=".text")
     ap.add_argument("--max", type=int, default=200)
+    ap.add_argument("--disp", action="store_true",
+                    help="match any memory operand displacement (structure field "
+                         "offsets such as ps+0x494), not only absolute addresses")
     ap.add_argument("--context", type=int, default=0,
                     help="also disassemble this many bytes before the xref")
     args = ap.parse_args()
@@ -89,6 +92,9 @@ def main() -> int:
                 if op.mem.base == 0 and op.mem.index == 0:
                     address = op.mem.disp & 0xFFFFFFFF
                     kind = "mem"
+                elif args.disp:
+                    address = op.mem.disp & 0xFFFFFFFF
+                    kind = "disp"
             if address is not None and address in hits:
                 hits[address].append((insn.address, kind, insn.mnemonic, insn.op_str))
     print(f"instructions={total}")
