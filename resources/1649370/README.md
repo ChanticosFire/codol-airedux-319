@@ -4,6 +4,8 @@
 
 更新：2026-10-26。项目根目录：`E:\GAME\COD\codol-airedux\319`。
 
+2026-10-28 武器资源补录：原始 `E:\GAME\COD\使命召唤OL\IIPS\IIPSDownload\ff_init_weapons_V37.ifs`（45,315,979 B，SHA-256 `374e7a22…b1a84d`）含 93 个 Build 1649370 / v461 签名 fastfile，成员 3 为 `client_shipRetail/chinese/ak47_mp.ff`。仅提取该成员后得到 1,835,285 B、SHA-256 `c4e975fe…819093f`；签名、哈希链与 zone 目录通过验证。原包和提取件的**独立副本**分别在私有 `local/weapon-fastfiles/ff_init_weapons_V37.ifs` 与 `local/weapon-fastfiles/ak47_mp.ff`，元数据见 `manifest.json`。**这不是已验证可部署资源**：r745 临时放入唯一运行时后虽使武器注册和模型解析各发生一次，仍弹 `174 ak47_mp` 回大厅。实验文件已从运行时移除，尚须定位 174 的真实抛错点；详情见 [r743–r745 证据](../../evidence/experiments/20261028-r743-r745-weapon-fastfile-gate.json)。
+
 2026-10-27 运行补充：当前活库 revision **1241**、SHA-256 `06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70`，实验前完整副本为 `local/profile/pre-r640-certenv.sqlite3`；下段 revision 1227 是旧交接时点。实际复用运行时的 `r107flow/runtime/cacert.pem` 原件独立备份为 `local/tls-active/r107flow-cacert-pre-r643.pem`（SHA-256 `05c420b36c179989cb83997cced3603c95285377f3528d861d0cd9d8f28c1aac`）。现用 LSG 服务端证书已由启动器幂等补入**这个实际运行时文件**；r643/r644 两次真实 `POST /auth/` 获 200。`319/runtime/client-1649370/cacert.pem` 与它不是同一文件，零售客户端的默认证书路径结论不应套用到离线 EXE。脱敏证据见 `evidence/experiments/20261027-r640-r647-auth-weapon-summary.json`。
 
 r647 退出时自动保存产生的 revision 1242 档案已整库隔离在 `local/profile/quarantine-post-r647-revision1242.sqlite3`（SHA-256 `e74cfe2664ff6b7bfdf22a1ea6f56f97bba6770f1e98e956f57e189d3889330b`）；活库随后由试前**完整数据库**恢复，不采用只替换 `profiles` 的旧错误做法。

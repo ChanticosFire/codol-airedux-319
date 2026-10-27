@@ -5,6 +5,24 @@
   "note": "Private content lives under ignored local/; this metadata contains no secret bytes. Hardlinks survive source path deletion but share file content and disk with source.",
   "critical_files": [
     {
+      "id": "verified_v461_weapon_ifs_source",
+      "source": "E:\\GAME\\COD\\使命召唤OL\\IIPS\\IIPSDownload\\ff_init_weapons_V37.ifs",
+      "backup": "local/weapon-fastfiles/ff_init_weapons_V37.ifs",
+      "method": "independent_copy",
+      "bytes": 45315979,
+      "sha256": "374e7a22fa6d949104eaca12885f9df1a599e7e8ce95f36b75a42f3ee6b1a84d",
+      "status": "source verified; staging any member is experimental"
+    },
+    {
+      "id": "verified_v461_ak47_fastfile_experimental",
+      "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\r745-ak47_mp.ff",
+      "backup": "local/weapon-fastfiles/ak47_mp.ff",
+      "method": "independent_copy",
+      "bytes": 1835285,
+      "sha256": "c4e975fef271f492774cc09701b1a9f7a014300b6ef94bce961def3dc819093f",
+      "status": "signature verified; r745 returned error 174 ak47_mp; not a known-good runtime asset"
+    },
+    {
       "id": "active_lsg_certificate",
       "source": "E:\\GAME\\COD\\codol-airedux\\319\\runs\\20261020-live-derived01\\tls\\auth.crt",
       "backup": "local/tls-active/auth.crt",

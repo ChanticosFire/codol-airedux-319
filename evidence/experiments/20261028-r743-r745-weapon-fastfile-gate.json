@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "The first-person view builder stops because weapon 78 never passes its asynchronous fastfile readiness gate; if the missing signed ak47_mp.ff is made available, the registration and model-resolution calls should become reachable.",
+  "runtime": {
+    "path": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+    "exe_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+    "new_runtime_created": false
+  },
+  "source_side": {
+    "gamestate": "runs/r738-gamestate-sniprestigea.bin",
+    "snapshot": "runs/r738-snapshot-sniprestigea.bin",
+    "r743": {"connect": 1, "snapshot_source": 1739, "inband_received": 1606, "start_utc": "2026-10-27T19:34:23Z", "stop_utc": "2026-10-27T19:38:31Z"},
+    "r744": {"connect": 1, "snapshot_source": 1101, "inband_received": 1059, "start_utc": "2026-10-27T19:48:59Z", "stop_utc": "2026-10-27T19:52:02Z"},
+    "r745": {"connect": 1, "snapshot_source": 1517, "inband_received": 1, "start_utc": "2026-10-27T19:58:03Z", "stop_utc": "2026-10-27T20:01:22Z"},
+    "log_paths": ["runs/r743-gs.jsonl", "runs/r744-gs.jsonl", "runs/r745-gs.jsonl"],
+    "limit": "snapshot_source is a server-side send record; it is not proof that the client accepted every snapshot."
+  },
+  "r743_live_observation": {
+    "sample_path": "runs/r743-view-gate-samples.json",
+    "sample_count": 50,
+    "sample_interval_seconds": 0.2,
+    "view_builder_entry_count_start_end": [9153, 10907],
+    "cg_primary_weapon": 78,
+    "cg_alt_weapon": 78,
+    "cg_weapon_flags": 0,
+    "client_snapshot_primary_weapon": 78,
+    "weapon_lookup_word": 0,
+    "queue_count": "1 in 49/50 samples",
+    "queue_entry": [78, 0],
+    "pre_view_call_count": 0,
+    "typed_model_resolver_call_count": 0,
+    "active_screenshot": "runs/r743-active.png: map and AK-47/30 HUD visible, no first-person gun or arms"
+  },
+  "native_path": {
+    "view_builder": "0x5903F0 selects cg+0x3F8=78 and sees per-ID lookup word 0; 0x5904BD returns while queue item (78,0) is pending.",
+    "queue_processor": "0x59AED0 is called from frame sites 0x515894 and 0x5C2A4D/0x5C2A6C; it reads 0x82CA590 queue and clears it at 0x59B23A. In r744 the queue enter/clear hooks each exceeded 13,000 hits during one active session.",
+    "r744_branch_counts": {"asset_lookup_0x59B060": 2571, "file_check_0x59B091": 2568, "ready_0x59B0C6": 0, "deferred_0x59B0E1": 0, "weapon_register_0x59B13A": 0},
+    "file_check": "0x4A0410 builds %s%c%s%s.ff from base path '.' and asset name, attempts a direct file open, then optional filesystem fallback. During r744 the fallback pointer [0x779570C] was zero; the captured asset input was ak47_mp. This explains why r744 repeatedly skips past 0x59B091 without registration in the observed process.",
+    "missing_before_intervention": "rg --files E:/GAME/COD -g ak47_mp.ff returned no file. The current r107flow/runtime had no ak47_mp.ff."
+  },
+  "source_asset": {
+    "ifs_source": "E:/GAME/COD/使命召唤OL/IIPS/IIPSDownload/ff_init_weapons_V37.ifs",
+    "ifs_sha256": "374e7a22fa6d949104eaca12885f9df1a599e7e8ce95f36b75a42f3ee6b1a84d",
+    "ifs_bytes": 45315979,
+    "member": "client_shipRetail/chinese/ak47_mp.ff (index 3 of 93, version 461)",
+    "extracted_path": "runs/r745-ak47_mp.ff",
+    "extracted_bytes": 1835285,
+    "extracted_sha256": "c4e975fef271f492774cc09701b1a9f7a014300b6ef94bce961def3dc819093f",
+    "verification": "Existing ifs_entries.py extracted the member span; existing codol_rebuild.resources.fastfile.decode_fastfile verified the 224-block trimmed candidate: publisher RSA signature, hash chain, zlib EOF, Adler32, directory coverage, 263 assets.",
+    "private_backups": ["resources/1649370/local/weapon-fastfiles/ff_init_weapons_V37.ifs", "resources/1649370/local/weapon-fastfiles/ak47_mp.ff"]
+  },
+  "r745_intervention": {
+    "only_intended_change": "Stage the verified ak47_mp.ff in the existing r107flow/runtime/client_shipretail/chinese directory; use the same gamestate, snapshot and session options as r744.",
+    "session_json_net_state": 10,
+    "weapon_register_call_count": 1,
+    "pre_view_call_count": 1,
+    "typed_model_resolver_call_count": 1,
+    "active_screenshot": "runs/r745-active.png (2026-10-27T19:59:50Z): lobby error dialog '174 ak47_mp', no playable first-person frame",
+    "result": "The signed file changed the observed registration path from zero calls to one call, but the client returned to the lobby with error 174 ak47_mp. This is one intervention (n=1), not a successful fix. The precise origin of error 174 is not established; the signed file alone is insufficient.",
+    "runtime_cleanup": "All call hooks restored with original-byte readback; exact client and LSG PIDs stopped; staged ak47_mp.ff removed after verifying its hash."
+  },
+  "profile_safety": {
+    "baseline_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "r743_post_sha256": "cb03dd76c85c9550fa9ec7a65240ff9f059f000e7ea58cf4a859f2a1c5a274f3",
+    "r745_post_sha256": "5ac5b1f15ad4d07044491f353591d19c2921f333ed2298bafc5c03e55fe260d9",
+    "classification": "Both changed databases had unchanged schema/table row counts and integrity=ok; accounts revision/updated and one profiles blob/hash changed. This is a normal client write, preserved in ignored r743-after-local.sqlite3 and r745-after-local.sqlite3 before restoring the exact baseline for repeatability.",
+    "r744_post_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "final_live_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "final_integrity": "ok"
+  },
+  "conclusion": "The missing first-person weapon in r743 is blocked before typed model resolution at the per-weapon cache/fastfile availability path. A verified source fastfile reached registration once in r745, but produced error 174 and did not render a gun. The error source and whether other bundles or registration assumptions are required remain open. Real connection is verified; restored loadout UI was separately observed previously; first-person weapon, shooting, and full acceptance remain unproven."
+}
