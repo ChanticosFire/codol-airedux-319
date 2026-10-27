@@ -1,0 +1,84 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r687-r690",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "r687_weapon_def_pointers": {
+    "weapon_def_hash_field_0x10": {
+      "value": "0x1f6ae24",
+      "strings_in_structure": {"0x14": "wea_tar21_tar21_lod110", "0x4c": "wea_tar21_tar21_lod210"},
+      "reading": "world model (wea_) reference, not a first-person model"
+    },
+    "weapon_def_field_0x28": {"value": "0x22e73bc", "strings_in_structure": {}},
+    "weapon_def_field_0x7b4_0x7bc_0x7c4": {
+      "value": "0x1cf6fe0",
+      "structure_head": ["0xffffffff x8", "0x010001ff", "0x503 (1283)", "0x2f25dc0", "0x480cad14"],
+      "strings_resolved": ["demo_pause"],
+      "reading": "not a model structure; the 0xffffffff run looks like an unset table"
+    }
+  },
+  "r688_high_rate_sampling": {
+    "tool": "tools/sample_asset_lookup_1649370.py --target 0x661b80 --interval 0.0001",
+    "reads": 202587,
+    "calls_observed": 18186,
+    "missed_calls": 18153,
+    "unique_names": 34,
+    "asset_type_ecx": "0x12",
+    "names_are": "character/AI animations only (mp_mantle_over_low_fr, %riotshield_run_approach_3, zombie_juggernaut_healboss_idle, ...)",
+    "reading": "0x661b80 is the typed asset lookup, but polling can never cover the dense loading burst; a ring-buffer hook is required (r689)"
+  },
+  "r689_ring_buffer_hook": {
+    "tool": "tools/hook_ring_1649370.py (new)",
+    "design": "stub records arg0 into a 4096-entry ring allocated in the target so the whole loading window is recovered in one read",
+    "install": {"cave": "allocated per run", "ring": "allocated per run",
+                "stolen_length": 6, "original": "558bec83ec14"},
+    "window_seconds": 80,
+    "head_counter": 1802,
+    "unique_pointers": 1921,
+    "resolved_names": 1912,
+    "viewmodel_names_found": ["viewmodel_zombie_adrenaline_stand"],
+    "sample_names": ["menu_lobby_slot9_fem_riot_idle", "menu_lobby_slot9_fem_riot_fidget",
+                     "menu_lobby_slot10_riot_idle", "MOD_GRENADE", "2841"],
+    "restored": true,
+    "conclusion": "during engine init, connect and map entry the client never asks this lookup for an AK first-person view model; the model name it does hold (viewmodel_ak47) was loaded earlier by the fastfile zone load, before the hook window"
+  },
+  "r690_weapon_name_configstrings": {
+    "hypothesis": "cgame registers weapon view models from name configstrings at 5960+index, which the captured gamestate lacks",
+    "names_source": "runs/r671-weapon78-records.json slot->name mapping (1136 entries, slot 1 = defaultweapon_mp, slot 78 = ak47_mp)",
+    "tool": "tools/add_weapon_configstrings_1649370.py (new)",
+    "gamestate": {
+      "file": "runs/r690-gamestate-weaponnames.bin",
+      "bytes": 25017,
+      "sha256": "49cd3f5a1f9053e7d3c672811712db1605c7c793237f95bdb872c60ceba0cc69",
+      "rows_before": 292,
+      "rows_after": 1428,
+      "added": 1136,
+      "slot_5960": "none",
+      "slot_6038": "ak47_mp",
+      "slot_7096": "** 646 0 0 8738 9321",
+      "mapname": "mp_crash_tropical",
+      "gametype": "war"
+    },
+    "result": {
+      "net_state": 0,
+      "client_ps": "all zero (lobby)",
+      "error_dialog": "错误 / 无法加入游戏会话",
+      "screenshot": "runs/r690-weaponnames-screen.png (sha256 64a5a2419773b77ce4d9ddc18844f434ebdddaf27c661465b3be4768f442011f)",
+      "gs_log": "only inband_short packets; no connect"
+    },
+    "interpretation": "the 5960+ slots are typed slots; some of them carry a type below 0x17 that is not 0x15, so the client rejects them as text configstrings exactly like r652/r653 rejected index 5961 (type 0x0d). A one-shot text entry at 5960 happened to pass in r646, which is why it looked harmless while doing nothing.",
+    "conclusion": "adding weapon names as text configstrings is not a viable path to bind view models; the hypothesis is falsified by a real client rejection"
+  },
+  "incidents": [
+    "r689's client was not stopped before the first r690 attempt, so session_up timed out waiting for a fresh engine init; the leftover PID was stopped by exact id and the retry ran cleanly"
+  ],
+  "database": {
+    "final_state": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok",
+    "quarantines": ["resources/1649370/local/profile/quarantine-post-r682.sqlite3"]
+  },
+  "open_items": [
+    "the first-person view model is loaded but never bound to a weapon",
+    "weapon defs carry animation names only; the model-name source inside the client is still unidentified",
+    "acceptance item 5 (weapon, arms, firing) is still not met"
+  ]
+}
