@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r702",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "purpose": "answer the user's method point: establish HUD/configstring facts from the data source instead of screenshots",
+  "configstring_store_probe": {
+    "tool": "tools/find_exact_string_1649370.py",
+    "serverinfo_fragment": {
+      "text": "scr_game_allowkillcam",
+      "exact_addresses": ["0xdb9074 (image .rdata original)", "0x789cccc (client string pool)"],
+      "reading": "configstring 0 (serverinfo) is materialised in the client pool around 0x789ccc, so the pool base is just below it"
+    },
+    "match_time_value": {
+      "text": "1825900",
+      "exact_addresses": ["0x16db05 (image)", "0xc87a54b (runtime pool)"],
+      "follow_up": "reading 0xc87a54b afterwards returns an empty string and the surrounding 0x80 bytes are zero",
+      "reading": "the value we sent as configstring 15 does appear in a runtime pool, but that slot is rewritten/cleared while the match runs, so a static read cannot be used as proof of the live HUD value"
+    }
+  },
+  "method_note": "HUD elements must be traced through their configstring index or playerState field; screenshots alone are not evidence for what a number means (the lower-left number is the team score, not health)",
+  "database": {
+    "final_state": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok"
+  },
+  "next_focus": [
+    "resolve the stringOffsets array in front of the pool to read configstring 435/15/13 by index rather than by string search",
+    "keep the weapon-draw investigation on the cgame side"
+  ]
+}
