@@ -215,7 +215,7 @@ def main() -> int:
                            "--snapshot-seq", "4", "--snapshot-repeat", "30000",
                            "--snapshot-interval", "0.1",
             *( ["--server-command-every", "200", "--server-command-seq", "4",
-                "--server-command-text", args.server_command_text]
+                "--server-command-text", args.server_command_text or " "]
                if args.server_command_text != "off" else [] ),
             *( ["--configstring-file", args.configstring_file] if args.configstring_file else [] ),
                            "--match-duration", str(int(args.server_seconds)),
