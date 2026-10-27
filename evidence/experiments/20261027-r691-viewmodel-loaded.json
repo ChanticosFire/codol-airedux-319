@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r691",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "correction": {
+    "earlier_claim": "experiments/20261027-r685-r686-viewmodel-binding.json said the viewmodel_ak47 asset had zero referencing structures",
+    "why_wrong": "the reference scan used 0x2311a40 as the structure base, derived from a dump that started mid-structure; the real XModel starts at 0x2311a8c where the name pointer is the first field",
+    "effect": "the earlier conclusion 'nothing in cgame owns this model' does not hold"
+  },
+  "xmodel_structure": {
+    "address": "0x2311a8c",
+    "stable_across_sessions": true,
+    "fields": {
+      "0x00": "0x4c7e77ec = viewmodel_ak47 (name)",
+      "0x04": "0x108 (264)",
+      "0x08": "1.0f",
+      "0x2c-0x44": "seven LOD name pointers (0x4c7e77fc ... 0x4c7e79a8)",
+      "0x48": "1000.0f",
+      "0x4c": "5 (LOD count)",
+      "0x50": "0x1e06fc4 (geometry pointer)",
+      "0x54": "0x4c7e7ab4 (string)"
+    },
+    "reading": "a loaded XModel for the AK-47 first-person view model"
+  },
+  "references_to_xmodel": {
+    "hits": 6,
+    "addresses": ["0x2605fdc", "0x2e483c4", "0x2e68744", "0x2e6a77c", "0x15095854", "0x4c7e77e8"],
+    "structures": [
+      {"holder": "0x2e48384", "xmodel_field": "+0x40", "context": "float triple at +0x30..+0x38, string pointer at +0x3c, pointer at +0x48"},
+      {"holder": "0x2e68704", "xmodel_field": "+0x40", "context": "same layout, different float triple"},
+      {"holder": "0x2e6a73c", "xmodel_field": "+0x40", "context": "same layout, different float triple"},
+      {"holder": "0x2605f9c", "xmodel_field": "+0x40", "context": "0x00=5, 0x10=0x209, 0x1c=3, 0x24=0x1e06fc4, 0x48=0x309, 0x5c=0x2e483b4 - looks like a DObj over the model"}
+    ],
+    "reading": "the first-person model is loaded, referenced by three heap holders and one .bss holder; at least one holder looks like a render object"
+  },
+  "conclusion": [
+    "the missing first-person weapon is not a missing asset: viewmodel_ak47 is loaded, named correctly and referenced by four holders",
+    "the remaining gap is either a draw gate or a transform/attachment problem, not asset loading",
+    "the earlier 'zero references' statement is retracted and must not be reused"
+  ],
+  "database": {
+    "final_state": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok"
+  }
+}
