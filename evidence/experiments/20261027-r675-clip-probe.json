@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-27",
+  "run": "r675",
+  "runtime": "reused existing r107flow/runtime",
+  "gamestate_sha256": "2f6c517931e43216740e598e642e682e55674e0d15dd3f14a9ab196a9a7acedb",
+  "snapshot": {
+    "path": "runs/r675-weapon78-clip30.bin",
+    "bytes": 91,
+    "sha256": "be978d643e30a96e31bd744e4d0b507b1814256a68f47ddcf91e15f0e86db337",
+    "change": "Experimental, unverified playerState tail clip_count=30"
+  },
+  "client": {
+    "net_state": 10,
+    "ps_weapon": 78,
+    "ps_primary": 78,
+    "ps_alt_weapon": 78,
+    "ps_viewmodel_index": 1023,
+    "screen": "runs/r675-clip30-game.png",
+    "observed": "Map and AK-47 HUD icon/name visible; ammo remains 0, out-of-ammo message, no first-person weapon or arms."
+  },
+  "conclusion": "The clip candidate did not produce visible ammo. Its wire layout or parser acceptance is unverified. First-person model and shooting remain unproven.",
+  "cleanup": {
+    "quarantine": "resources/1649370/local/profile/quarantine-post-r675.sqlite3",
+    "quarantine_sha256": "81ff6680a59f5b908360e1bda724c5b10d4716b283fd165a46118cc21dedafde",
+    "active_profile_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "sqlite_integrity": "ok",
+    "experiment_client_server_bridge_stopped": true
+  }
+}

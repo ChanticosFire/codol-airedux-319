@@ -1,5 +1,7 @@
 # CODOL Build 1649370 — 救援交接（2026-10-26）
 
+> **2026-10-27 最新入口**：请先读 [给 DeepSeek 的当前长程目标](docs/1649370-DEEPSEEK-LONGTERM-GOAL.md)、状态 §1264–1267 和脱敏实验记录。以下旧正文的“无地图”“无玩家数据”“第 521 轮暂停”“r336 武器 handler 绕过必须保留”等是当时历史陈述，不能当作今日结论。当前真实连接和地图已经验证，部署 Loadout 已恢复，r673–r675 还显示 AK-47 HUD；但用户再确认**第一人称枪模仍缺**，弹药 0，射击尚未验收。r675 的 30 发 clip 候选没有让弹药出现，线格式仍待核实。活库由完整基线恢复为 SHA-256 `06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70`；实验库在私有隔离目录。只复用 `r107flow/runtime`，不要复制大型运行时。
+
 > **当前接手入口**：额度 9% 时的新进展与给 DeepSeek 的执行目标见 `docs/1649370-DEEPSEEK-LONGTERM-GOAL.md`，尤其 r528 13 位武器候选尚未得到 parser 验证、活库已恢复 revision 1227。本文件以下是历史救援背景，冲突时以 `1649370-STATUS.md` §1105–1109 和当前磁盘/进程实证为准。
 
 > **2026-10-26 续修正**：本交接早先把零售客户端 `codoMP_client_shipRetail.exe` 的 TP/TCLS 故障与隔离离线客户端混为一谈。已验证的 `r107flow/runtime/codol1649370-offline.exe` 路线可进入大厅与 `mp_crash_tropical` 对局画面；用户现场确认未拉起 TP、未出现 100 大厅错误。当前仍**无可控玩家**。本文件中“3D 场景从不渲染”“可用私有客户端副本已丢失”等绝对表述仅可作为当时零售路径的历史判断，不能否定现存的 `r107flow`。另一次工作树清理错误地恢复了 `tools/launch_1649370.py` 的 `+cl_demo_play testdemo`，使后续启动误走 demo；现已移除。复现步骤见 [已验证启动流程](docs/1649370-KNOWN-GOOD-STARTUP.md)，资源副本见 [资源索引](resources/1649370/README.md)。

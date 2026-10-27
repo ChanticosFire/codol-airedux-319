@@ -343,7 +343,8 @@ def write_player_tail_zero(m: MsgWriter) -> None:
         m.write_bits(0, 1)
 
 
-def write_player_tail_equipped(m: MsgWriter, weapon_id: int) -> None:
+def write_player_tail_equipped(m: MsgWriter, weapon_id: int,
+                               clip_count: int = 0) -> None:
     """Publish one equipped inventory slot against an empty tail baseline.
 
     The target tail reader consumes stats, clip records, inventory slots,
@@ -352,9 +353,21 @@ def write_player_tail_equipped(m: MsgWriter, weapon_id: int) -> None:
     """
     if not 1 <= weapon_id <= 2047:
         raise ValueError("tail weapon id must fit the nonzero 11-bit wire range")
+    if not 0 <= clip_count <= 511:
+        raise ValueError("clip count must fit the 9-bit probe range")
     m.write_bits(1, 1)          # stats changed
     m.write_bits(1 << 3, 17)    # only spawn event
     m.write_byte(1)
+    if clip_count:
+        # Diagnostic candidate from the related cols snapshot writer. The
+        # exact 1649370 tail layout is not yet verified by a live ammo read.
+        m.write_bits(1, 1)      # one clip record
+        m.write_bits(0, 4)      # clip slot 0
+        m.write_bits(weapon_id, 10)  # tentative clip key
+        m.write_bits(1, 1)      # primary clip changed
+        m.write_bits(clip_count, 9)
+        m.write_bits(1, 1)      # offhand clip changed
+        m.write_bits(0, 9)
     m.write_bits(0, 1)          # end of clip records
     m.write_bits(1, 1)          # inventory changed
     for slot in range(15):
@@ -370,7 +383,8 @@ def write_player_tail_equipped(m: MsgWriter, weapon_id: int) -> None:
 
 
 def write_player_state(m: MsgWriter, values: dict[int, int], ctx: DeltaContext,
-                       tail_zero: bool = True, tail_weapon: int = 0) -> int:
+                       tail_zero: bool = True, tail_weapon: int = 0,
+                       tail_clip_count: int = 0) -> int:
     """Write the playerState section; returns the wire index of ``last``."""
     targets = [0] * PLAYER_FIELD_COUNT
     for offset, word in values.items():
@@ -404,7 +418,7 @@ def write_player_state(m: MsgWriter, values: dict[int, int], ctx: DeltaContext,
         if hint == 2:
             write_delta_value(m, bits, 0, targets[index], ctx)
     if tail_weapon:
-        write_player_tail_equipped(m, tail_weapon)
+        write_player_tail_equipped(m, tail_weapon, tail_clip_count)
     elif tail_zero:
         write_player_tail_zero(m)
     return last
@@ -465,7 +479,7 @@ def write_empty_tail_sections(m: MsgWriter) -> None:
 def build_snapshot(values: dict[int, int], *, server_time: int = 72192, delta: int = 0,
                    flags: int = 0, has_base: int = 0,
                    position_base=(0, 0, 0), tail_zero: bool = True,
-                   tail_weapon: int = 0,
+                   tail_weapon: int = 0, tail_clip_count: int = 0,
                    entities=()) -> bytes:
     """Assemble one complete snapshot body (no leading ack bytes)."""
     ctx = DeltaContext(server_time=server_time, position_base=position_base)
@@ -476,7 +490,7 @@ def build_snapshot(values: dict[int, int], *, server_time: int = 72192, delta: i
     m.write_byte(flags)
     m.write_bits(has_base & 1, 1)
     write_player_state(m, values, ctx, tail_zero=tail_zero,
-                       tail_weapon=tail_weapon)
+                       tail_weapon=tail_weapon, tail_clip_count=tail_clip_count)
     m.write_bits(0, 1)                  # anim commands
     m.write_bits(0, 1)                  # actors
     if entities:
