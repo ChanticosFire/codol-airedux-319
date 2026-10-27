@@ -30,6 +30,10 @@ def main() -> int:
                     help="ps+0x170 eye height; the historical marker value is 0.3125")
     ap.add_argument("--pm-type", type=int, default=0,
                     help="playerState pm_type byte; a real 2021 demo baseline carries 5")
+    ap.add_argument("--health", type=int, default=0,
+                    help="tail stats[0] (STAT_HEALTH); 0 may read as dead")
+    ap.add_argument("--field", action="append", default=[],
+                    help="extra playerState field as offset=value, repeatable")
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--baseline", type=Path, default=Path("runs/r546-markers.bin"))
     args = ap.parse_args()
@@ -62,15 +66,22 @@ def main() -> int:
     values = common | {0x4C: args.weapon_id, 0x15C: args.viewmodel_index,
                        0x3F8: args.weapon_id,
                        0x3FC: args.weapon_id}
+    for item in args.field:
+        try:
+            offset, value = item.split("=")
+            values[int(offset, 0)] = int(value, 0)
+        except ValueError:
+            ap.error(f"--field expects offset=value, got {item!r}")
     frame = build_snapshot(values, server_time=72192,
                            tail_weapon=args.weapon_id,
-                           tail_clip_count=args.clip_count, entities=entities)
+                           tail_clip_count=args.clip_count, tail_health=args.health,
+                           entities=entities)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(frame)
     print(json.dumps({"weapon_id": args.weapon_id,
                       "viewmodel_index": args.viewmodel_index, "bytes": len(frame),
                       "clip_count": args.clip_count, "origin": list(origin),
-                      "pm_type": args.pm_type,
+                      "pm_type": args.pm_type, "health": args.health,
                       "baseline_checked": baseline_ok,
                       "sha256": hashlib.sha256(frame).hexdigest(),
                       "output": str(args.output)}))

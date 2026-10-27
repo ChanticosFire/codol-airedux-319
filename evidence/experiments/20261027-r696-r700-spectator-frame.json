@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r696-r700",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "user_corrections": [
+    "COD/CODOL never shows a health bar; the blue 0/1 in the lower-left is the team score, not health",
+    "HUD facts must be established from the data source (configstrings / playerState), not inferred from a screenshot"
+  ],
+  "r696_health_field": {
+    "change": "added tail stats[0] (STAT_HEALTH) support to wire164 and the probe builder",
+    "frame": {"file": "runs/r696-weapon78-health100.bin", "bytes": 92,
+              "sha256": "3fea1175f8b668ca468d9a2932fa5aaae503bb6862a8af40d839a2863602e762",
+              "origin": [336.0, 60.0, 260.5], "pm_type": 0, "health": 100, "clip": 30},
+    "verification": "ps+0x1A4 read back 100 on the live client, so the stats encoder is correct",
+    "picture": "unchanged apart from the new origin; no first-person weapon",
+    "note": "the HUD has no health element, so this value cannot be judged from the picture"
+  },
+  "r697_demo_field_sweep": {
+    "fields_set": {"0x104": "0x102", "0xFC": "15", "0x78": "127", "0x2D4": "7"},
+    "frame": {"file": "runs/r697-weapon78-demofields.bin", "bytes": 100,
+              "sha256": "673e050e0ac9e83e087b0a906fe7793558eb252c76580543aed76c3fe1026d9d"},
+    "result": "no visible change; still no first-person weapon",
+    "screenshot": "runs/r697-demofields-game.png (sha256 0f27d4fa91e359ed5dce93766c0ae5085df7316bcedf2ab2dc72aff2e7cadf74)"
+  },
+  "r698_real_demo_baseline_frame": {
+    "frame": "runs/r695-demo-outer/baseline-outer17-245.bin (245 bytes, sha256 6d03cde387571deb9362904055c3d69df54ab369ca0778218b8f507addb534a6)",
+    "sent_verbatim": true,
+    "client_state": {"net_state": 10, "pm_type": 5, "clientNum": 1, "weapon": 0,
+                     "viewmodelIndex": 0, "origin": [336.0, 60.0, 261.0]},
+    "picture": "spectator overlay appears: '鼠标左键 - 下一位玩家  鼠标右键 - 上一位玩家  E - 第一人称'",
+    "screenshot": "runs/r698-baseline-game.png (sha256 863424aa646feca26f5e77f258b868fe4d381d1d39cb777439054a2c4f4ab36a)",
+    "conclusion": "a real demo frame is accepted and rendered by our server path, which proves the frame format is right and that pm_type 5 with clientNum 1 and weapon 0 is the spectator/dead state"
+  },
+  "r699_viewmodel_index_zero": {
+    "frame": {"file": "runs/r699-weapon78-vmidx0.bin", "bytes": 91,
+              "sha256": "ba9f86d52547bd92fab5be0a78f2e1e9ac83ca2408ed9b232e4048dae6fe9eec",
+              "viewmodel_index": 0, "weapon": 78, "pm_type": 0},
+    "client_read_back": {"viewmodelIndex": 0, "weapon": 78},
+    "result": "no visible change; viewmodelIndex is not the draw gate",
+    "screenshot": "runs/r699-vmidx0-game.png (sha256 e11968fba48562801cc173f176e60bd9d3a6bb81ddf5b4075111e714ceb27afd)"
+  },
+  "r700_spectator_first_person_key": {
+    "action": "sent VK 0x45 (E) to the spectator overlay",
+    "screenshots": ["runs/r700-before-e.png", "runs/r700-after-e.png (sha256 a5d0bbfbfe3bd8cf9788d8ee4b9c6645b9800b9aeab265f0211abd6a6f805f99)"],
+    "result": "the overlay stays in third-person spectator; with a single client there is no other player entity to follow",
+    "conclusion": "the E toggle cannot be used as a first-person reference in a one-client match"
+  },
+  "established_facts": [
+    "our snapshot format is accepted by the client even for a verbatim 2021 demo frame",
+    "pm_type 5 = spectator/dead; pm_type 0 gives the normal first-person camera",
+    "with pm_type 0, weapon 78, clip 30, health 100, clip/inventory/reserve written and a running match clock, the client still draws no first-person weapon",
+    "viewmodelIndex 0/78/1023 make no difference",
+    "the HUD lower-left number is the team score and must not be described as health"
+  ],
+  "database": {
+    "final_state": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok"
+  },
+  "next_focus": [
+    "identify the cgame state that gates the view model draw; the spectator overlay proves cgame runs and reads pm_type, so compare cg-side state rather than playerState values",
+    "add at least one other player entity so spectator first-person has a target"
+  ]
+}
