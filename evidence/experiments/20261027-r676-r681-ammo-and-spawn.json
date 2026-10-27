@@ -1,0 +1,109 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r676-r681",
+  "goal_revision": "docs/1649370-DEEPSEEK-LONGTERM-GOAL.md (2026-10-27)",
+  "runtime": {
+    "path": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+    "reused": true,
+    "copied_runtime": false
+  },
+  "image_identity": {
+    "shipped_image": "E:/GAME/COD/1649370/bin/v1649370/codol1649370-offline.exe",
+    "shipped_sha256": "55f067ac24e7d5ea9bea5acd46a1514eb1b7780a627b73c2094f41133dce3ffd",
+    "runtime_image": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime/codol1649370-offline.exe",
+    "runtime_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+    "same_size": true,
+    "changed_bytes": 31,
+    "changed_ranges": [
+      {"va": "0x4730a0", "len": 3, "from": "558bec", "to": "b001c3", "note": "function returns 1"},
+      {"va": "0x4fdae2", "len": 14, "note": "stack/heap bootstrap difference"},
+      {"va": "0x77eea5", "len": 5, "from": "e8a6f8ebff", "to": "33c0909090", "note": "call -> xor eax,eax"},
+      {"va": "0x7e993d", "len": 5, "from": "e8de8ce5ff", "to": "9090909090", "note": "call -> nop"},
+      {"va": "0xd8ccfe", "len": 2, "from": "3531", "to": "3339", "note": "rdata string bytes"},
+      {"va": "0xe579f0", "len": 3, "from": "18cddb", "to": "4c08dc", "note": "data pointer"}
+    ],
+    "conclusion": "static disassembly of the shipped image applies to the running client except at these six sites"
+  },
+  "tail_layout_fix": {
+    "source": "community retained-engine overlay codol/snapshot/codol_player_tail164.c (protocol facts only)",
+    "tested_before": "clip record wrote the weapon id as 10 bits (older 1604220 array writer)",
+    "tested_after": "weapon id written as 11 bits, offhand gate written as unchanged (1 bit)",
+    "file": "runs/r676-weapon78-clip30.bin",
+    "bytes": 90,
+    "sha256": "b412ca7dc572cbe271ec1a02db12ff3be9135f1751ea80582c8e79ba80bb148c",
+    "regression_control": {
+      "file": "runs/r676-weapon78-clip0.bin",
+      "bytes": 87,
+      "sha256": "9cb284002e0e6d3c2062bacc6c69cf363d9f460f78feea84f369d1d3bd36c074",
+      "note": "identical to the previous r671 weapon-78 frame, so the zero-clip path is unchanged"
+    }
+  },
+  "r676_clip11": {
+    "command": "session_up --gamestate runs/r672-composite-count.bin --snapshot runs/r676-weapon78-clip30.bin --restore-weapon-handler --restore-weapon-lookup-branch --restore-weapon-init-indexing --weapon-lookup-fallback",
+    "net_state": 10,
+    "native_ps": {"weapon_0x4c": 78, "primary_0x3f8": 78, "alt_0x3fc": 78, "clip_ps_0x494": 78, "clip_count_ps_0x498": 30, "inventory_ps_0x2f4": 78},
+    "hud": "AK-47 name and icon with a clip count of 30; the previous 'out of ammo' banner is gone",
+    "screenshot": "runs/r676-clip30-game.png (sha256 9029ba03fc0a5ea4286221600953ae21e10cca1e1ec7959fc0921aa73cbf2f8c)",
+    "front_screenshot": "runs/r676-front.png (sha256 d399e800ddbcfe109cd3843a2682b65ca8ead20330fb7e71f880e0e580d62ba6c)",
+    "first_person_weapon": "absent",
+    "weapon_def": {"id": 78, "ptr": "0x2a392d4", "name": "ak47_mp", "field80": "viewmodel_ak104_idle", "field7b4": "0x1cf6fe0"},
+    "model_cache_0x1c166e8": "all 1200 entries zero, including 78"
+  },
+  "r677_cache_indexing": {
+    "extra_option": "--restore-weapon-cache-indexing (0x58EF76 restored to per-ID table access)",
+    "model_cache_nonzero_entries": 271,
+    "entry_78": [0, 0, 0, 0],
+    "sample_nonzero": [[1, [0, 316436768, 0, 0]], [23, [0, 316435232, 0, 0]], [25, [0, 316433696, 0, 0]]],
+    "hud": "AK-47 with 30 rounds",
+    "first_person_weapon": "absent",
+    "screenshot": "runs/r677-cache-index-game.png (sha256 f545863224cc5e59dfc2dfd250cec83a2386d33fe0b49b840661d0d3320dd329)",
+    "conclusion": "0x1c166e8 is the server-side (game logic) model cache. Restoring its per-ID indexing fills entries for weapons the server logic touches, but never 78, and it changes nothing on screen. It is not the first-person path."
+  },
+  "r678_position_probe": {
+    "method": "stop the game server, then write ps+0x30..0x38 = (386.0, 60.0, 133.81) in the live client",
+    "write_verified": true,
+    "screenshot": "runs/r678-origin386.png (sha256 4327fc1add7a63f56ffa8dc0fdd368aa89492b6b1b9869dda3b8e76aa9e33672)",
+    "result": "picture unchanged, so cgame does not follow cl->ps while the snapshot stream is stopped"
+  },
+  "r679_origin_386": {
+    "snapshot": "runs/r679-weapon78-clip30-origin386.bin (90 bytes, sha256 d949cf51d871e4ef242ffe6a931de93c50cd838d4c502fb20ebbb7bd6a2a8831)",
+    "net_state": 10,
+    "native_origin": [386.0, 60.0, 133.81],
+    "screenshot": "runs/r679-origin386-game.png (sha256 f4b03b9b8dc94b8bca014af23c2b824df774a241665303624312594436f0798c)",
+    "observation": "different part of the map next to water and reeds, 'tactical team deathmatch' banner visible; no 'cannot stand here' hint; camera still very low; no first-person weapon"
+  },
+  "r680_view_height_current": {
+    "snapshot": "runs/r680-weapon78-clip30-eye60.bin (90 bytes, sha256 25c99e3b8ef2483132a0b164c85c56a881ecca6e5f8831054103777453b95c9e)",
+    "change": "ps+0x170 viewHeightCurrent 0.3125 -> 60.0",
+    "screenshot": "runs/r680-eye60-game.png (sha256 f1efcf4b2366b9677b18a02208f17e2377bf5c79e4bb0f0eafef3f95f51b5ea9)",
+    "result": "no visible change; camera remains at ground level"
+  },
+  "r681_origin_z220": {
+    "snapshot": "runs/r681-weapon78-clip30-z220.bin (90 bytes, sha256 e3f408d8069184072985f2d6b4ce9836a2d2a60ae898d63e620172947f019d79)",
+    "change": "origin third component 133.81 -> 220.0",
+    "net_state": 10,
+    "native_origin": [386.0, 60.0, 220.0],
+    "screenshot": "runs/r681-z220-game.png (sha256 e441649d33b56adb2a1a45b3aee22deff747368b3650f51e236bcfa3ccdd9516)",
+    "observation": "camera raised to normal eye level inside a colonnade; still no first-person weapon or arms",
+    "memory_scan": {
+      "marker_0x12345678_hits": 52,
+      "cl_ps_marker": "0x130007f0",
+      "snapshot_ring_start": "0x1300b1f4",
+      "snapshot_stride": "0x3bbc",
+      "weapon_config_structure": "0x199d00 (first dword = weapon def 78, then view floats and pointers)"
+    }
+  },
+  "database": {
+    "baseline": "resources/1649370/local/profile/pre-r640-certenv.sqlite3",
+    "pre_round_backup": "resources/1649370/local/profile/pre-r676.sqlite3",
+    "sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok",
+    "post_round_state": "unchanged; every round ended with the live file still at the baseline digest, so no restore or quarantine copy was needed"
+  },
+  "processes": "each round stopped only the PIDs it started (client, game server, ring bridge, loopback LSG)",
+  "open_items": [
+    "first-person weapon and arms still absent with a valid origin, non-zero ammo and a weapon HUD",
+    "the cgame weapon registration path is not yet identified; 0x199d00 holds weapon def 78 plus view floats",
+    "round 5 of the acceptance list is still not met"
+  ]
+}
