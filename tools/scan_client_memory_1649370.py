@@ -41,6 +41,9 @@ def main() -> int:
     ap.add_argument("--pid", type=int, required=True)
     ap.add_argument("--value", type=lambda text: int(text, 0), default=None)
     ap.add_argument("--ascii", default=None, help="search this ASCII string instead")
+    ap.add_argument("--range", nargs=3, type=lambda text: int(text, 0), default=None,
+                    metavar=("LO", "HI", "STRIDE"),
+                    help="match dwords with LO <= value <= HI and (value-LO) %% STRIDE == 0")
     ap.add_argument("--max-hits", type=int, default=200)
     ap.add_argument("--context", type=int, default=0,
                     help="dump this many bytes around each hit")
@@ -64,8 +67,12 @@ def main() -> int:
     if not handle:
         raise SystemExit(f"OpenProcess failed for pid {args.pid}")
 
-    needle = (struct.pack("<I", args.value & 0xFFFFFFFF) if args.ascii is None
-              else args.ascii.encode("ascii"))
+    if args.ascii is not None:
+        needle = args.ascii.encode("ascii")
+    elif args.value is not None:
+        needle = struct.pack("<I", args.value & 0xFFFFFFFF)
+    else:
+        needle = b""
     hits: list[int] = []
     regions = 0
     scanned = 0
@@ -96,20 +103,29 @@ def main() -> int:
                                          take, ctypes.byref(read_got)):
                     data = buf.raw[:read_got.value]
                     scanned += len(data)
-                    start = 0
-                    while len(hits) < args.max_hits:
-                        index = data.find(needle, start)
-                        if index < 0:
-                            break
-                        if index % 4 == 0 or args.ascii is not None:
-                            hits.append((base + offset + index) & 0xFFFFFFFF)
-                        start = index + 1
+                    if args.range:
+                        low, high, stride = args.range
+                        body = data[:len(data) // 4 * 4]
+                        for slot, (value,) in enumerate(struct.iter_unpack("<I", body)):
+                            if len(hits) >= args.max_hits:
+                                break
+                            if low <= value <= high and (value - low) % stride == 0:
+                                hits.append((base + offset + slot * 4) & 0xFFFFFFFF)
+                    else:
+                        start = 0
+                        while len(hits) < args.max_hits:
+                            index = data.find(needle, start)
+                            if index < 0:
+                                break
+                            if index % 4 == 0 or args.ascii is not None:
+                                hits.append((base + offset + index) & 0xFFFFFFFF)
+                            start = index + 1
                 offset += take
         address = base + size
 
     report = {
         "pid": args.pid,
-        "needle": args.ascii if args.ascii is not None else hex(args.value),
+        "needle": args.ascii if args.ascii is not None else (hex(args.value) if args.value is not None else list(args.range)),
         "regions": regions,
         "scanned_bytes": scanned,
         "hits": [hex(hit) for hit in hits],
