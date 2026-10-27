@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r701",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "attempt": "replay real demo snapshots through --snapshot-dir",
+  "frames": {
+    "baseline": "runs/r701-demo-frames/baseline-outer17-245.bin (245 B, spectator state, accepted in r698)",
+    "deltas_exported": 120,
+    "table": "runs/r701-demo-frames/frame-NNNN-outer<seq>.bin, renamed to fixed width so sorted() sends them in packet order",
+    "outer_sequences": "113, 289, 466, 541, 542 ... 3471, 3481, 3546 - a sparse subset of the 725 candidates the parser recognises"
+  },
+  "result": {
+    "outcome": "client process exited during the replay",
+    "evidence": ["read_client_ps_1649370.py: 'cl pointer is null'", "capture_window_bg.py: window class CODO not found"],
+    "net_state": null
+  },
+  "diagnosis": "the recognised snapshot candidates are a sparse subset of the demo's packet stream, so their delta chain is not contiguous (outer sequence jumps of hundreds of packets). Feeding them back to back gives the client deltas whose baseline never arrived, and it terminates. A faithful replay needs every packet in order, including the configstring/serverCommand records between snapshots.",
+  "conclusion": "demo replay is not a shortcut; the useful parts of the demo remain the measured match-start configstrings and the decodable baseline playerState",
+  "database": {
+    "final_state": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok"
+  }
+}
