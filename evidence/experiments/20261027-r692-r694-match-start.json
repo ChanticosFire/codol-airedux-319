@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r692-r694",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "user_insight": "the match never actually starts because the server never sends the start signal; the grey desaturated frame is what a real match shows only for an instant after entry",
+  "r692_demo_play_attempt": {
+    "command": "cl_demo_play officialdemo (injected through the launcher cbuf)",
+    "result": "client stopped with stop_reason=fatal_dialog; no CODO window to capture",
+    "conclusion": "demo playback of the bundled officialdemo is not usable as a picture reference in this runtime, so the demo was used as a data source instead"
+  },
+  "r693_demo_command_stream": {
+    "tools": ["tools/dump_demo_cmds.py (new)"],
+    "demo_small": {
+      "file": "0C-2021-8-26[19-24-23]war.demo",
+      "bytes": 247347,
+      "commands": 17,
+      "kinds": {"d": 15, "s": 2},
+      "notable": ["d 12246 1267", "d 2557 \"mp_crash_tropical\" 1000", "d 435 1", "d 15 944850",
+                  "d 435 0", "d 15 0", "d 23 \\winner\\-2", "d 479 1", "d 464 0",
+                  "s 0201 \"1\"", "s 2972 \"1\""]
+    },
+    "demo_big": {
+      "file": "0C-2021-8-26[19-26-24]war.demo",
+      "bytes": 7286117,
+      "commands": 2887,
+      "kinds": {"d": 540, "s": 14, "r": 62, "v": 20, "w": 526, "p": 1725},
+      "configstring_indices": 200,
+      "configstring_indices_head": [13, 15, 23, 395, 435, 464, 479, 756, 758, 760, 762, 764,
+                                     766, 768, 770, 772, 774, 776, 778, 780, 782, 784, 786,
+                                     788, 790, 792, 793, 794, 795, 796, 797, 864, 865, 866,
+                                     867, 868, 869, 870, 871, 872, 873, 874, 875, 876, 877,
+                                     878, 879, 880, 881, 882, 2454, 2455, 2456, 2457, 2458,
+                                     2459, 2460, 2461, 2462, 2463],
+      "match_start_sequence": [
+        {"offset": 73744, "command": "d 435 1", "reading": "match start flag"},
+        {"offset": 74024, "command": "d 15 1825900", "reading": "match end time in ms (about 30:26)"}
+      ],
+      "match_end_sequence": [
+        {"offset": 7131199, "command": "d 15 0"},
+        {"offset": 7131658, "command": "d 23 \\winner\\-2"},
+        {"offset": 7131806, "command": "d 479 1"},
+        {"offset": 7131819, "command": "d 464 0"},
+        {"offset": 7185468, "command": "d 13 \"0 0.000106654 124 123 106 0.5 0 0 1 70 75\""},
+        {"offset": 7185591, "command": "d 395 1.5"}
+      ],
+      "server_commands": ["s 0201 \"1\"", "s 0194 \"OBJECTIVES_WAR_HINT\"", "s 0195 \"UK_M2_\"",
+                          "s 0195 \"UK_M1_\"", "s 2972 \"1\""],
+      "reading": "a real server starts the match by setting configstring 435 to 1 and configstring 15 to the match end time in milliseconds"
+    }
+  },
+  "r693_engine_match_state": {
+    "address": "0x84aba50",
+    "value_in_match": 5,
+    "next_dword_0x84aba54": 4,
+    "dispatch": "0x63e115 mov eax,[0x84aba50]; cmp eax,5; jmp [eax*4+0x63e178]",
+    "jump_table": ["0x63e173 (return)", "0x63e126", "0x63e126", "0x63e126", "0x63e126", "0x63e126"],
+    "reading": "states 1..5 share one handler, so state 5 is an active (not idle) state; the engine does not think it is sitting in the lobby"
+  },
+  "r694_match_start_configstrings": {
+    "tool": "tools/add_configstrings_1649370.py (new)",
+    "entries": [[435, "1"], [15, "1825900"]],
+    "gamestate": {
+      "file": "runs/r694-gamestate-start.bin",
+      "bytes": 6432,
+      "rows": 294,
+      "sha256": "b05c16c4440ed9d10e4f55b05ca778e3c302b9328b0bd7c99f36e30a2b4bcac1"
+    },
+    "client": {"net_state": 10, "weapon": 78, "clip": 30, "origin": [386.0, 60.0, 220.0]},
+    "observed_change": "a match countdown appeared in the lower-left HUD: 27:18 in the first capture and 23:48 in a later one, so the match clock is running",
+    "unchanged": "picture still desaturated and there is still no first-person weapon or arms",
+    "screenshots": ["runs/r694-start-game.png (sha256 162c937313c73988ba387110123498739784bac525d09256543d6bb11d98a58d)",
+                    "runs/r694-start-game2.png (sha256 bf7b07873fbce74f9e1d708761fadfbb115f39eb3024a32dd551bcf6ac4a954c)"],
+    "conclusion": "configstrings 435 and 15 are the server-side match-start signal this project never sent. Supplying them starts the match clock, which is a real advance in the server-to-client match state machine, but it does not by itself restore the first-person weapon"
+  },
+  "database": {
+    "final_state": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok"
+  },
+  "next_focus": [
+    "find what a real match does right after d 435 1 that our stream still lacks, especially the local player spawn",
+    "compare the demo's per-snapshot playerState with ours (weaponState, eFlags, stats) rather than guessing"
+  ]
+}
