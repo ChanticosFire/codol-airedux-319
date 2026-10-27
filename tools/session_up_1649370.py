@@ -135,6 +135,8 @@ def main() -> int:
                          "three seconds apart")
     ap.add_argument("--rebuild-follow", action="store_true",
                     help="start the client first, then let the server encode snapshots from its held keys")
+    ap.add_argument("--restore-weapon-handler", action="store_true",
+                    help="after r336 compatibility patches, restore the original 0x59B560 weapon handler for a controlled probe")
     args = ap.parse_args()
 
     logs = ROOT / "runs"
@@ -251,6 +253,16 @@ def main() -> int:
     if "ok=0" in result.stdout:
         raise SystemExit(f"r336 patch reported a failure: {result.stdout[:400]}")
     step("r336 patches applied")
+    if args.restore_weapon_handler:
+        # r336 replaces this whole registration/validation function with RET.
+        # Restore only these ten bytes before the bridge can connect. The
+        # remaining transport compatibility patches stay in place.
+        result = run(["tools/hook_any_1649370.py", "--pid", str(pid),
+                      "--target", "0x59B560", "--restore", "--original-hex",
+                      "558bec568db748170000"])
+        if '"restored": true' not in result.stdout or '"bytes_after": "558bec568db748170000"' not in result.stdout:
+            raise SystemExit(f"weapon handler restore failed: {result.stdout[:400]} {result.stderr[:200]}")
+        step("original weapon handler restored")
 
     # --------------------------------------------------------------- bridge
     owner = _udp_owner("", 29023)

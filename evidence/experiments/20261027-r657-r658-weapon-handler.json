@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-27",
+  "runtime": "reused r107flow/runtime",
+  "finding": "runs/_patch_r336.py replaces 0x59B560 with ret; tools/session_up_1649370.py applies it on each session",
+  "controlled_change": "--restore-weapon-handler restores original 558bec568db748170000 before bridge connect; other r336 compatibility patches remain",
+  "r657": {
+    "gamestate": "baseline plus simple [5961,1]",
+    "highest_observed_net_state": "not sampled before dialog",
+    "dialog": "181 ak47ssaltfire_mp 106 105",
+    "result": "returned to lobby, no match"
+  },
+  "r658": {
+    "gamestate": "unmodified runs/gamestate-player1735.bin",
+    "highest_observed_net_state": 8,
+    "dialog": "181 ak47ssaltfire_mp 106 105",
+    "result": "returned to lobby, no match"
+  },
+  "interpretation": "The original weapon registration path hits an ID ordering mismatch; simple [5961,1] did not create this mismatch. The old ret patch suppresses this path and confounds earlier registration conclusions.",
+  "unverified": "Which preceding name first failed to occupy its expected slot; whether the remaining 0x42F32C compatibility patch contributes",
+  "profile": {
+    "quarantine": "resources/1649370/local/profile/ (ignored, private)",
+    "restored_baseline_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "sqlite_integrity": "ok"
+  },
+  "acceptance": "first-person weapon model and shooting remain unverified"
+}
