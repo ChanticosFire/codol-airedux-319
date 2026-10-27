@@ -80,6 +80,9 @@ def main() -> int:
     ap.add_argument("--name", required=True)
     ap.add_argument("--attempts", type=int, default=3)
     ap.add_argument("--settle", type=float, default=3.0)
+    ap.add_argument("--after-success", default=None,
+                    help="command to run right after a successful attempt; "
+                         "{name} and {pid} are substituted")
     ap.add_argument("rest", nargs=argparse.REMAINDER)
     args = ap.parse_args()
     extra = [item for item in args.rest if item != "--"]
@@ -93,6 +96,19 @@ def main() -> int:
         attempts.append({"attempt": attempt, "name": name, "returncode": result.returncode})
         if result.returncode == 0:
             print(f"[retry] success on attempt {attempt} (name={name})", flush=True)
+            if args.after_success:
+                import json
+                session_file = ROOT / "runs" / f"{name}-session.json"
+                pid = 0
+                if session_file.is_file():
+                    try:
+                        pid = int(json.loads(session_file.read_text(encoding="utf-8"))
+                                  .get("client_pid") or 0)
+                    except (ValueError, KeyError):
+                        pid = 0
+                hook = args.after_success.replace("{name}", name).replace("{pid}", str(pid))
+                print(f"[retry] after-success (pid={pid}): {hook}", flush=True)
+                subprocess.run(hook, cwd=ROOT, shell=True)
             print(f"[retry] summary {attempts}", flush=True)
             return 0
         print(f"[retry] attempt {attempt} failed, cleaning up", flush=True)
