@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-27",
+  "runtime": "existing r107flow/runtime",
+  "gamestate": {
+    "change": "35 composite weapon configstrings compacted as in r670, plus configstring 12246 weapon count changed from 1259 to 1171 (one past the last slot).",
+    "sha256": "2f6c517931e43216740e598e642e682e55674e0d15dd3f14a9ab196a9a7acedb",
+    "verification": "6420-byte byte-exact codec round-trip"
+  },
+  "r672": "Changing the count alone, with r336's table-indexing patch still active, did not remove the '174 ak47_mp' lobby error. A stable net_state=10 was not established.",
+  "r673": {
+    "change": "Restored the original per-ID weapon table access at 0x58F3B9 in the current process, alongside the original lookup branch and weapon handler; retained the explicit exact-name lookup probe.",
+    "result": "Stable real net_state=10 on mp_crash_tropical. Two read-only playerState samples showed weapon=78, primary=78, altWeapon=78. Screenshot showed the AK-47 name and icon in the HUD and an out-of-ammo message. The first-person weapon model and arms were still absent.",
+    "private_screenshot": "runs/r673-init-index-screen.png",
+    "cache_caveat": "A later read of dword [0x1C166E8 + 78*16 + 4] was zero even though no 174 was shown. The current evidence does not prove the cache was populated; the restored instruction may have changed which path executed."
+  },
+  "r674": {
+    "change": "Set snapshot playerState viewmodelIndex=78 instead of the baseline 1023; all other r673 inputs held constant.",
+    "snapshot_sha256": "1ad59e4a9727520f752aaaefe1bc0902ca7ff30dfd0fa7406a8a25b2220891a1",
+    "result": "Stable net_state=10, playerState weapon/primary/altWeapon/viewmodelIndex all 78. Screenshot still showed AK-47 HUD and out-of-ammo message, with no first-person weapon model or arms.",
+    "private_screenshot": "runs/r674-viewmodel78-screen.png"
+  },
+  "cleanup": "The process-local exact-name hook was restored before stopping each exact client/server/bridge PID. Complete post-test profile backups were quarantined privately for r672, r673 and r674; active profile restored to SHA-256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70 with integrity_check=ok.",
+  "acceptance": "First-person weapon and shooting remain unverified. HUD weapon selection alone does not satisfy criterion 5."
+}

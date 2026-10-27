@@ -22,6 +22,8 @@ def main() -> int:
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--base-count", type=int, default=1135,
                     help="observed number of base weapon definitions before composites")
+    ap.add_argument("--update-count", action="store_true",
+                    help="also change configstring 12246 to the new one-past-last weapon ID")
     args = ap.parse_args()
     if args.input.resolve() == args.output.resolve():
         ap.error("input and output must be different files")
@@ -45,7 +47,16 @@ def main() -> int:
         raise SystemExit("compacted composites exceed weapon range")
 
     mapping = dict(zip(old_indices, new_indices))
-    gs.texts = sorted(((mapping.get(index, index), value) for index, value in gs.texts),
+    if args.update_count:
+        count_values = [value for index, value in gs.texts if index == 12246]
+        expected_old_count = old_indices[-1] - WEAPON_START + 1
+        if count_values != [str(expected_old_count).encode("ascii")]:
+            raise SystemExit("source weapon count does not match old composite range")
+        mapping[12246] = 12246
+    new_count = new_indices[-1] - WEAPON_START + 1
+    gs.texts = sorted(((mapping.get(index, index),
+                        str(new_count).encode("ascii") if args.update_count and index == 12246 else value)
+                       for index, value in gs.texts),
                       key=lambda item: item[0])
     output = encode(gs)
     if decode(output).texts != gs.texts:
@@ -56,6 +67,7 @@ def main() -> int:
                       "output_sha256": hashlib.sha256(output).hexdigest(),
                       "count": len(composites), "old_range": [old_indices[0], old_indices[-1]],
                       "new_range": [new_indices[0], new_indices[-1]],
+                      "new_weapon_count": new_count if args.update_count else None,
                       "output": str(args.output)}))
     return 0
 

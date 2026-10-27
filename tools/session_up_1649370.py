@@ -151,6 +151,8 @@ def main() -> int:
                     help="with --restore-weapon-handler, bypass only its ID equality error branch for a controlled probe")
     ap.add_argument("--restore-weapon-lookup-branch", action="store_true",
                     help="restore the original conditional 0x42F32C branch after r336 for an isolated A/B probe")
+    ap.add_argument("--restore-weapon-init-indexing", action="store_true",
+                    help="restore original per-ID table access at 0x58F3B9 after r336")
     args = ap.parse_args()
     if args.trace_weapon_registration and not args.restore_weapon_handler:
         ap.error("--trace-weapon-registration requires --restore-weapon-handler")
@@ -284,6 +286,12 @@ def main() -> int:
         if result.returncode or '"restored": true' not in result.stdout:
             raise SystemExit(f"weapon lookup branch restore failed: {result.stdout[:400]} {result.stderr[:200]}")
         step("original weapon lookup branch restored")
+    if args.restore_weapon_init_indexing:
+        result = run(["tools/restore_weapon_table_indexing_1649370.py", "--pid", str(pid),
+                      "--site", "init"])
+        if result.returncode or '"restored": true' not in result.stdout:
+            raise SystemExit(f"weapon init indexing restore failed: {result.stdout[:400]} {result.stderr[:200]}")
+        step("original weapon init indexing restored")
     if args.restore_weapon_handler:
         # r336 replaces this whole registration/validation function with RET.
         # Restore only these ten bytes before the bridge can connect. The

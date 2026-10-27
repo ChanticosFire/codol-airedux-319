@@ -34778,3 +34778,5 @@ r435/r436 的实验性调试未产生可用快照结果，客户端已退出；�
 
 - r670 将 demo gamestate 的 35 条 `**` 复合武器 configstring 从槽位 1224–1258 连续移到当前普通表末尾 1136–1170；只移动索引，生成器 `tools/compact_weapon_configstrings_1649370.py` 可逐字节重建。显式进程内同名查找探针下，武器注册 2305 条 `slot=returned`、真实连接 `net=10` 并显示地图，但 `ps.weapon=0`，截图仍无枪。r671 用可重建快照把已注册 `ak47_mp` ID 78 写入当前武器、主/副武器和 inventory slot0；短暂 `net=10` 后弹 `174 ak47_mp` 回大厅。注册通过与可装备仍是两个阶段，枪模/射击未达成。两轮仅复用 `r107flow/runtime`，私有试后档案隔离、活库整库恢复 SHA/integrity；详见 `1649370-STATUS.md` §1265 和 `evidence/experiments/20261027-r670-r671-composite-weapon.json`。
 - 静态定位 r671 的 174 调用点：原始 EXE `0x58FCD4` 见 `dword [0x1C166E8 + weapon_id*16 + 4]==0` 后，在 `0x58FCEB` 调用错误。已注册名称与客户端本地缓存初始化是不同条件；填充路径仍待追。
+
+- r672–r674：复合武器重排后同步把 `CS_WEAPON_COUNT` 1259→1171；仅改计数仍报 `174 ak47_mp`。再按原始 EXE 恢复 r336 曾覆盖的 `0x58F3B9` 按武器 ID 取表，r673 稳定真实 `net=10`、`ps.weapon/primary/altWeapon=78`，实机出现 AK-47 名称/图标 HUD，174 消失；然而“弹药用尽”且无第一人称枪身/手臂。r674 把 `viewmodelIndex` 也设 78 后仍无枪模。第 5 项移动/射击及枪模仍未验收；不要把 HUD 进展宣称为可射击。原 hook 已恢复，试后档案隔离并整库恢复基线 SHA/integrity，只复用 `r107flow/runtime`。详见 §1266 与 `evidence/experiments/20261027-r672-r674-weapon-hud.json`。
