@@ -139,11 +139,29 @@ def main() -> int:
                     help="after r336 compatibility patches, restore the original 0x59B560 weapon handler for a controlled probe")
     ap.add_argument("--trace-weapon-registration", action="store_true",
                     help="with --restore-weapon-handler, record each weapon slot and resolved ID before validation")
+    ap.add_argument("--trace-weapon-lookup", action="store_true",
+                    help="with --restore-weapon-handler, also trace 0x42F2F0 lookup returns")
+    ap.add_argument("--trace-weapon-compare105", action="store_true",
+                    help="with --restore-weapon-handler, trace candidate comparisons at table count 105")
+    ap.add_argument("--trace-weapon-scan", action="store_true",
+                    help="with --restore-weapon-handler, trace lookup scan entry and loop")
+    ap.add_argument("--weapon-lookup-fallback", action="store_true",
+                    help="with --restore-weapon-handler, try exact-name lookup before the original function")
     ap.add_argument("--tolerate-weapon-id-mismatch", action="store_true",
                     help="with --restore-weapon-handler, bypass only its ID equality error branch for a controlled probe")
+    ap.add_argument("--restore-weapon-lookup-branch", action="store_true",
+                    help="restore the original conditional 0x42F32C branch after r336 for an isolated A/B probe")
     args = ap.parse_args()
     if args.trace_weapon_registration and not args.restore_weapon_handler:
         ap.error("--trace-weapon-registration requires --restore-weapon-handler")
+    if args.trace_weapon_lookup and not args.restore_weapon_handler:
+        ap.error("--trace-weapon-lookup requires --restore-weapon-handler")
+    if args.trace_weapon_compare105 and not args.restore_weapon_handler:
+        ap.error("--trace-weapon-compare105 requires --restore-weapon-handler")
+    if args.trace_weapon_scan and not args.restore_weapon_handler:
+        ap.error("--trace-weapon-scan requires --restore-weapon-handler")
+    if args.weapon_lookup_fallback and not args.restore_weapon_handler:
+        ap.error("--weapon-lookup-fallback requires --restore-weapon-handler")
     if args.tolerate_weapon_id_mismatch and not args.restore_weapon_handler:
         ap.error("--tolerate-weapon-id-mismatch requires --restore-weapon-handler")
 
@@ -261,6 +279,11 @@ def main() -> int:
     if "ok=0" in result.stdout:
         raise SystemExit(f"r336 patch reported a failure: {result.stdout[:400]}")
     step("r336 patches applied")
+    if args.restore_weapon_lookup_branch:
+        result = run(["tools/restore_weapon_lookup_branch_1649370.py", "--pid", str(pid)])
+        if result.returncode or '"restored": true' not in result.stdout:
+            raise SystemExit(f"weapon lookup branch restore failed: {result.stdout[:400]} {result.stderr[:200]}")
+        step("original weapon lookup branch restored")
     if args.restore_weapon_handler:
         # r336 replaces this whole registration/validation function with RET.
         # Restore only these ten bytes before the bridge can connect. The
@@ -271,6 +294,12 @@ def main() -> int:
         if '"restored": true' not in result.stdout or '"bytes_after": "558bec568db748170000"' not in result.stdout:
             raise SystemExit(f"weapon handler restore failed: {result.stdout[:400]} {result.stderr[:200]}")
         step("original weapon handler restored")
+        if args.weapon_lookup_fallback:
+            result = run(["tools/weapon_lookup_fallback_1649370.py", "--pid", str(pid),
+                          "--meta", f"runs/{args.name}-weapon-lookup-fallback-meta.json", "--install"])
+            if result.returncode or '"installed": true' not in result.stdout:
+                raise SystemExit(f"weapon lookup fallback failed: {result.stdout[:400]} {result.stderr[:200]}")
+            step("weapon lookup fallback installed")
         if args.tolerate_weapon_id_mismatch:
             result = run(["tools/patch_weapon_assert_1649370.py", "--pid", str(pid)])
             if result.returncode or '"applied": true' not in result.stdout:
@@ -282,6 +311,26 @@ def main() -> int:
             if result.returncode:
                 raise SystemExit(f"weapon trace install failed: {result.stdout[:400]} {result.stderr[:200]}")
             step("weapon registration trace installed")
+        if args.trace_weapon_lookup:
+            result = run(["tools/trace_weapon_registration_1649370.py", "--pid", str(pid),
+                          "--site", "post_lookup", "--meta",
+                          f"runs/{args.name}-weapon-lookup-trace-meta.json", "--install"])
+            if result.returncode:
+                raise SystemExit(f"weapon lookup trace install failed: {result.stdout[:400]} {result.stderr[:200]}")
+            step("weapon lookup trace installed")
+        if args.trace_weapon_compare105:
+            result = run(["tools/trace_weapon_compare105_1649370.py", "--pid", str(pid),
+                          "--meta", f"runs/{args.name}-weapon-compare105-meta.json", "--install"])
+            if result.returncode:
+                raise SystemExit(f"weapon comparison trace install failed: {result.stdout[:400]} {result.stderr[:200]}")
+            step("weapon comparison trace installed")
+        if args.trace_weapon_scan:
+            for site in ("scan_start", "scan_loop"):
+                result = run(["tools/trace_weapon_registration_1649370.py", "--pid", str(pid),
+                              "--site", site, "--meta", f"runs/{args.name}-{site}-meta.json", "--install"])
+                if result.returncode:
+                    raise SystemExit(f"weapon {site} trace install failed: {result.stdout[:400]} {result.stderr[:200]}")
+            step("weapon lookup scan trace installed")
 
     # --------------------------------------------------------------- bridge
     owner = _udp_owner("", 29023)

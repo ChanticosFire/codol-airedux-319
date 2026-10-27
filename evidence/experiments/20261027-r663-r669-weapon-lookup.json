@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-27",
+  "runtime": "existing r107flow/runtime",
+  "baseline_profile_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+  "scope": "process-local probes; no persistent client binary patch",
+  "r663": "Restoring the original 0x42F32C lookup branch and 0x59B560 weapon handler still caused error 181 at slot 105, returned ID 106.",
+  "r664_r665": "The outer lookup for ak47ssaltfire_mp returned zero even though table entry 105 had the exact same name; registration appended a duplicate at ID 106.",
+  "r666_r667": "The filtered comparator probe recorded zero rows; this result does not establish whether comparisons ran.",
+  "r668": "Scan-entry and loop probes were reached. Their row counts alone do not identify why the original lookup missed the existing name.",
+  "r669": {
+    "probe": "Process-local exact-name fallback at 0x42F2F0, with original 0x42F32C branch and 0x59B560 handler restored.",
+    "fallback_hits": 3273,
+    "slot_105": "Both passes returned ID 105 for ak47ssaltfire_mp; the earlier duplicate-registration error was removed.",
+    "first_mismatch": "After 1135 ordinary names passed in both passes, the text configstring at 7184 ('** 646 0 0 8738 9321') was processed as slot 1224 but returned ID 1136; error 181 followed.",
+    "client_result": "net_state=0; screenshot showed error 181 in the lobby; no first-person gun or shooting proof.",
+    "private_records": ["runs/r669-lookup-fallback-weapon-records.json", "runs/r669-lookup-fallback-screen.png"],
+    "cleanup": "Both process hooks restored before stopping the exact client/server/bridge PIDs. Post-test SQLite backup quarantined privately; active profile restored to baseline SHA-256 and integrity_check=ok."
+  },
+  "conclusion": "The original lookup miss at slot 105 is a real blocker, but fixing it exposes a separate composite-weapon index gap. The root cause of that gap and first-person weapon visibility remain unproven."
+}
