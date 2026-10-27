@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-28",
+  "hypotheses": [
+    "If cg_thirdPerson caused missing first-person arms and gun, setting it to zero should reveal them.",
+    "A clientState number 0 record built from the community clients164 list format may enable the local viewmodel.",
+    "The historical minimal entity (0, type 1, field 2 = 200.0) should leave the current baseline playable."
+  ],
+  "asset_search": {
+    "status_and_project_status": "Earlier r536 minimal entity was present; r703 added two entities and more position fields before crashing. Historical ui_state address 0x84ABA50 was recorded.",
+    "evidence_experiments": "20261027-r703-entity-frame.json and audit A1/A2 examined before a new probe.",
+    "community_reference": "CODOL-Member-Preview-20261026/native-engine/source/src/codol/snapshot/codol_clients164.c and codol_client_fields164.inc supplied the list format and 87 descriptors.",
+    "tools": "Reused cbuf_1649370.py, session_up_1649370.py, build_weapon_probe_snapshot_1649370.py, read_client_ps_1649370.py, read_client_memory_1649370.py and capture_window_bg.py."
+  },
+  "identity_and_baseline": {
+    "runtime": "existing r107flow/runtime",
+    "runtime_exe_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+    "profile_sha256_before_and_after": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "profile_integrity_after": "ok",
+    "profile_row_counts_after": {"accounts": 1, "profiles": 2, "display_names": 1, "account_initialization": 1},
+    "private_backup": "resources/1649370/local/profile/pre-r731-thirdperson.sqlite3"
+  },
+  "r731": {
+    "input": "runs/r696-weapon78-health100.bin",
+    "snapshot_sha256": "3fea1175f8b668ca468d9a2932fa5aaae503bb6862a8af40d839a2863602e762",
+    "client_pid": 26536,
+    "cbuf": "launch injected cg_thirdPerson 0; live 1 then 0 were also injected and the buffer drained",
+    "server_evidence": "runs/r731-thirdperson-gs.jsonl snapshot_source repeatedly named the r696 file",
+    "native_reads": {"net_state": 10, "ps_weapon": 78, "ps_clientNum": 0, "ui_state_address": "0x84ABA50", "ui_state": 5},
+    "screenshots": ["runs/r731-thirdperson-screen.png", "runs/r731-thirdperson-1.png", "runs/r731-thirdperson-0b.png"],
+    "observation": "Map and AK-47 HUD with 30 rounds remained visible; no first-person arms or gun in all three screenshots.",
+    "limit": "Cbuf accepted the text; the internal cg_thirdPerson dvar value was not read, so the cvar hypothesis is not fully excluded."
+  },
+  "client_section_change": {
+    "implementation": "Optional new-client list records following community codol_clients164.c, with 87 copied descriptors; default empty list remains byte-exact.",
+    "default_regression": "Before and after code change, the 92-byte r696-equivalent frame has identical SHA-256 3fea1175f8b668ca468d9a2932fa5aaae503bb6862a8af40d839a2863602e762.",
+    "client0_file": "runs/r732-client0.bin",
+    "client0_bytes": 93,
+    "client0_sha256": "8f1bad80a335b769a63fb6cf2a5eda88d44fe8ea799726eff852d6b966e1bc2c",
+    "difference": "Only an empty clientState number 0 record is added to the existing weapon, health and minimal-entity frame."
+  },
+  "r732": {
+    "client_pid": 4324,
+    "server_evidence": "runs/r732-client0-gs.jsonl: snapshot_source named runs\\r732-client0.bin 149 times at sampling",
+    "native_reads": {"net_state": 10, "ps_weapon": 78, "ps_clientNum": 0, "ui_state": 5},
+    "screenshot": "runs/r732-client0-screen.png",
+    "observation": "Map and AK-47/30 HUD visible; no first-person gun or arms."
+  },
+  "r733": {
+    "client_pid": 4680,
+    "server_evidence": "runs/r733-client0-repeat-gs.jsonl: snapshot_source named runs\\r732-client0.bin 141 times at sampling",
+    "native_reads": {"net_state": 10, "ps_weapon": 78, "ps_clientNum": 0, "ui_state": 5},
+    "screenshot": "runs/r733-client0-repeat-screen.png",
+    "observation": "Second independent connection reproduced the same visible result."
+  },
+  "r734_clean_ab_control": {
+    "difference_from_r732_r733": "Same runtime, gamestate, weapon/health/clip/origin snapshot semantics and process-local options, but client records omitted; no cg_thirdPerson command.",
+    "snapshot": "runs/r732-postchange-default.bin",
+    "snapshot_sha256": "3fea1175f8b668ca468d9a2932fa5aaae503bb6862a8af40d839a2863602e762",
+    "client_pid": 26376,
+    "server_evidence": "runs/r734-default-ab-gs.jsonl: snapshot_source named runs\\r732-postchange-default.bin 145 times at sampling",
+    "native_reads": {"net_state": 10, "ps_weapon": 78, "ps_clientNum": 0, "ui_state": 5},
+    "screenshot": "runs/r734-default-ab-screen.png",
+    "observation": "Map and AK-47/30 HUD visible; no first-person gun or arms.",
+    "scope": "One clean control against two independent client0 runs; visually no difference, but clientState internal table was not sampled."
+  },
+  "corrections": [
+    "Withdraw the claim that the historical minimal entity was never retried: build_weapon_probe_snapshot_1649370.py already puts (0, type 1, field 2 = 200.0) in r696; r731-r733 repeatedly sent that frame and reached net_state 10. Internal entity count was not measured.",
+    "The current map/HUD screenshot does not prove ui_state != 5: direct reads were 5 in r731-r734.",
+    "An empty clientState record did not visibly restore the gun in two runs. Its internal acceptance and the effect of a populated appearance record remain unverified."
+  ],
+  "ring_bridge_observation": "No ring_b_full status was seen in r731-r733 bridge logs; r732 had 147 write_failed entries while client state was 0. This is not an A/B regression test of the 0.6 s versus 30 s wait.",
+  "cleanup": "Exact experiment client, server, bridge and LSG PIDs were stopped across r731-r734; baseline profile SHA and SQLite integrity remained unchanged. Private screenshots/logs stay under ignored runs/."
+}

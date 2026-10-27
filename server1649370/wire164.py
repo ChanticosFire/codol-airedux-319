@@ -3,8 +3,9 @@
 The layout and every codec here follow the protocol facts recorded in
 `docs/1649370-COMMUNITY-WIRE-SPEC.md`, which were read out of the build's own
 reader (0x6701D0 / 0x671170 / 0x671D80) by the community member preview
-package.  Nothing is copied from their C sources: this module only reproduces
-the wire behaviour.
+package.  The clientState descriptor values are transcribed into
+`client_fields164.py`; the Python writers reproduce the documented wire
+behaviour.
 
 Two things make this writer different from `server1649370/ps_codec.py`:
 
@@ -31,6 +32,7 @@ import math
 import struct
 
 from .entity_fields164 import ENTITY_FIELDS164, ENTITY_FIELDS_PER_TYPE164, ENTITY_SENTINEL
+from .client_fields164 import CLIENT_FIELDS164
 from .player_fields164 import PLAYER_FIELDS164
 
 PLAYER_FIELD_COUNT = len(PLAYER_FIELDS164)
@@ -491,6 +493,44 @@ def write_entities(m: MsgWriter, entities, ctx: DeltaContext) -> None:
     write_index_code(m, ENTITY_SENTINEL, last_number)
 
 
+def write_clients(m: MsgWriter, clients, ctx: DeltaContext) -> None:
+    """Write new clientState records from the community 1649370 list format.
+
+    Each item is (client_number, {descriptor_index: word}). Unlisted fields
+    inherit the zero new-client baseline. This is the no-ack baseline form;
+    delta removal/update needs a held-client list and is intentionally absent.
+    """
+    last_number = -1
+    for number, fields in clients:
+        if not last_number < number < 19:
+            raise ValueError("client numbers must be unique, ordered and below 19")
+        targets = [0] * len(CLIENT_FIELDS164)
+        for index, word in fields.items():
+            if not 0 <= index < len(CLIENT_FIELDS164):
+                raise ValueError(f"client field index {index} outside descriptor table")
+            targets[index] = word & 0xFFFFFFFF
+        m.write_bits(1, 1)  # record present
+        consecutive = number == last_number + 1
+        m.write_bits(int(consecutive), 1)
+        if not consecutive:
+            m.write_bits(number, 5)
+        m.write_bits(0, 1)  # not a removal
+        changed = [index for index, value in enumerate(targets) if value]
+        m.write_bits(int(bool(changed)), 1)
+        if changed:
+            m.write_bits(changed[-1], 7)
+            previous = -1
+            for index in changed:
+                for _ in range(index - previous - 1):
+                    m.write_bits(0, 1)
+                m.write_bits(1, 1)
+                write_delta_value(m, CLIENT_FIELDS164[index][1], 0,
+                                  targets[index], ctx)
+                previous = index
+        last_number = number
+    m.write_bits(0, 1)  # end of client list
+
+
 def write_empty_tail_sections(m: MsgWriter) -> None:
     """anim commands, actors, clients and glass: one zero bit each."""
     for _ in range(4):
@@ -501,7 +541,8 @@ def build_snapshot(values: dict[int, int], *, server_time: int = 72192, delta: i
                    flags: int = 0, has_base: int = 0,
                    position_base=(0, 0, 0), tail_zero: bool = True,
                    tail_weapon: int = 0, tail_clip_count: int = 0,
-                   tail_reserve_count: int = 0, tail_health: int = 0, entities=()) -> bytes:
+                   tail_reserve_count: int = 0, tail_health: int = 0,
+                   entities=(), clients=()) -> bytes:
     """Assemble one complete snapshot body (no leading ack bytes)."""
     ctx = DeltaContext(server_time=server_time, position_base=position_base)
     m = MsgWriter()
@@ -520,7 +561,7 @@ def build_snapshot(values: dict[int, int], *, server_time: int = 72192, delta: i
         write_entities(m, entities, ctx)
     else:
         write_entities_empty(m)
-    m.write_bits(0, 1)                  # clients
+    write_clients(m, clients, ctx)
     m.write_bits(0, 1)                  # glass
     m.write_byte(5)                     # svc_EOF
     if m.failed:
@@ -576,6 +617,13 @@ def _self_test() -> int:
     m = MsgWriter()
     write_index_code(m, ENTITY_SENTINEL, -1)
     check("sentinel bits", m.bit, 1 + 1 + 11)
+
+    # Community client-list baseline: present, consecutive client 0,
+    # not removed, no changed descriptors, then end-of-list.
+    m = MsgWriter()
+    write_clients(m, [(0, {})], DeltaContext())
+    check("client zero bits", m.bit, 5)
+    check("client zero bytes", m.to_bytes(), b"\x03")
 
     # angle codec: 90 degrees -> 16384 -> 0x4000 little endian
     m = MsgWriter()

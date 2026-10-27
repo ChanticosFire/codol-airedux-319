@@ -34,6 +34,10 @@ def main() -> int:
                     help="tail stats[0] (STAT_HEALTH); 0 may read as dead")
     ap.add_argument("--field", action="append", default=[],
                     help="extra playerState field as offset=value, repeatable")
+    ap.add_argument("--client-number", type=int, default=-1,
+                    help="experimental zero-baseline clientState record, 0..18; default omits it")
+    ap.add_argument("--client-field", action="append", default=[],
+                    help="client descriptor index=value, repeatable with --client-number")
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--baseline", type=Path, default=Path("runs/r546-markers.bin"))
     args = ap.parse_args()
@@ -43,6 +47,8 @@ def main() -> int:
         ap.error("viewmodel index must fit the observed 10-bit range")
     if not 0 <= args.clip_count <= 511:
         ap.error("clip count must fit the 9-bit probe range")
+    if not -1 <= args.client_number < 19:
+        ap.error("client number must be -1 (omit) or 0..18")
     try:
         origin = tuple(float(part) for part in args.origin.split(","))
         if len(origin) != 3:
@@ -72,15 +78,26 @@ def main() -> int:
             values[int(offset, 0)] = int(value, 0)
         except ValueError:
             ap.error(f"--field expects offset=value, got {item!r}")
+    client_fields = {}
+    for item in args.client_field:
+        try:
+            index, value = item.split("=")
+            client_fields[int(index, 0)] = int(value, 0)
+        except ValueError:
+            ap.error(f"--client-field expects index=value, got {item!r}")
+    if client_fields and args.client_number < 0:
+        ap.error("--client-field requires --client-number")
+    clients = [(args.client_number, client_fields)] if args.client_number >= 0 else ()
     frame = build_snapshot(values, server_time=72192,
                            tail_weapon=args.weapon_id,
                            tail_clip_count=args.clip_count, tail_health=args.health,
-                           entities=entities)
+                           entities=entities, clients=clients)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(frame)
     print(json.dumps({"weapon_id": args.weapon_id,
                       "viewmodel_index": args.viewmodel_index, "bytes": len(frame),
                       "clip_count": args.clip_count, "origin": list(origin),
+                      "client_number": args.client_number,
                       "pm_type": args.pm_type, "health": args.health,
                       "baseline_checked": baseline_ok,
                       "sha256": hashlib.sha256(frame).hexdigest(),
