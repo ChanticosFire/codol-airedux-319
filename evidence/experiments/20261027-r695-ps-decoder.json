@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-27",
+  "rounds": "r695",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (reused)",
+  "new_tool": {
+    "file": "tools/decode_ps_1649370.py",
+    "purpose": "read side of server1649370/wire164.py: decode the playerState section of a full snapshot frame",
+    "validation": "decoding runs/r681-weapon78-clip30-z220.bin reproduces origin (386, 60, 220), viewHeightCurrent 60, viewHeightTarget 60, primary 78, altWeapon 78, groundEntityNum 1023 and viewmodelIndex 1023 exactly as written",
+    "known_limit": "the field walk stops after the last field the writer selected; tail sections are not decoded yet"
+  },
+  "demo_baseline_decode": {
+    "source": "resources/1649370/local/mirrors/original-client/main/demo/0C-2021-8-26[19-26-24]war.demo",
+    "extractor": "tools/parse_demo_outer.py --out runs/r695-demo-outer",
+    "gamestate_bytes": 6407,
+    "baseline_file": "runs/r695-demo-outer/baseline-outer17-245.bin",
+    "baseline_sha256": "6d03cde387571deb9362904055c3d69df54ab369ca0778218b8f507addb534a6",
+    "header": {"server_time": 11350, "delta": 0, "flags": 4, "last_index": 216},
+    "fields_decoded": 63,
+    "notable_fields": {
+      "0x00 commandTime": "0x33 (51)",
+      "0x04 pm_type": "5",
+      "0x30 origin.x": "336.0",
+      "0x34 origin.y": "60.0",
+      "0x38 origin.z": "260.5",
+      "0x104": "0x102",
+      "0x2a8": "2",
+      "0xb4 angle": "46.104 deg",
+      "0x178": "-1",
+      "0xfc": "0x0f",
+      "0x278": "1",
+      "0x2d4": "7",
+      "0x78": "0x7f",
+      "0x2b8": "0xff",
+      "0x648": "3",
+      "0x284": "1",
+      "0xd0": "0x030000ff",
+      "0x690": "-109",
+      "0x694": "0x5a20 (23072)",
+      "0x18c": "0x80000000",
+      "0x188": "0xcfa (3322)"
+    },
+    "reading": "this is a real playerState from a live 2021 match; it differs from ours in pm_type, eFlags, 0xd0, 0x188, 0xfc, 0x78 and the origin"
+  },
+  "r695_pm_type_test": {
+    "hypothesis": "pm_type 5 (the demo baseline value) is the normal in-match player state",
+    "snapshot": {"file": "runs/r695-weapon78-pmtype5.bin", "bytes": 92,
+                 "sha256": "b1bb1a28077698adbdd4de5609733e8daa7121cc11e5080985b24f9731c23dd8",
+                 "origin": [336.0, 60.0, 260.5], "pm_type": 5, "weapon": 78, "clip": 30},
+    "gamestate": "runs/r694-gamestate-start.bin (294 rows, includes 435=1 and 15=1825900)",
+    "client": {"net_state": 10, "pm_type": 5, "weapon": 78, "origin": [336.0, 60.0, 260.5]},
+    "screenshot": "runs/r695-pmtype5-game.png (luma_minmax=(0, 0), i.e. black frame)",
+    "result": "pm_type 5 renders a black screen while the client stays connected; it is not the normal in-match state",
+    "conclusion": "the demo baseline was captured in a non-normal state (death/spectator), so pm_type 5 must not be used as the playing state"
+  },
+  "database": {
+    "final_state": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "integrity": "ok"
+  },
+  "next_focus": [
+    "decode more complete frames (or implement delta decoding) to find the ps values a live player carries while playing normally",
+    "compare 0x104 (eFlags), 0xd0, 0x188 and 0xfc between the demo frame and ours"
+  ]
+}

@@ -28,6 +28,8 @@ def main() -> int:
                     help="playerState origin; the default is the marker triple")
     ap.add_argument("--view-height-current", type=float, default=0.3125,
                     help="ps+0x170 eye height; the historical marker value is 0.3125")
+    ap.add_argument("--pm-type", type=int, default=0,
+                    help="playerState pm_type byte; a real 2021 demo baseline carries 5")
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--baseline", type=Path, default=Path("runs/r546-markers.bin"))
     args = ap.parse_args()
@@ -45,7 +47,7 @@ def main() -> int:
         ap.error("origin must be three comma separated numbers")
     default_origin = origin == (111.5, 222.5, 333.5)
     common = {
-        0x00: 72192, 0x04: 0, 0xA4: 800, 0xB0: 190, 0xC0: 1023,
+        0x00: 72192, 0x04: args.pm_type, 0xA4: 800, 0xB0: 190, 0xC0: 1023,
         0x2C: 0, 0x158: 0, 0x16C: 60, 0x170: _word(args.view_height_current),
         0x174: 0x12345678, 0x4C: 0, 0x15C: 1023, 0x10: 0,
         0x30: _word(origin[0]), 0x34: _word(origin[1]), 0x38: _word(origin[2]),
@@ -68,6 +70,7 @@ def main() -> int:
     print(json.dumps({"weapon_id": args.weapon_id,
                       "viewmodel_index": args.viewmodel_index, "bytes": len(frame),
                       "clip_count": args.clip_count, "origin": list(origin),
+                      "pm_type": args.pm_type,
                       "baseline_checked": baseline_ok,
                       "sha256": hashlib.sha256(frame).hexdigest(),
                       "output": str(args.output)}))
