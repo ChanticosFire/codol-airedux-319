@@ -50,7 +50,7 @@ def main() -> int:
     ap.add_argument("--low", type=lambda text: int(text, 0), default=0x10000)
     ap.add_argument("--high", type=lambda text: int(text, 0), default=0x7FFF0000)
     args = ap.parse_args()
-    if (args.value is None) == (args.ascii is None):
+    if sum(item is None for item in (args.value, args.ascii, args.range)) != 2:
         raise SystemExit("give exactly one of --value or --ascii")
 
     k32 = ctypes.WinDLL("kernel32", use_last_error=True)
