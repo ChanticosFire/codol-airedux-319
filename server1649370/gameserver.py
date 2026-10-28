@@ -43,6 +43,7 @@ from pathlib import Path
 
 from .native_gamestate import DEFAULT_CONFIGSTRINGS, build_native_gamestate
 from .wire164 import build_snapshot, _word
+from .client_input import ClientInputDecodeError, decode_client_packet
 
 PROTOCOL_GENERATION = "1.1.1.13"
 DEFAULT_MAP = "mp_cross_fire"
@@ -353,7 +354,8 @@ class GameServer:
                  snapshot_dir: str | None = None,
                  snapshot_frame_repeat: int = 1,
                  rebuild_follow_pid: int | None = None,
-                 send_opcode: int | None = None):
+                 send_opcode: int | None = None,
+                 decode_client_input: bool = False):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -364,6 +366,7 @@ class GameServer:
         self.running = True
         self.delay_send = delay_send
         self.checksum_feed = checksum_feed
+        self.decode_client_input = decode_client_input
         self.gamestate_source = gamestate_source
         self.gamestate_file = Path(gamestate_file) if gamestate_file else None
         self.connect_extra = connect_extra
@@ -916,6 +919,37 @@ class GameServer:
                           body[:2048], ((peer.get("challenge") or 0) ^ (server_id << 24)
                                       ^ (message_ack & 0xFFFFFFFF)) & 0xFFFFFFFF),
                       "body_nonzero": sum(1 for b in body[:2048] if b) > 0})
+            if self.decode_client_input and not (seq & 0x80000000):
+                try:
+                    if self.checksum_feed is None or peer.get("challenge") is None:
+                        raise ClientInputDecodeError("missing gamestate feed or challenge")
+                    result = decode_client_packet(
+                        data, challenge=peer["challenge"],
+                        checksum_feed=self.checksum_feed)
+                except ClientInputDecodeError as error:
+                    self.state.counters["input_decode_error"] = (
+                        self.state.counters.get("input_decode_error", 0) + 1)
+                    if self.state.counters["input_decode_error"] <= 5:
+                        self.log({"dir": "meta", "kind": "input_decode_error",
+                                  "seq": seq, "reason": str(error)})
+                else:
+                    self.state.counters["input_decoded"] = (
+                        self.state.counters.get("input_decoded", 0) + 1)
+                    prior = peer.get("last_input_seq", -1)
+                    if result.sequence > prior:
+                        peer["last_input_seq"] = result.sequence
+                        peer["last_input"] = result.usercmds[-1]
+                    last = result.usercmds[-1]
+                    self.log({"dir": "meta", "kind": "input_decoded",
+                              "seq": result.sequence, "message_ack": result.message_ack,
+                              "reliable_ack": result.reliable_ack,
+                              "client_commands": len(result.client_commands),
+                              "cmd_count": len(result.usercmds),
+                              "server_time": last.server_time,
+                              "direction": last.direction,
+                              "buttons": last.buttons,
+                              "reported_origin": result.reported_origin,
+                              "origin_time": result.origin_time})
         else:
             self.log({"dir": "in", "kind": "inband_short", "from": f"{addr[0]}:{addr[1]}",
                       "length": len(data), "hex": data[:64].hex()})
@@ -954,6 +988,8 @@ def main() -> int:
                         help="seconds after connect before sending gamestate")
     parser.add_argument("--checksum-feed", type=lambda value: int(value, 0),
                         help="experimental uint32 replacement at gamestate offset 26")
+    parser.add_argument("--decode-client-input", action="store_true",
+                        help="read-only validated usercmd decode (requires actual checksum feed)")
     parser.add_argument("--gamestate-source", choices=("native", "capture", "file"), default="native")
     parser.add_argument("--gamestate-file", default=None,
                         help="complete plaintext payload, including four-byte reliable ack")
@@ -1049,6 +1085,10 @@ def main() -> int:
         parser.error("--command-delay must be nonnegative")
     if not 0 < args.command_seq <= 0x7FFFFFFF:
         parser.error("--command-seq must be a positive 31-bit integer")
+    if args.decode_client_input and args.checksum_feed is None:
+        parser.error("--decode-client-input requires --checksum-feed from the actual gamestate")
+    if args.decode_client_input and (args.server_command_every or args.command_file):
+        parser.error("--decode-client-input currently requires no server reliable commands")
     server = GameServer(args.port, args.log, args.delay_send, args.checksum_feed,
                         args.gamestate_source, args.registration_checksum, args.challenge_override,
                         args.snapshot_file, args.snapshot_delay, args.snapshot_seq,
@@ -1062,7 +1102,7 @@ def main() -> int:
                         args.follow_client_pid, args.client_state_pid, args.server_command_every,
                         args.server_command_seq, args.server_command_text,
                         args.snapshot_dir, args.snapshot_frame_repeat,
-                        args.rebuild_follow_pid, args.send_opcode)
+                        args.rebuild_follow_pid, args.send_opcode, args.decode_client_input)
     try:
         server.serve()
     except KeyboardInterrupt:

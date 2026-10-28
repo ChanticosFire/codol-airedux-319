@@ -2,6 +2,8 @@
 
 > 当前执行状态与验收进度请读 [1649370-HANDOFF-CURRENT.md](../../1649370-HANDOFF-CURRENT.md)。本页只维护资源来源、备份与建表时哈希；下文旧 r528/r647 状态是历史记录。
 
+2026-10-29 外部参考入口：社区 Git 仓库 `../../codol-ember/` 已快进到 `f784a77`。全库可用资料、原目录、Build 边界和许可见 [codol-ember 参考索引](../../docs/1649370-CODOL-EMBER-REFERENCE-AUDIT.md)。它保留为独立仓库，不复制大型运行时或整库到 `local/`，也不将其 1604220 实验误当本 Build 的实测。
+
 更新：2026-10-26。项目根目录：`E:\GAME\COD\codol-airedux\319`。
 
 2026-10-28 武器资源补录：原始 `E:\GAME\COD\使命召唤OL\IIPS\IIPSDownload\ff_init_weapons_V37.ifs`（45,315,979 B，SHA-256 `374e7a22…b1a84d`）含 93 个 Build 1649370 / v461 签名 fastfile，成员 3 为 `client_shipRetail/chinese/ak47_mp.ff`。仅提取该成员后得到 1,835,285 B、SHA-256 `c4e975fe…819093f`；签名、哈希链与 zone 目录通过验证。原包和提取件的**独立副本**分别在私有 `local/weapon-fastfiles/ff_init_weapons_V37.ifs` 与 `local/weapon-fastfiles/ak47_mp.ff`，元数据见 `manifest.json`。**这不是已验证可部署资源**：r745 临时放入唯一运行时后虽使武器注册和模型解析各发生一次，仍弹 `174 ak47_mp` 回大厅。实验文件已从运行时移除，尚须定位 174 的真实抛错点；详情见 [r743–r745 证据](../../evidence/experiments/20261028-r743-r745-weapon-fastfile-gate.json)。

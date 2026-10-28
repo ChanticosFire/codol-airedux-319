@@ -118,6 +118,8 @@ def main() -> int:
     ap.add_argument("--server-seconds", type=float, default=3600.0,
                     help="how long the game server keeps serving")
     ap.add_argument("--bridge-seconds", type=float, default=1500.0)
+    ap.add_argument("--ring-a-length-mode", choices=("slot", "nul"), default="slot",
+                    help="outgoing ring A binary length mode; nul is the legacy A/B control")
     ap.add_argument("--keep-server", action="store_true")
     ap.add_argument("--keep-bridge", action="store_true")
     ap.add_argument("--skip-client", action="store_true")
@@ -130,6 +132,8 @@ def main() -> int:
                     help="JSON [[index,value],...] replacing the built-in configstrings")
     ap.add_argument("--server-command-text", default=None,
                     help="override the svc_serverCommand text sent during the match")
+    ap.add_argument("--decode-client-input", action="store_true",
+                    help="read-only usercmd decoding using the selected gamestate's checksum feed; requires server-command-text off")
     ap.add_argument("--send-opcode", default=None,
                     help="comma separated raw inband opcodes to send after connect, "
                          "three seconds apart")
@@ -160,6 +164,12 @@ def main() -> int:
                     help="inject one native cbuf command (for example a cvar set) "
                          "through the launcher, before the client connects")
     args = ap.parse_args()
+    input_checksum_feed = None
+    if args.decode_client_input:
+        if args.gamestate_source != "file" or args.server_command_text != "off":
+            ap.error("--decode-client-input requires a file gamestate and --server-command-text off")
+        from build_gamestate_1649370 import decode as decode_gamestate
+        input_checksum_feed = decode_gamestate((ROOT / args.gamestate).read_bytes()).checksum_feed
     if args.trace_weapon_registration and not args.restore_weapon_handler:
         ap.error("--trace-weapon-registration requires --restore-weapon-handler")
     if args.trace_weapon_lookup and not args.restore_weapon_handler:
@@ -209,6 +219,8 @@ def main() -> int:
             server_args = [sys.executable, "-X", "utf8", "-B", "-m", "server1649370.gameserver",
                            "--port", "28969", "--delay-send", "1",
                            "--gamestate-source", args.gamestate_source, "--gamestate-file", args.gamestate,
+                           *( ["--checksum-feed", str(input_checksum_feed), "--decode-client-input"]
+                              if args.decode_client_input else [] ),
                            "--gamestate-gametype", args.gametype,
                            "--gamestate-map", "mp_crash_tropical",
                            "--snapshot-delay", "1",
@@ -367,6 +379,7 @@ def main() -> int:
         step("starting bridge", seconds=args.bridge_seconds)
         subprocess.Popen([sys.executable, "-B", "-X", "utf8", "tools/ring_bridge_1649370.py",
                           "forward", "--target", "127.0.0.1:28969", "--bind-port", "29023",
+                          "--ring-a-length-mode", args.ring_a_length_mode,
                           "--start-challenge", "--retry-seconds", "0",
                           "--seconds", str(int(args.bridge_seconds))],
                          cwd=ROOT, stdout=open(logs / f"{args.name}-bridge.out", "w", encoding="utf-8"),

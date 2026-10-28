@@ -465,7 +465,9 @@ class Client:
         return {"status": "queued" if ok else "write_failed", "slot": hex(slot),
                 "length": len(payload)}
 
-    def drain_ring_a(self) -> list[dict]:
+    def drain_ring_a(self, length_mode: str = "slot") -> list[dict]:
+        if length_mode not in ("slot", "nul"):
+            raise ValueError(f"unsupported ring A length mode: {length_mode}")
         read = self.u32(RING_A_READ)
         write = self.u32(RING_A_WRITE)
         packets = []
@@ -481,7 +483,8 @@ class Client:
             raw = self.read(slot, RING_A_STRIDE)
             nul = raw.find(b"\x00") if raw else -1
             stored_length = self.u32(slot + RING_A_WIRE_LENGTH)
-            if (raw and not raw.startswith(b"\xff\xff\xff\xff")
+            if (length_mode == "slot" and raw
+                    and not raw.startswith(b"\xff\xff\xff\xff")
                     and stored_length is not None
                     and 0 < stored_length <= RING_A_WIRE_LENGTH):
                 length = stored_length
@@ -791,7 +794,7 @@ def cmd_forward(client: Client, args) -> dict:
     try:
         while time.monotonic() < deadline:
             progressed = False
-            outbox = client.drain_ring_a() + client.drain_ring_c(args.port)
+            outbox = client.drain_ring_a(args.ring_a_length_mode) + client.drain_ring_c(args.port)
             if outbox:
                 print(f"[forward] outbox={len(outbox)} "
                       f"first={outbox[0]['payload'][:16]!r} sent={sent}",
@@ -1072,6 +1075,8 @@ def main() -> int:
     p.add_argument("--forge-seq-base", type=int, default=100000,
                    help="netchan sequence to start from; must exceed the dedrun's incomingSequence")
     p.add_argument("--dump-in", help="write every injected server packet as JSONL (length/state/hex)")
+    p.add_argument("--ring-a-length-mode", choices=("slot", "nul"), default="slot",
+                   help="slot reads bounded binary length at +0x4E8; nul restores the old truncating path")
     p.set_defaults(func=cmd_forward)
 
     p = sub.add_parser("start-challenge")

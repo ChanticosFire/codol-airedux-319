@@ -1,0 +1,120 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "Build 1649370 client usermove can be decoded from complete real client packets; ring A NUL truncation is a negative control",
+  "source_reference": "他人文件参考/CODOL-Member-Preview-20261026/native-engine/source/src/codol/player/codol_usercmd.c (AGPL-3.0-or-later), verified against local raw packets",
+  "offline_runs": {
+    "r762": {
+      "raw_full_packets": 709,
+      "decoded": 709,
+      "independent_probe_field_matches": 709,
+      "decode_errors": [],
+      "last_usercmd_direction_counts": {
+        "0": 709
+      },
+      "last_usercmd_attack_bit_counts": {
+        "0": 698,
+        "1": 11
+      }
+    },
+    "r763": {
+      "raw_full_packets": 441,
+      "decoded": 441,
+      "independent_probe_field_matches": 441,
+      "decode_errors": [],
+      "last_usercmd_direction_counts": {
+        "0": 441
+      },
+      "last_usercmd_attack_bit_counts": {
+        "0": 441
+      }
+    },
+    "r764": {
+      "raw_full_packets": 453,
+      "decoded": 453,
+      "independent_probe_field_matches": 453,
+      "decode_errors": [],
+      "last_usercmd_direction_counts": {
+        "0": 443,
+        "1": 10
+      },
+      "last_usercmd_attack_bit_counts": {
+        "0": 453
+      }
+    }
+  },
+  "live_runs": {
+    "r765": {
+      "ring_mode": "slot",
+      "real_connect": 1,
+      "client_net_state_at_session_return": 10,
+      "full_nonfragment_inband": 533,
+      "short_inband": 0,
+      "input_decoded": 533,
+      "input_decode_error": 0,
+      "snapshot_source": 1425
+    },
+    "r766": {
+      "ring_mode": "nul",
+      "real_connect": 1,
+      "client_net_state_at_session_return": 10,
+      "full_nonfragment_inband": 0,
+      "short_inband": 116,
+      "input_decoded": 0,
+      "input_decode_error": 0,
+      "snapshot_source": 198
+    },
+    "r767": {
+      "ring_mode": "slot",
+      "real_connect": 1,
+      "client_net_state_at_session_return": 10,
+      "full_nonfragment_inband": 99,
+      "short_inband": 0,
+      "input_decoded": 99,
+      "input_decode_error": 0,
+      "snapshot_source": 204
+    }
+  },
+  "negative_controls": {
+    "wrong_challenge": [
+      {
+        "run": "r762",
+        "rejected": true
+      },
+      {
+        "run": "r763",
+        "rejected": true
+      },
+      {
+        "run": "r764",
+        "rejected": true
+      }
+    ],
+    "truncated": [
+      {
+        "run": "r762",
+        "rejected": true
+      },
+      {
+        "run": "r763",
+        "rejected": true
+      },
+      {
+        "run": "r764",
+        "rejected": true
+      }
+    ]
+  },
+  "limits": [
+    "Only full nonfragment packets are decoded; fragments require reassembly.",
+    "The decoder reads wire input but server does not update playerState or execute movement/attack.",
+    "Default usercmd baseline does not establish unchanged weapon fields as authoritative."
+  ],
+  "safety": {
+    "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime reused",
+    "profile_baseline_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "profile_integrity_after_r766_r767": "ok",
+    "r766_r767_private_pre_post_backups": "resources/1649370/local/profile-backups/",
+    "staged_private_ff_removed": true,
+    "exact_pids_stopped": true
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-29",
+  "hypothesis": "If the server rebuilds the byte-exact r738 snapshot with an origin derived only from decoded real W usercmd packets, the same connected client will report the new playerState origin. A static origin or a key that produces no decoded direction=1 is a negative control.",
+  "fixture": {
+    "gamestate": "runs/r738-gamestate-sniprestigea.bin",
+    "snapshot": "runs/r738-snapshot-sniprestigea.bin",
+    "snapshot_bytes": 102,
+    "snapshot_sha256": "ef0c42ade3d8acec78aa233dd3a4e9bb7e050f7dd9e2ace6fec20447cd5129cc",
+    "rebuild": "build_snapshot with decoded playerState, commandTime=72192, weapon=78, clip=30, health=100, minimal entity and typed client 0; byte-exact against r738 before varying origin",
+    "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+    "runtime_exe_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380"
+  },
+  "static_origin_control_r768": {
+    "change": "Only snapshot X 336 -> 346; first frame baseline, subsequent frames shifted. No input-to-motion helper.",
+    "server": {"connect": 1, "snapshot_source": 90, "input_decoded": 104, "input_decode_error": 0, "shifted_frame_sends": 89},
+    "client": {"session_net_state": 10, "four_origin_samples": [[346, 60, 260.5], [346, 60, 260.5], [346, 60, 260.5], [346, 60, 260.5]], "weapon": 78},
+    "limit": "This establishes that client playerState accepts a server-origin change, not player control."
+  },
+  "failed_controls": {
+    "r769": "The key target mistakenly combined class Base_PowerMessageWindow with title CoD Splash Screen; FindWindow failed, no key was sent, helper saw 0 W packets and origin stayed 336.",
+    "r770": "Actual CoD Splash Screen class was focused and keybd_event W held 1600 ms, but this session decoded 0 direction=1 packets; source stayed 336 and client stayed 336. This does not rule out the older separate PostMessage window-route evidence."
+  },
+  "real_w_to_server_origin_r771": {
+    "key": {"window_class": "CODO", "foreground_matches": true, "vk": "0x57", "hold_ms": 1600},
+    "server": {"connect": 1, "snapshot_source": 334, "input_decoded": 223, "input_decode_error": 0, "direction_1_packets": 10, "source_origin_x_before": 336, "source_origin_x_after": 356, "helper_rule": "+2 X per decoded direction=1 packet, capped at 400"},
+    "client": {"session_net_state": 10, "origin_before": [336, 60, 260.5], "origin_after_three_samples": [[356, 60, 260.5], [356, 60, 260.5], [356, 60, 260.5]], "weapon": 78},
+    "logs": ["runs/r771-gs.jsonl", "runs/r771-motion-report.json", "runs/r771-key.json", "runs/r771-before-ps.jsonl", "runs/r771-after-ps.jsonl"]
+  },
+  "real_w_to_server_origin_r772": {
+    "key": {"window_class": "CODO", "foreground_matches": true, "vk": "0x57", "hold_ms": 1600},
+    "server": {"connect": 1, "snapshot_source": 328, "input_decoded": 231, "input_decode_error": 0, "direction_1_packets": 7, "source_origin_x_before": 336, "source_origin_x_after": 350, "helper_rule": "+2 X per decoded direction=1 packet, capped at 400"},
+    "client": {"session_net_state": 10, "origin_before": [336, 60, 260.5], "origin_after_three_samples": [[350, 60, 260.5], [350, 60, 260.5], [350, 60, 260.5]], "weapon": 78},
+    "screenshots": ["evidence/experiments/20261029-r772-before-w.png", "evidence/experiments/20261029-r772-after-w.png"],
+    "logs": ["runs/r772-gs.jsonl", "runs/r772-motion-report.json", "runs/r772-key.json", "runs/r772-before-ps.jsonl", "runs/r772-after-ps.jsonl"]
+  },
+  "boundary": "The diagnostic helper runs outside gameserver, polls its input_decoded log, and atomically replaces an ignored snapshot file. Its +2 X rule is a controlled probe, not physical movement simulation; only W was tested. No collision, bidirectional movement, firing, ammo update, first-person gun restoration, normal game ending, or ui_state != 5 is established by these runs.",
+  "safety": "Every run reused r107flow/runtime, staged the verified private ak47_mp.ff only during the run, stored pre/post profile backups under ignored resources/1649370/local/profile-backups, stopped exact PIDs, removed the staged FF, and restored live local.sqlite3 to SHA-256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70 with integrity_check=ok."
+}
