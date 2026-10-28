@@ -1,0 +1,114 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "The active weapon 78 viewmodel pointer still references the placeholder XModel tag_origin. If that pointer alone is the missing gun-binding step, replacing it with the already loaded viewmodel_ak47 XModel in the same connected client should make the AK-47 body visible without changing the server frame.",
+  "fixed_inputs": {
+    "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (only reused runtime)",
+    "gamestate": "runs/r738-gamestate-sniprestigea.bin SHA-256 00130dd56bda7bfd83b1770f2dd9662571c9d5d94191c58154c99b0c4f837c21",
+    "snapshot": "runs/r738-snapshot-sniprestigea.bin SHA-256 ef0c42ade3d8acec78aa233dd3a4e9bb7e050f7dd9e2ace6fec20447cd5129cc",
+    "signed_asset": "resources/1649370/local/weapon-fastfiles/ak47_mp.ff SHA-256 c4e975fef271f492774cc09701b1a9f7a014300b6ef94bce961def3dc819093f",
+    "launch_flags": [
+      "--restore-weapon-handler",
+      "--restore-weapon-lookup-branch",
+      "--restore-weapon-init-indexing",
+      "--restore-weapon-cache-indexing",
+      "--weapon-lookup-fallback",
+      "--server-command-text off"
+    ]
+  },
+  "source_side": {
+    "r754": {
+      "connect": 1,
+      "snapshot_source": 1363,
+      "bridge_inject_queued": 1090
+    },
+    "r755": {
+      "connect": 1,
+      "snapshot_source": 1727,
+      "bridge_inject_queued": 1807
+    },
+    "r756": {
+      "connect": 1,
+      "snapshot_source": 1673,
+      "bridge_inject_queued": 1305
+    },
+    "r757": {
+      "connect": 1,
+      "snapshot_source": 1626,
+      "bridge_inject_queued": 1633
+    },
+    "r758": {
+      "connect": 1,
+      "snapshot_source": 2219,
+      "bridge_inject_queued": 2227
+    },
+    "logs": "runs/r754..r760-gs.jsonl and runs/r754..r760-bridge.out",
+    "r760": {
+      "connect": 1,
+      "snapshot_source": 1092,
+      "bridge_inject_queued": 1145
+    }
+  },
+  "client_side": {
+    "all_runs": "session_up returned net_state=10; this establishes entry, not prolonged stability",
+    "r754_read_only": {
+      "weapon_id": 78,
+      "definition": "0x02A392D4",
+      "weapon_definition_plus_0x10": "0x01F69024",
+      "xmodel_name": "tag_origin",
+      "loaded_viewmodel_ak47": "0x02311A8C",
+      "active_model_list_low_count": 3,
+      "active_model_names": [
+        "fja_ghillie_sc_m_vmchar_basic",
+        "han_fingerless_ss_s_vmchar_20",
+        "tag_origin"
+      ],
+      "other_definitions": "904 of 1171 registered weapons had tag_origin at +0x10; this is a broad placeholder population, not proof all need the same replacement"
+    },
+    "intervention": {
+      "address": "weaponDef78+0x10 = 0x02A392E4",
+      "before": "0x01F69024 (XModel tag_origin)",
+      "after": "0x02311A8C (XModel viewmodel_ak47)",
+      "guards": "Both source and target XModel names were read from live process memory before each write; readback checked. Single 32-bit pointer changed. Original pointer restored and read back before process exit."
+    },
+    "visual_repetitions": {
+      "r755": "Before: arms and AK-47/30 HUD without body; after: full AK-47 body visible, same process and network session",
+      "r756": "Independent before/after repetition: full AK-47 body visible after pointer change",
+      "r757": "Before screenshot arms-only; first after screenshot was a completely black capture frame and next was ground-level view; visual result inconclusive and excluded from positive count",
+      "r758": "Third independent positive: three consecutive captures after pointer change show full AK-47 body at net_state=10"
+    },
+    "tracked_screenshots": [
+      "evidence/experiments/20261028-r755-before-viewmodel.png",
+      "evidence/experiments/20261028-r755-after-viewmodel.png",
+      "evidence/experiments/20261028-r758-after-click.png",
+      "evidence/experiments/20261028-r760-helper-viewmodel.png"
+    ],
+    "local_screenshots": [
+      "runs/r756-before.png",
+      "runs/r756-after.png",
+      "runs/r758-gun1.png",
+      "runs/r758-gun2.png",
+      "runs/r758-gun3.png"
+    ],
+    "r758_real_mouse_test": "tools/hold_mouse_1649370.py held left button for 500 ms; foreground_matches=true; before and after direct read net_state=10 and ps.weapon=78, while visible HUD clip remained 30 and no muzzle or other shot feedback was observed. This does not prove the server parsed the input, and shooting acceptance remains false.",
+    "movement": "not tested in this intervention series",
+    "ui_state": "not measured in this intervention series"
+  },
+  "reusable_probe_validation": {
+    "tool": "tools/probe_weapon_viewmodel_binding_1649370.py",
+    "r759_source": {
+      "connect": 1,
+      "snapshot_source": 1440,
+      "bridge_inject_queued": 1466
+    },
+    "r759_client": "net_state=10; --probe read ak47_mp+0x10 -> tag_origin; --apply recorded 0x1F69024 and read back 0x2311A8C; --restore-from read back 0x1F69024. A wrong target named tag_origin was refused before writing and created no restore record. The immediate screenshot was ground-level and is not visual proof of the gun for r759.",
+    "scope": "The tool is opt-in and diagnostic; session_up and the normal launcher were not changed.",
+    "r760_source": {
+      "connect": 1,
+      "snapshot_source": 1092,
+      "bridge_inject_queued": 1145
+    },
+    "r760_client": "Second independent opt-in helper run: net_state=10, guarded probe found ak47_mp+0x10 -> tag_origin, --apply changed it to loaded viewmodel_ak47 with readback; actual in-game screenshot shows AK-47 body; --restore-from read back original tag_origin pointer. This is a client-side diagnostic, not durable server binding."
+  },
+  "interpretation": "Three independent real-client screenshots establish that binding the already loaded AK-47 XModel to the active weapon definition is sufficient to show the body in the current setup. This is a reversible client-memory diagnostic, not a server-controlled or durable implementation. The earlier §1272 inference that model loading ruled out a binding defect was too broad: the asset was loaded, but the active weapon definition still selected tag_origin. No shooting or movement success is claimed.",
+  "safety": "All temporary pointers restored before exact PID cleanup. Signed asset removed after SHA-256 check; ignored private source preserved. r754-r758 write-after profile copies kept under resources/1649370/local/profile-backups and checked with SQLite integrity; live database restored to SHA-256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70. No additional runtime copy created. r760 likewise restored the original pointer, stopped only its client/server/bridge PIDs, removed staged FF, and preserved live profile SHA-256 baseline with integrity ok; pre-run copy is ignored/private."
+}
