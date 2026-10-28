@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "The separate 0x58F850 weapon view builder is invoked only when the arm model set changes, so a hook installed after entering the match misses it; an early hook should capture weapon ID 78 in ECX if the gun assembly path is active.",
+  "run": "r753",
+  "inputs": "Same r738 gamestate/snapshot, verified signed ak47_mp.ff and restored per-ID indexing as r748-r752; sole reused r107flow/runtime.",
+  "source_side": {"connect": 1, "snapshot_source": 2810, "bridge_inject_queued": 1237, "logs": ["runs/r753-gs.jsonl", "runs/r753-bridge.out"]},
+  "client_side": {"session_net_state": 10, "weapon_builder_address": "0x58F850", "hook_installed_before_match": true, "count_at_entry_read": 768, "count_at_restoration": 1081, "ecx_weapon_id": 78, "return_address": "0x590744", "argument_model_count": 2, "ps_weapon": 78, "ps_pm_type": 0, "screenshot": "runs/r753-entry.png", "screenshot_result": "ghillie arms and AK-47/30 HUD; no identifiable gun body"},
+  "static_followup": "0x59073F calls 0x58F850 when the first-person model set changes. 0x58FA44 reads weapon definition +0x30, but live +0x30 is nonzero for only 6 of 1171 definitions, all ballistic knives (IDs 509,516-520); it is an optional component and zero for AK-47 cannot alone explain the absent gun.",
+  "conclusion": "The weapon-specific view builder is entered with ID 78 in a real match. Missing gun body is downstream of entry or in a later rendering/submission condition; no shooting or movement success is established.",
+  "safety": "Temporary hook at 0x58F850 restored to original 558bec83ec78a140f2e300 and read back. Exact run PIDs stopped. Staged FF hash checked and removed; private source retained. r753 write-after SQLite copy integrity ok in ignored private quarantine; live database restored to SHA-256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70."
+}
