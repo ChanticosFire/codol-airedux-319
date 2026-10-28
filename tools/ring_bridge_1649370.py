@@ -107,8 +107,9 @@ RING_A_STRIDE = 0x4F0
 RING_A_SLOTS = 64
 RING_A_READ = 0x7886808
 RING_A_WRITE = 0x788680C
-RING_A_TYPE = 0x4E8      # dword, message type
-RING_A_LENGTH = 0x4EC    # word, payload length
+RING_A_TYPE = 0x4E8      # legacy injected-slot hint
+RING_A_WIRE_LENGTH = 0x4E8  # client-written in-band packet length (r761)
+RING_A_LENGTH = 0x4EC    # legacy injected-slot word; zero in r761 client packets
 
 CONNECT_FN = 0x5BE730
 PUMP_FN = 0x4F8D70
@@ -472,14 +473,25 @@ class Client:
             read = write - RING_A_SLOTS
         while read < write:
             slot = RING_A_BASE + (read & (RING_A_SLOTS - 1)) * RING_A_STRIDE
-            # Slots hold the raw payload with no stored length.  OOB commands
-            # are NUL-terminated, so the first NUL is the packet end.
+            # OOB commands are NUL-terminated.  In-band packets contain zero
+            # bytes in their header, so their first NUL is not their end.
+            # The client stores their exact byte length at slot+0x4E8: a live
+            # 824-byte command had 0x338 there and a nonzero byte at offset
+            # 823 (r761).  slot+0x4EC was zero for those packets.
             raw = self.read(slot, RING_A_STRIDE)
             nul = raw.find(b"\x00") if raw else -1
-            length = nul if (nul is not None and nul > 0) else (len(raw) if raw else 0)
+            stored_length = self.u32(slot + RING_A_WIRE_LENGTH)
+            if (raw and not raw.startswith(b"\xff\xff\xff\xff")
+                    and stored_length is not None
+                    and 0 < stored_length <= RING_A_WIRE_LENGTH):
+                length = stored_length
+                length_source = "slot+0x4E8"
+            else:
+                length = nul if nul > 0 else (len(raw) if raw else 0)
+                length_source = "oob_nul_or_fallback"
             payload = raw[:length] if raw else b""
             print(f"[drain_ring_a] idx={read} slot={slot:#x} "
-                  f"raw={raw[:12]!r} nul={nul} len={length}",
+                  f"raw={raw[:12]!r} nul={nul} len={length} source={length_source}",
                   file=sys.stderr, flush=True)
             if payload:
                 packets.append({

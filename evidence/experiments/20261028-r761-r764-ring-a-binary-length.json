@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "The bridge truncates client-written in-band ring A packets at their first NUL, usually byte 2, and therefore the game server receives no complete usercmd stream. The client-written slot+0x4E8 dword may be the exact binary packet length.",
+  "fixed_inputs": {
+    "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (single reused runtime)",
+    "gamestate": "runs/r738-gamestate-sniprestigea.bin",
+    "snapshot": "runs/r738-snapshot-sniprestigea.bin",
+    "signed_ff": "private resources/1649370/local/weapon-fastfiles/ak47_mp.ff staged only during each run; SHA-256 c4e975fef271f492774cc09701b1a9f7a014300b6ef94bce961def3dc819093f",
+    "flags": [
+      "--restore-weapon-handler",
+      "--restore-weapon-lookup-branch",
+      "--restore-weapon-init-indexing",
+      "--restore-weapon-cache-indexing",
+      "--weapon-lookup-fallback",
+      "--server-command-text off"
+    ]
+  },
+  "read_only_r761": {
+    "connect": 1,
+    "snapshots": 1254,
+    "inband_short": 1659,
+    "full_inband": 5,
+    "full_lengths": [
+      1264
+    ],
+    "slot_sample": {
+      "first_bytes": "6d2b00009b2a02000000000000e37071",
+      "first_nul_offset": 2,
+      "slot_plus_0x4e8_dword": 824,
+      "last_nonzero_payload_offset": 823,
+      "slot_plus_0x4ec_dword": 0
+    },
+    "interpretation": "The metadata dword equals the observed live binary payload length in the sample. The old bridge used first NUL for all ring A packets and forwarded most binary packets as 1-2 bytes. OOB text remains NUL-terminated."
+  },
+  "change": "tools/ring_bridge_1649370.py drain_ring_a now takes client-written non-OOB packet length from slot+0x4E8 when bounded (1..0x4E8); OOB continues to use NUL termination. A conservative fallback retains the previous behavior for invalid metadata.",
+  "post_change": {
+    "r762": {
+      "connect": 1,
+      "snapshots": 1346,
+      "full_inband": 709,
+      "short": 0,
+      "unique_inband_seq": 709,
+      "length_range": [
+        97,
+        1140
+      ],
+      "client_net_state_at_session_return": 10,
+      "mouse_test": "A 1000 ms real left-button hold occurred with foreground_matches true; the server logged full packets during that interval. No decoded attack or shot effect was established."
+    },
+    "r763": {
+      "connect": 1,
+      "snapshots": 589,
+      "full_inband": 441,
+      "short": 0,
+      "unique_inband_seq": 441,
+      "length_range": [
+        119,
+        881
+      ],
+      "client_net_state_at_session_return": 10
+    },
+    "r764": {
+      "connect": 1,
+      "snapshots": 1546,
+      "full_inband": 453,
+      "short": 0,
+      "unique_inband_seq": 453,
+      "length_range": [
+        110,
+        881
+      ],
+      "client_net_state_at_session_return": 10,
+      "key_test": "Real W hold 1800 ms, foreground_matches true; client command number 394 -> 413, and server logged 36 full inband packets in the hold window. Client predicted origin read before/after remained (336,60,260.5), so movement was not achieved."
+    }
+  },
+  "limits": "Receiving full client packets does not mean the server parses usercmd, buttons, movement or attack. Current gameserver.py logs inband payloads but does not execute user movement. First-person AK-47 visual evidence from r755/r756/r758/r760 remains a guarded client-pointer diagnostic, not persistent server binding. No shooting or end-match criterion is verified.",
+  "safety": "Each session used the one existing runtime; exact client/server/bridge PIDs stopped. Temporary signed FF removed after each run. Pre-run SQLite backups remain ignored/private. Live data/v1649370/local.sqlite3 SHA-256 restored to 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70, SQLite integrity_check ok.",
+  "logs": [
+    "runs/r761-gs.jsonl",
+    "runs/r761-bridge.out",
+    "runs/r762-gs.jsonl",
+    "runs/r762-bridge.out",
+    "runs/r763-gs.jsonl",
+    "runs/r763-bridge.out",
+    "runs/r764-gs.jsonl",
+    "runs/r764-bridge.out"
+  ]
+}
