@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "Count whether the candidate 0x58F370→0x58EF60 slot writer and its downstream model lookup execute when the signed ak47_mp.ff is staged; if they do, the error must be explained beyond file existence alone.",
+  "difference_from_r746": "Same verified fastfile, gamestate, snapshot and session flags. Added count hooks at 0x58F723, 0x58EEA2, 0x58F535 and 0x58F702; no shared tool or wire change.",
+  "source_side": {
+    "path": "runs/r747-gs.jsonl",
+    "connect": 1,
+    "snapshot_source": 2084,
+    "inband_received": 1,
+    "server_start_utc": "2026-10-28T05:13:26Z",
+    "server_stop_utc": "2026-10-28T05:18:07Z",
+    "limit": "Server-side send counts do not establish client acceptance."
+  },
+  "client_side": {
+    "session_up_result": "timed out waiting for cls.state == 10 (90s); no r747-session.json was written",
+    "screenshot": "runs/r747-failure.png: lobby error 174 ak47_mp",
+    "hook_counts": {
+      "file_check_0x58F535": 881,
+      "asset_load_0x58F702": 290,
+      "slot_writer_call_0x58F723": 277,
+      "model_lookup_0x58EEA2": 0
+    },
+    "interpretation_limit": "The count hooks record all weapon IDs, including lobby registration. They were not filtered to ID 78, and the client did not sustain net_state 10. They cannot establish whether the ak47_mp slot writer ran or what value it returned."
+  },
+  "result": "The 174 ak47_mp dialog was observed in a third independent signed-file run, but this attempted writer probe did not isolate the ID-78 write. The next experiment must capture weapon ID and slot value at the writer, not repeat an unfiltered count.",
+  "safety": {
+    "all_hooks_original_bytes_restored": true,
+    "temporary_ak47_mp_removed": true,
+    "exact_client_and_lsg_pids_stopped": [13996, 31288],
+    "game_server_pid": "25352 had already exited when cleanup ran",
+    "profile_post_sha256": "b466098c5bbd9f8b955645281c0ab31410dfbb400f218cd3999527cb411a2baa",
+    "profile_classification": "integrity ok; schema and table counts unchanged; accounts revision/updated and one profiles blob/hash changed. Preserved in ignored resources/1649370/local/profile-backups/r747-after-local.sqlite3, then restored exact pre-run database.",
+    "final_profile_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "new_runtime_created": false
+  }
+}
