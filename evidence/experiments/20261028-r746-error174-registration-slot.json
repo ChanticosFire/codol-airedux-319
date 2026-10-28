@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "The r745 lobby error 174 ak47_mp is thrown by a native weapon-registration check after the signed fastfile becomes visible; capture the exact Com Error caller and predicate without changing the server payload.",
+  "r746": {
+    "difference_from_r745": "Same existing runtime, same signed ak47_mp.ff staged temporarily, same gamestate/snapshot and session flags; a temporary hook was added at the error function for attribution.",
+    "source_log": "runs/r746-gs.jsonl",
+    "server_start_utc": "2026-10-27T20:10:39Z",
+    "server_stop_utc": "2026-10-27T20:13:18Z",
+    "connect": 1,
+    "snapshot_source": 1017,
+    "inband_received": 3,
+    "session_net_state": 10,
+    "screenshot": "runs/r746-active.png (2026-10-27T20:12:21Z): lobby error 174 ak47_mp",
+    "replication": "r745 and r746 independently showed the same 174 ak47_mp dialog with the signed file staged; n=2, no claim of stable success."
+  },
+  "native_error_event": {
+    "path": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/reuse-631eafaf/events.jsonl",
+    "line": 233,
+    "timestamp_utc": "2026-10-27T20:11:38Z",
+    "milestone": "Com Error",
+    "entry": "0x4F82E0",
+    "return_address": "0x58FCF0",
+    "argument_0": 2,
+    "format_string": "174 %s",
+    "argument_2": "ak47_mp",
+    "native_static": "0x58FCEB calls 0x4F82E0 with code 2, format 174 %s and the weapon definition's name only when [0x1C166E8 + weapon_id*16 + 4] == 0 (comparison at 0x58FCD4). This identifies the precise observed error predicate, not the cause of the zero slot.",
+    "upstream_registration_path": "0x58F370 can call 0x58EF60 at 0x58F723, passing the per-weapon 16-byte slot; 0x58EF60 writes slot+4 from 0x58ED10 at 0x58EFF2. Whether this call executes and what later clears the slot remain unmeasured."
+  },
+  "failed_hook_attribution": {
+    "attempt": "hook_any_1649370.py at 0x4F82E0 then 0x4F82E1",
+    "observation": "The launcher had already placed an INT3 breakpoint at 0x4F82E0; the direct hook would replay CC inside its cave. It was immediately restored. A hook at 0x4F82E1 recorded zero hits despite the dialog, because the launcher's breakpoint handler observes the event before the function body runs.",
+    "reuse": "Read the launcher's existing events.jsonl breakpoint record; do not hook over its breakpoint for this error."
+  },
+  "safety": {
+    "signed_file_sha256": "c4e975fef271f492774cc09701b1a9f7a014300b6ef94bce961def3dc819093f",
+    "file_removed_after_run": true,
+    "hooks_restored": true,
+    "exact_pids_stopped": [29308, 22252],
+    "profile_before_after_sha256": "06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70",
+    "profile_integrity": "ok",
+    "new_runtime_created": false
+  },
+  "conclusion": "The displayed 174 ak47_mp is directly tied to a zero per-weapon registration slot at 0x58FCD4 in this run. The reason that slot is zero is still open. Neither signed fastfile staging nor the temporary hooks produced a playable first-person weapon or shooting."
+}
