@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-29",
+  "hypothesis": "The previously verified real usercmd W bit can update an opt-in server-owned playerState snapshot directly inside gameserver, without the external log-polling helper; the connected client should report the same origin.",
+  "code_path": "server1649370/gameserver.py --decode-client-input --input-motion-probe; only the exact r738 102-byte snapshot SHA-256 ef0c42ade3d8acec78aa233dd3a4e9bb7e050f7dd9e2ace6fec20447cd5129cc is accepted, then each new direction=1 packet adds 2 to X with a 64-unit cap",
+  "fixed_inputs": {
+    "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+    "runtime_exe_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+    "gamestate": "runs/r738-gamestate-sniprestigea.bin",
+    "snapshot": "runs/r738-snapshot-sniprestigea.bin",
+    "private_signed_asset": "resources/1649370/local/weapon-fastfiles/ak47_mp.ff, staged temporarily and removed",
+    "input": "native keybd_event W to foreground CODO window for 1600 ms after 20 s match settle; no direct client position write"
+  },
+  "r773": {
+    "source": {"connect": 1, "snapshot_source": 333, "input_decoded": 197, "input_decode_error": 0, "direction_1_packets": 15, "motion_events": 15, "x_before": 336, "x_after": 366},
+    "client": {"foreground_matches": true, "net_state_before": 10, "net_state_after_samples": [10, 10, 10], "origin_before": [336, 60, 260.5], "origin_after_samples": [[366, 60, 260.5], [366, 60, 260.5], [366, 60, 260.5]]},
+    "screenshots": ["evidence/experiments/20261029-r773-before-w-integrated.png", "evidence/experiments/20261029-r773-after-w-integrated.png"],
+    "raw_logs": ["runs/r773-gs.jsonl", "runs/r773-key.json", "runs/r773-before-ps.jsonl", "runs/r773-after-ps.jsonl"]
+  },
+  "r774": {
+    "source": {"connect": 1, "snapshot_source": 337, "input_decoded": 215, "input_decode_error": 0, "direction_1_packets": 10, "motion_events": 10, "x_before": 336, "x_after": 356},
+    "client": {"foreground_matches": true, "net_state_before": 10, "net_state_after_samples": [10, 10, 10], "origin_before": [336, 60, 260.5], "origin_after_samples": [[356, 60, 260.5], [356, 60, 260.5], [356, 60, 260.5]]},
+    "capture_limit": "r774 post-key PrintWindow frame was black and is excluded from visual evidence; the direct three-sample playerState read supports the position observation.",
+    "raw_logs": ["runs/r774-gs.jsonl", "runs/r774-key.json", "runs/r774-before-ps.jsonl", "runs/r774-after-ps.jsonl"]
+  },
+  "negative_controls": "The feature is opt-in; r765/r767 with decode only retained static X=336. Initialization rejects a changed snapshot fixture; this rejection and exact-r738 round-trip were checked locally before the live runs.",
+  "boundary": "Two independent live sessions show integrated single-direction input-to-server-snapshot-to-client position feedback. The +2 X rule is deliberately artificial and has no collision, speed-time integration, lateral/backward movement, firing, ammo consumption, or persistent first-person gun body. The five acceptance criteria remain incomplete, including literal ui_state != 5.",
+  "safety": "Only the existing r107flow/runtime was used. Each session backed up the entire SQLite profile under ignored resources/1649370/local/profile-backups, staged and removed the signed FF, stopped exact client/game server/bridge/LSG PIDs, and verified restored live SHA-256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70 plus SQLite integrity_check=ok."
+}

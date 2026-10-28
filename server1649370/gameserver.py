@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import hashlib
 import json
 import socket
 import struct
@@ -355,7 +356,8 @@ class GameServer:
                  snapshot_frame_repeat: int = 1,
                  rebuild_follow_pid: int | None = None,
                  send_opcode: int | None = None,
-                 decode_client_input: bool = False):
+                 decode_client_input: bool = False,
+                 input_motion_probe: bool = False):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -367,6 +369,7 @@ class GameServer:
         self.delay_send = delay_send
         self.checksum_feed = checksum_feed
         self.decode_client_input = decode_client_input
+        self.input_motion_probe = input_motion_probe
         self.gamestate_source = gamestate_source
         self.gamestate_file = Path(gamestate_file) if gamestate_file else None
         self.connect_extra = connect_extra
@@ -389,6 +392,23 @@ class GameServer:
         self.snapshot_path = Path(snapshot_path) if snapshot_path else None
         self.snapshot_files = ([Path(part.strip()) for part in snapshot_path.split(",") if part.strip()]
                                if snapshot_path else [])
+        self.input_motion_values = None
+        self.input_motion_start_x = None
+        if input_motion_probe:
+            if not decode_client_input or len(self.snapshot_files) != 1 or snapshot_dir:
+                raise ValueError("input motion probe requires decoder and one snapshot file")
+            fixture = self.snapshot_files[0].read_bytes()
+            if hashlib.sha256(fixture).hexdigest() != (
+                    "ef0c42ade3d8acec78aa233dd3a4e9bb7e050f7dd9e2ace6fec20447cd5129cc"):
+                raise ValueError("input motion probe requires byte-exact r738 snapshot")
+            from tools.decode_ps_1649370 import decode_snapshot
+            parsed = decode_snapshot(fixture)
+            values = {int(key, 16): row["word"] for key, row in parsed["fields"].items()}
+            values[0] = parsed["server_time"]
+            self.input_motion_start_x = struct.unpack("<f", struct.pack("<I", values[0x30]))[0]
+            self.input_motion_values = values
+            if self._input_motion_frame(self.input_motion_start_x) != fixture:
+                raise ValueError("input motion template did not round-trip")
         # A directory of frames plays as one continuous stream: every frame is
         # repeated ``snapshot_frame_repeat`` times so the client keeps receiving
         # snapshots while it steps through candidate values.  Sparse frames
@@ -524,6 +544,8 @@ class GameServer:
             peer["gamestate_due"] = time.monotonic() + self.delay_send
             peer["gamestate_sent"] = False
             peer["inband_seen"] = False
+        if self.input_motion_probe:
+            peer["input_motion_x"] = self.input_motion_start_x
         if self.rebuild_follower is not None:
             self.rebuild_follower.reader._ensure_handle(force=True)
         self.log({"dir": "in", "kind": "connect", "from": f"{addr[0]}:{addr[1]}",
@@ -741,6 +763,15 @@ class GameServer:
                       "seq": seq, "index": index, "count": count,
                       "stride": frag_size, "chunk": len(chunk), "length": len(packet)})
 
+    def _input_motion_frame(self, x: float) -> bytes:
+        """Rebuild the verified r738 baseline with one bounded origin change."""
+        values = dict(self.input_motion_values)
+        values[0x30] = _word(x)
+        return build_snapshot(values, server_time=72192, tail_weapon=78,
+                              tail_clip_count=30, tail_health=100,
+                              entities=((0, 1, {2: _word(200.0)}),),
+                              clients=((0, {17: 1, 20: 570, 36: 1}),))
+
     def send_due_snapshots(self) -> None:
         """Send the staged snapshot files in order; optionally keep repeating the last."""
         if not self.snapshot_files:
@@ -763,6 +794,9 @@ class GameServer:
                 peer["snapshot_due"] = None
                 self.log({"dir": "meta", "kind": "snapshot_missing", "error": str(error)})
                 continue
+            if self.input_motion_probe:
+                data = self._input_motion_frame(
+                    peer.get("input_motion_x", self.input_motion_start_x))
             payload = b"\x00\x00\x00\x00" + data
             if not self.snapshot_preserve_time and len(payload) >= 9 and payload[4] == 0:
                 server_time = 72192 + index * 500
@@ -939,6 +973,13 @@ class GameServer:
                     if result.sequence > prior:
                         peer["last_input_seq"] = result.sequence
                         peer["last_input"] = result.usercmds[-1]
+                        if self.input_motion_probe and result.usercmds[-1].direction == 1:
+                            before = peer.get("input_motion_x", self.input_motion_start_x)
+                            after = min(self.input_motion_start_x + 64.0, before + 2.0)
+                            peer["input_motion_x"] = after
+                            self.log({"dir": "meta", "kind": "input_motion_probe",
+                                      "seq": result.sequence, "before_x": before,
+                                      "after_x": after})
                     last = result.usercmds[-1]
                     self.log({"dir": "meta", "kind": "input_decoded",
                               "seq": result.sequence, "message_ack": result.message_ack,
@@ -990,6 +1031,8 @@ def main() -> int:
                         help="experimental uint32 replacement at gamestate offset 26")
     parser.add_argument("--decode-client-input", action="store_true",
                         help="read-only validated usercmd decode (requires actual checksum feed)")
+    parser.add_argument("--input-motion-probe", action="store_true",
+                        help="experimental r738 W packet -> bounded snapshot X feedback")
     parser.add_argument("--gamestate-source", choices=("native", "capture", "file"), default="native")
     parser.add_argument("--gamestate-file", default=None,
                         help="complete plaintext payload, including four-byte reliable ack")
@@ -1089,6 +1132,10 @@ def main() -> int:
         parser.error("--decode-client-input requires --checksum-feed from the actual gamestate")
     if args.decode_client_input and (args.server_command_every or args.command_file):
         parser.error("--decode-client-input currently requires no server reliable commands")
+    if args.input_motion_probe and not args.decode_client_input:
+        parser.error("--input-motion-probe requires --decode-client-input")
+    if args.input_motion_probe and args.snapshot_dir:
+        parser.error("--input-motion-probe requires a single r738 snapshot file")
     server = GameServer(args.port, args.log, args.delay_send, args.checksum_feed,
                         args.gamestate_source, args.registration_checksum, args.challenge_override,
                         args.snapshot_file, args.snapshot_delay, args.snapshot_seq,
@@ -1102,7 +1149,8 @@ def main() -> int:
                         args.follow_client_pid, args.client_state_pid, args.server_command_every,
                         args.server_command_seq, args.server_command_text,
                         args.snapshot_dir, args.snapshot_frame_repeat,
-                        args.rebuild_follow_pid, args.send_opcode, args.decode_client_input)
+                        args.rebuild_follow_pid, args.send_opcode, args.decode_client_input,
+                        args.input_motion_probe)
     try:
         server.serve()
     except KeyboardInterrupt:
