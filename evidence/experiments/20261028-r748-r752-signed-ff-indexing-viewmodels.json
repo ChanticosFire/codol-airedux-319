@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-28",
+  "hypothesis": "With the verified signed ak47_mp.ff staged, restoring the original 0x58EF76 per-ID indexing will populate weapon ID 78's 16-byte registration slot and allow the first-person model resolver to run; failure would leave slot+4 zero and reproduce error 174.",
+  "inputs": {
+    "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime (single reused checkout)",
+    "gamestate": {"path": "runs/r738-gamestate-sniprestigea.bin", "bytes": 6493, "sha256": "00130dd56bda7bfd83b1770f2dd9662571c9d5d94191c58154c99b0c4f837c21"},
+    "snapshot": {"path": "runs/r738-snapshot-sniprestigea.bin", "bytes": 102, "sha256": "ef0c42ade3d8acec78aa233dd3a4e9bb7e050f7dd9e2ace6fec20447cd5129cc"},
+    "private_signed_asset": {"path": "resources/1649370/local/weapon-fastfiles/ak47_mp.ff", "bytes": 1835285, "sha256": "c4e975fef271f492774cc09701b1a9f7a014300b6ef94bce961def3dc819093f"},
+    "launch_flags": ["--restore-weapon-handler", "--restore-weapon-lookup-branch", "--restore-weapon-init-indexing", "--restore-weapon-cache-indexing", "--weapon-lookup-fallback", "--server-command-text off"]
+  },
+  "source_side": {
+    "runs": [
+      {"name": "r748", "connect": 1, "snapshot_source": 2049, "bridge_inject_queued": 1056},
+      {"name": "r749", "connect": 1, "snapshot_source": 1299, "bridge_inject_queued": 1361},
+      {"name": "r750", "connect": 1, "snapshot_source": 2766, "bridge_inject_queued": 1352},
+      {"name": "r751", "connect": 1, "snapshot_source": 2129, "bridge_inject_queued": 1310},
+      {"name": "r752", "connect": 1, "snapshot_source": 1331, "bridge_inject_queued": 1228}
+    ],
+    "bridge_inject_failed": 0,
+    "logs": "runs/r748..r752-gs.jsonl and runs/r748..r752-bridge.out"
+  },
+  "client_side": {
+    "all_five_sessions": "session_up reported net_state=10 in each independent run; this establishes entry, not indefinite stability",
+    "r748_id78_writer": {"entry": "0x58EF60", "entry_count": 277, "ecx_weapon_id": 78, "argument_slot_pointer": "0x1C16BC8", "slot_before": [0, 0, 0, 0], "writer": "0x58EFF2", "writer_eax": "0x12CB1720", "slot_after": [0, 315299616, 0, 0], "sample": "runs/r748-writer-samples.json"},
+    "r749_without_hooks": {"id78_slot_plus4": 314644256, "cache_nonzero_count": 272, "screen": "runs/r749-entry.png"},
+    "r750_view_builder": {"address": "0x5903F0", "count_at_first_read": 16184, "model_resolver": "0x80E1D0", "resolver_count_at_first_read": 16184, "screen": "runs/r750-entry.png"},
+    "r751_resolver_return": {"return_site": "0x5905BE", "count": 21105, "eax": 2},
+    "r752_resolver_return": {"return_site": "0x5905BE", "count": 17927, "eax": 2, "model_name_pointer_0": "0x33B4942B", "model_name_0": "fja_ghillie_sc_m_vmchar_basic", "model_name_pointer_1": "0x33B4B679", "model_name_1": "han_fingerless_ss_s_vmchar_20"},
+    "visual": "r748/r749/r750 entry screenshots show map, AK-47/30 HUD and ghillie arms but no identifiable AK-47 gun body; later ground-level view cannot be treated as first-person gun proof",
+    "ps_at_r751": {"pm_type": 0, "health": 100, "weapon": 78, "clientNum": 0, "viewmodelIndex": 482, "origin": [336, 60, 260.5]},
+    "ui_state": "not measured in these runs; previous direct reads were 5",
+    "movement_and_shooting": "not proven"
+  },
+  "interpretation": "The old r747 ID-78 writer question is resolved: with original per-ID indexing and the signed FF, slot+4 is written. Error 174 was not observed in these five entries. The first-person resolver returns two character models, both hands/arms; these are not the gun body. Its successful calls do not establish that the AK-47 model was registered or submitted to the view DObj. The 0x1C166E8 table was previously classified as a server-logic cache (§677); do not relabel it as the gun renderer solely from this test.",
+  "safety": "All transient hooks were restored and original bytes read back. Only exact run PIDs were stopped. The staged signed FF was hash-checked and removed from the sole runtime; private source stays ignored. r749-r752 write-after SQLite databases were integrity-checked and quarantined in resources/1649370/local/profile-backups; live profile was restored to baseline SHA-256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70. No second runtime was copied.",
+  "next": "Trace the separate gun-body model path and view DObj submission, starting from the weapon definition/model name and active cg weapon ID 78. At each stage record server frame, client state, registered model pointer, and live screenshot. Then verify real input-driven movement and shooting; do not infer either from HUD or arm models."
+}
