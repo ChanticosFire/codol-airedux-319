@@ -1,0 +1,494 @@
+{
+  "date": "2026-10-29",
+  "hypothesis": "Acknowledged snapshot usercmd baseline reconstructs mouse yaw, and server snapshots feed yaw-relative bounded directional steps back to native client playerState.",
+  "community_reference": "他人文件参考/CODOL-Member-Preview-20261026/native-engine/source/src/codol/player/codol_usercmd_baseline164.c",
+  "implementation_scope": "Guarded --input-motion-probe; verified r738 102-byte baseline frame; one +2 local-axis step per input packet rotated by yaw; ±64 world XY clamp; one press-edge decrement of clip. No time integration/collision/ballistics.",
+  "runs": [
+    {
+      "run": "r780",
+      "server_log": "runs/r780-gs.jsonl (private, ignored)",
+      "source_counts": {
+        "connect": 1,
+        "snapshot_source": 338,
+        "input_decoded": 225,
+        "input_decode_error": 0,
+        "input_yaw_probe": 0,
+        "input_motion_probe": 8,
+        "input_ammo_probe": 0
+      },
+      "mouse": {
+        "foreground_matches": true,
+        "relative_dx_total": 400,
+        "events": 10
+      },
+      "native_client_samples": {
+        "before": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": null,
+          "clip": 30
+        },
+        "postmouse": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": null,
+          "clip": 30
+        },
+        "after": {
+          "reads": 3,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            352.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": null,
+          "clip": 30
+        }
+      }
+    },
+    {
+      "run": "r781",
+      "server_log": "runs/r781-gs.jsonl (private, ignored)",
+      "source_counts": {
+        "connect": 1,
+        "snapshot_source": 334,
+        "input_decoded": 241,
+        "input_decode_error": 0,
+        "input_yaw_probe": 34,
+        "input_motion_probe": 11,
+        "input_ammo_probe": 0
+      },
+      "mouse": {
+        "foreground_matches": true,
+        "relative_dx_total": 400,
+        "events": 10
+      },
+      "native_client_samples": {
+        "before": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": 0.0,
+          "clip": 30
+        },
+        "postmouse": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": -29.8389,
+          "clip": 30
+        },
+        "after": {
+          "reads": 3,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            358.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": 0.0,
+          "clip": 30
+        }
+      }
+    },
+    {
+      "run": "r782",
+      "server_log": "runs/r782-gs.jsonl (private, ignored)",
+      "source_counts": {
+        "connect": 1,
+        "snapshot_source": 340,
+        "input_decoded": 246,
+        "input_decode_error": 0,
+        "input_yaw_probe": 3,
+        "input_motion_probe": 11,
+        "input_ammo_probe": 0
+      },
+      "mouse": {
+        "foreground_matches": true,
+        "relative_dx_total": 400,
+        "events": 10
+      },
+      "native_client_samples": {
+        "before": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": 0.0,
+          "clip": 30
+        },
+        "postmouse": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": -29.8004,
+          "clip": 30
+        },
+        "after": {
+          "reads": 3,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            355.0908,
+            49.0664,
+            260.5
+          ],
+          "yaw_degrees": -29.8004,
+          "clip": 30
+        }
+      }
+    },
+    {
+      "run": "r783",
+      "server_log": "runs/r783-gs.jsonl (private, ignored)",
+      "source_counts": {
+        "connect": 1,
+        "snapshot_source": 350,
+        "input_decoded": 212,
+        "input_decode_error": 0,
+        "input_yaw_probe": 5,
+        "input_motion_probe": 6,
+        "input_ammo_probe": 0
+      },
+      "mouse": {
+        "foreground_matches": true,
+        "relative_dx_total": 400,
+        "events": 10
+      },
+      "native_client_samples": {
+        "before": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": 0.0,
+          "clip": 30
+        },
+        "postmouse": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": -29.8389,
+          "clip": 30
+        },
+        "after": {
+          "reads": 3,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            346.4091,
+            54.0293,
+            260.5
+          ],
+          "yaw_degrees": -29.8389,
+          "clip": 30
+        }
+      }
+    },
+    {
+      "run": "r784",
+      "server_log": "runs/r784-gs.jsonl (private, ignored)",
+      "source_counts": {
+        "connect": 1,
+        "snapshot_source": 438,
+        "input_decoded": 312,
+        "input_decode_error": 0,
+        "input_yaw_probe": 8,
+        "input_motion_probe": 37,
+        "input_ammo_probe": 1
+      },
+      "mouse": {
+        "foreground_matches": true,
+        "relative_dx_total": 400,
+        "events": 10
+      },
+      "native_client_samples": {
+        "before": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": 0.0,
+          "clip": 30
+        },
+        "postmouse": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": -29.8004,
+          "clip": 30
+        },
+        "w": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            348.1487,
+            53.0423,
+            260.5
+          ],
+          "yaw_degrees": -29.8004,
+          "clip": 30
+        },
+        "s": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            332.529,
+            61.9879,
+            260.5
+          ],
+          "yaw_degrees": -29.8004,
+          "clip": 30
+        },
+        "a": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            322.5894,
+            44.6327,
+            260.5
+          ],
+          "yaw_degrees": -29.8004,
+          "clip": 30
+        },
+        "d": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            333.5229,
+            63.7234,
+            260.5
+          ],
+          "yaw_degrees": -29.8004,
+          "clip": 30
+        },
+        "after": {
+          "reads": 3,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            333.5229,
+            63.7234,
+            260.5
+          ],
+          "yaw_degrees": -29.8004,
+          "clip": 29
+        }
+      }
+    },
+    {
+      "run": "r785",
+      "server_log": "runs/r785-gs.jsonl (private, ignored)",
+      "source_counts": {
+        "connect": 1,
+        "snapshot_source": 432,
+        "input_decoded": 272,
+        "input_decode_error": 0,
+        "input_yaw_probe": 6,
+        "input_motion_probe": 35,
+        "input_ammo_probe": 1
+      },
+      "mouse": {
+        "foreground_matches": true,
+        "relative_dx_total": 400,
+        "events": 10
+      },
+      "native_client_samples": {
+        "before": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": 0.0,
+          "clip": 30
+        },
+        "postmouse": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            336.0,
+            60.0,
+            260.5
+          ],
+          "yaw_degrees": -29.8389,
+          "clip": 30
+        },
+        "w": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            344.6743,
+            55.0244,
+            260.5
+          ],
+          "yaw_degrees": -29.8389,
+          "clip": 30
+        },
+        "s": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            325.5909,
+            65.9707,
+            260.5
+          ],
+          "yaw_degrees": -29.8389,
+          "clip": 30
+        },
+        "a": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            314.6445,
+            46.8873,
+            260.5
+          ],
+          "yaw_degrees": -29.8389,
+          "clip": 30
+        },
+        "d": {
+          "reads": 1,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            322.6055,
+            60.7662,
+            260.5
+          ],
+          "yaw_degrees": -29.8389,
+          "clip": 30
+        },
+        "after": {
+          "reads": 3,
+          "net_states": [
+            10
+          ],
+          "origin": [
+            322.6055,
+            60.7662,
+            260.5
+          ],
+          "yaw_degrees": -29.8389,
+          "clip": 29
+        }
+      }
+    }
+  ],
+  "comparisons": {
+    "r780": "Before yaw feedback: mouse packet yaw changed in offline decode, but server snapshot yaw remained zero and native client X changed only along world X.",
+    "r781": "Yaw in snapshot with zero usercmd baseline: native postmouse yaw -29.8389 but after-W sample yaw 0; source yaw_probe 34 includes repeated 330.16 to 0 flips.",
+    "r782_r783": "Acknowledged-snapshot baseline: independent live runs decode 246/212 packets with zero errors, postmouse and after-W native yaw remains about -29.8 degrees, world XY displacement has both components.",
+    "r784_r785": "Two independent full sequences mouse/W/S/A/D/left: native yaw remained about -29.8 throughout, every key changed native XY, and attack edge changed clip 30 to 29. More repetitions needed for stable full-sequence claim."
+  },
+  "screenshots": [
+    {
+      "file": "evidence/experiments/20261029-r782-before-mouse.png",
+      "sha256": "f5b889d7e3837dd38b000345c1997723ac6158382fad78f55b9b56d93761a025"
+    },
+    {
+      "file": "evidence/experiments/20261029-r782-after-yaw-w.png",
+      "sha256": "40f04337e3db30236953a454eaf4a52546b3deb71c916f8bea46920d1f0b110c"
+    },
+    {
+      "file": "evidence/experiments/20261029-r784-after-yaw-four-axis-ammo.png",
+      "sha256": "bc246592bb5c15737fcd2ec3c77186c79f001ccc3f561387df547a0d5d18d8d1"
+    }
+  ],
+  "limitations": [
+    "Normal first-person gun body absent in screenshots.",
+    "Clip decrement is a diagnostic response, not firing animation, ballistic shot or hit.",
+    "Position response is packet-step diagnostic without collision, speed or elapsed time.",
+    "Normal end-to-lobby and literal ui_state != 5 not retested in this configuration.",
+    "r784 before and r785 after captures are black frames and excluded from visual evidence."
+  ],
+  "privacy": "No packet bodies, auth material, resource local files, or live database copied into tracked evidence."
+}

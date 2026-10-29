@@ -36,6 +36,7 @@ import argparse
 import ctypes
 import hashlib
 import json
+import math
 import socket
 import struct
 import time
@@ -44,7 +45,7 @@ from pathlib import Path
 
 from .native_gamestate import DEFAULT_CONFIGSTRINGS, build_native_gamestate
 from .wire164 import build_snapshot, _word
-from .client_input import ClientInputDecodeError, decode_client_packet
+from .client_input import ClientInputDecodeError, UserCmd, decode_client_packet
 
 PROTOCOL_GENERATION = "1.1.1.13"
 DEFAULT_MAP = "mp_cross_fire"
@@ -552,6 +553,11 @@ class GameServer:
             peer["input_motion_y"] = self.input_motion_start_y
             peer["input_motion_clip"] = 30
             peer["input_attack_down"] = False
+            peer["input_motion_pitch"] = 0.0
+            peer["input_motion_pitch_wire"] = 0
+            peer["input_motion_yaw"] = 0.0
+            peer["input_motion_yaw_wire"] = 0
+            peer["input_snapshot_baselines"] = {}
         if self.rebuild_follower is not None:
             self.rebuild_follower.reader._ensure_handle(force=True)
         self.log({"dir": "in", "kind": "connect", "from": f"{addr[0]}:{addr[1]}",
@@ -769,11 +775,14 @@ class GameServer:
                       "seq": seq, "index": index, "count": count,
                       "stride": frag_size, "chunk": len(chunk), "length": len(packet)})
 
-    def _input_motion_frame(self, x: float, y: float, clip: int = 30) -> bytes:
+    def _input_motion_frame(self, x: float, y: float, clip: int = 30,
+                            yaw: float = 0.0, pitch: float = 0.0) -> bytes:
         """Rebuild the verified r738 baseline with bounded input feedback."""
         values = dict(self.input_motion_values)
         values[0x30] = _word(x)
         values[0x34] = _word(y)
+        values[0x160] = _word(pitch)
+        values[0x164] = _word(yaw)
         return build_snapshot(values, server_time=72192, tail_weapon=78,
                               tail_clip_count=clip, tail_health=100,
                               entities=((0, 1, {2: _word(200.0)}),),
@@ -805,7 +814,9 @@ class GameServer:
                 data = self._input_motion_frame(
                     peer.get("input_motion_x", self.input_motion_start_x),
                     peer.get("input_motion_y", self.input_motion_start_y),
-                    peer.get("input_motion_clip", 30))
+                    peer.get("input_motion_clip", 30),
+                    peer.get("input_motion_yaw", 0.0),
+                    peer.get("input_motion_pitch", 0.0))
             payload = b"\x00\x00\x00\x00" + data
             if not self.snapshot_preserve_time and len(payload) >= 9 and payload[4] == 0:
                 server_time = 72192 + index * 500
@@ -839,6 +850,14 @@ class GameServer:
                               "seq": self.snapshot_seq + index,
                               "origin": list(struct.unpack("<fff", payload[0x0F:0x0F + 12]))})
             seq = self.snapshot_seq + index
+            if self.input_motion_probe:
+                baselines = peer["input_snapshot_baselines"]
+                baselines[seq] = UserCmd(
+                    angles=(peer["input_motion_pitch_wire"],
+                            peer["input_motion_yaw_wire"], 0),
+                    weapon=78, alt_weapon=78)
+                if len(baselines) > 2048:
+                    del baselines[min(baselines)]
             gate = self.state_reader or self.origin_reader
             ready = True if gate is None else gate.is_active()
             if self.command_every and index % self.command_every == 0 and ready:
@@ -966,9 +985,14 @@ class GameServer:
                 try:
                     if self.checksum_feed is None or peer.get("challenge") is None:
                         raise ClientInputDecodeError("missing gamestate feed or challenge")
+                    baseline = UserCmd()
+                    if self.input_motion_probe:
+                        baseline = peer["input_snapshot_baselines"].get(message_ack)
+                        if baseline is None:
+                            raise ClientInputDecodeError("missing acknowledged snapshot baseline")
                     result = decode_client_packet(
                         data, challenge=peer["challenge"],
-                        checksum_feed=self.checksum_feed)
+                        checksum_feed=self.checksum_feed, baseline=baseline)
                 except ClientInputDecodeError as error:
                     self.state.counters["input_decode_error"] = (
                         self.state.counters.get("input_decode_error", 0) + 1)
@@ -984,15 +1008,32 @@ class GameServer:
                         peer["last_input"] = result.usercmds[-1]
                         if self.input_motion_probe:
                             # r775 observed W/S/A/D as 1/2/8/4. These are
-                            # deliberately axis-aligned diagnostic steps, not
-                            # a collision-aware movement or yaw model.
+                            # Deliberate bounded local-axis packet steps,
+                            # rotated by yaw; not collision-aware movement.
                             direction = result.usercmds[-1].direction
+                            pitch_wire, yaw_wire = result.usercmds[-1].angles[:2]
+                            pitch = (pitch_wire & 0xFFFF) * (360.0 / 65536.0)
+                            yaw = (yaw_wire & 0xFFFF) * (360.0 / 65536.0)
+                            prior_yaw = peer.get("input_motion_yaw", 0.0)
+                            peer["input_motion_pitch"] = pitch
+                            peer["input_motion_pitch_wire"] = pitch_wire
+                            peer["input_motion_yaw"] = yaw
+                            peer["input_motion_yaw_wire"] = yaw_wire
+                            if yaw != prior_yaw:
+                                self.log({"dir": "meta", "kind": "input_yaw_probe",
+                                          "seq": result.sequence,
+                                          "wire_yaw": yaw_wire,
+                                          "before_degrees": prior_yaw,
+                                          "after_degrees": yaw})
                             steps = {1: (2.0, 0.0), 2: (-2.0, 0.0),
                                      4: (0.0, 2.0), 8: (0.0, -2.0)}
                             if direction in steps:
                                 before_x = peer.get("input_motion_x", self.input_motion_start_x)
                                 before_y = peer.get("input_motion_y", self.input_motion_start_y)
-                                dx, dy = steps[direction]
+                                local_x, local_y = steps[direction]
+                                radians = math.radians(yaw)
+                                dx = math.cos(radians) * local_x - math.sin(radians) * local_y
+                                dy = math.sin(radians) * local_x + math.cos(radians) * local_y
                                 after_x = min(self.input_motion_start_x + 64.0,
                                               max(self.input_motion_start_x - 64.0,
                                                   before_x + dx))
@@ -1023,6 +1064,7 @@ class GameServer:
                               "cmd_count": len(result.usercmds),
                               "server_time": last.server_time,
                               "direction": last.direction,
+                              "angles": last.angles,
                               "buttons": last.buttons,
                               "reported_origin": result.reported_origin,
                               "origin_time": result.origin_time})

@@ -45,6 +45,7 @@ FIELDS = (
     ("weapon", 0x004C, "u32"),
     ("clientNum", 0x0158, "u32"),
     ("viewmodelIndex", 0x015C, "u32"),
+    ("viewangles", 0x0160, "vec3"),
     ("viewHeightTarget", 0x016C, "i32"),
     ("groundEntityNum", 0x00C0, "u32"),
     ("gravity", 0x00A4, "u32"),
