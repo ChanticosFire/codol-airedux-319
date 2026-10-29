@@ -358,7 +358,8 @@ class GameServer:
                  rebuild_follow_pid: int | None = None,
                  send_opcode: int | None = None,
                  decode_client_input: bool = False,
-                 input_motion_probe: bool = False):
+                 input_motion_probe: bool = False,
+                 input_fire_event_probe: bool = False):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -371,6 +372,9 @@ class GameServer:
         self.checksum_feed = checksum_feed
         self.decode_client_input = decode_client_input
         self.input_motion_probe = input_motion_probe
+        self.input_fire_event_probe = input_fire_event_probe
+        if input_fire_event_probe and not input_motion_probe:
+            raise ValueError("fire event probe requires the r738 input motion probe")
         self.gamestate_source = gamestate_source
         self.gamestate_file = Path(gamestate_file) if gamestate_file else None
         self.connect_extra = connect_extra
@@ -553,6 +557,7 @@ class GameServer:
             peer["input_motion_y"] = self.input_motion_start_y
             peer["input_motion_clip"] = 30
             peer["input_attack_down"] = False
+            peer["input_fire_event_sequence"] = 0
             peer["input_motion_pitch"] = 0.0
             peer["input_motion_pitch_wire"] = 0
             peer["input_motion_yaw"] = 0.0
@@ -776,17 +781,23 @@ class GameServer:
                       "stride": frag_size, "chunk": len(chunk), "length": len(packet)})
 
     def _input_motion_frame(self, x: float, y: float, clip: int = 30,
-                            yaw: float = 0.0, pitch: float = 0.0) -> bytes:
+                            yaw: float = 0.0, pitch: float = 0.0,
+                            event_sequence: int = 0) -> bytes:
         """Rebuild the verified r738 baseline with bounded input feedback."""
         values = dict(self.input_motion_values)
         values[0x30] = _word(x)
         values[0x34] = _word(y)
         values[0x160] = _word(pitch)
         values[0x164] = _word(yaw)
+        events = None
+        if event_sequence:
+            values[0x108] = event_sequence
+            events = {0x10C: (54, 0)}
         return build_snapshot(values, server_time=72192, tail_weapon=78,
                               tail_clip_count=clip, tail_health=100,
                               entities=((0, 1, {2: _word(200.0)}),),
-                              clients=((0, {17: 1, 20: 570, 36: 1}),))
+                              clients=((0, {17: 1, 20: 570, 36: 1}),),
+                              player_event_pairs=events)
 
     def send_due_snapshots(self) -> None:
         """Send the staged snapshot files in order; optionally keep repeating the last."""
@@ -816,7 +827,9 @@ class GameServer:
                     peer.get("input_motion_y", self.input_motion_start_y),
                     peer.get("input_motion_clip", 30),
                     peer.get("input_motion_yaw", 0.0),
-                    peer.get("input_motion_pitch", 0.0))
+                    peer.get("input_motion_pitch", 0.0),
+                    peer.get("input_fire_event_sequence", 0)
+                    if self.input_fire_event_probe else 0)
             payload = b"\x00\x00\x00\x00" + data
             if not self.snapshot_preserve_time and len(payload) >= 9 and payload[4] == 0:
                 server_time = 72192 + index * 500
@@ -1048,13 +1061,13 @@ class GameServer:
                                           "before_y": before_y, "after_y": after_y})
                             attack_down = bool(result.usercmds[-1].buttons & 1)
                             if attack_down and not peer.get("input_attack_down", False):
-                                before_clip = peer.get("input_motion_clip", 30)
-                                after_clip = max(0, before_clip - 1)
-                                peer["input_motion_clip"] = after_clip
-                                self.log({"dir": "meta", "kind": "input_ammo_probe",
-                                          "seq": result.sequence,
-                                          "before_clip": before_clip,
-                                          "after_clip": after_clip})
+                                if self.input_fire_event_probe and peer.get("input_motion_clip", 30) > 0:
+                                    peer["input_fire_event_sequence"] += 1
+                                    self.log({"dir": "meta", "kind": "input_fire_event_probe",
+                                              "seq": result.sequence,
+                                              "event_sequence": peer["input_fire_event_sequence"],
+                                              "event_id": 54,
+                                              "clip_unchanged": peer["input_motion_clip"]})
                             peer["input_attack_down"] = attack_down
                     last = result.usercmds[-1]
                     self.log({"dir": "meta", "kind": "input_decoded",
@@ -1109,7 +1122,9 @@ def main() -> int:
     parser.add_argument("--decode-client-input", action="store_true",
                         help="read-only validated usercmd decode (requires actual checksum feed)")
     parser.add_argument("--input-motion-probe", action="store_true",
-                        help="experimental r738 four-axis origin and attack-edge clip feedback")
+                        help="experimental r738 four-axis origin feedback; no synthetic ammo changes")
+    parser.add_argument("--input-fire-event-probe", action="store_true",
+                        help="opt-in attack-edge player event ID 54 with unchanged clip")
     parser.add_argument("--gamestate-source", choices=("native", "capture", "file"), default="native")
     parser.add_argument("--gamestate-file", default=None,
                         help="complete plaintext payload, including four-byte reliable ack")
@@ -1213,6 +1228,8 @@ def main() -> int:
         parser.error("--input-motion-probe requires --decode-client-input")
     if args.input_motion_probe and args.snapshot_dir:
         parser.error("--input-motion-probe requires a single r738 snapshot file")
+    if args.input_fire_event_probe and not args.input_motion_probe:
+        parser.error("--input-fire-event-probe requires --input-motion-probe")
     server = GameServer(args.port, args.log, args.delay_send, args.checksum_feed,
                         args.gamestate_source, args.registration_checksum, args.challenge_override,
                         args.snapshot_file, args.snapshot_delay, args.snapshot_seq,
@@ -1227,7 +1244,7 @@ def main() -> int:
                         args.server_command_seq, args.server_command_text,
                         args.snapshot_dir, args.snapshot_frame_repeat,
                         args.rebuild_follow_pid, args.send_opcode, args.decode_client_input,
-                        args.input_motion_probe)
+                        args.input_motion_probe, args.input_fire_event_probe)
     try:
         server.serve()
     except KeyboardInterrupt:

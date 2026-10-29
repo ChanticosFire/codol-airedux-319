@@ -135,7 +135,9 @@ def main() -> int:
     ap.add_argument("--decode-client-input", action="store_true",
                     help="read-only usercmd decoding using the selected gamestate's checksum feed; requires server-command-text off")
     ap.add_argument("--input-motion-probe", action="store_true",
-                    help="opt-in bounded r738 four-axis origin and attack-edge clip feedback")
+                    help="opt-in bounded r738 four-axis origin feedback; no synthetic ammo changes")
+    ap.add_argument("--input-fire-event-probe", action="store_true",
+                    help="opt-in attack-edge event ID 54 with unchanged clip; requires input motion probe")
     ap.add_argument("--send-opcode", default=None,
                     help="comma separated raw inband opcodes to send after connect, "
                          "three seconds apart")
@@ -176,6 +178,8 @@ def main() -> int:
         ap.error("--input-motion-probe requires --decode-client-input")
     if args.input_motion_probe and args.snapshot_dir:
         ap.error("--input-motion-probe requires a single r738 snapshot file")
+    if args.input_fire_event_probe and not args.input_motion_probe:
+        ap.error("--input-fire-event-probe requires --input-motion-probe")
     if args.trace_weapon_registration and not args.restore_weapon_handler:
         ap.error("--trace-weapon-registration requires --restore-weapon-handler")
     if args.trace_weapon_lookup and not args.restore_weapon_handler:
@@ -228,6 +232,7 @@ def main() -> int:
                            *( ["--checksum-feed", str(input_checksum_feed), "--decode-client-input"]
                               if args.decode_client_input else [] ),
                            *( ["--input-motion-probe"] if args.input_motion_probe else [] ),
+                           *( ["--input-fire-event-probe"] if args.input_fire_event_probe else [] ),
                            "--gamestate-gametype", args.gametype,
                            "--gamestate-map", "mp_crash_tropical",
                            "--snapshot-delay", "1",

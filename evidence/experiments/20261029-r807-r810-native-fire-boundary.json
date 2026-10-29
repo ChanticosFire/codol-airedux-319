@@ -1,0 +1,200 @@
+{
+  "date": "2026-10-29",
+  "rounds": [
+    "r807",
+    "r808",
+    "r809",
+    "r810"
+  ],
+  "hypothesis": "If a real client attack edge is mapped into native Build 1649370 player event ID 54, the client should store the event; only a native weapon-state transition, firing feedback, and true ammo/damage changes can prove shooting.",
+  "change": {
+    "files": [
+      "server1649370/gameserver.py",
+      "tools/session_up_1649370.py"
+    ],
+    "opt_in": "--input-fire-event-probe requires --input-motion-probe and exact r738 snapshot; increments event sequence from decoded new attack edges; sends -94 ID54; never decrements clip",
+    "old_artificial_ammo": "removed from input-motion-probe default diagnostic path, including its input_ammo_probe log; stored r778-r802 results remain diagnostic historical evidence, not shooting"
+  },
+  "static_regression": "Existing r738 snapshot rebuild stays byte-exact at 102 bytes; event sequence1 yields 104 bytes and decodes ID54; compileall and wire164 self-test passed.",
+  "r807": {
+    "connect": 1,
+    "snapshot_source": 195,
+    "input_decoded": 85,
+    "decode_errors": 0,
+    "attack_packets": 10,
+    "fire_event_rows": [
+      {
+        "seq": 1413,
+        "event_sequence": 1,
+        "event_id": 54
+      }
+    ],
+    "artificial_ammo_rows": 1,
+    "client_event_before": {
+      "sequence": 0,
+      "event_id": 0,
+      "parameter": 0
+    },
+    "client_event_after": {
+      "sequence": 1,
+      "event_id": 54,
+      "parameter": 0
+    },
+    "client_weapon_clips": [
+      [
+        78,
+        30
+      ],
+      [
+        78,
+        30
+      ],
+      [
+        78,
+        30
+      ]
+    ]
+  },
+  "r808": {
+    "connect": 1,
+    "snapshot_source": 196,
+    "input_decoded": 99,
+    "decode_errors": 0,
+    "attack_packets": 9,
+    "fire_event_rows": [
+      {
+        "seq": 1493,
+        "event_sequence": 1,
+        "event_id": 54
+      },
+      {
+        "seq": 2105,
+        "event_sequence": 2,
+        "event_id": 54
+      }
+    ],
+    "artificial_ammo_rows": 2,
+    "client_event_before": {
+      "sequence": 0,
+      "event_id": 0,
+      "parameter": 0
+    },
+    "client_event_after": {
+      "sequence": 2,
+      "event_id": 54,
+      "parameter": 0
+    },
+    "client_weapon_clips": [
+      [
+        78,
+        30
+      ],
+      [
+        78,
+        30
+      ],
+      [
+        78,
+        30
+      ]
+    ]
+  },
+  "r809": {
+    "connect": 1,
+    "snapshot_source": 210,
+    "input_decoded": 104,
+    "decode_errors": 0,
+    "attack_packets": 21,
+    "fire_event_rows": [
+      {
+        "seq": 1463,
+        "event_sequence": 1,
+        "event_id": 54
+      }
+    ],
+    "artificial_ammo_rows": 0,
+    "client_event_before": {
+      "sequence": 0,
+      "event_id": 0,
+      "parameter": 0
+    },
+    "client_event_after": {
+      "sequence": 1,
+      "event_id": 54,
+      "parameter": 0
+    },
+    "client_weapon_clips": [
+      [
+        78,
+        30
+      ],
+      [
+        78,
+        30
+      ],
+      [
+        78,
+        30
+      ]
+    ],
+    "native_weapon_state_samples": {
+      "before": {
+        "weapAnim": 0,
+        "weaponTime": 0,
+        "weaponDelay": 0,
+        "weaponState": 0,
+        "weaponShotCount": 0
+      },
+      "during": {
+        "weapAnim": 0,
+        "weaponTime": 0,
+        "weaponDelay": 0,
+        "weaponState": 0,
+        "weaponShotCount": 0
+      },
+      "after": {
+        "weapAnim": 0,
+        "weaponTime": 0,
+        "weaponDelay": 0,
+        "weaponState": 0,
+        "weaponShotCount": 0
+      }
+    },
+    "during_click_screenshot": "evidence/experiments/20261029-r809-native-fire-probe-during-click.png"
+  },
+  "r810": {
+    "connect": 1,
+    "snapshot_source": 200,
+    "input_decoded": 100,
+    "decode_errors": 0,
+    "attack_packets": 14,
+    "fire_event_rows": [],
+    "artificial_ammo_rows": 0,
+    "client_event_before": {
+      "sequence": 0,
+      "event_id": 0,
+      "parameter": 0
+    },
+    "client_event_after": {
+      "sequence": 0,
+      "event_id": 0,
+      "parameter": 0
+    },
+    "client_weapon_clips": [
+      [
+        78,
+        30
+      ],
+      [
+        78,
+        30
+      ],
+      [
+        78,
+        30
+      ]
+    ]
+  },
+  "interpretation": "r807/r809 show a real click produces a decoded attack packet and ID54 in native client PS, with clip still 30. r808 recorded two separate decoded attack edges, therefore no one-click-one-event claim. In r809 all five sampled native weapon-state words stayed zero before/during/after; samples can miss short transients. r810 with event flag off decoded attack packets yet produced no event and no artificial ammo change. No muzzle, projectile, hit, damage, or gun body was demonstrated. Full fifth acceptance criterion remains open.",
+  "environment": "Sole r107flow/runtime reused; signed FF staged only at client_shipretail/chinese and removed; exact PIDs stopped; private profile copies retained; active profile baseline SHA256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70 and SQLite integrity ok."
+}
