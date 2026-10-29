@@ -22,9 +22,9 @@
     "name": "r813 one-field owned-bit snapshot, not run against client",
     "intended_difference": "r738 snapshot with ps+0x564=0x4000 (weapon 78 owned bit 14)",
     "baseline_rebuild": "byte-exact r738 round trip succeeded before adding field",
-    "result": "build_snapshot raised ValueError: unsupported integer width -57 before reaching descriptor 192 (0x564)",
+    "result": "Committed writer raised ValueError: unsupported integer width -57 before reaching descriptor 192 (0x564). A temporary one-bit -57 branch based on same-Build community code then produced a 109-byte candidate, which the diagnostic decoder read back as owned=0x4000; the branch was reverted pending live A/B regression. Candidate was not sent to a client.",
     "reason": "The current production writer does not encode all zero-valued descriptor codecs needed when the last changed field extends to index 192.",
-    "reusable": "Yes: extend and verify codecs against same-Build community codol_playerstate164.c, preserve r738 byte-exact baseline, then perform controlled A/B. No r813 frame was sent."
+    "reusable": "Yes: reapply the exact one-bit -57 branch after inspecting the diff, preserve r738 byte-exact baseline, then perform controlled baseline/owned A/B with two regression runs. No r813 frame was sent."
   },
   "interpretation": "A second real session confirms the native client currently has spawn time zero and no owned bit for weapon 78 while its playerState weapon/HUD say 78. This supports investigation of native selection/spawn state, but does not establish that either zero value alone causes usercmd.weapon=0 or blocks firing. Prior direct-memory owned-bit trials addressed rendering and cannot be treated as a snapshot-published selection test.",
   "cleanup": "Only r107flow/runtime reused; temporary signed FF removed; profile SHA-256 restored to 06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70, SQLite integrity ok, game ports released."
