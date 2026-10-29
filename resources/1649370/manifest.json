@@ -20,7 +20,7 @@
       "method": "independent_copy",
       "bytes": 1835285,
       "sha256": "c4e975fef271f492774cc09701b1a9f7a014300b6ef94bce961def3dc819093f",
-      "status": "signature verified; r745 returned error 174 ak47_mp; not a known-good runtime asset"
+      "status": "signature verified; r797-r799 correct-path staging registered weapon 78 and arm models in three real connections; gun body still required guarded temporary client-memory binding; remove staged file after each run"
     },
     {
       "id": "active_lsg_certificate",
