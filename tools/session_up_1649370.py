@@ -135,7 +135,7 @@ def main() -> int:
     ap.add_argument("--decode-client-input", action="store_true",
                     help="read-only usercmd decoding using the selected gamestate's checksum feed; requires server-command-text off")
     ap.add_argument("--input-motion-probe", action="store_true",
-                    help="opt-in bounded r738 W packet -> snapshot X feedback")
+                    help="opt-in bounded r738 four-axis origin and attack-edge clip feedback")
     ap.add_argument("--send-opcode", default=None,
                     help="comma separated raw inband opcodes to send after connect, "
                          "three seconds apart")

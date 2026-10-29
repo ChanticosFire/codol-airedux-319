@@ -52,6 +52,8 @@ FIELDS = (
     ("primary", 0x03F8, "u32"),
     ("altWeapon", 0x03FC, "u32"),
     ("fWeaponPosFrac", 0x0404, "f32"),
+    ("clipWeapon", 0x0494, "u32"),
+    ("clipCount", 0x0498, "u32"),
 )
 
 

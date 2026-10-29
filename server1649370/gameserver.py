@@ -394,6 +394,7 @@ class GameServer:
                                if snapshot_path else [])
         self.input_motion_values = None
         self.input_motion_start_x = None
+        self.input_motion_start_y = None
         if input_motion_probe:
             if not decode_client_input or len(self.snapshot_files) != 1 or snapshot_dir:
                 raise ValueError("input motion probe requires decoder and one snapshot file")
@@ -406,8 +407,10 @@ class GameServer:
             values = {int(key, 16): row["word"] for key, row in parsed["fields"].items()}
             values[0] = parsed["server_time"]
             self.input_motion_start_x = struct.unpack("<f", struct.pack("<I", values[0x30]))[0]
+            self.input_motion_start_y = struct.unpack("<f", struct.pack("<I", values[0x34]))[0]
             self.input_motion_values = values
-            if self._input_motion_frame(self.input_motion_start_x) != fixture:
+            if self._input_motion_frame(self.input_motion_start_x,
+                                        self.input_motion_start_y) != fixture:
                 raise ValueError("input motion template did not round-trip")
         # A directory of frames plays as one continuous stream: every frame is
         # repeated ``snapshot_frame_repeat`` times so the client keeps receiving
@@ -546,6 +549,9 @@ class GameServer:
             peer["inband_seen"] = False
         if self.input_motion_probe:
             peer["input_motion_x"] = self.input_motion_start_x
+            peer["input_motion_y"] = self.input_motion_start_y
+            peer["input_motion_clip"] = 30
+            peer["input_attack_down"] = False
         if self.rebuild_follower is not None:
             self.rebuild_follower.reader._ensure_handle(force=True)
         self.log({"dir": "in", "kind": "connect", "from": f"{addr[0]}:{addr[1]}",
@@ -763,12 +769,13 @@ class GameServer:
                       "seq": seq, "index": index, "count": count,
                       "stride": frag_size, "chunk": len(chunk), "length": len(packet)})
 
-    def _input_motion_frame(self, x: float) -> bytes:
-        """Rebuild the verified r738 baseline with one bounded origin change."""
+    def _input_motion_frame(self, x: float, y: float, clip: int = 30) -> bytes:
+        """Rebuild the verified r738 baseline with bounded input feedback."""
         values = dict(self.input_motion_values)
         values[0x30] = _word(x)
+        values[0x34] = _word(y)
         return build_snapshot(values, server_time=72192, tail_weapon=78,
-                              tail_clip_count=30, tail_health=100,
+                              tail_clip_count=clip, tail_health=100,
                               entities=((0, 1, {2: _word(200.0)}),),
                               clients=((0, {17: 1, 20: 570, 36: 1}),))
 
@@ -796,7 +803,9 @@ class GameServer:
                 continue
             if self.input_motion_probe:
                 data = self._input_motion_frame(
-                    peer.get("input_motion_x", self.input_motion_start_x))
+                    peer.get("input_motion_x", self.input_motion_start_x),
+                    peer.get("input_motion_y", self.input_motion_start_y),
+                    peer.get("input_motion_clip", 30))
             payload = b"\x00\x00\x00\x00" + data
             if not self.snapshot_preserve_time and len(payload) >= 9 and payload[4] == 0:
                 server_time = 72192 + index * 500
@@ -973,13 +982,39 @@ class GameServer:
                     if result.sequence > prior:
                         peer["last_input_seq"] = result.sequence
                         peer["last_input"] = result.usercmds[-1]
-                        if self.input_motion_probe and result.usercmds[-1].direction == 1:
-                            before = peer.get("input_motion_x", self.input_motion_start_x)
-                            after = min(self.input_motion_start_x + 64.0, before + 2.0)
-                            peer["input_motion_x"] = after
-                            self.log({"dir": "meta", "kind": "input_motion_probe",
-                                      "seq": result.sequence, "before_x": before,
-                                      "after_x": after})
+                        if self.input_motion_probe:
+                            # r775 observed W/S/A/D as 1/2/8/4. These are
+                            # deliberately axis-aligned diagnostic steps, not
+                            # a collision-aware movement or yaw model.
+                            direction = result.usercmds[-1].direction
+                            steps = {1: (2.0, 0.0), 2: (-2.0, 0.0),
+                                     4: (0.0, 2.0), 8: (0.0, -2.0)}
+                            if direction in steps:
+                                before_x = peer.get("input_motion_x", self.input_motion_start_x)
+                                before_y = peer.get("input_motion_y", self.input_motion_start_y)
+                                dx, dy = steps[direction]
+                                after_x = min(self.input_motion_start_x + 64.0,
+                                              max(self.input_motion_start_x - 64.0,
+                                                  before_x + dx))
+                                after_y = min(self.input_motion_start_y + 64.0,
+                                              max(self.input_motion_start_y - 64.0,
+                                                  before_y + dy))
+                                peer["input_motion_x"] = after_x
+                                peer["input_motion_y"] = after_y
+                                self.log({"dir": "meta", "kind": "input_motion_probe",
+                                          "seq": result.sequence, "direction": direction,
+                                          "before_x": before_x, "after_x": after_x,
+                                          "before_y": before_y, "after_y": after_y})
+                            attack_down = bool(result.usercmds[-1].buttons & 1)
+                            if attack_down and not peer.get("input_attack_down", False):
+                                before_clip = peer.get("input_motion_clip", 30)
+                                after_clip = max(0, before_clip - 1)
+                                peer["input_motion_clip"] = after_clip
+                                self.log({"dir": "meta", "kind": "input_ammo_probe",
+                                          "seq": result.sequence,
+                                          "before_clip": before_clip,
+                                          "after_clip": after_clip})
+                            peer["input_attack_down"] = attack_down
                     last = result.usercmds[-1]
                     self.log({"dir": "meta", "kind": "input_decoded",
                               "seq": result.sequence, "message_ack": result.message_ack,
@@ -1032,7 +1067,7 @@ def main() -> int:
     parser.add_argument("--decode-client-input", action="store_true",
                         help="read-only validated usercmd decode (requires actual checksum feed)")
     parser.add_argument("--input-motion-probe", action="store_true",
-                        help="experimental r738 W packet -> bounded snapshot X feedback")
+                        help="experimental r738 four-axis origin and attack-edge clip feedback")
     parser.add_argument("--gamestate-source", choices=("native", "capture", "file"), default="native")
     parser.add_argument("--gamestate-file", default=None,
                         help="complete plaintext payload, including four-byte reliable ack")
