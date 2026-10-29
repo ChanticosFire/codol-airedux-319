@@ -1,0 +1,305 @@
+{
+  "date": "2026-10-29",
+  "hypothesis": "The existing guarded client-memory AK-47 viewmodel binding will reproduce the prior visible-gun result in the current real connection, and the server can observe the same session left-click.",
+  "prior_positive": "evidence/experiments/20261028-r755-before-viewmodel.png and r755-after-viewmodel.png show arms-before/gun-after; r756/r758 repeated under earlier state. This historical result is not erased by current negative sessions.",
+  "fixed_inputs": {
+    "runtime": "only r107flow/runtime, EXE SHA-256 141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+    "gamestate": "runs/r738-gamestate-sniprestigea.bin",
+    "snapshot": "runs/r738-snapshot-sniprestigea.bin",
+    "signed_fastfile": "private original ak47_mp.ff temporarily staged, verified by SHA and removed",
+    "profile": "baseline SHA-256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70 before and after, SQLite integrity ok"
+  },
+  "runs": [
+    {
+      "run": "r786",
+      "mode": "slot+decode+motion",
+      "binding_time": "early (about snapshot 265)",
+      "server": {
+        "connect": 1,
+        "snapshot_source": 331,
+        "input_decoded": 223,
+        "decoded_attack_packets": 15,
+        "input_decode_error": 0,
+        "input_ammo_probe": 1
+      },
+      "client": {
+        "before_net": 10,
+        "after_net": 10,
+        "weapon": 78,
+        "before_clip": 30,
+        "after_clip": 29,
+        "binding_from_name": "tag_origin",
+        "binding_to_name": "viewmodel_ak47",
+        "apply_readback_matches_target": true,
+        "restore_matches_original": true
+      },
+      "capture_phases": [
+        {
+          "phase": "before-binding",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 264
+        },
+        {
+          "phase": "after-fire",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 322
+        }
+      ],
+      "private_logs": "runs/r786-* (ignored)"
+    },
+    {
+      "run": "r787",
+      "mode": "slot+decode+motion",
+      "binding_time": "early (about snapshot 265)",
+      "server": {
+        "connect": 1,
+        "snapshot_source": 923,
+        "input_decoded": 673,
+        "decoded_attack_packets": 0,
+        "input_decode_error": 0,
+        "input_ammo_probe": 0
+      },
+      "client": {
+        "before_net": 10,
+        "after_net": 10,
+        "weapon": 78,
+        "before_clip": 30,
+        "after_clip": 30,
+        "binding_from_name": "tag_origin",
+        "binding_to_name": "viewmodel_ak47",
+        "apply_readback_matches_target": true,
+        "restore_matches_original": true
+      },
+      "capture_phases": [
+        {
+          "phase": "before-binding",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 269
+        },
+        {
+          "phase": "after-fire",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 914
+        }
+      ],
+      "private_logs": "runs/r787-* (ignored)"
+    },
+    {
+      "run": "r788",
+      "mode": "slot+decode",
+      "binding_time": "early (about snapshot 265)",
+      "server": {
+        "connect": 1,
+        "snapshot_source": 333,
+        "input_decoded": 244,
+        "decoded_attack_packets": 28,
+        "input_decode_error": 0,
+        "input_ammo_probe": 0
+      },
+      "client": {
+        "before_net": 10,
+        "after_net": 10,
+        "weapon": 78,
+        "before_clip": 30,
+        "after_clip": 30,
+        "binding_from_name": "tag_origin",
+        "binding_to_name": "viewmodel_ak47",
+        "apply_readback_matches_target": true,
+        "restore_matches_original": true
+      },
+      "capture_phases": [
+        {
+          "phase": "before-binding",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 266
+        },
+        {
+          "phase": "after-fire",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 324
+        }
+      ],
+      "private_logs": "runs/r788-* (ignored)"
+    },
+    {
+      "run": "r789",
+      "mode": "slot, no decode",
+      "binding_time": "early (about snapshot 265)",
+      "server": {
+        "connect": 1,
+        "snapshot_source": 330,
+        "input_decoded": 0,
+        "decoded_attack_packets": 0,
+        "input_decode_error": 0,
+        "input_ammo_probe": 0
+      },
+      "client": {
+        "before_net": 10,
+        "after_net": 10,
+        "weapon": 78,
+        "before_clip": 30,
+        "after_clip": 30,
+        "binding_from_name": "tag_origin",
+        "binding_to_name": "viewmodel_ak47",
+        "apply_readback_matches_target": true,
+        "restore_matches_original": true
+      },
+      "capture_phases": [
+        {
+          "phase": "before-binding",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 263
+        },
+        {
+          "phase": "after-fire",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 320
+        }
+      ],
+      "private_logs": "runs/r789-* (ignored)"
+    },
+    {
+      "run": "r790",
+      "mode": "slot, no decode",
+      "binding_time": "early (about snapshot 265)",
+      "server": {
+        "connect": 1,
+        "snapshot_source": 1313,
+        "input_decoded": 0,
+        "decoded_attack_packets": 0,
+        "input_decode_error": 0,
+        "input_ammo_probe": 0
+      },
+      "client": {
+        "before_net": 10,
+        "after_net": 10,
+        "weapon": 78,
+        "before_clip": 30,
+        "after_clip": 30,
+        "binding_from_name": "tag_origin",
+        "binding_to_name": "viewmodel_ak47",
+        "apply_readback_matches_target": true,
+        "restore_matches_original": true
+      },
+      "capture_phases": [
+        {
+          "phase": "before-binding",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 267
+        },
+        {
+          "phase": "after-fire",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 1303
+        }
+      ],
+      "private_logs": "runs/r790-* (ignored)"
+    },
+    {
+      "run": "r791",
+      "mode": "slot, no decode",
+      "binding_time": "late (about snapshot 1114)",
+      "server": {
+        "connect": 1,
+        "snapshot_source": 1180,
+        "input_decoded": 0,
+        "decoded_attack_packets": 0,
+        "input_decode_error": 0,
+        "input_ammo_probe": 0
+      },
+      "client": {
+        "before_net": 10,
+        "after_net": 10,
+        "weapon": 78,
+        "before_clip": 30,
+        "after_clip": 30,
+        "binding_from_name": "tag_origin",
+        "binding_to_name": "viewmodel_ak47",
+        "apply_readback_matches_target": true,
+        "restore_matches_original": true
+      },
+      "capture_phases": [
+        {
+          "phase": "before-binding",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 1114
+        },
+        {
+          "phase": "after-fire",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 1171
+        }
+      ],
+      "private_logs": "runs/r791-* (ignored)"
+    },
+    {
+      "run": "r792",
+      "mode": "nul, no decode",
+      "binding_time": "early (about snapshot 265)",
+      "server": {
+        "connect": 1,
+        "snapshot_source": 337,
+        "input_decoded": 0,
+        "decoded_attack_packets": 0,
+        "input_decode_error": 0,
+        "input_ammo_probe": 0
+      },
+      "client": {
+        "before_net": 10,
+        "after_net": 10,
+        "weapon": 78,
+        "before_clip": 30,
+        "after_clip": 30,
+        "binding_from_name": "tag_origin",
+        "binding_to_name": "viewmodel_ak47",
+        "apply_readback_matches_target": true,
+        "restore_matches_original": true
+      },
+      "capture_phases": [
+        {
+          "phase": "before-binding",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 270
+        },
+        {
+          "phase": "after-fire",
+          "valid_capture": true,
+          "snapshot_count_before_capture": 327
+        }
+      ],
+      "private_logs": "runs/r792-* (ignored)"
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "evidence/experiments/20261029-r786-binding-attack-no-gun.png",
+      "sha256": "748b049112ae7cee269cc3479c6c9bad16565fc6a34502917ab117b19f406d95"
+    },
+    {
+      "file": "evidence/experiments/20261029-r790-early-binding-late-capture-no-gun.png",
+      "sha256": "78a6ea35c5cd95dcdd72ea5caee31454ad48a5d42198245627534b9780085fba"
+    },
+    {
+      "file": "evidence/experiments/20261029-r791-late-before-binding-no-arms.png",
+      "sha256": "83282f646a08b66c195ee4086a32114880e68577cf507687be5f6819bc4bfe54"
+    },
+    {
+      "file": "evidence/experiments/20261029-r791-late-after-binding-no-gun.png",
+      "sha256": "a2b5d2be9da2353d48b4f03e677df014d8b4b68dc29a6888b9ae8bc0874ef9b5"
+    }
+  ],
+  "conclusion": [
+    "r786 produced 15 decoded attack packets and diagnostic clip 30 to 29, but a valid post-attack frame still had no first-person arms or gun.",
+    "All seven new sessions confirmed tag_origin to viewmodel_ak47 pointer write and readback, then restored the exact original pointer; valid captures still showed no arms/gun. Black frames were excluded.",
+    "Disabling motion probe (r788), disabling read-only decoder (r789), restoring legacy nul ring mode (r792), binding early but observing after 1300 snapshots (r790), or binding late (r791) did not singly reproduce r755.",
+    "The prior positive run had arms visible before binding, whereas current valid before-binding frames have no arms. The active first-person model list is the next data source to compare.",
+    "No real firing or hit accepted; r787 had no decoded attack packets in the relevant late interval, so its left-click result cannot be interpreted as a shooting failure."
+  ],
+  "limitations": [
+    "This experiment has no current native DObj/model-list readout and does not identify the cause of missing arms.",
+    "Memory pointer intervention is a reversible diagnostic and not a persistent service-side weapon registration fix.",
+    "r786/r788 attack reception with no visible firing and r786 diagnostic ammo decrement do not satisfy shooting acceptance.",
+    "Normal end/lobby and literal ui_state != 5 not tested."
+  ],
+  "privacy": "No raw packet payload, key, auth token, private local resource, or database included."
+}
