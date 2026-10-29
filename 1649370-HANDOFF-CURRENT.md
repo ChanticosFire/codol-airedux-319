@@ -1,4 +1,6 @@
-# Build 1649370 离线对局：当前交接（2026-10-27）
+# Build 1649370 离线对局：当前交接（2026-10-29）
+
+> **2026-10-29 参考资料范围补充**：用户明确要求把 `codol-ember` 的**整个仓库**当作参考，不限最新进度。当天 `git fetch` 后 HEAD 与远端 `main` 均为 `f784a77`；按版本身份、1649370 资源/启动/UI、1604220 比较实现、方法工具及许可编成[全库问题索引](docs/1649370-CODOL-EMBER-REFERENCE-AUDIT.md)。其 `first-page-routes.json` 可指导赛后回大厅的观察，IIPS/IFS 报告可指导枪模资源链排查；二者均未替代 1649370 实机验收。本次只是资料索引，未改运行时/活库，已验证成果仍以 r773/r774 为准。
 
 > **2026-10-29 r773/r774 内置服务端 W 反馈，交接入口**：游戏服新增默认关闭的 `--input-motion-probe`，仅接受 SHA 匹配、byte-exact 可重建的 r738 快照；每个新的真实 `direction=1` 包令服务端快照 X +2，最多 +64。r773/r774 两轮独立真实连接均 `net=10`、真实 CODO 窗口 W 按住 1600 ms、输入解码零错：服务端分别处理 15/10 个前进包并将 X 从 336 改为 366/356，客户端事前 336、事后三次分别稳定读到 366/356。它证明服务端内已形成单方向输入→快照→客户端位置闭环，**不等于完整自由移动**。r773[前](evidence/experiments/20261029-r773-before-w-integrated.png)/[后](evidence/experiments/20261029-r773-after-w-integrated.png)截图依然没有第一人称枪身；r774 后截图黑帧不作视觉证据。射击、持久枪模、正常收尾、字面 `ui_state != 5` 均未完成。细节 [r773/r774 证据](evidence/experiments/20261029-r773-r774-integrated-w-motion.json) 与 `1649370-STATUS.md` §1316。给 DeepSeek 的**当前完整长程目标**是 [docs/1649370-DEEPSEEK-LONGTERM-GOAL.md](docs/1649370-DEEPSEEK-LONGTERM-GOAL.md)；其旧 r675 状态已替换。唯一运行时与私有活库回到基线，无残留进程。
 
