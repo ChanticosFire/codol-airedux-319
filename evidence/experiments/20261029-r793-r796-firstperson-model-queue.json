@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-29",
+  "hypothesis": "Current no-gun frames lack a populated native first-person model cache even when playerState selects weapon 78 and its definition points to viewmodel_ak47.",
+  "static_source": "r107flow runtime EXE SHA-256 141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380; 0x590435 selects weapon definition, 0x5904b6-0x5904bd returns for an existing queue item with matching weapon and status zero, 0x5905b9 invokes model resolver, 0x5905c4 compares returned count to client+0xC7F88. Disassembly in ignored runs/r793-view-builder-static.txt.",
+  "runs": [
+    {"name":"r793","net_state":10,"selected_weapon":null,"model_count_before":0,"model_count_after_binding":0,"binding_readback":"viewmodel_ak47","restored":true,"note":"Probe version did not yet report selected weapon; do not infer it from this file."},
+    {"name":"r794","net_state":10,"selected_weapon":78,"model_count_before":0,"model_count_after_binding":0,"binding_readback":"viewmodel_ak47","restored":true},
+    {"name":"r795","net_state":10,"selected_weapon":78,"model_count_before":0,"watch_samples":8,"watch_model_counts":[0,0,0,0,0,0,0,0],"model_count_after_binding":0,"binding_readback":"viewmodel_ak47","restored":true},
+    {"name":"r796","net_state":10,"selected_weapon":78,"model_count_before":0,"watch_samples":8,"watch_model_counts":[0,0,0,0,0,0,0,0],"weapon_lookup_first_word":0,"weapon_queue_head":{"weapon":78,"status":0},"queue_head_unchanged_in_watch":true,"model_count_after_binding":0,"binding_readback":"viewmodel_ak47","restored":true,"valid_screenshot":"evidence/experiments/20261029-r796-weapon-queue-stalled-no-viewmodel.png","screenshot_sha256":"10ec2f32132fed0d3e447787740c30e5d7590a8649d0622e1391c5f543cf9e29"}
+  ],
+  "observed": "Four independent real-client sessions have a zero cached first-person model count before and after the pointer diagnostic. The third and fourth included eight serial reads. In r796, an existing weapon-78 queue item stayed at status zero and the weapon lookup entry first word stayed zero. This matches the branch condition that returns before model resolver; the exact queue producer/consumer and reason it remains pending are not yet established.",
+  "historical_difference": "r753 recorded view-builder entry calls and model_count argument 2; r755/r756/r758 had visible arms before pointer binding and gun after. This current-path finding does not invalidate those captures.",
+  "limits": "Model cache count is not itself a renderer draw count. The r796 valid screenshot shows no arms or gun while AK-47/29 HUD is visible; clip change is diagnostic, not proof of real firing. Client-info root alternated zero/nonzero in serial reads, so a single sample of that root is not a conclusive cause.",
+  "environment": "Only existing r107flow/runtime was reused; private signed FF was staged then removed; weapon pointer was restored; exact session PIDs were cleaned. Live local.sqlite3 SHA-256 before/after 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70, SQLite integrity_check ok. Private before/after backups and raw logs remain ignored."
+}
