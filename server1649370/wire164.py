@@ -222,14 +222,15 @@ def write_delta_value(m: MsgWriter, bits: int, from_word: int, to_word: int,
         m.write_long(t)
     elif bits == -88:
         m.write_long(f ^ t)
-    elif bits in (-93, -94, -84):
-        width = 11 if bits == -93 else 8 if bits == -94 else 7
+    elif bits == -94:
+        # PlayerState -94 occupies two words.  The scalar path cannot encode
+        # its tag and payload without silently discarding the second word.
+        raise ValueError("-94 requires a player event pair")
+    elif bits in (-93, -84):
+        width = 11 if bits == -93 else 7
         if t > _mask(width):
             raise ValueError(f"value {t} does not fit {width} bits")
-        if bits == -94:
-            m.write_byte(t)
-        else:
-            m.write_bits(t, width)
+        m.write_bits(t, width)
     elif bits == -65:
         if t % 100 or t // 100 >= 1024:
             raise ValueError("value is not a valid hundredths codec value")
@@ -403,10 +404,23 @@ def write_player_tail_equipped(m: MsgWriter, weapon_id: int,
         m.write_bits(0, 1)
 
 
+def write_player_event_pair(m: MsgWriter, tag: int, payload: int) -> None:
+    """1649370 playerState -94: supported tag 0 followed by 11 payload bits.
+
+    The native descriptor has two words.  Other tags need their own measured
+    wire form and are rejected instead of being encoded as a scalar byte.
+    """
+    if tag != 0 or not 0 <= payload <= 0x7FF:
+        raise ValueError("unsupported -94 player event pair")
+    m.write_bits(0, 1)
+    m.write_bits(payload, 11)
+
+
 def write_player_state(m: MsgWriter, values: dict[int, int], ctx: DeltaContext,
                        tail_zero: bool = True, tail_weapon: int = 0,
                        tail_clip_count: int = 0, tail_reserve_count: int = 0,
-                       tail_health: int = 0) -> int:
+                       tail_health: int = 0,
+                       player_event_pairs: dict[int, tuple[int, int]] | None = None) -> int:
     """Write the playerState section; returns the wire index of ``last``."""
     targets = [0] * PLAYER_FIELD_COUNT
     for offset, word in values.items():
@@ -416,10 +430,24 @@ def write_player_state(m: MsgWriter, values: dict[int, int], ctx: DeltaContext,
                 break
         else:
             raise ValueError(f"offset {offset:#x} is not in the playerState table")
+    events: dict[int, tuple[int, int]] = {}
+    for offset, pair in (player_event_pairs or {}).items():
+        matches = [i for i, (row_offset, bits, _hint, words)
+                   in enumerate(PLAYER_FIELDS164)
+                   if row_offset == offset and bits == -94 and words == 2]
+        if (len(matches) != 1 or offset in values or
+                not isinstance(pair, (tuple, list)) or len(pair) != 2):
+            raise ValueError(f"invalid or conflicting player event offset {offset:#x}")
+        tag, payload = pair
+        if tag != 0 or not 0 <= payload <= 0x7FF:
+            raise ValueError(f"unsupported player event pair at {offset:#x}")
+        events[matches[0]] = (tag, payload)
     selected = [False] * PLAYER_FIELD_COUNT
     last = -1
     for index, (_offset, _bits, hint, _words) in enumerate(PLAYER_FIELDS164):
-        if hint == 3:
+        if index in events:
+            selected[index] = True
+        elif hint == 3:
             selected[index] = True
         else:
             selected[index] = targets[index] != 0
@@ -433,12 +461,18 @@ def write_player_state(m: MsgWriter, values: dict[int, int], ctx: DeltaContext,
         if not selected[index] or (hint == 2 and index != last):
             continue
         write_gap(m, index - previous)
-        write_delta_value(m, bits, 0, targets[index], ctx)
+        if index in events:
+            write_player_event_pair(m, *events[index])
+        else:
+            write_delta_value(m, bits, 0, targets[index], ctx)
         previous = index
     for index in range(max(last, 0)):
         _offset, bits, hint, _words = PLAYER_FIELDS164[index]
         if hint == 2:
-            write_delta_value(m, bits, 0, targets[index], ctx)
+            if index in events:
+                write_player_event_pair(m, *events[index])
+            else:
+                write_delta_value(m, bits, 0, targets[index], ctx)
     if tail_weapon:
         write_player_tail_equipped(m, tail_weapon, tail_clip_count,
                                    tail_reserve_count, tail_health)
@@ -542,7 +576,8 @@ def build_snapshot(values: dict[int, int], *, server_time: int = 72192, delta: i
                    position_base=(0, 0, 0), tail_zero: bool = True,
                    tail_weapon: int = 0, tail_clip_count: int = 0,
                    tail_reserve_count: int = 0, tail_health: int = 0,
-                   entities=(), clients=()) -> bytes:
+                   entities=(), clients=(),
+                   player_event_pairs: dict[int, tuple[int, int]] | None = None) -> bytes:
     """Assemble one complete snapshot body (no leading ack bytes)."""
     ctx = DeltaContext(server_time=server_time, position_base=position_base)
     m = MsgWriter()
@@ -554,7 +589,8 @@ def build_snapshot(values: dict[int, int], *, server_time: int = 72192, delta: i
     write_player_state(m, values, ctx, tail_zero=tail_zero,
                        tail_weapon=tail_weapon, tail_clip_count=tail_clip_count,
                        tail_reserve_count=tail_reserve_count,
-                       tail_health=tail_health)
+                       tail_health=tail_health,
+                       player_event_pairs=player_event_pairs)
     m.write_bits(0, 1)                  # anim commands
     m.write_bits(0, 1)                  # actors
     if entities:
@@ -629,6 +665,20 @@ def _self_test() -> int:
     m = MsgWriter()
     write_delta_value(m, -87, 0, _word(90.0), DeltaContext())
     check("angle 90", m.to_bytes(), b"\x00\x40")
+
+    # Build 1649370 player event descriptors are two words.  The supported
+    # tag-0 form is one zero bit plus an 11-bit payload, even for payload 0.
+    m = MsgWriter()
+    write_player_event_pair(m, 0, 0x52A)
+    check("event pair bits", m.bit, 12)
+    check("event pair bytes", m.to_bytes(), b"\x54\x0a")
+    try:
+        write_player_event_pair(MsgWriter(), 1, 0)
+    except ValueError:
+        pass
+    else:
+        failures += 1
+        print("FAIL unsupported event tag was accepted")
 
     # a full empty frame must end with the EOF byte and decode its own geometry
     body = build_snapshot({0: 72192, 4: 0, 0x158: 0}, server_time=72192)

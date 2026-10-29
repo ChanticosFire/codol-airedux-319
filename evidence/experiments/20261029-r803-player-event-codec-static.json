@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-29",
+  "round": "r803",
+  "hypothesis": "If Build 1649370 playerState codec -94 is a two-word event descriptor, an explicit tag-0 plus 11-bit payload writer should round-trip through a matching reader while no-event baseline frames remain byte-exact.",
+  "source": {
+    "descriptor": "server1649370/player_fields164.py entries 21-24 and 46/48-50: codec -94, words 2",
+    "community_encoder": "他人文件参考/CODOL-Member-Preview-20261026/native-engine/source/src/codol/snapshot/codol_playerstate164.c case -94: tag 0 bit, word[1] low 11 bits; other tags rejected",
+    "old_local_behavior": "server1649370/wire164.py scalar -94 branch wrote one byte and lost word[1]; tools/decode_ps_1649370.py read one byte. No current r738 field selects -94."
+  },
+  "change": "Explicit player_event_pairs keyed by playerState offset; validate tag 0, 11-bit payload, descriptor words=2 and overlap; scalar -94 fails closed. Diagnostic decoder reports event_payload.",
+  "regression": {
+    "pre_change_self_test": "46-byte frame 00001a010000004604601a0000000000000000b10000000000000000000000000b00000000000000000000ff0f05; failures 0",
+    "post_change_self_test": "identical 46-byte frame; failures 0",
+    "r546_zero_weapon_fixture": "tools/build_weapon_probe_snapshot_1649370.py baseline_checked=true, 102-byte equipped candidate generated without event",
+    "r738_exact_fixture": "rebuilt runs/r738-snapshot-sniprestigea.bin from decoded fields, client 0 and minimal entity: exact True, 102 bytes, sha256 ef0c42ade3d8acec78aa233dd3a4e9bb7e050f7dd9e2ace6fec20447cd5129cc",
+    "event_payload_zero": "48-byte frame decoded event_payload=0; sha256 d4656ba9c34941c1275125354d59cf0ed8dbbf23393c6ee199a521ad74e9f9d1",
+    "event_payload_max": "48-byte frame decoded event_payload=2047; sha256 9605a8acdb09539262d53d7d4de35a7cc1480c6ab8002ee1a95871950f792336",
+    "unsupported_scalar": "write_delta_value(-94) raises ValueError",
+    "compileall": "python -m compileall -q server1649370 passed"
+  },
+  "limits": "Static wire-format check only. No client was launched and no firing event ID or event sequence was assigned. This does not demonstrate shooting, muzzle flash, damage or first-person weapon registration.",
+  "environment": "Runtime exe hash 141215DD38754D39A45E9B112345049293579006EA98573A0BA51CC4D55AD380; profile SHA256 06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70; SQLite integrity ok; no UDP endpoint on 28969/29023. No runtime or profile writes."
+}

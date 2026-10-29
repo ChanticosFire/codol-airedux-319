@@ -126,10 +126,13 @@ def read_value(m: MsgReader, bits: int, from_word: int = 0,
         return value, float(value)
     if bits == -88:
         return m.read_long(), None
-    if bits in (-93, -94, -84):
-        width = 11 if bits == -93 else 8 if bits == -94 else 7
-        if bits == -94:
-            return m.read_byte(), None
+    if bits == -94:
+        tag = m.read_bits(1)
+        if tag != 0:
+            raise ValueError("unsupported -94 event tag")
+        return tag, m.read_bits(11)
+    if bits in (-93, -84):
+        width = 11 if bits == -93 else 7
         return m.read_bits(width), None
     if bits == -65:
         return m.read_bits(10) * 100, None
@@ -233,6 +236,8 @@ def decode_snapshot(body: bytes) -> dict:
             return result
         result["fields"][hex(offset)] = {"index": index, "bits": bits,
                                          "word": word, "value": human}
+        if bits == -94:
+            result["fields"][hex(offset)]["event_payload"] = human
         if index == last:
             break
     return result

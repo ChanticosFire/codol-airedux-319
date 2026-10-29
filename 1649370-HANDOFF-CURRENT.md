@@ -1,5 +1,7 @@
 # Build 1649370 离线对局：当前交接（2026-10-29）
 
+> **2026-10-29 r803 静态进展**：本 Build 的双字事件字段 `-94` 原被 `wire164.py` 误写成单字节；已按同 Build 社区编码器改为显式、经校验的 `tag 0 + 11-bit payload`，并修正只读解码器。r738 102 B 候选帧仍逐字节一致，事件边界负载 0/2047 可回读。详见 `1649370-STATUS.md` §1325 与[证据](evidence/experiments/20261029-r803-player-event-codec-static.json)。本轮没有客户端实测，尚未确定实际开火事件编号、事件序列、客户端反应，也没有解决枪身自动绑定。旧审查中“clients 段从未实现”已被现有编码器及 r735/r736 原生直读更新。
+
 > **2026-10-29 低额度交接**：当前唯一给 DeepSeek 的长程目标已重写为 [docs/1649370-DEEPSEEK-LONGTERM-GOAL.md](docs/1649370-DEEPSEEK-LONGTERM-GOAL.md)，以 §1323 的 r800–r802 同路径三次实测为起点，列明完整五项验收、正确签名资源目录、真实连接与已恢复的背包 UI、诊断枪身/输入闭环和仍未证明的真实射击、物理、正常赛后及 `ui_state != 5`。资源原件/私有备份/哈希以 `resources/1649370/README.md` 和 `manifest.json` 为准。接手不得重跑根目录 FF 的旧无枪实验或把诊断扣弹称为开火成功。
 
 > **2026-10-29 r800–r802 最新同路径组合复验**：签名 AK-47 资源在原生 `client_shipretail/chinese/` 路径暂存、可逆客户端模型指针绑定后，三次独立真实连接都完成鼠标转向→W/S/A/D→左键序列；服务端分别解码 347/385/324 个输入包、零错，客户端各阶段 `net=10`、朝向约 −29.8°、四方向位置读数改变，左键后诊断弹夹 30→29。手臂与 AK-47 枪身在移动及左键后[画面 r800](evidence/experiments/20261029-r800-armed-sequence-after-input.png)、[r801](evidence/experiments/20261029-r801-armed-sequence-after-input.png)、[r802](evidence/experiments/20261029-r802-armed-sequence-after-input.png)持续可见；[分列证据](evidence/experiments/20261029-r800-r802-armed-input-sequence.json)、`1649370-STATUS.md` §1323。**仍是每包有界诊断位移、人工扣弹和临时客户端枪身绑定**，不等于真实物理/射击或服务端持续发枪；正常结束、仓库与字面 `ui_state != 5` 未在同一路径验收。
