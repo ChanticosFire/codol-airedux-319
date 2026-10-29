@@ -1,0 +1,126 @@
+{
+  "date": "2026-10-29",
+  "rounds": [
+    "r804",
+    "r805",
+    "r806"
+  ],
+  "hypothesis": "Build 1649370 -94 carries changed event ID and width-indexed parameter; activating eventSequence 1 must also use native -75 encoding to preserve all later playerState fields.",
+  "ground_truth": {
+    "runtime_exe_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+    "native_event_reader": "0x66FB60 (changed-ID bit, optional byte ID, width from 0xDA93F0, optional parameter gate)",
+    "native_names": "0xE5FD38 consecutive EV_* pointers; ID 41 EV_FIRE_WEAPON, ID 54 EV_SV_FIRE_WEAPON",
+    "width_table": "185 32-bit entries byte-exact against runtime EXE at 0xDA93F0; ID 0 width 11, IDs 41/54 width 5",
+    "codec_minus75": "same-Build community codol_playerstate164.c case -75: delta 1..4 uses 1+3 bits; otherwise one selector bit and byte XOR"
+  },
+  "change": {
+    "production_files": [
+      "server1649370/event_fields164.py",
+      "server1649370/wire164.py"
+    ],
+    "diagnostic_file": "tools/decode_ps_1649370.py",
+    "r738_baseline_sha256": "ef0c42ade3d8acec78aa233dd3a4e9bb7e050f7dd9e2ace6fec20447cd5129cc",
+    "r805_candidate_sha256": "878365027876317d2566e8383eb6eb27bcbc4c2fcf4769c36c8c715c8ce36259",
+    "r805_candidate_bytes": 104,
+    "r804_bad_candidate_bytes": 105
+  },
+  "r804_failed": {
+    "source": "64 event frames actually sent after one baseline",
+    "client": "net=10 but playerState shifted: weapon=0, origin [0,336,0], clipWeapon=2000, model_count=0",
+    "cause": "strong inference from -75 branch difference; repaired and independently checked in r805/r806; no separate isolated -75-only session"
+  },
+  "r805": {
+    "net_state": 10,
+    "source_files": {
+      "runs\\r805-event-seq\\00-baseline.bin": 1,
+      "runs\\r805-event-seq\\01-fire54.bin": 59
+    },
+    "connect": 1,
+    "ps_samples": [
+      {
+        "origin": [
+          336.0,
+          60.0,
+          260.5
+        ],
+        "weapon": 78,
+        "viewmodelIndex": 482,
+        "clipCount": 30
+      },
+      {
+        "origin": [
+          336.0,
+          60.0,
+          260.5
+        ],
+        "weapon": 78,
+        "viewmodelIndex": 482,
+        "clipCount": 30
+      },
+      {
+        "origin": [
+          336.0,
+          60.0,
+          260.5
+        ],
+        "weapon": 78,
+        "viewmodelIndex": 482,
+        "clipCount": 30
+      }
+    ],
+    "native_ps_offset_0x108": 1,
+    "native_event_id_offset_0x10c": 54,
+    "native_event_param_offset_0x110": 0,
+    "model_count": 2,
+    "weapon_model_name": "tag_origin",
+    "screen": "runs/r805-after-event.png"
+  },
+  "r806": {
+    "net_state": 10,
+    "source_files": {
+      "runs\\r806-event-seq\\00-baseline.bin": 1,
+      "runs\\r806-event-seq\\01-fire54.bin": 62
+    },
+    "connect": 1,
+    "ps_samples": [
+      {
+        "origin": [
+          336.0,
+          60.0,
+          260.5
+        ],
+        "weapon": 78,
+        "viewmodelIndex": 482,
+        "clipCount": 30
+      },
+      {
+        "origin": [
+          336.0,
+          60.0,
+          260.5
+        ],
+        "weapon": 78,
+        "viewmodelIndex": 482,
+        "clipCount": 30
+      },
+      {
+        "origin": [
+          336.0,
+          60.0,
+          260.5
+        ],
+        "weapon": 78,
+        "viewmodelIndex": 482,
+        "clipCount": 30
+      }
+    ],
+    "native_ps_offset_0x108": 1,
+    "native_event_id_offset_0x10c": 54,
+    "native_event_param_offset_0x110": 0,
+    "model_count": 2,
+    "weapon_model_name": "tag_origin",
+    "screen": "runs/r806-after-event.png"
+  },
+  "limits": "Two independent live sessions prove delivery and native storage of event ID 54 with normal playerState. Static eventSequence=1 and repeated same frame do not prove cgame consumed it as a shot. No client fire input, muzzle flash, projectile, hit, damage, or clip decrement was measured. Both screenshots show arms but no gun body. Full five criteria remain unmet.",
+  "cleanup": "Only sole r107flow/runtime reused. Signed ak47_mp.ff staged at original subpath and removed. Exact session PIDs stopped. Profile copies preserved privately; live SHA256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70; SQLite integrity ok."
+}

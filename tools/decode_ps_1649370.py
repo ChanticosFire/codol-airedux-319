@@ -20,6 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from server1649370.player_fields164 import PLAYER_FIELDS164
+from server1649370.event_fields164 import EVENT_PARAMETER_WIDTHS164
 from server1649370.wire164 import TAIL_SECTIONS
 
 
@@ -127,10 +128,16 @@ def read_value(m: MsgReader, bits: int, from_word: int = 0,
     if bits == -88:
         return m.read_long(), None
     if bits == -94:
-        tag = m.read_bits(1)
-        if tag != 0:
-            raise ValueError("unsupported -94 event tag")
-        return tag, m.read_bits(11)
+        changed_id = m.read_bits(1)
+        event_id = m.read_byte() if changed_id else 0
+        if event_id >= len(EVENT_PARAMETER_WIDTHS164):
+            raise ValueError("event ID exceeds verified Build 1649370 table")
+        width = EVENT_PARAMETER_WIDTHS164[event_id]
+        if not width:
+            return event_id, 0
+        if changed_id and not m.read_bits(1):
+            return event_id, 0  # unchanged zero-baseline parameter
+        return event_id, m.read_bits(width)
     if bits in (-93, -84):
         width = 11 if bits == -93 else 7
         return m.read_bits(width), None
@@ -152,8 +159,8 @@ def read_value(m: MsgReader, bits: int, from_word: int = 0,
         return read_compressed(m, 8), None
     if bits == -75:
         if m.read_bits(1):
-            return m.read_bits(5) + 1, None
-        return read_compressed(m, 11), None
+            return m.read_bits(3) + 1, None
+        return m.read_byte(), None
     if bits == -76:
         if m.read_bits(1):
             return m.read_bits(5) - 16, None
@@ -237,7 +244,7 @@ def decode_snapshot(body: bytes) -> dict:
         result["fields"][hex(offset)] = {"index": index, "bits": bits,
                                          "word": word, "value": human}
         if bits == -94:
-            result["fields"][hex(offset)]["event_payload"] = human
+            result["fields"][hex(offset)]["event_parameter"] = human
         if index == last:
             break
     return result

@@ -34,6 +34,7 @@ import struct
 from .entity_fields164 import ENTITY_FIELDS164, ENTITY_FIELDS_PER_TYPE164, ENTITY_SENTINEL
 from .client_fields164 import CLIENT_FIELDS164
 from .player_fields164 import PLAYER_FIELDS164
+from .event_fields164 import EVENT_PARAMETER_WIDTHS164
 
 PLAYER_FIELD_COUNT = len(PLAYER_FIELDS164)
 TAIL_SECTIONS = 17
@@ -261,15 +262,15 @@ def write_delta_value(m: MsgWriter, bits: int, from_word: int, to_word: int,
             raise ValueError("value outside 0..255")
         write_compressed(m, t, 8)
     elif bits == -75:
+        if (f | t) > 0xFF:
+            raise ValueError("-75 value outside 0..255")
         delta = t - f
-        if 1 <= delta <= 32:
+        if 1 <= delta <= 4:
             m.write_bits(1, 1)
-            m.write_bits(delta - 1, 5)
+            m.write_bits(delta - 1, 3)
         else:
-            if t > 2047:
-                raise ValueError("value outside 0..2047")
             m.write_bits(0, 1)
-            write_compressed(m, (f ^ t) & 2047, 11)
+            m.write_byte((f ^ t) & 0xFF)
     elif bits == -76:
         delta = (t - (1 << 32) if t & 0x80000000 else t) - (f - (1 << 32) if f & 0x80000000 else f)
         if -16 <= delta <= 15:
@@ -404,16 +405,29 @@ def write_player_tail_equipped(m: MsgWriter, weapon_id: int,
         m.write_bits(0, 1)
 
 
-def write_player_event_pair(m: MsgWriter, tag: int, payload: int) -> None:
-    """1649370 playerState -94: supported tag 0 followed by 11 payload bits.
+def write_player_event_pair(m: MsgWriter, event_id: int, parameter: int) -> None:
+    """Write a -94 pair against the zero new-player baseline.
 
-    The native descriptor has two words.  Other tags need their own measured
-    wire form and are rejected instead of being encoded as a scalar byte.
+    Native reader 0x66FB60 reads a changed-ID bit, then (when changed) an
+    event-ID byte.  It obtains the parameter width from 0xDA93F0[event_id].
+    For changed IDs a second bit selects a new parameter; an unchanged ID
+    reads its parameter directly.  This does not manage the event ring epoch.
     """
-    if tag != 0 or not 0 <= payload <= 0x7FF:
-        raise ValueError("unsupported -94 player event pair")
-    m.write_bits(0, 1)
-    m.write_bits(payload, 11)
+    if not 0 <= event_id < len(EVENT_PARAMETER_WIDTHS164):
+        raise ValueError("unsupported Build 1649370 event ID")
+    width = EVENT_PARAMETER_WIDTHS164[event_id]
+    if parameter < 0 or (width == 0 and parameter != 0) or (width and parameter >= (1 << width)):
+        raise ValueError("event parameter does not fit native event width")
+    if event_id == 0:
+        m.write_bits(0, 1)
+        m.write_bits(parameter, width)
+    else:
+        m.write_bits(1, 1)
+        m.write_byte(event_id)
+        if width:
+            m.write_bits(int(parameter != 0), 1)
+            if parameter:
+                m.write_bits(parameter, width)
 
 
 def write_player_state(m: MsgWriter, values: dict[int, int], ctx: DeltaContext,
@@ -438,10 +452,13 @@ def write_player_state(m: MsgWriter, values: dict[int, int], ctx: DeltaContext,
         if (len(matches) != 1 or offset in values or
                 not isinstance(pair, (tuple, list)) or len(pair) != 2):
             raise ValueError(f"invalid or conflicting player event offset {offset:#x}")
-        tag, payload = pair
-        if tag != 0 or not 0 <= payload <= 0x7FF:
-            raise ValueError(f"unsupported player event pair at {offset:#x}")
-        events[matches[0]] = (tag, payload)
+        event_id, parameter = pair
+        if not 0 <= event_id < len(EVENT_PARAMETER_WIDTHS164):
+            raise ValueError(f"unsupported player event ID at {offset:#x}")
+        width = EVENT_PARAMETER_WIDTHS164[event_id]
+        if parameter < 0 or (width == 0 and parameter != 0) or (width and parameter >= (1 << width)):
+            raise ValueError(f"invalid player event parameter at {offset:#x}")
+        events[matches[0]] = (event_id, parameter)
     selected = [False] * PLAYER_FIELD_COUNT
     last = -1
     for index, (_offset, _bits, hint, _words) in enumerate(PLAYER_FIELDS164):
@@ -666,19 +683,33 @@ def _self_test() -> int:
     write_delta_value(m, -87, 0, _word(90.0), DeltaContext())
     check("angle 90", m.to_bytes(), b"\x00\x40")
 
-    # Build 1649370 player event descriptors are two words.  The supported
-    # tag-0 form is one zero bit plus an 11-bit payload, even for payload 0.
+    m = MsgWriter()
+    write_delta_value(m, -75, 0, 1, DeltaContext())
+    check("-75 short delta bits", m.bit, 4)
+    check("-75 short delta bytes", m.to_bytes(), b"\x01")
+    m = MsgWriter()
+    write_delta_value(m, -75, 0, 5, DeltaContext())
+    check("-75 XOR form", m.to_bytes(), b"\x00\x05")
+
+    # Build 1649370 player event descriptors are two words.  Event ID zero
+    # reuses the baseline ID and reads its 11-bit parameter directly.
     m = MsgWriter()
     write_player_event_pair(m, 0, 0x52A)
     check("event pair bits", m.bit, 12)
     check("event pair bytes", m.to_bytes(), b"\x54\x0a")
+    # A real nonzero ID uses the changed-ID bit + byte cursor, then a parameter
+    # gate.  EV_SV_FIRE_WEAPON (54) has a measured 5-bit parameter width.
+    m = MsgWriter()
+    write_player_event_pair(m, 54, 0)
+    check("fire event bytes", m.to_bytes(), b"\x01\x36")
+    check("fire event bit cursor", m.bit, 2)
     try:
-        write_player_event_pair(MsgWriter(), 1, 0)
+        write_player_event_pair(MsgWriter(), 54, 32)
     except ValueError:
         pass
     else:
         failures += 1
-        print("FAIL unsupported event tag was accepted")
+        print("FAIL out-of-range fire parameter was accepted")
 
     # a full empty frame must end with the EOF byte and decode its own geometry
     body = build_snapshot({0: 72192, 4: 0, 0x158: 0}, server_time=72192)
