@@ -1,0 +1,31 @@
+{
+  "scope": "r812 one independent real connection; native client memory read only, no attack, no gameplay mutation",
+  "source": {
+    "spawn_time_dump": "runs/r812-spawn-time.txt",
+    "spawn_time_dump_sha256": "710416c473f82a0c8cc2677e3cc996a8163f0bbfb1b86a4ca6de13a204385525",
+    "owned_dump": "runs/r812-weapon-bits.txt",
+    "owned_dump_sha256": "c2316f7057441cfebdaee9e9ceef01c2917d58a7ce449ce897d68d4a719ba357",
+    "server_log": "runs/r812-gs.jsonl",
+    "server_log_sha256": "53ded406ed13c7efa88bbd8f399d3a8338123977f6967d783dbab39472b516ee"
+  },
+  "client": {
+    "net_state": 10,
+    "ps_weapon": 78,
+    "ps_primary": 78,
+    "clip_weapon": 78,
+    "clip_count": 30,
+    "ps_0x333c_spawn_time": 0,
+    "ps_0x564_owned_bits_64_to_95": 0,
+    "all_sampled_words_ps_0x560_to_0x59c": 0
+  },
+  "static_probe_attempt": {
+    "name": "r813 one-field owned-bit snapshot, not run against client",
+    "intended_difference": "r738 snapshot with ps+0x564=0x4000 (weapon 78 owned bit 14)",
+    "baseline_rebuild": "byte-exact r738 round trip succeeded before adding field",
+    "result": "build_snapshot raised ValueError: unsupported integer width -57 before reaching descriptor 192 (0x564)",
+    "reason": "The current production writer does not encode all zero-valued descriptor codecs needed when the last changed field extends to index 192.",
+    "reusable": "Yes: extend and verify codecs against same-Build community codol_playerstate164.c, preserve r738 byte-exact baseline, then perform controlled A/B. No r813 frame was sent."
+  },
+  "interpretation": "A second real session confirms the native client currently has spawn time zero and no owned bit for weapon 78 while its playerState weapon/HUD say 78. This supports investigation of native selection/spawn state, but does not establish that either zero value alone causes usercmd.weapon=0 or blocks firing. Prior direct-memory owned-bit trials addressed rendering and cannot be treated as a snapshot-published selection test.",
+  "cleanup": "Only r107flow/runtime reused; temporary signed FF removed; profile SHA-256 restored to 06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70, SQLite integrity ok, game ports released."
+}
