@@ -1,5 +1,7 @@
 # Ember 对局实现资料与本项目采用边界（2026-10-30）
 
+> 接口字段、数值位宽、跨 Build 误用和旧 `0x333c=netfield98` 更正见[深入核查](1649370-EMBER-INTERFACE-BIT-AUDIT.md)。
+
 ## 资料身份
 
 `319/codol-ember` 经 `git fetch origin` 后本地 `HEAD` 与 `origin/main` 均为 `f784a77f34f10698d481b1b23cf187b81d49bd02`。本次查看整个库的版本、PVP、离线实现、工具与组件目录，沿用 [全库索引](1649370-CODOL-EMBER-REFERENCE-AUDIT.md)。本地两个未跟踪 `lobby-reproduction1604220/extracted*` 目录未更动。
