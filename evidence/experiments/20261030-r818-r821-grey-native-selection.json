@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-30",
+  "hypothesis": "If the grey map is caused by zero client health, the active client PS health field should read zero; otherwise inspect the match-state and snapshot path.",
+  "scope": "Build 1649370, sole r107flow runtime, independent real connections r819/r820/r821 plus within-session r818 A/B",
+  "server": {
+    "candidate_snapshot": "runs/r818-otherflags1000.bin",
+    "candidate_sha256": "57d7aacf9c9479ada67716a6352e54621ce1f068c0a89e187c84920778608de7",
+    "candidate_change": "PS logical flags +0x10 = 0x1000; health 100, weapon 78, clip 30",
+    "r818_log": "runs/r818-gs.jsonl",
+    "r819_log": "runs/r819-gs.jsonl",
+    "r820_log": "runs/r820-gs.jsonl",
+    "r821_log": "runs/r821-gs.jsonl",
+    "r821_log_sha256": "ef302b1fc2dd149bdfff5aa9a92b2efcf6cf78d6c7b8ab1e4509f909a28328d9",
+    "r821_observations": {"snapshot_source": 1412, "input_decoded": 661, "attack_input_packets": 13, "server_commands": 0},
+    "timer_mechanism": "gameserver.py send_due_snapshots repeats the static snapshot file and stamps serverTime=72192+index*500. A moving timer does not establish a simulated match."
+  },
+  "client": {
+    "r818_ab": "With PS+0x0c=0x800 the native 0x54f1a3 test was zero and 0x461440 reset source ran. Mid-session PS+0x10=0x1000 made 0x54f1a3 read 0x1000 and stopped reset calls within the observed window; this is a bounded causal observation, not a complete match-start proof.",
+    "r819_r820": "Two independent connections started with PS+0x10=0x1000; native cg+0xC7228, cl+0x3c60, and current command ring main-weapon field were 78 without direct client memory writes. Four auxiliary screenshots were preserved without duplication under ignored resources/1649370/local/evidence-uncommitted.",
+    "r821": {"net_state": 10, "ui_state": 5, "ps_pm_type": 0, "ps_weapon": 78, "ps_health_at_0x1a4": 100, "ps_stats3_at_0x1b0": 1, "ps_clip_count": 30, "native_weapon_samples": 903, "native_weapon_sample_duration_ms": 4996, "weapon_animation_time_delay_state_shotcount_all_zero": true, "clip_count_constant": 30},
+    "weapon_sample_log": "runs/r821-weaponstate-sample.jsonl",
+    "weapon_sample_sha256": "80486f83ba99a3930d2322a2e108e4f9d748a13ebfcf1592abb85863815fa8bf",
+    "screenshot": "evidence/experiments/20261030-r821-grey-active.png"
+  },
+  "reference": {
+    "ember_commit": "f784a77f34f10698d481b1b23cf187b81d49bd02",
+    "ember_report": "codol-ember/研究报告-research/offline-implementations/version-2697.md",
+    "finding": "The reviewed 2.6.9.7 architecture separates Python session coordination from a native game process for real-time simulation, but the public curated repository does not contain the corresponding native game source or a validated replacement for this Build's current game server."
+  },
+  "conclusion": "Zero health is ruled out for the observed active grey frame. The moving timer is driven by serverTime stamps on repeated static snapshots. The exact native grey-screen predicate remains unidentified; incomplete match/spawn/vision state is a hypothesis. Native firing and first-person weapon rendering remain unproven on the current automatic path.",
+  "cleanup": "Exact r821 PIDs 9180/15552/28852/23116 stopped; temporary AK-47 fastfile moved into ignored resources/1649370/local/weapon-fastfiles; four unselected screenshots moved into ignored resources/1649370/local/evidence-uncommitted; profile SHA256 06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70 and SQLite integrity_check ok."
+}

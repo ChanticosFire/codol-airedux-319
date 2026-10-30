@@ -1,5 +1,7 @@
 # codol-ember 全库参考索引（2026-10-29）
 
+> 2026-10-30 再次 `git fetch origin`：本地与远端 `main` 仍同为 `f784a77`。围绕灰色对局、实时模拟、ACK 历史、武器与赛后流程的具体适用点及边界见[Ember 对局实现资料](1649370-EMBER-MATCH-IMPLEMENTATION-REFERENCE.md)。
+
 本地仓库：`E:\GAME\COD\codol-airedux\319\codol-ember`。远端 `https://gitea.codolai.win:2096/ember-forge/codol-ember.git`；已从 `28368dd7a3e57ec2c77db2dadad9216ba7e86531` 快进到远端 `main` 的 `f784a77f34f10698d481b1b23cf187b81d49bd02`（提交日期 2026-10-23 00:04:33 +08:00）。此前存在的两个未跟踪 `工具-tools/lobby-reproduction1604220/extracted*` 目录仍原样保留。这里是**参考库**，不是本项目的运行时或服务端源码；没有复制它的整套文件，也没有启动其服务。
 
 2026-10-29 再次 `git fetch origin main`，本地 HEAD 与 `origin/main` 均为 `f784a77f34f10698d481b1b23cf187b81d49bd02`。本索引按**整个仓库的资料**建立，不只考察最新提交；`git ls-files` 列出 618 个已跟踪文件，其中工具、规格、研究报告三个目录分别有 409、15、111 个文件。两个既存未跟踪提取目录不计为已发布内容。该计数包含工具代码、合成样例与文档，不代表逐个文件已完成动态验证。
