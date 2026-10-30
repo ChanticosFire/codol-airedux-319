@@ -1,6 +1,6 @@
 # 给 DeepSeek 的长程目标：完成 Build 1649370 自建服务端可玩对局
 
-更新：2026-10-29，依据 `1649370-STATUS.md` §1328、r811 原始攻击包与高频采样、r812 原生字段直读、r813 静态构造边界，以及前述 r807–r810 实机记录；接手时以当前 Git HEAD 和活文件为准。项目根目录 `E:\GAME\COD\codol-airedux\319`。开工先读本目录 `AGENTS.md`、`1649370-HANDOFF-CURRENT.md`、`1649370-AUDIT-20261027.md`、`1649370-STATUS.md` 最新章节、`PROJECT_STATUS.md` 顶部、`resources/1649370/README.md` 与 `manifest.json`；旧结论只作历史线索，具体事实核对当前文件和实机。
+更新：2026-10-30，依据 `1649370-STATUS.md` §1330–§1331、r811 原始攻击包与高频采样、r812 原生字段直读及对其错误语义的撤销，以及前述 r807–r810 实机记录；接手时以当前 Git HEAD 和活文件为准。项目根目录 `E:\GAME\COD\codol-airedux\319`。开工先读本目录 `AGENTS.md`、`1649370-HANDOFF-CURRENT.md`、`1649370-AUDIT-20261027.md`、`1649370-STATUS.md` 最新章节、`PROJECT_STATUS.md` 顶部、`resources/1649370/README.md` 与 `manifest.json`；旧结论只作历史线索，具体事实核对当前文件和实机。
 
 ## 唯一目标与五项验收
 
@@ -16,22 +16,23 @@
 
 - 第 1、2 项在当前真实连接路线反复成立。r800/r801/r802 三次独立会话各有 `connect=1`，服务端发送 517/511/514 个快照，完整解码 347/385/324 个输入包、零错误；客户端各阶段 `net_state=10`。不是 `+cl_demo_play`。证据：`evidence/experiments/20261029-r800-r802-armed-input-sequence.json` 和对应原始忽略日志 `runs/r800..r802-gs.jsonl`。
 - **背包/仓库 UI 的已验证范围单列**：r527 新实例在大厅打开仓库，Loadout 1 主副武器、储物箱物品网格与 190 道具分类曾恢复显示，原生库存计数 7,208；`evidence/experiments/20261026-r527-warehouse-control.json` 记录其与 r525 入图后仓库空白的对照。这证明档案内有库存且“保存保护必然导致空仓库”不成立，**不证明 r800–r802 对局正常结束后仓库仍可用**。最终第 3 项须同路径重新打开仓库、背包和档案实测。
+- **物品编号线索的边界**：用户转来的社区实测称部分旧枪械 ID 在另一份完整目录中对应 `+9000`，并报告 `10710` 为客户端 SKU；该目录与抓包未在当前工作树核对。当前附带的商城目录却有 `1000=type95_mp`、`10000=badge_xpboost`、SKU 最大 2762。[静态核对](1649370-ITEM-ID-SKU-BOUNDARY.md)。先取当前 Build 的 SKU→product→item 实际证据，不能将 `+9000` 批量应用于 7208 项档案，更不能把商城编号套入快照武器索引 78。
 - 签名武器资源 `ak47_mp.ff` 的**正确临时放置目录**为唯一运行时下的 `client_shipretail/chinese/ak47_mp.ff`；放到运行时根目录会使武器 78 查询字为 0、队列 `(78,0)` 常驻、手臂模型缓存 0。r797–r799 只改目录，三次均变为查询字 1、队列清空、手臂/手部模型缓存 2。此前 r786–r796 无枪回归的主要原因是资源暂存位置错误，不应再重复追这个已解的队列现象。证据：`evidence/experiments/20261029-r796-r799-weapon-fastfile-stage-path-ab.json`。
 - r797–r799 在正确资源目录下，用可逆**客户端内存诊断**把 `weaponDef78+0x10` 从 `tag_origin` 指向已加载 `viewmodel_ak47`，三张有效截图都有 AK-47。r800–r802 又在**同一会话**完成鼠标转向、W/S/A/D、左键，原生角度约 −29.8°、逐键 XY 改变、诊断弹夹 30→29，枪身在移动和左键后持续可见。截图 `evidence/experiments/20261029-r800-armed-sequence-after-movement.png`、`20261029-r800-armed-sequence-after-input.png`、`20261029-r801-armed-sequence-after-input.png`、`20261029-r802-armed-sequence-after-input.png`；完整数值在上列 JSON。三次独立复现只支持“可见枪身的诊断输入闭环”。
-- **最新原生链路边界**：r811 单次真实连接中，服务端收到 17 个真实左键攻击包；独立重解 108 个完整客户端包，全为 `usercmd.weapon=0`，17 个攻击包也全为 0。客户端此时 `ps.weapon/primary=78`、弹夹 30；3.5 秒 632 次约 5 ms 采样的 `weapAnim/weaponTime/weaponDelay/weaponState/weaponShotCount` 全为 0。r812 第二次连接直读 `ps+0x333c` 出生时间为 0，`ps+0x564` 武器 78 拥有位字为 0，同时 HUD/玩家状态仍为武器 78、弹夹 30。社区同 Build `codol_game.c:164–183` 记载命令武器 0 在出生后 200 ms 才暂时被忽略；`codol_bot.c:710–750` 记载持续武器 0 请求导致空手。这是**原生武器选择/出生链路的待验证因果假设**，不是已证明的根因，也不能据此断言“只补出生时间就能开火”。脱敏证据：`evidence/experiments/20261029-r811-native-usercmd-weapon-zero.json`、`20261029-r812-native-spawn-owned-read.json`。
+- **最新原生链路边界**：r811 单次真实连接中，服务端收到 17 个真实左键攻击包；独立重解 108 个完整客户端包，全为 `usercmd.weapon=0`，17 个攻击包也全为 0。客户端此时 `ps.weapon/primary=78`、弹夹 30；3.5 秒 632 次约 5 ms 采样的 `weapAnim/weaponTime/weaponDelay/weaponState/weaponShotCount` 全为 0。r812 第二次连接直读 `ps+0x333c=0`、`ps+0x564=0`，同时 HUD/玩家状态仍为武器 78、弹夹 30。**撤销“0x564 是武器 78 拥有位”的解释**：该说法混用了社区保留引擎结构和原生客户端结构；Build 1649370 的装备记录由快照尾部 inventory 承载，`0x564` 原生字段的语义尚未证实。社区 `codol_game.c:164–183` 记载命令武器 0 在出生后 200 ms 才暂时被忽略；`codol_bot.c:710–750` 记载持续武器 0 请求导致空手。这是**原生武器选择/出生链路的待验证因果假设**，不是已证明的根因。脱敏证据：`evidence/experiments/20261029-r811-native-usercmd-weapon-zero.json`、`20261029-r812-native-spawn-owned-read.json`。
 
 ## 当前未完成的卡点
 
 - `weaponDef78+0x10` 的枪身绑定仍靠临时客户端指针写入；正常注册后为什么保持 `tag_origin`、如何由可持续运行路径建立绑定，尚未解决。签名 fastfile 是必要条件之一，不等于完成自动绑定。旧 r745 的单次 174 不能概括正确目录下的 r797–r802。
 - `--input-motion-probe` 仍是按解码包 ±2 的有界人工位移；没有用 usercmd 时长、地形碰撞、角色速度等实现实际游戏物理。真实输入的服务端消费已证实，但不能称自由移动验收完成。
-- **r813 还没有客户端结果**：r738 基线快照缺 `0x333c` 出生时间和 `0x564` 拥有位。为只改武器 78 拥有位，临时按同 Build 社区 `codol_playerstate164.c` 的 `-57` 单 bit codec 补了共享写端，r738 原帧仍逐字节回环，109 B 候选静态解码读回 `0x564=0x4000`。但共享工具的两次实机回归与 A/B 未做，所以分支已撤回；候选仅在忽略的 `runs/r813-owned78-snapshot.bin`，**绝未发送客户端**。不要把静态构造写成客户端接受，也不要重跑历史 §1228/§1229 的直接内存强写——它测试的是枪模渲染，不是“服务端快照拥有位是否改变原生 `usercmd.weapon`”。
+- **r813 作废，不做实机拥有位试验**：r738 基线快照未包含 `0x333c` 和 `0x564`。临时按同 Build 社区 `codol_playerstate164.c` 的 `-57` 单 bit codec 补共享写端，r738 原帧逐字节回环、109 B 候选静态解码读回 `0x564=0x4000`；但该字段没有可信的“武器拥有位”语义。分支已撤回；候选仅在忽略的 `runs/r813-owned78-snapshot.bin`，**绝未发送客户端**。不应把它作为下一轮 A/B，也不要重复早期直接强写 `ps+0x564` 的实验。
 - **用户已明确禁止以人工扣弹解决射击**。旧 r778–r802 的 30→29 是已删除的诊断分支，只作历史记录。§1326 修正 `-94`：首位是事件 ID 变化位，非“tag”；本 Build ID 54 是 `EV_SV_FIRE_WEAPON`。§1327 的默认关闭 `--input-fire-event-probe` 已能让真实左键输入产生服务端事件，r807/r809 客户端原生读到事件序列 1 / ID 54，弹夹保持 30；r810 关闭开关仍解到攻击包但没有事件或弹夹变化。r809 按前、中、后五个武器状态字段采样全为 0，画面无枪身或枪口反馈。证据 `evidence/experiments/20261029-r807-r810-native-fire-boundary.json`。**事件送达仍不等于客户端原生开火**；需定位原生武器状态机及完整服务端射击规则，并直接验证射速、弹药、枪口/弹道、命中或伤害。旧 `ps_codec.py` 的 `-94` 不得与已验证 `wire164.py` 混用。
 - 正常赛后结束、回大厅后仓库/背包/档案，以及字面 `ui_state != 5`，尚未在当前最终路径实测。历史直接读数曾为 `ui_state=5`；不能用不弹错误框代替直接指标。
 
 ## 开工顺序与证据要求
 
 1. 固定当前可进图配置：唯一 `r107flow/runtime`、r738 gamestate/snapshot、`--ring-a-length-mode slot --server-command-text off --decode-client-input`，武器 handler/lookup/init/cache 原始索引与 name fallback；签名 FF 只临时放在 `client_shipretail/chinese/`。先核对档案 SHA、EXE SHA、端口 PID 与当前 Git diff；不得重新复制约 15 GiB 运行时。
-2. **先验证原生武器选择的因果**：按同 Build 社区 `codol_playerstate164.c` 恢复 `-57` 单 bit 编码，先证明原 r738 102 B 逐字节不变和 109 B 候选可回读；随后用无动态运动/事件的 r738 静态帧作控制组，只改 `0x564=0x4000` 作实验组，保持其余启动、签名 FF 路径及输入时序一致。服务端先证明两种快照各自确实发出，客户端再直接读 `net_state`、拥有位、出生时间、`ps.weapon`、原生 `usercmd.weapon`、武器状态及弹药；至少两次回归，结论“稳定”需三次独立复现。若拥有位没改变发包武器，再定位客户端原生命令生产点与出生时间门控；**不可用服务端伪造弹夹或人为写客户端 PS 来替代这项测试**。
+2. **先追原生武器选择生产点**：r811 的真实攻击包持续 `usercmd.weapon=0` 是可靠的发送侧线索。核对客户端 `0x66F410` 附近的原生 usercmd 生产路径，以及它从哪份已确认的快照/装备状态读取当前武器；先确认尾部 inventory 在客户端解析后的真实存放与消费，再决定只改哪个**有证据的**服务端字段。`ps+0x564` 没有拥有位语义证据，禁止继续用 `0x564=0x4000` 当装备 A/B。分开记录服务端发出的字段、客户端收到的状态与真实 usercmd；新方案须两次回归，称稳定须三次独立复现。**不可用服务端伪造弹夹或人为写客户端 PS 来替代原生射击**。
 3. 查注册后的枪身模型为何停在 `tag_origin`，对照已加载 `viewmodel_ak47`、武器定义写入点和服务端下发的武器/玩家数据。诊断指针仅作正控；给出不靠事后手改客户端内存的可重复注册路径，并以三次真实截图复验。不要把临时 `probe_weapon_viewmodel_binding_1649370.py --apply` 包装成最终功能。
 4. 参照 `他人文件参考/` 的 `codol_player_tail164.c`、`codol_clients164.c`、`codol_entities164.c` 和 `codol-ember` 全库的 Build 1649370 资源、UI、协议资料，先查现有实现与 `--help`，再改事件/物理代码。先做可逆小实验，分别核对服务端发什么、客户端读到什么、画面显示什么；三次独立复现才写稳定。对真实射击必须有武器状态及实际开火/命中反馈的直接证据，不只弹夹数字。
 5. 把诊断步进升级为服务端权威的时间、方向、朝向与碰撞运动；逐方向及组合键复测。不得直接改客户端 playerState 冒充服务端反馈。核心桥/编码/启动路径变更保留开关与 A/B 回归。

@@ -15,17 +15,17 @@
     "clip_weapon": 78,
     "clip_count": 30,
     "ps_0x333c_spawn_time": 0,
-    "ps_0x564_owned_bits_64_to_95": 0,
+    "ps_0x564_descriptor_value_semantics_unverified": 0,
     "all_sampled_words_ps_0x560_to_0x59c": 0
   },
   "static_probe_attempt": {
-    "name": "r813 one-field owned-bit snapshot, not run against client",
-    "intended_difference": "r738 snapshot with ps+0x564=0x4000 (weapon 78 owned bit 14)",
+    "name": "r813 invalid owned-bit hypothesis, not run against client",
+    "intended_difference": "r738 snapshot with ps+0x564=0x4000; the claim that this represents weapon 78 ownership is withdrawn",
     "baseline_rebuild": "byte-exact r738 round trip succeeded before adding field",
     "result": "Committed writer raised ValueError: unsupported integer width -57 before reaching descriptor 192 (0x564). A temporary one-bit -57 branch based on same-Build community code then produced a 109-byte candidate, which the diagnostic decoder read back as owned=0x4000; the branch was reverted pending live A/B regression. Candidate was not sent to a client.",
     "reason": "The current production writer does not encode all zero-valued descriptor codecs needed when the last changed field extends to index 192.",
-    "reusable": "Yes: reapply the exact one-bit -57 branch after inspecting the diff, preserve r738 byte-exact baseline, then perform controlled baseline/owned A/B with two regression runs. No r813 frame was sent."
+    "reusable": "Do not reuse as an ownership test. The descriptor at 0x564 is a native playerState field of unverified semantics; the retained engine's weapon ownership array at 0x55c was relocated to a separate extension, and the Build 1649370 inventory is in the snapshot tail. No r813 frame was sent."
   },
-  "interpretation": "A second real session confirms the native client currently has spawn time zero and no owned bit for weapon 78 while its playerState weapon/HUD say 78. This supports investigation of native selection/spawn state, but does not establish that either zero value alone causes usercmd.weapon=0 or blocks firing. Prior direct-memory owned-bit trials addressed rendering and cannot be treated as a snapshot-published selection test.",
+  "interpretation": "A second real session confirms native ps+0x333c=0 and ps+0x564=0 while weapon/HUD say 78. Later source review invalidated the interpretation of 0x564 as the weapon-78 owned word: codol_playerstate_ext.h relocates the retained-engine owned array, and codol_player_tail164.c publishes inventory in the snapshot tail. The source of usercmd.weapon=0 remains unknown. Earlier direct-memory writes to ps+0x564 likewise do not establish ownership semantics.",
   "cleanup": "Only r107flow/runtime reused; temporary signed FF removed; profile SHA-256 restored to 06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70, SQLite integrity ok, game ports released."
 }
