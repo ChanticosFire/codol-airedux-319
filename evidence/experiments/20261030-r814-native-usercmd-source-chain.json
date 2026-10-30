@@ -1,0 +1,40 @@
+{
+  "build": 1649370,
+  "scope": "One independent real-client session (r814), read-only client memory samples plus static disassembly of the exact runtime image; no gameplay or protocol patch added",
+  "hypothesis": "If usercmd.weapon=0 originates upstream of packet encoding, the native command source should remain zero while the snapshot playerState and render-selected weapon can be 78.",
+  "runtime_image": {
+    "path": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime/codol1649370-offline.exe",
+    "sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380"
+  },
+  "static_chain": [
+    "0x572809 reads local cg+0xc7228; 0x57280f reads local cg+0xc7fb0; 0x572825/0x57282b copy these to cl+0x3c60/+0x3c64. Independent alternate path 0x5596e7..0x5596f3 calls 0x5143a0 with the same two cg values, and 0x5143aa/b0 writes the same cl fields.",
+    "0x5b2b00 increments cl+0x68d0, calls 0x5b2920, then copies 44 bytes into cl+0x3cd0+(sequence&255)*0x2c.",
+    "0x5b2200 reads the low word of cl+0x3c64 at 0x5b2237 and writes command+0x18 at 0x5b2241; this is the first 11-bit weapon field read by packet encoder 0x66f410 at 0x66f7db.",
+    "0x5b2c10 indexes the same 44-byte command ring and calls 0x66f410 at 0x5b2f1a to encode the outgoing packet.",
+    "0x46155b/0x461567 copy cg+0x3e4 to cg+0xc7fb0 on one path. 0x59040d..0x590435 choose cg+0x3f8 when cg+0x400 bit 1 is clear for the model lookup. These are different source fields."
+  ],
+  "static_limitations": "The exact dynamic path that last wrote cg+0xc7fb0 was not traced; indirect calls, copies and other writers exist. Static data flow does not prove which producer ran in r814 or why cg+0x3e4 was zero. REA Ghidra/IDA/Hopper providers were unavailable on this host, so existing PE/Capstone tools supplied the instruction evidence.",
+  "real_session": {
+    "session_log": "runs/r814-session.json",
+    "game_server_log": "runs/r814-gs.jsonl",
+    "game_server_log_sha256": "5ac52c6bb95faecb1b3f206fb6a811bd9a3465b0615c1cd2ac668f86a9012d51",
+    "final_server_events": {"connect": 1, "snapshot_source": 856, "input_decoded": 695, "stop": 1},
+    "gamestate": "runs/r738-gamestate-sniprestigea.bin",
+    "snapshot": "runs/r738-snapshot-sniprestigea.bin",
+    "client_pid_during_sample": 26644,
+    "net_state": 10,
+    "server_events_at_sample": {
+      "connect": 1,
+      "snapshot_source": 470,
+      "input_decoded": 350
+    },
+    "samples": [
+      {"command_number": 2927, "ps_weapon": 78, "cg_0x3e4": 0, "cg_0xc7fb0": 0, "cl_0x3c64": 0, "current_ring_0x18_word": 0},
+      {"command_number": 2999, "ps_weapon": 78, "cg_0x3e4": 0, "cg_0xc7fb0": 0, "cl_0x3c64": 0, "current_ring_0x18_word": 0},
+      {"command_number": 3070, "ps_weapon": 78, "cg_0x3e4": 0, "cg_0xc7fb0": 0, "cl_0x3c64": 0, "current_ring_0x18_word": 0}
+    ],
+    "additional_read": {"local_client_slot": 3, "cg_0x400_flags": 0, "cg_0x3e4": 0, "cg_0x3f8": 78, "cg_0xc7fb0": 0, "cg_0xc7fa4": 78, "cl_0x3c64": 0}
+  },
+  "interpretation": "This session directly separates rendered/snapshot weapon 78 from the zero-valued native command source. The zero exists before 0x66f410 encodes the outgoing usercmd. The causal reason for cg+0x3e4/cg+0xc7fb0 being zero, and the full snapshot-tail inventory consumption path, remain unverified. Prior r811 independent raw packet decoding found 108 packets with usercmd.weapon=0, including 17 attack packets; r814 did not repeat that raw offline decode.",
+  "cleanup": "Only r107flow/runtime used. Exact r814 PIDs 26644 (client), 4952 (game server), 19280 (bridge), 25068 (LSG) no longer running. Temporary signed ak47_mp.ff was moved out of the runtime to ignored private resources/1649370/local/weapon-fastfiles/ak47_mp.r814-staged.ff after direct Remove-Item was rejected by policy. Live profile SHA-256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70; SQLite integrity_check ok."
+}
