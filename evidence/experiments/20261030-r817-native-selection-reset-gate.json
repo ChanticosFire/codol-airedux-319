@@ -1,0 +1,24 @@
+{
+  "build": 1649370,
+  "session": "runs/r817-session.json",
+  "server_log": "runs/r817-gs.jsonl",
+  "server_log_sha256": "8815bdfb8e153c2e73e4bb825522d4208543037daf61a2a04bb6be780996c7a7",
+  "runtime_image_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+  "observations": {
+    "session_net_state": 10,
+    "server_final": {"connect": 1, "snapshot_source": 1888, "input_decoded": 647, "stop": 1},
+    "live_client": {"ps_primary_0x3f8": 78, "inventory_slot0_0x2f4": 78, "stats3_0x1b0": 1, "command_primary_cg_0xc7228": 0, "spawn_gate_cg_0xb7e60": 0},
+    "hook_0x5951b0": {"count": 0, "original_bytes": "558bec83ec28"},
+    "hook_0x59b8d0": {"count": 0, "original_bytes": "a1583b2c08"},
+    "hook_0x461440": {"count": 209, "last_return": "0x54f679", "last_arg0": 0, "last_arg1": 1, "original_bytes": "558bec51a1583b2c08"},
+    "native_input": "VK_1 and left click sent during observation; server decoded at least one attack-button packet. Hooks were installed after net=10."
+  },
+  "static_link_in_exact_runtime_image": [
+    "0x54F674 calls 0x461440 with arg1 determined at 0x54F642-0x54F66C. The observed last return 0x54F679 and arg1=1 identify at least one reset-path call.",
+    "0x461508 tests arg1; nonzero jumps to 0x46154F, which writes zero to cg+0xC7228. The 0x461546 call to 0x59B8D0 is bypassed on that path.",
+    "0x5951B0 and 0x59B8D0 had zero observed entry calls during this post-net=10 window; this does not establish they were never called earlier or on other paths."
+  ],
+  "interpretation": "A native reset call with arg1=1 directly clears the primary selection source, while the two observed selection producers were not called during the monitored window. Why arg1=1 and whether a server field can prevent that reset remain unproven. This evidence does not prove native first-person shooting.",
+  "numbering_chat_boundary": "A separate user-provided chat reports old weapon-table ID+9000 examples and SKU 10710. Current checked community catalog assigns 1000 to Type 95, 10000 to a badge, and has maximum SKU 2762; no conversion was applied. In the chat itself, 1609+9000=10609, which differs from the separately claimed item 10690 and SKU 10710. See docs/1649370-ITEM-ID-SKU-BOUNDARY.md.",
+  "cleanup": "All three process hooks restored to captured original bytes; client PID 1016 and LSG PID 22012 stopped by exact PID, game server and bridge exited naturally. Signed temporary fastfile moved out of sole runtime into ignored resources/1649370/local/weapon-fastfiles/ak47_mp.r817-staged.ff; runtime source path absent. Active data/v1649370/local.sqlite3 SHA256 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70; SQLite integrity_check ok. No inventory/profile/gameplay code modified."
+}
