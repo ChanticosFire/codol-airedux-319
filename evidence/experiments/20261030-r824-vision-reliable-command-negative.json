@@ -1,0 +1,30 @@
+{
+  "run": "r824",
+  "date": "2026-10-30",
+  "hypothesis": "沿用初始 mpintro gamestate，使用当前 gameserver 的可回退 --server-command-text 发送 d 2557 \"mp_crash_tropical\" 1000，客户端应把 CS2557 更新成目标值。",
+  "setup": {
+    "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+    "gamestate": "runs/r738-gamestate-sniprestigea.bin",
+    "snapshot": "runs/r818-otherflags1000.bin",
+    "server_command_text": "d 2557 \"mp_crash_tropical\" 1000",
+    "sender_log": "runs/r824-gs.jsonl",
+    "bridge_log": "runs/r824-bridge.out"
+  },
+  "observed": {
+    "client_pid": 30456,
+    "net_state": 10,
+    "server_command_fragments_sent": 4,
+    "snapshot_sources": 684,
+    "client_acked_our_sequences": 191,
+    "client_cs2557_before_and_after": "\"mpintro\" 0",
+    "client_cs_evidence": ["runs/r824-cs.json", "runs/r824-cs-later.json"],
+    "result": "此通用命令发送路径未使客户端更新 CS2557；不能作为正式 vision 切换。"
+  },
+  "limits": "仅证明本次通用 serverCommand 路径失败；未定位是 netchan 顺序、可靠序号、body 构造、客户端消费还是其他原因。没有把该结果推及社区 retained engine 的实现。",
+  "cleanup": {
+    "client_stopped_exact_pid": 30456,
+    "server_and_bridge": "已在 110 秒期限自然退出",
+    "temporary_fastfile": "已移回私有资源",
+    "profile_active_sha256": "06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70"
+  }
+}

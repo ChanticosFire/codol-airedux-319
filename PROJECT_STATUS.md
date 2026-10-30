@@ -1,5 +1,9 @@
 # Phase Status and Evidence
 
+> **2026-10-30 [§1338 r824 视觉命令负对照]** 原始 `mpintro` + 当前通用 `d 2557` 服务端命令虽发 4 次，客户端仍实读 `mpintro`。此路径未打通，尚不能按正式服务端视觉切换宣布灰屏修复。[失败证据](evidence/experiments/20261030-r824-vision-reliable-command-negative.json)。
+
+> **2026-10-30 [§1337 r823 彩色与缺失的比赛链]** 仅更改全局 vision CS2557 后，真实连接客户端直接读得 `"mp_crash_tropical" 1000`，地图由灰变彩色（n=1）；同 Build 社区确认正式更新应发送可靠 `d 2557 ...`。用户在同实例观察原生瞄准/射击动作与音效、响应迟缓和 30→22→30 弹药回跳；服务端已解码 7 条攻击输入，仍重复静态弹匣 30 快照。ESC 背包空、Tab 无板是未完成项；社区同 Build 有 `s` 请求→`b` 行回复及 PUBLIC profile class 读取，当前服未实现闭环。没有服务端权威扣弹/命中或完整开局结论。写后档案降旧修订已隔离、基线恢复。[证据](evidence/experiments/20261030-r823-vision-score-loadout.json)、[社区接口](docs/1649370-EMBER-INTERFACE-BIT-AUDIT.md)。
+
 > **2026-10-30 [§1336 Ember 接口与数据位]** Ember 公开库提供同 Build CrossProxy 固定 body、UI 赛后状态键和 IIPS 资源身份规则，2697 对局资料提供房间代次/原生 worker/出生流程，但没有可直接套用的 1649370 UDP bitstream。对照本工作区同 Build 246 项玩家字段表，`PS+0x10` 为序号 54/codec `-102`、武器 `PS+0x4c` 为序号 57/11 bit。**撤销旧 r811“`PS+0x333c=netfield98`”对应**：98 实为 `0x258`，`0x333c` 未列入表；r812 地址读数本身未撤销。[深查与迁移边界](docs/1649370-EMBER-INTERFACE-BIT-AUDIT.md)。本轮只有静态核对，未宣称灰屏或射击已修复。
 
 > **2026-10-30 [§1335 灰色对局及 Ember 参考]** r818 的服务端 `PS+0x10=0x1000` 单变量测试改变了原生选枪重置门控；r819/r820 独立会话自然产生主武器命令环 78。r821 活跃画面仍灰色，但客户端直接读得生命值 100、`pm_type=0`、武器 78/弹夹 30、`net_state=10`、`ui_state=5`。服务端实际重复同一快照并推进 `serverTime`，13 个左键攻击输入到达；903 次原生开火状态采样全零、弹夹不变。灰度具体门控未证实，服务端尚无完整实时模拟/开局/终局；倒计时不能作为开局证明。Ember 的 2.6.9.7 资料可借鉴 Python 协调与原生对局权威分工、ACK 历史和资源映射；公开库没有完整 1649370 gameplay worker。见[证据](evidence/experiments/20261030-r818-r821-grey-native-selection.json)、[资料与采用次序](docs/1649370-EMBER-MATCH-IMPLEMENTATION-REFERENCE.md)。五项验收仍未完成。

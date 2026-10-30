@@ -1,5 +1,19 @@
 # Ember 社区库接口与数据位深查（2026-10-30）
 
+**§1338 r824 负对照**：保留初始 `"mpintro" 0`，用当前 `gameserver.py` 的可回退 `--server-command-text` 路径发送 `d 2557 "mp_crash_tropical" 1000`。服务端日志有 4 个 `servercmd` fragment、684 个快照源及 191 次本服序号被确认，客户端达到 `net=10`；然而两次直接读取 CS2557 均仍为 `"mpintro" 0`。因此当前通用命令路径尚未实现可靠 vision 更新；失败点可能在包顺序、可靠序号、body 构造或客户端消费，尚未定位。r823 改初始 gamestate 的彩色结果不能替代正式更新。[r824 失败证据](../evidence/experiments/20261030-r824-vision-reliable-command-negative.json)。r824 活库哈希保持基线，临时 FF 已移回私有目录。
+
+## §1337 补证：社区同 Build 视觉、数据板与配装链；r823 实机
+
+用户在 r823 实例实测：ESC 对局背包为空、Tab 没有数据板；右键瞄准和左键射击有动作与声音，但响应延迟较大，弹匣数从 30 瞬间到 22 再回到 30。它们是**用户观察**，不能改写成已验证的服务端命中或权威扣弹。服务端日志直接记录到 7 条攻击输入、494 条解码输入、1273 次静态快照；目前发送的快照弹匣固定为 30。[r823 原始摘要](../evidence/experiments/20261030-r823-vision-score-loadout.json)。
+
+同 Build 社区预览的 `codol_configstrings.h:73–74` 给出全局 vision 起点 **2557**；`codol_script_vision.c:167–203` 把 `"名称" 毫秒数` 发布到 configstring，并对已经收到 gamestate 的客户端发送可靠命令 `d <index> <value>`。这与真实 demo 在初始 `"mpintro" 0` 之后发送 `d 2557 "mp_crash_tropical" 1000` 相符。r823 只把 gamestate 的 2557 改成后者，保持 r818 快照及唯一运行时不变；真实客户端 `net_state=10`，内存中 2557 为新值，画面由此前灰色变为彩色。**这是一次成功的单变量观察 n=1，不称稳定修复。**正式路径应按同 Build 发送端做可靠 `d` 更新并验证客户端消费，不能靠改 UI 色调或随意改快照字段。[彩色实机截图](../evidence/experiments/20261030-r823-vision-normal-active.png)。
+
+Tab 数据板有更精确的接口：同 Build `sv_client.c:3716–3719` 指出 `CG_ScoresDown` 发送可靠客户端命令 **`s`**，服务器须放行；`codol_scoreboard_sender.c:19–79` 从已连接玩家会话组装分数、ping、死亡、击杀等行；`codol_scoreboard_wire.c:9–56` 普通模式的服务端可靠命令为 **`b <行数> <队伍1分> <队伍2分> <分数上限> <每行10个数>`**，每行顺序为 `client score ping deaths status_icon kills assists headshots objectives skill`，最多 19 行。增量比分可发 `E <client> <score>`，但它不能替代完整 `b` 回复（`codol_scoreboard_sender.c:82–164`）。本服 `client_input.py` 已能解可靠客户端字符串，`gameserver.py` 目前只记录其数量而无 `s` 分发或 `b` 组包；r823 无服务端命令回复。**推断**这构成 Tab 空白的主要缺口，须用同轮 `s` 入站和 `b` 出站/客户端显示核实，不能仅由静态源码断言唯一原因。
+
+ESC 配装不能直接拿大厅仓库 ID `+9000` 填快照。同 Build `codol_script_profile_loadout.c:55–116` 要求公开档案 schema `version=233`、checksum `0x4a6cc345`、record `15767` 字节，`weaponClasses` 60 项；选中 class 包含 `primaryBase`、`secondaryBase`、两组各 6 个附件、perks、killstreaks、wildcards 等。`sv_client.c:936–1003` 还处理客户端 stats 上传，按槽绑定安全档案；本服 r823 `stop.counters.stats=0`，仅有静态尾段装备/弹匣，没有把大厅用户档案绑定到比赛客户端、解析所选 class 并投影至游戏。**推断**此链缺失与 ESC 空白一致，具体缺的是哪一步须按“实际档案→上传/绑定→class 选择→服务端发布→客户端 UI”逐段量测，避免把大厅可见配装误当场内已下发。
+
+彩色、HUD 枪名/30、射击音效与动作都是局部进展；枪身仍无可辨认模型，服务端权威弹药/命中、完整数据板、ESC 配装、正常赛后均未验收。r823 写后档案较实验前更旧，已隔离到私有资源并恢复较新基线，细节见证据；大运行时没有复制。Ember 公开库提供的是可迁移的架构和接口索引，上述 2557、`s/b/E` 和 schema 来自**本工作区另存的同 Build 社区预览**，不要混称为 Ember 原创源码。
+
 ## 范围和证据等级
 
 本地 `codol-ember` 的 `HEAD` 与 `origin/main` 经重新 fetch 均为 `f784a77`。本记录优先核对公开库的 1649370 UI、CrossProxy、IIPS/IFS、2697 对局架构和 1604220 工具；再把它们与本机 2697 源码包、当前 1649370 服务端和同 Build 社区字段表逐项对照。来源按四类区分：**A** Ember 公开库中同 Build 的静态规格；**B** Ember 报告提到但不在公开库内的本机 2697 源码/脚本；**C** 当前仓库的 1649370 社区预览字段表；**D** 当前自建连接实测。A/B 的接口不能未经消费验证直接成为 C/D 的游戏 UDP 数据位。

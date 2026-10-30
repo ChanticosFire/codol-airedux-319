@@ -1,0 +1,52 @@
+{
+  "run": "r823",
+  "date": "2026-10-30",
+  "hypothesis": "若灰色地图来自全局裸眼 vision configstring 2557 仍为 mpintro，则只把该项改为 mp_crash_tropical 应恢复正常色彩；若无变化则该假设不成立。",
+  "source": {
+    "baseline_gamestate": "runs/r738-gamestate-sniprestigea.bin",
+    "candidate_gamestate": "runs/r823-gamestate-vision-normal.bin",
+    "changed_configstring": 2557,
+    "before": "\"mpintro\" 0",
+    "after": "\"mp_crash_tropical\" 1000",
+    "candidate_sha256": "5a7b8150329beb3812925d7002dc1916218e1fc906130069802394b21f9d03d6",
+    "same_snapshot": "runs/r818-otherflags1000.bin",
+    "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime"
+  },
+  "observed": {
+    "client_pid": 30508,
+    "server_pid": 30640,
+    "bridge_pid": 24712,
+    "net_state": 10,
+    "client_configstring_2557": "\"mp_crash_tropical\" 1000",
+    "map_color": "正常彩色，非此前 r821 灰色",
+    "screenshot": "evidence/experiments/20261030-r823-vision-normal-active.png",
+    "live_client_configstrings": "runs/r823-cs.json",
+    "sender_log": "runs/r823-gs.jsonl",
+    "sender_snapshot_sources": 1273,
+    "sender_stop_counters": {
+      "connect": 1,
+      "input_decoded": 494,
+      "client_acked_ours": 176,
+      "stats": 0
+    },
+    "attack_input_packets_decoded": 7,
+    "user_report": "同一实例右键瞄准、左键射击有声音和动作，但操作延迟大；弹匣数在 30 与 22 间跳回；ESC 背包仍空，Tab 没有数据板。",
+    "user_empty_loadout_image": "C:/Users/ADMINI~1/AppData/Local/Temp/codex-clipboard-ed739470-645e-4006-b98b-1e3ee097cfe0.png"
+  },
+  "interpretation": {
+    "vision": "单次 A/B 观察 n=1：configstring 2557 变化与彩色画面同时出现；社区同 Build 源码和 demo 后续 d 2557 命令进一步支持因果，但稳定性须独立复现至少三次。",
+    "shooting": "客户端原生瞄准/射击动作与音效由用户实测，7 条攻击输入已抵服务端；弹药 22 为用户观察，未由客户端内存直接读取。静态快照持续发布弹匣 30 与回跳现象一致；尚无服务端权威扣弹、命中和持久状态。",
+    "scoreboard": "社区同 Build 显示 Tab 发可靠 client command s，服务端应答 b 行；本服目前不处理该请求，也未发送 b，故 Tab 缺数据板的精确原因仍待输入字符串与客户端消费实测。",
+    "loadout": "大厅档案 UI 有配装，而对局 ESC 为空；社区同 Build 从 PUBLIC profile 的 weaponClasses 读所选 class。本服没有同等 profile→game class 流程，具体客户端所缺字段/命令待测。",
+    "status": "不能宣称完整对局、枪身、原生权威射击、Tab 数据板或 ESC 配装已经完成。"
+  },
+  "cleanup": {
+    "client_stopped_exact_pid": 30508,
+    "temporary_weapon_fastfile": "已从唯一运行时移回 resources/1649370/local/weapon-fastfiles/ak47_mp.r821-staged.ff",
+    "profile_pre_sha256": "06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70",
+    "profile_post_sha256": "86D97F6AC02A084108BB0FAC2D9372BA22E66E12EA3C54A8D6FF3BF84019C4F5",
+    "profile_post_quarantine": "resources/1649370/local/profile/quarantine-post-r823-vision.sqlite3",
+    "profile_active_restored_sha256": "06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70",
+    "profile_integrity": "两库均 ok，表及行数相同；写后 accounts revision 1213 低于实验前 1241，public profile blob 不同，故先隔离再恢复较新备份。"
+  }
+}
