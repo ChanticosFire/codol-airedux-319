@@ -18,6 +18,8 @@
 
 上述机制分别见 `version-2697.md` 的“组成与职责”“前端激活与房间协调”“玩法脚本与会话生命周期”“技术资料补充”及“最小真实对局验证”章节。这是**架构与验证方法参考**；Ember 未提供能直接复制到本工作树的完整 1649370 gameplay worker。
 
+本机还有 Ember 报告所审阅的 **2697 本地材料**，在 `E:/GAME/COD/codol-airedux/CODOL2697/fbe7c395/server2697/`，与 `codol-ember` 公开库分属不同来源。只读核对 `room_host2697.py:69–112`：它验证原生 EXE 摘要、准备会话工作目录、以 `+set g_gametype`/`+map` 启动 `native/bin2697/codol_dedrun.exe`，等待地图初始化日志才回报 ready。该目录的 `script-overlay2697/maps/mp/gametypes/war.gsc:43–68` 注册 `onStartGameType` 和出生点处理；`_playerlogic.gsc:516–589` 的 `spawnPlayer` 在选择出生点后调用 `updateSessionState("playing", "")`、设生命值、`hasSpawned=true` 和 `spawnTime`；`_gamelogic.gsc:414–483` 把赛前、宽限期、`game["state"]=="playing"` 和未出生玩家分开处理。**这是 2697 原生服务 + 脚本的实际流程线索**，比“推进计时器就是开局”更具体；这些脚本字段不能直接充当 1649370 wire 字段，也没有证明 r821 灰度的具体成因。该本地包原生 EXE 和脚本未启动、未复制到唯一运行时。
+
 ## 当前灰色画面的针对性结论
 
 r821 活跃真实连接：服务端日志 `runs/r821-gs.jsonl` 有 1412 次从同一文件发送快照、661 条解码输入、13 条攻击输入；`send_due_snapshots()` 把 `serverTime` 写为 `72192+index*500`，故倒计时会走。客户端 `net_state=10`、`ui_state=5`、`pm_type=0`、武器 78、生命值 100、出生计数/`stats3=1`，截图仍灰色。按下左键期间 903 次原生武器状态采样全部为零，弹夹仍 30。详见 [r818–r821 证据](../evidence/experiments/20261030-r818-r821-grey-native-selection.json)和[实机截图](../evidence/experiments/20261030-r821-grey-active.png)。
@@ -26,7 +28,7 @@ r821 活跃真实连接：服务端日志 `runs/r821-gs.jsonl` 有 1412 次从�
 
 ## 接入次序
 
-1. 固定 r821 为负控。比较同 Build 正常入局/开局的真实记录，分别核对灰度状态、队伍/出生、可靠命令、`playerState` 与配置字符串；不再仅调时间或重复同一静态帧。
+1. 固定 r821 为负控。以 2697 的 `updateSessionState("playing")`、`hasSpawned`、`spawnTime` 顺序作为**调查问题**，比较同 Build 1649370 正常入局/开局的真实记录，分别核对灰度状态、队伍/出生、可靠命令、`playerState` 与配置字符串；不再仅调时间或重复同一静态帧。
 2. 将当前只读输入解码接入受 ACK 约束的原生/等效权威游戏状态，先证明移动由客户端原生输入驱动且服务端计算，不用诊断性按键加固定坐标。
 3. 从服务端权威武器/弹药状态生成快照，验证客户端原生枪模、动画、弹药、命中和伤害的连续变化；不得人工扣客户端弹药作为验收。
 4. 完成正常结束、结果页、回大厅及持久档案读回。在同一最终路径上逐条完成原五项验收。
