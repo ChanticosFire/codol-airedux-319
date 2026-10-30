@@ -1,0 +1,41 @@
+{
+  "build": 1649370,
+  "hypothesis": "The main weapon command is generated from the local selection field, not from command+0x18; if the server tail is missing, inventory/stat3 should be zero. A native selection input might change that field if its binding is active.",
+  "runtime_image_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+  "correction_to_1332": "Revoke the identification of native command+0x18 as the primary weapon. Exact image 0x66F170 writes PS+0x3F8 to command+0x14, PS+0x3FC to command+0x16, and PS+0x3E4 to command+0x18. Encoder 0x66F77F reads command+0x14 first; 0x66F7DB reads command+0x18 second. Thus 1332's cg+0xC7FB0 / cl+0x3C64 / command+0x18 chain is offhand, whose zero can be normal. The previously decoded r811 primary=0 result remains independent evidence.",
+  "static_primary_chain": [
+    "0x572809 reads cg+0xC7228; 0x572825 writes cl+0x3C60. 0x5B221A reads cl+0x3C60; 0x5B2227 writes command+0x14. 0x66F77F reads command+0x14 for the first 11-bit weapon delta.",
+    "Xrefs to cg+0xC7228 include writes at 0x46154F (zero under guard), 0x5595EE (zero under index guard), 0x5952E9 (copies PS+0x3F8), and 0x59B989 (accepted selection). Their actual runtime sequence has not been traced.",
+    "0x54C80B/0x54C811 compare PS+0x1B0 (stats3) across states before 0x461440. Community projection164.c publishes stats3 from native spawn counter; this is a reference implementation, not proof of the active local path."
+  ],
+  "r815": {
+    "session": "runs/r815-session.json",
+    "server_log": "runs/r815-gs.jsonl",
+    "server_log_sha256": "06f5e3bd34ab0d251fc58a4d00a927a6a6c77018ef6c8be7293aeaf889283e00",
+    "net_state": 10,
+    "server_final": {"connect": 1, "snapshot_source": 879, "input_decoded": 699, "stop": 1},
+    "raw_packet_redecode": {"complete_packets": 699, "primary_weapon": {"0": 699}, "alt_weapon": {"0": 699}, "offhand": {"0": 699}, "errors": {}},
+    "read_only_live_samples": [
+      {"sequence": 3923, "cg_primary_0x3f8": 78, "cg_alt_0x3fc": 78, "cg_offhand_0x3e4": 0, "cg_command_primary_0xc7228": 0, "cl_primary_0x3c60": 0, "ring_primary_0x14": 0},
+      {"sequence": 3997, "cg_primary_0x3f8": 78, "cg_alt_0x3fc": 78, "cg_offhand_0x3e4": 0, "cg_command_primary_0xc7228": 0, "cl_primary_0x3c60": 0, "ring_primary_0x14": 0},
+      {"sequence": 4068, "cg_primary_0x3f8": 78, "cg_alt_0x3fc": 78, "cg_offhand_0x3e4": 0, "cg_command_primary_0xc7228": 0, "cl_primary_0x3c60": 0, "ring_primary_0x14": 0},
+      {"sequence": 4141, "cg_primary_0x3f8": 78, "cg_alt_0x3fc": 78, "cg_offhand_0x3e4": 0, "cg_command_primary_0xc7228": 0, "cl_primary_0x3c60": 0, "ring_primary_0x14": 0}
+    ],
+    "post_server_read": {"net_state": 10, "stats3_0x1b0": 1, "inventory_slot0_0x2f4": 78, "command_primary_0xc7228": 0, "caution": "PS primary had already returned to zero after server exit; this is not an active-frame comparison."}
+  },
+  "r816": {
+    "session": "runs/r816-session.json",
+    "server_log": "runs/r816-gs.jsonl",
+    "server_log_sha256": "7e6b71b05391cacfa82981ea7686530aae7a08236c421baff973982a88cf7bc1",
+    "net_state": 10,
+    "server_at_exact_pid_cleanup": {"connect": 1, "snapshot_source": 826, "input_decoded": 547, "stop": 0},
+    "raw_packet_redecode": {"complete_packets": 547, "primary_weapon": {"0": 547}, "alt_weapon": {"0": 547}, "offhand": {"0": 547}, "errors": {}},
+    "before_input": {"sequence": 1673, "stats3_0x1b0": 1, "inventory_slot0_0x2f4": 78, "ps_primary_0x3f8": 78, "command_primary_0xc7228": 0, "cl_primary_0x3c60": 0, "ring_primary_0x14": 0},
+    "inputs": ["Native keyboard VK_1 (0x31) twice through tools/send_key_1649370.py", "one native mouse-wheel +120 event"],
+    "after_vk1": {"sequence_samples": [7204, 7257, 7312], "stats3": 1, "inventory_slot0": 78, "ps_primary": 78, "command_primary": 0, "cl_primary": 0, "ring_primary": 0},
+    "after_wheel": {"sequence": 14275, "inventory_slot0": 78, "ps_primary": 78, "command_primary": 0, "cl_primary": 0, "ring_primary": 0},
+    "pre_input_screenshot": "evidence/experiments/20261030-r816-native-selection-before-key.png"
+  },
+  "interpretation": "Two independent real connections directly confirm primary command selection zero even while snapshot PS primary and decoded inventory slot 0 are 78. The r815/r816 packet redecode confirms r811's primary zero is not merely an offhand-field label error. The tested key and wheel did not change the observed field, but their active binding and game consumption were not proven; no broad input-route failure is claimed. The immediate next task is to trace why local selection cg+0xC7228 is not set by the received inventory and accepted native selection path; do not patch command ring or decrement ammo artificially.",
+  "cleanup": "Only the existing r107flow/runtime was used. Exact r815 and r816 session PIDs were stopped or naturally exited. Signed FF was moved out of runtime to ignored private resources/1649370/local/weapon-fastfiles/ak47_mp.r816-staged.ff. The active SQLite SHA256 remained 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70, integrity_check ok; pre-session backups are private. No gameplay code changed."
+}
