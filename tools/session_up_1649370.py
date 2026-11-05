@@ -132,6 +132,14 @@ def main() -> int:
                     help="JSON [[index,value],...] replacing the built-in configstrings")
     ap.add_argument("--server-command-text", default=None,
                     help="override the svc_serverCommand text sent during the match")
+    ap.add_argument("--server-command-transport", choices=("separate", "inline"),
+                    default="separate", help="opt in to ACK-resend server commands inside snapshots")
+    ap.add_argument("--server-command-every", type=int, default=200,
+                    help="snapshot interval between newly queued server commands")
+    ap.add_argument("--max-unacked-snapshots", type=int, default=0,
+                    help="opt in to ACK-paced snapshot delivery; requires --decode-client-input")
+    ap.add_argument("--scoreboard-reply", action="store_true",
+                    help="reply to the client's s poll using current single-player match scores")
     ap.add_argument("--decode-client-input", action="store_true",
                     help="read-only usercmd decoding using the selected gamestate's checksum feed; requires server-command-text off")
     ap.add_argument("--input-motion-probe", action="store_true",
@@ -170,8 +178,9 @@ def main() -> int:
     args = ap.parse_args()
     input_checksum_feed = None
     if args.decode_client_input:
-        if args.gamestate_source != "file" or args.server_command_text != "off":
-            ap.error("--decode-client-input requires a file gamestate and --server-command-text off")
+        if args.gamestate_source != "file" or (args.server_command_text != "off" and
+                                                args.server_command_transport != "inline"):
+            ap.error("--decode-client-input requires a file gamestate and inline or disabled server commands")
         from build_gamestate_1649370 import decode as decode_gamestate
         input_checksum_feed = decode_gamestate((ROOT / args.gamestate).read_bytes()).checksum_feed
     if args.input_motion_probe and not args.decode_client_input:
@@ -238,9 +247,14 @@ def main() -> int:
                            "--snapshot-delay", "1",
                            "--snapshot-seq", "4", "--snapshot-repeat", "30000",
                            "--snapshot-interval", "0.1",
-            *( ["--server-command-every", "200", "--server-command-seq", "4",
-                "--server-command-text", args.server_command_text or " "]
+            *( ["--server-command-every", str(args.server_command_every),
+                "--server-command-seq", "0" if args.server_command_transport == "inline" else "4",
+                "--server-command-text", args.server_command_text or " ",
+                "--server-command-transport", args.server_command_transport]
                if args.server_command_text != "off" else [] ),
+            *( ["--max-unacked-snapshots", str(args.max_unacked_snapshots)]
+               if args.max_unacked_snapshots else [] ),
+            *( ["--scoreboard-reply"] if args.scoreboard_reply else [] ),
             *( ["--configstring-file", args.configstring_file] if args.configstring_file else [] ),
                            "--match-duration", str(int(args.server_seconds)),
                            "--log", f"runs/{args.name}-gs.jsonl"]

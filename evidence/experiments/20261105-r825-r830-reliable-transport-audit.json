@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-05",
+  "scope": "Review of existing r825-r830 local runs before publishing source; no new game session",
+  "source_logs": [
+    "runs/r825-gs.jsonl",
+    "runs/r826-gs.jsonl",
+    "runs/r827-gs.jsonl",
+    "runs/r828-gs.jsonl",
+    "runs/r829-gs.jsonl",
+    "runs/r830-gs.jsonl"
+  ],
+  "reproduction": "python tools/session_up_1649370.py --name <unique-name> --runtime r107flow --gamestate runs/r738-gamestate-sniprestigea.bin --snapshot runs/r818-otherflags1000.bin --server-seconds 65 --bridge-seconds 65 --ring-a-length-mode slot --server-command-text 'd 2557 \"mp_crash_tropical\" 1000' --server-command-transport inline --server-command-every 30000 --decode-client-input --max-unacked-snapshots 16 --scoreboard-reply --restore-weapon-handler --restore-weapon-lookup-branch --restore-weapon-init-indexing --restore-weapon-cache-indexing --weapon-lookup-fallback",
+  "observations": {
+    "r825": "Inline reliable d 2557 command acknowledged as sequence 1; client reached net_state 10 and CS2557 became the map vision value. Screenshot evidence/experiments/20261030-r825-vision-inline-active.png shows color map, weapon HUD and scoreboard columns, but does not prove full match state.",
+    "r826": "Decoded input was enabled before outgoing XOR included the last acknowledged client command string. At the last input packet, messageAck=104 while the nearest sent snapshot had sequence 606 (gap 502).",
+    "r827": "After implementing the outgoing command-string XOR, 481 input packets decoded. At the last input packet, messageAck=606 and nearest sent snapshot sequence=607 (gap 1). The server continued sending to sequence 1639 after client input stopped, so the final sequence gap is not a live-latency comparison.",
+    "r828": "With optional 16 outstanding snapshot bound, 425 input packets decoded. Last-input messageAck=510, nearest sent sequence=511 (gap 1). This does not establish improved response time relative to active r827; it only bounds sends after acknowledgements stop.",
+    "r829": "The server queued 116 scoreboard b replies, all 116 were acknowledged, and 394 input packets decoded. Screenshot evidence/experiments/20261030-r829-scoreboard-tab.png, taken while Tab was held, does not show a scoreboard panel.",
+    "r830": "After two-second unchanged-board throttle, the server queued 19 scoreboard b replies, reached reliable ACK 20 including vision command, and decoded 304 input packets. Last-input messageAck=329, nearest sent sequence=330 (gap 1)."
+  },
+  "limits": [
+    "Each run is one independent connection. Vision path was also active in r826-r830, but no three-run set of direct CS2557 memory reads is included in this publication audit; do not call it a completed stable feature on this evidence alone.",
+    "Reliable ACK proves command transport, not cgame scoreboard rendering. The Tab UI remains unverified/visually absent in r829.",
+    "The server still repeats a static player-state snapshot with clip 30. Native shooting action/sound and user-observed 30-to-22-to-30 bounce do not prove authoritative ammo, hits, or damage.",
+    "ESC loadout remained empty in the user-observed match. No loadout or full match acceptance is claimed.",
+    "All runs used the existing r107flow runtime. This evidence file omits private game data, certificates, account files, packet bodies, and full logs."
+  ]
+}

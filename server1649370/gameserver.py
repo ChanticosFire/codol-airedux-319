@@ -359,7 +359,10 @@ class GameServer:
                  send_opcode: int | None = None,
                  decode_client_input: bool = False,
                  input_motion_probe: bool = False,
-                 input_fire_event_probe: bool = False):
+                 input_fire_event_probe: bool = False,
+                 server_command_transport: str = "separate",
+                 max_unacked_snapshots: int = 0,
+                 scoreboard_reply: bool = False):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -455,6 +458,38 @@ class GameServer:
         self.command_every = int(server_command_every or 0)
         self.command_seq = int(server_command_seq or 0)
         self.command_text = (server_command_text or "").encode("latin-1")
+        if server_command_transport not in ("separate", "inline"):
+            raise ValueError("invalid server command transport")
+        self.server_command_transport = server_command_transport
+        if max_unacked_snapshots < 0:
+            raise ValueError("max_unacked_snapshots must be nonnegative")
+        self.max_unacked_snapshots = max_unacked_snapshots
+        self.scoreboard_reply = scoreboard_reply
+
+    def _queue_reliable(self, peer: dict, command: bytes, reason: str) -> int:
+        if self.server_command_transport != "inline" or not command or b"\x00" in command:
+            raise ValueError("invalid inline reliable command")
+        sequence = peer.get("server_command_seq", self.command_seq) + 1
+        peer["server_command_seq"] = sequence
+        peer.setdefault("pending_reliable", {})[sequence] = command
+        peer.setdefault("reliable_history", {})[sequence] = command
+        self.log({"dir": "meta", "kind": "reliable_queued",
+                  "command_seq": sequence, "reason": reason,
+                  "text": command.decode("latin-1")})
+        return sequence
+
+    @staticmethod
+    def _initial_scoreboard(peer: dict) -> bytes:
+        # The current game server admits one local player (client 0). All ten
+        # row values come from its match state; no scoring events exist yet.
+        row = (0, peer.get("score", 0), peer.get("ping", 0),
+               peer.get("deaths", 0), peer.get("status_icon", 0),
+               peer.get("kills", 0), peer.get("assists", 0),
+               peer.get("headshots", 0), peer.get("objectives", 0),
+               peer.get("skill", 0))
+        values = (1, peer.get("team1_score", 0), peer.get("team2_score", 0),
+                  peer.get("score_limit", 0), *row)
+        return ("b " + " ".join(str(value) for value in values)).encode("ascii")
 
     # ------------------------------------------------------------------ logging
     def log(self, event: dict) -> None:
@@ -762,23 +797,33 @@ class GameServer:
                       "to": f"{addr[0]}:{addr[1]}", "seq": seq,
                       "length": len(payload), "payload_head": payload[:32].hex()})
             return
+        # The server's last acknowledged client command is also the cipher
+        # string (sv_net_chan.c / CODOL_Xor). Once the four-byte command ACK
+        # becomes nonzero, a fixed-key XOR makes every later snapshot unreadable.
+        encoded = bytearray(payload)
+        last_command = peer.get("last_client_command_string", b"")
+        command_index = 0
+        for position in range(4, len(encoded)):
+            if last_command:
+                if command_index >= len(last_command) or not last_command[command_index]:
+                    command_index = 0
+                key ^= (last_command[command_index] << ((position - 4) & 1)) & 0xFF
+                command_index += 1
+            encoded[position] ^= key
         for index in range(count):
-            chunk = payload[index * frag_size:(index + 1) * frag_size]
-            data = bytearray(chunk)
-            for i in range(4 if index == 0 else 0, len(data)):
-                data[i] ^= key
+            data = encoded[index * frag_size:(index + 1) * frag_size]
             # The verified 1649370 regression packet starts directly with the
             # 10-byte fragment header (gamestate seq 3, 89-byte chunk, 99 bytes
             # total). A prepended u16 length made the client ignore it at state 7.
             header = (struct.pack("<I", seq_word) + bytes([index, count - 1])
-                      + struct.pack("<HH", frag_size, len(chunk)))
+                      + struct.pack("<HH", frag_size, len(data)))
             packet = header + data
             self.sock.sendto(packet, addr)
             self.state.counters["inband_sent"] += 1
             self.log({"dir": "out", "kind": "fragment", "message": kind,
                       "to": f"{addr[0]}:{addr[1]}",
                       "seq": seq, "index": index, "count": count,
-                      "stride": frag_size, "chunk": len(chunk), "length": len(packet)})
+                      "stride": frag_size, "chunk": len(data), "length": len(packet)})
 
     def _input_motion_frame(self, x: float, y: float, clip: int = 30,
                             yaw: float = 0.0, pitch: float = 0.0,
@@ -808,6 +853,19 @@ class GameServer:
             if due is None or time.monotonic() < due:
                 continue
             index = peer.get("snapshot_index", 0)
+            if self.max_unacked_snapshots and index:
+                latest = self.snapshot_seq + index - 1
+                acknowledged = peer.get("highest_message_ack", self.snapshot_seq - 1)
+                if latest - acknowledged >= self.max_unacked_snapshots:
+                    stalls = peer.get("snapshot_backpressure_stalls", 0) + 1
+                    peer["snapshot_backpressure_stalls"] = stalls
+                    if stalls == 1 or stalls % 100 == 0:
+                        self.log({"dir": "meta", "kind": "snapshot_backpressure",
+                                  "latest": latest, "ack": acknowledged,
+                                  "limit": self.max_unacked_snapshots,
+                                  "stalls": stalls})
+                    peer["snapshot_due"] = time.monotonic() + 0.05
+                    continue
             if index < len(self.snapshot_files):
                 path = self.snapshot_files[index]
             elif self.snapshot_repeat:
@@ -878,8 +936,11 @@ class GameServer:
                 # the client's serverCommandSequence never advances, the
                 # unconfirmed-command window exceeds the prediction limit and
                 # CL_PredictMovement is skipped, so held movement never moves.
-                self.command_seq += 1
-                if self.origin_reader is not None:
+                if self.server_command_transport == "inline":
+                    self._queue_reliable(peer, self.command_text, "scheduled")
+                else:
+                    self.command_seq += 1
+                if self.server_command_transport == "separate" and self.origin_reader is not None:
                     cmd = self.origin_reader.cmd_number()
                     if cmd is not None:
                         # Keep the unconfirmed-command window small but non-zero:
@@ -889,10 +950,23 @@ class GameServer:
                 # svc_serverCommand = 1: [0x01][sequence u32][text NUL].  The
                 # handler at 0x4737E0 rejects non-increasing sequences and stores
                 # the text into conn+0x80154[sequence & 0x1FF].
-                command = (b"\x01" + struct.pack("<I", self.command_seq)
-                           + self.command_text + b"\x00")
-                self._send_fragments(addr, peer, b"\x00\x00\x00\x00" + command,
-                                     seq - 1, "servercmd")
+                if self.server_command_transport == "separate":
+                    command = (b"\x01" + struct.pack("<I", self.command_seq)
+                               + self.command_text + b"\x00")
+                    self._send_fragments(addr, peer, b"\x00\x00\x00\x00" + command,
+                                         seq - 1, "servercmd")
+            if self.server_command_transport == "inline":
+                pending = peer.get("pending_reliable", {})
+                if pending:
+                    commands = b"".join(
+                        b"\x01" + struct.pack("<I", command_seq) + text + b"\x00"
+                        for command_seq, text in sorted(pending.items()))
+                    payload = payload[:4] + commands + payload[4:]
+                    if index % 25 == 0:
+                        self.log({"dir": "meta", "kind": "reliable_in_snapshot",
+                                  "snapshot_seq": seq, "commands": sorted(pending)})
+            if self.decode_client_input:
+                payload = struct.pack("<I", peer.get("last_client_command", 0)) + payload[4:]
             self._send_fragments(addr, peer, payload, seq, "snapshot")
             peer["snapshot_index"] = index + 1
             if index + 1 < len(self.snapshot_files):
@@ -981,6 +1055,18 @@ class GameServer:
             server_id = data[4]
             message_ack = struct.unpack_from("<i", data, 5)[0]
             body = data[9:]
+            if self.server_command_transport == "inline" and len(body) >= 4:
+                reliable_ack = struct.unpack_from("<I", body)[0]
+                issued = peer.get("server_command_seq", self.command_seq)
+                previous = peer.get("reliable_command_ack", 0)
+                if previous <= reliable_ack <= issued and reliable_ack != previous:
+                    peer["reliable_command_ack"] = reliable_ack
+                    pending = peer.get("pending_reliable", {})
+                    for command_seq in list(pending):
+                        if command_seq <= reliable_ack:
+                            del pending[command_seq]
+                    self.log({"dir": "in", "kind": "reliable_ack",
+                              "ack": reliable_ack, "pending": sorted(pending)})
             acked_ours = message_ack == peer.get("last_server_seq", 0) and message_ack > 0
             if acked_ours:
                 self.state.counters["client_acked_ours"] = self.state.counters.get("client_acked_ours", 0) + 1
@@ -1003,9 +1089,12 @@ class GameServer:
                         baseline = peer["input_snapshot_baselines"].get(message_ack)
                         if baseline is None:
                             raise ClientInputDecodeError("missing acknowledged snapshot baseline")
+                    reliable_ack = struct.unpack_from("<I", data, 9)[0]
+                    reliable_command = peer.get("reliable_history", {}).get(reliable_ack, b"")
                     result = decode_client_packet(
                         data, challenge=peer["challenge"],
-                        checksum_feed=self.checksum_feed, baseline=baseline)
+                        checksum_feed=self.checksum_feed,
+                        reliable_command=reliable_command, baseline=baseline)
                 except ClientInputDecodeError as error:
                     self.state.counters["input_decode_error"] = (
                         self.state.counters.get("input_decode_error", 0) + 1)
@@ -1015,6 +1104,44 @@ class GameServer:
                 else:
                     self.state.counters["input_decoded"] = (
                         self.state.counters.get("input_decoded", 0) + 1)
+                    if 0 < result.message_ack <= peer.get("last_server_seq", 0):
+                        peer["highest_message_ack"] = max(
+                            peer.get("highest_message_ack", self.snapshot_seq - 1),
+                            result.message_ack)
+                    for client_seq, client_text in result.client_commands:
+                        last_client_command = peer.get("last_client_command", 0)
+                        if client_seq <= last_client_command:
+                            continue
+                        if client_seq != last_client_command + 1:
+                            self.log({"dir": "meta", "kind": "client_command_gap",
+                                      "expected": last_client_command + 1,
+                                      "got": client_seq})
+                            break
+                        peer["last_client_command"] = client_seq
+                        peer["last_client_command_string"] = client_text
+                        verb = client_text.split(b" ", 1)[0][:24]
+                        safe_verb = verb.decode("ascii", "replace")
+                        self.state.counters["client_command_new"] = (
+                            self.state.counters.get("client_command_new", 0) + 1)
+                        if safe_verb != "s" or client_seq <= 5 or client_seq % 20 == 0:
+                            self.log({"dir": "meta", "kind": "client_command_new",
+                                      "seq": client_seq, "verb": safe_verb})
+                        if safe_verb == "s":
+                            peer["scoreboard_requested"] = True
+                    if (self.scoreboard_reply and self.server_command_transport == "inline"
+                            and peer.get("scoreboard_requested")
+                            and peer.get("reliable_command_ack", 0) >= 1
+                            and peer.get("scoreboard_pending_seq", 0)
+                            <= peer.get("reliable_command_ack", 0)):
+                        board = self._initial_scoreboard(peer)
+                        now = time.monotonic()
+                        if (board != peer.get("scoreboard_last_body") or
+                                now - peer.get("scoreboard_last_sent_at", -1e9) >= 2.0):
+                            peer["scoreboard_pending_seq"] = self._queue_reliable(
+                                peer, board, "scoreboard_s")
+                            peer["scoreboard_last_body"] = board
+                            peer["scoreboard_last_sent_at"] = now
+                            peer["scoreboard_requested"] = False
                     prior = peer.get("last_input_seq", -1)
                     if result.sequence > prior:
                         peer["last_input_seq"] = result.sequence
@@ -1162,6 +1289,12 @@ def main() -> int:
                         help="first svc_serverCommand sequence number")
     parser.add_argument("--server-command-text", default=None,
                         help="text carried by svc_serverCommand (empty is harmless)")
+    parser.add_argument("--server-command-transport", choices=("separate", "inline"),
+                        default="separate", help="send reliable commands in snapshots with ACK-based resend")
+    parser.add_argument("--max-unacked-snapshots", type=int, default=0,
+                        help="optional bound on outstanding snapshots; requires decoded client input")
+    parser.add_argument("--scoreboard-reply", action="store_true",
+                        help="reply to client s polls from the single-player match score state")
     parser.add_argument("--snapshot-repeat", type=int, default=0,
                         help="total snapshot sends; 0 = send once")
     parser.add_argument("--snapshot-interval", type=float, default=0.5,
@@ -1222,8 +1355,14 @@ def main() -> int:
         parser.error("--command-seq must be a positive 31-bit integer")
     if args.decode_client_input and args.checksum_feed is None:
         parser.error("--decode-client-input requires --checksum-feed from the actual gamestate")
-    if args.decode_client_input and (args.server_command_every or args.command_file):
-        parser.error("--decode-client-input currently requires no server reliable commands")
+    if args.decode_client_input and args.command_file:
+        parser.error("--decode-client-input cannot decode the separate command-file stream")
+    if args.decode_client_input and args.server_command_every and args.server_command_transport != "inline":
+        parser.error("--decode-client-input requires inline server commands")
+    if args.max_unacked_snapshots < 0 or (args.max_unacked_snapshots and not args.decode_client_input):
+        parser.error("--max-unacked-snapshots requires decoded client input")
+    if args.scoreboard_reply and (not args.decode_client_input or args.server_command_transport != "inline"):
+        parser.error("--scoreboard-reply requires decoded input and inline commands")
     if args.input_motion_probe and not args.decode_client_input:
         parser.error("--input-motion-probe requires --decode-client-input")
     if args.input_motion_probe and args.snapshot_dir:
@@ -1244,7 +1383,9 @@ def main() -> int:
                         args.server_command_seq, args.server_command_text,
                         args.snapshot_dir, args.snapshot_frame_repeat,
                         args.rebuild_follow_pid, args.send_opcode, args.decode_client_input,
-                        args.input_motion_probe, args.input_fire_event_probe)
+                        args.input_motion_probe, args.input_fire_event_probe,
+                        args.server_command_transport, args.max_unacked_snapshots,
+                        args.scoreboard_reply)
     try:
         server.serve()
     except KeyboardInterrupt:

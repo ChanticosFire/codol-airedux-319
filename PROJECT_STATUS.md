@@ -1,5 +1,7 @@
 # Phase Status and Evidence
 
+> **2026-11-05 [§1339 可靠命令与对局未完成项]** r825 的快照内可靠 `d 2557` 获 ACK1 且彩色地图可见；r827 修正随客户端命令确认变化的服务端 XOR 后，最后输入包 `messageAck=606` 对同期快照 607。r828 可选背压同期差距同为 1，未证实减少延迟。r829/r830 的 `s`→`b` 服务端路径有可靠确认，但 [r829 Tab 截图](evidence/experiments/20261030-r829-scoreboard-tab.png)没有数据板，故 UI 仍未修复。ESC 背包为空、弹匣回跳与权威射击、完整开局/结束仍是卡点；公开代码均为可选开关，不将协议确认误写成五项验收完成。[脱敏审计](evidence/experiments/20261105-r825-r830-reliable-transport-audit.json)。
+
 > **2026-10-30 [§1338 r824 视觉命令负对照]** 原始 `mpintro` + 当前通用 `d 2557` 服务端命令虽发 4 次，客户端仍实读 `mpintro`。此路径未打通，尚不能按正式服务端视觉切换宣布灰屏修复。[失败证据](evidence/experiments/20261030-r824-vision-reliable-command-negative.json)。
 
 > **2026-10-30 [§1337 r823 彩色与缺失的比赛链]** 仅更改全局 vision CS2557 后，真实连接客户端直接读得 `"mp_crash_tropical" 1000`，地图由灰变彩色（n=1）；同 Build 社区确认正式更新应发送可靠 `d 2557 ...`。用户在同实例观察原生瞄准/射击动作与音效、响应迟缓和 30→22→30 弹药回跳；服务端已解码 7 条攻击输入，仍重复静态弹匣 30 快照。ESC 背包空、Tab 无板是未完成项；社区同 Build 有 `s` 请求→`b` 行回复及 PUBLIC profile class 读取，当前服未实现闭环。没有服务端权威扣弹/命中或完整开局结论。写后档案降旧修订已隔离、基线恢复。[证据](evidence/experiments/20261030-r823-vision-score-loadout.json)、[社区接口](docs/1649370-EMBER-INTERFACE-BIT-AUDIT.md)。

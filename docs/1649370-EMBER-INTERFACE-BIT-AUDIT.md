@@ -1,5 +1,7 @@
 # Ember 社区库接口与数据位深查（2026-10-30）
 
+**2026-11-05 更新 §1339**：下方 §1338 的负结论只适用于旧“独立命令包”发送路径。r825 采用真实 demo 的快照内可靠命令后，`d 2557` 获 ACK1、地图彩色；r827 随客户端命令确认修正发送 XOR，最后输入包与同期快照差 1。r829 的 `s`→`b` 获可靠 ACK，但按 Tab 的截图仍无数据板。完整的发送端、接收端与未验证边界见[脱敏审计](../evidence/experiments/20261105-r825-r830-reliable-transport-audit.json)。
+
 **§1338 r824 负对照**：保留初始 `"mpintro" 0`，用当前 `gameserver.py` 的可回退 `--server-command-text` 路径发送 `d 2557 "mp_crash_tropical" 1000`。服务端日志有 4 个 `servercmd` fragment、684 个快照源及 191 次本服序号被确认，客户端达到 `net=10`；然而两次直接读取 CS2557 均仍为 `"mpintro" 0`。因此当前通用命令路径尚未实现可靠 vision 更新；失败点可能在包顺序、可靠序号、body 构造或客户端消费，尚未定位。r823 改初始 gamestate 的彩色结果不能替代正式更新。[r824 失败证据](../evidence/experiments/20261030-r824-vision-reliable-command-negative.json)。r824 活库哈希保持基线，临时 FF 已移回私有目录。
 
 ## §1337 补证：社区同 Build 视觉、数据板与配装链；r823 实机
