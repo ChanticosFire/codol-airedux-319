@@ -22,7 +22,7 @@
 | [`docs/`](docs/) | 目标、交接、协议格式和运行记录。 |
 | [`evidence/experiments/`](evidence/experiments/) | 经整理的实验摘要与证据索引。 |
 
-本地的 `runtime/` 保存隔离客户端副本，`runs/` 保存实验运行结果；它们不作为可直接从 Git 克隆获得的内容。游戏文件、资源包和本机实验数据需由使用者在本地准备。仓库边界见 [REPOSITORY.md](REPOSITORY.md)。
+本地的 `runtime/` 保存隔离客户端副本，`runs/` 保存实验运行结果；历史上有少量 `runs/` 文件被跟踪，新的原始运行数据仍留在本机。游戏文件、资源包和本机实验数据需由使用者自行准备。仓库边界见 [REPOSITORY.md](REPOSITORY.md)，公开前检查见[仓库检查记录](docs/PUBLIC-SNAPSHOT-PROVENANCE.md)。
 
 ## 阅读与运行入口
 
