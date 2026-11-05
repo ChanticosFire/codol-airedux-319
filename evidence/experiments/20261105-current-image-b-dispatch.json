@@ -1,0 +1,20 @@
+{
+  "build": 1649370,
+  "date": "2026-11-05",
+  "method": "Static inspection of the exact r107flow runtime image with existing tools/disasm_image_1649370.py and pefile; no live client or runtime mutation.",
+  "image": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime/codol1649370-offline.exe",
+  "image_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+  "observations": [
+    "At 0x614c8c the current image loads a reliable server-command string from conn+0x80154+(seq&0x1ff)*0x400; 0x614cbd tokenizes it and 0x614d6a calls 0x613a40.",
+    "The 0x613a40 game-command dispatcher indexes its byte table at 0x614a38 with the first command character, then jumps through the pointer table at 0x614934. For ASCII 'b' (0x62), the byte is 38 and the target pointer is 0x613ab1.",
+    "The 0x613ab1 branch checks global 0x33813a4 and its +0xc field, then obtains token 1 and calls 0x757640. It does not parse the claimed scoreboard row fields in this branch.",
+    "The 0x757640 path opens or consults the image string at 0xdd9738 ('mp/heroicMoment.csv'), formats other UI strings, and uses a timing/scene path. This is evidence of a different command meaning for 'b' in the current image.",
+    "Community preview comments name 0x465130 as a scoreboard reply consumer, but the exact r107flow image has unrelated code there; the community address and cg+0xBEB70 cache offset cannot be imported into this image."
+  ],
+  "interpretation": "The earlier statement that community 'b' row syntax is the correct scoreboard wire format for this exact client is withdrawn. Reliable ACKs in r829-r832 remain valid transport observations, but their lack of visible scoreboard is consistent with this command-format mismatch. The correct scoreboard command and UI gate for this image are still unverified; static dispatch alone does not prove which live branch executed.",
+  "reproduction": [
+    "python tools/disasm_image_1649370.py 0x614c40 0x160 --image E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime/codol1649370-offline.exe --stop-ret 0",
+    "python tools/disasm_image_1649370.py 0x613a40 0x110 --image E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime/codol1649370-offline.exe --stop-ret 0",
+    "python tools/disasm_image_1649370.py 0x757640 0x180 --image E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime/codol1649370-offline.exe --stop-ret 0"
+  ]
+}
