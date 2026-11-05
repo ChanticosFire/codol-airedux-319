@@ -8,7 +8,7 @@
 
 更新：2026-10-30，依据 `1649370-STATUS.md` §1330–§1333、r811 原始攻击包与高频采样、r812 原生字段直读及对其错误语义的撤销、r815/r816 主武器命令字段和库存实测、r814 副手链字段误认的撤销，以及前述 r807–r810 实机记录；接手时以当前 Git HEAD 和活文件为准。项目根目录 `E:\GAME\COD\codol-airedux\319`。开工先读本目录 `AGENTS.md`、`1649370-HANDOFF-CURRENT.md`、`1649370-AUDIT-20261027.md`、`1649370-STATUS.md` 最新章节、`PROJECT_STATUS.md` 顶部、`resources/1649370/README.md` 与 `manifest.json`；旧结论只作历史线索，具体事实核对当前文件和实机。
 
-> **2026-11-05 更新**：当前最深进度以[交接 §1339](../1649370-HANDOFF-CURRENT.md)及[r825–r830 审计](../evidence/experiments/20261105-r825-r830-reliable-transport-audit.json)为准。快照内可靠视觉命令已获 ACK；客户端输入确认与发送 XOR 已配对。Tab 的 `s`→`b` 传输获 ACK，但界面未显示；ESC 背包空、弹匣回跳、权威射击、赛后均未验收。下文较早轮次保留历史背景，不覆盖这条更新。
+> **2026-11-05 更新**：当前最深进度以[交接 §1340](../1649370-HANDOFF-CURRENT.md)、[r825–r830 审计](../evidence/experiments/20261105-r825-r830-reliable-transport-audit.json)和[r831/r832 比分消费诊断](../evidence/experiments/20261105-r831-r832-scoreboard-consumption.json)为准。快照内可靠视觉命令已获 ACK；客户端输入确认与发送 XOR 已配对。Tab 的 `s`→`b` 传输获 ACK，但 score=7 诊断行未改变可见分数，界面未显示；ESC 背包空、弹匣回跳、权威射击、赛后均未验收。下文较早轮次保留历史背景，不覆盖这条更新。
 
 ## 唯一目标与五项验收
 

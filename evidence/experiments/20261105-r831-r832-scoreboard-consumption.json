@@ -1,0 +1,32 @@
+{
+  "build": 1649370,
+  "date": "2026-11-05",
+  "hypothesis": "If the client's game command consumer accepts the b scoreboard payload, an isolated nonzero local row score should become visible or appear in the confirmed local cache. A reliable sequence ACK alone is insufficient.",
+  "image": {
+    "path": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime/codol1649370-offline.exe",
+    "sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380"
+  },
+  "r831": {
+    "server_log": "runs/r831-gs.jsonl",
+    "server_log_sha256": "485545e427bbc4f29f2ff37ef64443f1d2c2e020f571b57c2920fe19c6b41ebb",
+    "transport": "inline vision command, decoded input, optional 16-frame cap, scoreboard reply enabled",
+    "sender_counts": {"connect": 1, "snapshot_source": 376, "inband": 369, "reliable_queued": 24, "reliable_ack": 24, "last_reliable_ack": 24, "new_client_commands": 9, "input_decode_error": 0},
+    "observation": "Before the manual Tab press, at least 23 b replies had been queued and the server had already seen repeated s commands. Therefore s is not a unique marker of the operator's Tab press. A read-only probe of cg+0xBEB70 returned zeros, but this address is not verified for this exact image and is not used as proof of rejection."
+  },
+  "r832": {
+    "server_log": "runs/r832-gs.jsonl",
+    "server_log_sha256": "5a4a6873008667ac67a0c453dac020778969c516c971211e0c6360a92b56d315",
+    "transport": "same existing runtime and r818 snapshot; initial gamestate already carries map vision; inline reliable diagnostic b command; scoreboard auto reply off",
+    "sent_command": "b 1 0 0 0 0 7 0 0 0 0 0 0 0 0",
+    "shape": "one row, local client 0, score 7, 14 integer tokens after b, matching the community producer's ordinary-row layout",
+    "gamestate_client_number": 0,
+    "sender_counts": {"connect": 1, "snapshot_source": 405, "inband": 339, "reliable_queued": 1, "reliable_ack": 1, "last_reliable_ack": 1, "new_client_commands": 9, "input_decode_error": 0},
+    "client_state": {"net_state": 10, "ui_state": 5, "load_status": 2},
+    "screenshot": "evidence/experiments/20261105-r832-score-probe7.png",
+    "screenshot_sha256": "b9fbdeb20e7d31995db3d753c288539b5b11afb7f4944888b731fc6006245b6e",
+    "visible_result": "The upper-right individual score remains 0 and no Tab board is shown in this screenshot. The score 7 is a diagnostic only and is not a real match result."
+  },
+  "static_boundary": "The community scoreboard sender and wire formatter show b count/team/limit/row fields, but their cited cg+0xBEB70 cache displacement is absent as a literal from the current offline PE. REA function analysis was unavailable because no Ghidra/IDA provider is configured; the existing exact-image Capstone tool confirmed the current 0x465130 address is the end of a different function. Thus the cache location and game-command parser for this exact image remain unknown.",
+  "interpretation": "Server delivery and reliable ACK are observed. The diagnostic score did not appear in the visible HUD. The specific cause (game command dispatch, match/UI gate, or score cache mapping) remains unverified; do not claim the client rejected the command solely from the ACK or screenshot.",
+  "cleanup": "Only the existing r107flow runtime was used; the r831/r832 client and game-server processes were stopped by exact PID. No temporary weapon fastfile remained in runtime. The active profile SHA-256 remained 06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70."
+}
