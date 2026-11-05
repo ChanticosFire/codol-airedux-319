@@ -46,6 +46,7 @@ from pathlib import Path
 from .native_gamestate import DEFAULT_CONFIGSTRINGS, build_native_gamestate
 from .wire164 import build_snapshot, _word
 from .client_input import ClientInputDecodeError, UserCmd, decode_client_packet
+from .stats164 import Stats164Upload
 
 PROTOCOL_GENERATION = "1.1.1.13"
 DEFAULT_MAP = "mp_cross_fire"
@@ -362,7 +363,8 @@ class GameServer:
                  input_fire_event_probe: bool = False,
                  server_command_transport: str = "separate",
                  max_unacked_snapshots: int = 0,
-                 scoreboard_reply: bool = False):
+                 scoreboard_reply: bool = False,
+                 inspect_stats_upload: bool = False):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("127.0.0.1", port))
         self.sock.settimeout(0.1)
@@ -465,6 +467,7 @@ class GameServer:
             raise ValueError("max_unacked_snapshots must be nonnegative")
         self.max_unacked_snapshots = max_unacked_snapshots
         self.scoreboard_reply = scoreboard_reply
+        self.inspect_stats_upload = inspect_stats_upload
 
     def _queue_reliable(self, peer: dict, command: bytes, reason: str) -> int:
         if self.server_command_transport != "inline" or not command or b"\x00" in command:
@@ -555,6 +558,8 @@ class GameServer:
         userinfo_text = args[1] if len(args) > 1 else ""
         info = self.parse_userinfo(userinfo_text)
         peer["userinfo"] = info
+        if self.inspect_stats_upload:
+            peer["stats164"] = Stats164Upload()
         peer["build"] = info.get("shortversion") or info.get("2490")
         # The client echoes the challenge it decodes fragments with.  Prefer
         # that value over our own, so a lost getchallenge cannot desynchronise
@@ -979,11 +984,16 @@ class GameServer:
                       "path": str(path), "payload_length": len(payload),
                       "seq": seq, "file_index": index, "payload_head": payload[:64].hex()})
 
-    def on_stats(self, addr: tuple, args: list[str], peer: dict) -> None:
+    def on_stats(self, addr: tuple, args: list[str], peer: dict,
+                 binary_payload: bytes = b"") -> None:
         self.state.counters["stats"] += 1
         challenge = peer.get("challenge") or 0
         self.log({"dir": "in", "kind": "stats", "from": f"{addr[0]}:{addr[1]}",
                   "args": args, "challenge": challenge})
+        if self.inspect_stats_upload:
+            upload = peer.setdefault("stats164", Stats164Upload())
+            result = upload.feed(binary_payload)
+            self.log({"dir": "meta", "kind": "stats_upload_inspect", **result})
         # Echo the challenge the client was given: a bare 0 does not let the
         # client confirm that it is talking to the server that issued it.
         # The client only accepts statResponse in state 5, but it sends stats
@@ -1029,7 +1039,8 @@ class GameServer:
             elif command == "connect":
                 self.on_connect(addr, args, peer)
             elif command == "stats":
-                self.on_stats(addr, args, peer)
+                self.on_stats(addr, args, peer,
+                              raw.split(b"\x00", 1)[1] if b"\x00" in raw else b"")
             elif command == "gamestateupdate":
                 # The client asks for gamestate refreshes while it loads the
                 # map; the last request is the natural moment to deliver the
@@ -1295,6 +1306,8 @@ def main() -> int:
                         help="optional bound on outstanding snapshots; requires decoded client input")
     parser.add_argument("--scoreboard-reply", action="store_true",
                         help="reply to client s polls from the single-player match score state")
+    parser.add_argument("--inspect-stats-upload", action="store_true",
+                        help="opt in to bounded, read-only assembly of native public stats")
     parser.add_argument("--snapshot-repeat", type=int, default=0,
                         help="total snapshot sends; 0 = send once")
     parser.add_argument("--snapshot-interval", type=float, default=0.5,
@@ -1385,7 +1398,7 @@ def main() -> int:
                         args.rebuild_follow_pid, args.send_opcode, args.decode_client_input,
                         args.input_motion_probe, args.input_fire_event_probe,
                         args.server_command_transport, args.max_unacked_snapshots,
-                        args.scoreboard_reply)
+                        args.scoreboard_reply, args.inspect_stats_upload)
     try:
         server.serve()
     except KeyboardInterrupt:

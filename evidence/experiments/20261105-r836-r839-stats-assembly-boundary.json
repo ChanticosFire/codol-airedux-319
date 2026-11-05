@@ -1,0 +1,19 @@
+{
+  "build": 1649370,
+  "date": "2026-11-05",
+  "hypothesis": "The newly preserved native stats OOB packet contains the same public profile as the lobby archive and can be validated and bound to the match client.",
+  "method": "Default-off server --inspect-stats-upload assembles 1238-byte native chunks, requires exact zlib consumption and 32768-byte output, then reports only header metadata. It leaves statResponse unchanged, keeps no disk copy, and does not publish a profile when the CRC convention is unverified.",
+  "existing_source": [
+    "Community native-engine codol_stats.c:93-123 defines Build 1649370 chunk:u8, wireLength:u16, 1238-byte parts and exact 32768-byte inflate.",
+    "Existing tools/ring_bridge_1649370.py:_fix_stats_payload explicitly records that the client upload header does not use the 2697 crc32(profile[4:]) convention and rewrites it only for a 2697 archive probe.",
+    "The local SQLite profiles table contains a 32764-byte public blob beginning with version 233 and schema 0x4a6cc345, and a 32764-byte secure blob beginning with version 19 and schema 0xa34378b4. This read-only comparison did not export either blob."
+  ],
+  "runs": {
+    "r836": {"log": "runs/r836-stats-assemble-a-gs.jsonl", "sha256": "c697a30a17b4e3757acbd64c397c18e2ac1001a795821a5831513aad72a0dd71", "net_state": 10, "stats_wire_length": 987, "first_probe": "32768-byte inflate succeeded but the initially over-strict 2697 CRC check returned profile_crc_mismatch; no profile published"},
+    "r837": {"log": "runs/r837-stats-header-a-gs.jsonl", "sha256": "e7406fe29284196e6c2da108bccf5b96cb8a99cbce8e0b7e578cf73baf67c4e2", "net_state": 10, "stats_wire_length": 985, "inflated_size": 32768, "header_version": 0, "header_schema": 0, "crc_matches_2697": false, "additional_text_only_stats": 2},
+    "r838": {"log": "runs/r838-stats-header-b-gs.jsonl", "sha256": "81ee4afd3502a077733ec9f344d16b8730a6d639a383c1a644c0f00410ccec87", "net_state": 10, "stats_packets": 0},
+    "r839": {"log": "runs/r839-stats-header-c-gs.jsonl", "sha256": "b7e74959cac25b47142bd834e58e12f9519f0f7c2a7287f4d13bf8e2135cdbce", "net_state": 10, "stats_wire_length": 993, "inflated_size": 32768, "header_version": 0, "header_schema": 0, "crc_matches_2697": false, "additional_text_only_stats": 2}
+  },
+  "interpretation": "The transport and exact-size zlib decode are verified in independent runs, but the upload does not carry the expected public-profile header. Its role and CRC convention remain unknown. The 9-byte stats records in r837/r839 may be short control packets or still-truncated malformed packets and require a separate length audit. Neither a usable public profile nor an ESC loadout is established. Do not silently rewrite the upload CRC or bind this blob as player inventory.",
+  "cleanup": "All experiment client, game-server and bridge processes ended or were stopped by verified exact PID. Only r107flow/runtime was used. Live SQLite SHA-256 remained 06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70 and integrity_check=ok. No raw uploaded profile bytes entered tracked files."
+}

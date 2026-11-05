@@ -122,6 +122,8 @@ def main() -> int:
                     help="outgoing ring A binary length mode; nul is the legacy A/B control")
     ap.add_argument("--preserve-binary-stats", action="store_true",
                     help="opt in to forwarding the native binary stats OOB payload")
+    ap.add_argument("--inspect-stats-upload", action="store_true",
+                    help="ask the game server to validate uploaded stats in memory without changing replies")
     ap.add_argument("--keep-server", action="store_true")
     ap.add_argument("--keep-bridge", action="store_true")
     ap.add_argument("--skip-client", action="store_true")
@@ -244,6 +246,7 @@ def main() -> int:
                               if args.decode_client_input else [] ),
                            *( ["--input-motion-probe"] if args.input_motion_probe else [] ),
                            *( ["--input-fire-event-probe"] if args.input_fire_event_probe else [] ),
+                           *( ["--inspect-stats-upload"] if args.inspect_stats_upload else [] ),
                            "--gamestate-gametype", args.gametype,
                            "--gamestate-map", "mp_crash_tropical",
                            "--snapshot-delay", "1",
