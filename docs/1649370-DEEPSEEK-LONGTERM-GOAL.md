@@ -1,5 +1,7 @@
 # 给 DeepSeek 的长程目标：完成 Build 1649370 自建服务端可玩对局
 
+> 2026-11-05 §1342 进展：桥接器现在可选保留 `stats\0` 后的二进制档案分片，r834/r835 两次真实连接分别把 1002/1000 字节包送到本服。但本服仍只回复 `statResponse <challenge>`，没有组装、核对公开档案并绑定玩家；ESC 背包和完整对局不因此算完成。实现下一步时遵循社区同 Build `codol_stats.c:93–123` 的分片、zlib、缺失掩码和先校验后提交规则，保护原档案。[证据](../evidence/experiments/20261105-r833-r835-binary-stats-forwarding.json)。
+
 > 2026-11-05 §1341 纠错：当前 `r107flow` 客户端的 `b` 服务端命令进入引用 `mp/heroicMoment.csv` 的另一条 UI 路径；社区预览 `b <行数> …` 比分格式与其错配。r829–r832 的可靠 ACK 不代表 Tab 数据板恢复。查比分时先定位确切镜像的命令分发与真实同版数据，禁止继续把旧 `b` 格式直接照搬。[证据](../evidence/experiments/20261105-current-image-b-dispatch.json)。
 
 > 2026-10-30 Ember 深查更正：公开库有同 Build CrossProxy/UI/IIPS 精确接口和 2697 对局流程参考，**没有**1649370 游戏 UDP 全字段位宽；勿跨版本复制。当前 1649370 字段表确认 `PS+0x10` 序号54/codec `-102`、武器 `PS+0x4c` 序号57/11 bit；旧 r811“`PS+0x333c=netfield98`”错误，字段98实为 `0x258`。详见[接口/数据位核查](1649370-EMBER-INTERFACE-BIT-AUDIT.md)。

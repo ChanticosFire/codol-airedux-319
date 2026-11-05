@@ -120,6 +120,8 @@ def main() -> int:
     ap.add_argument("--bridge-seconds", type=float, default=1500.0)
     ap.add_argument("--ring-a-length-mode", choices=("slot", "nul"), default="slot",
                     help="outgoing ring A binary length mode; nul is the legacy A/B control")
+    ap.add_argument("--preserve-binary-stats", action="store_true",
+                    help="opt in to forwarding the native binary stats OOB payload")
     ap.add_argument("--keep-server", action="store_true")
     ap.add_argument("--keep-bridge", action="store_true")
     ap.add_argument("--skip-client", action="store_true")
@@ -406,6 +408,7 @@ def main() -> int:
         subprocess.Popen([sys.executable, "-B", "-X", "utf8", "tools/ring_bridge_1649370.py",
                           "forward", "--target", "127.0.0.1:28969", "--bind-port", "29023",
                           "--ring-a-length-mode", args.ring_a_length_mode,
+                          *( ["--preserve-binary-stats"] if args.preserve_binary_stats else [] ),
                           "--start-challenge", "--retry-seconds", "0",
                           "--seconds", str(int(args.bridge_seconds))],
                          cwd=ROOT, stdout=open(logs / f"{args.name}-bridge.out", "w", encoding="utf-8"),

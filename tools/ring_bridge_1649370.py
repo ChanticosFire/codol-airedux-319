@@ -465,7 +465,8 @@ class Client:
         return {"status": "queued" if ok else "write_failed", "slot": hex(slot),
                 "length": len(payload)}
 
-    def drain_ring_a(self, length_mode: str = "slot") -> list[dict]:
+    def drain_ring_a(self, length_mode: str = "slot",
+                     preserve_stats: bool = False) -> list[dict]:
         if length_mode not in ("slot", "nul"):
             raise ValueError(f"unsupported ring A length mode: {length_mode}")
         read = self.u32(RING_A_READ)
@@ -483,7 +484,24 @@ class Client:
             raw = self.read(slot, RING_A_STRIDE)
             nul = raw.find(b"\x00") if raw else -1
             stored_length = self.u32(slot + RING_A_WIRE_LENGTH)
-            if (length_mode == "slot" and raw
+            stats_length = 0
+            if (preserve_stats and raw and
+                    raw.startswith(StatsUploadAssembler.PREFIX) and
+                    len(raw) >= 13):
+                # This OOB command has a NUL between its text and binary
+                # payload.  The ordinary OOB NUL rule drops the upload.
+                # Compute the bounded packet size from the native 164 header;
+                # malformed/control packets keep the legacy path.
+                chunk = raw[10]
+                wire_length = struct.unpack_from("<H", raw, 11)[0]
+                total = wire_length or 32768
+                count = (total + 1237) // 1238
+                if total <= 32768 and chunk < count:
+                    stats_length = 13 + min(1238, total - chunk * 1238)
+            if stats_length and stats_length <= RING_A_WIRE_LENGTH:
+                length = stats_length
+                length_source = "stats164_header"
+            elif (length_mode == "slot" and raw
                     and not raw.startswith(b"\xff\xff\xff\xff")
                     and stored_length is not None
                     and 0 < stored_length <= RING_A_WIRE_LENGTH):
@@ -794,7 +812,8 @@ def cmd_forward(client: Client, args) -> dict:
     try:
         while time.monotonic() < deadline:
             progressed = False
-            outbox = client.drain_ring_a(args.ring_a_length_mode) + client.drain_ring_c(args.port)
+            outbox = client.drain_ring_a(args.ring_a_length_mode,
+                                         args.preserve_binary_stats) + client.drain_ring_c(args.port)
             if outbox:
                 print(f"[forward] outbox={len(outbox)} "
                       f"first={outbox[0]['payload'][:16]!r} sent={sent}",
@@ -1077,6 +1096,8 @@ def main() -> int:
     p.add_argument("--dump-in", help="write every injected server packet as JSONL (length/state/hex)")
     p.add_argument("--ring-a-length-mode", choices=("slot", "nul"), default="slot",
                    help="slot reads bounded binary length at +0x4E8; nul restores the old truncating path")
+    p.add_argument("--preserve-binary-stats", action="store_true",
+                   help="opt in to forwarding the native binary stats OOB payload beyond its text NUL")
     p.set_defaults(func=cmd_forward)
 
     p = sub.add_parser("start-challenge")

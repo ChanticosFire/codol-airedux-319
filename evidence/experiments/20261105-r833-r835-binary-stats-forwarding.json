@@ -1,0 +1,31 @@
+{
+  "build": 1649370,
+  "date": "2026-11-05",
+  "hypothesis": "The ring A bridge truncates native stats OOB packets at the text NUL; a guarded binary-length path should deliver the whole upload to the local game server without changing the successful connect path.",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+  "runtime_exe_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+  "baseline": {
+    "r832_log": "runs/r832-gs.jsonl",
+    "r832_log_sha256": "5a4a6873008667ac67a0c453dac020778969c516c971211e0c6360a92b56d315",
+    "r832_stats_lengths": [9, 9, 9, 9],
+    "r832_bridge_prefix": "raw=b'\\xff\\xff\\xff\\xffstats\\x00\\x00\\xe0', nul=9, len=9, source=oob_nul_or_fallback",
+    "r833_log": "runs/r833-stats-oob-control-gs.jsonl",
+    "r833_log_sha256": "f8fbc5fd4b35ae102289c90fe0b8f775e831c667a33b4e70ed2fca986960de9b",
+    "r833_stats_lengths": [],
+    "qualification": "The same-option r833 control did not emit a stats packet; r832 demonstrates the truncation but also had a separate diagnostic b command. This is a transport-path comparison, not a claim about stats emission frequency."
+  },
+  "guarded_change": "tools/ring_bridge_1649370.py --preserve-binary-stats uses the native [chunk:u8, wireLength:u16] header after the text NUL to bound packet length to 13 + min(1238, remaining bytes). The default NUL path remains unchanged. tools/session_up_1649370.py forwards the opt-in flag.",
+  "after": {
+    "r834_log": "runs/r834-stats-oob-preserve-a-gs.jsonl",
+    "r834_log_sha256": "9b04b00ea2ff37953bb0c054f9e07b2d81f52908a4bdd90feabd2b9a2ba98d2c",
+    "r834_stats_lengths": [1002],
+    "r834_bridge": "raw stats prefix has nul=9, forwarded len=1002, source=stats164_header",
+    "r835_log": "runs/r835-stats-oob-preserve-b-gs.jsonl",
+    "r835_log_sha256": "6c67be238988a990ee7ca2639ff24661680091dab1c6717ee5486df11ca948c5",
+    "r835_stats_lengths": [1000, 1000, 1000, 1000],
+    "r835_bridge": "all four native stats packets have nul=9, forwarded len=1000, source=stats164_header",
+    "client_net_state": {"r833": 10, "r834": 10, "r835": 10}
+  },
+  "source_boundary": "The local game server currently splits the OOB text at the first NUL and on_stats() sends statResponse <challenge> without parsing the binary payload. Community same-Build CODOL_AcceptClientStats164() documents 1238-byte chunks, optional zlib, 32768-byte profile, and missing-mask acknowledgement. Thus full packet delivery is verified but profile assembly, client-slot binding, ESC loadout, and normal match state are not.",
+  "cleanup": "Only the existing r107flow runtime was used. r833/r834/r835 experiment client, game-server and bridge processes ended or were stopped by their verified exact PIDs. The live SQLite SHA-256 remained 06F7A93BC8F818461FC0267F464BB3FA0E3801AC999462FC54EB8CC512AF2F70; integrity_check=ok. No profile bytes were added to tracked evidence."
+}
