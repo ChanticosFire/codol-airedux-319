@@ -1,11 +1,26 @@
-# 私有仓库范围
+# 仓库公开边界
 
-GitHub：<https://github.com/ChanticosFire/codol-airedux-319>；所有者 `ChanticosFire`，可见性经 GitHub API 核验为 `PRIVATE`。本地根目录为 `E:\GAME\COD\codol-airedux\319`，分支 `main`，远端 `origin` 使用 HTTPS。Git 凭据只由本机 GitHub CLI 管理，不写入仓库。
+本项目的公开协作入口是 <https://github.com/ChanticosFire/codol-airedux-319>。公开仓库从 2026-11-05 审核过的源码快照开始，保留此后的开发提交。之前的 2,844 次实验历史存于私有归档；它们曾跟踪原始抓包、日志和二进制，不能仅因已在私有 GitHub 就直接公开。公开版的起始提交和私有归档提交在本机留有对照，不把历史实验记录表述为已验证产品功能。
 
-此仓库保存 Build 1649370 的自有源码、可复核的文件身份清单和阶段交接文档。`runtime/` 是用户客户端的隔离副本，`runs/` 含本机实验后像和截图，`他人文件参考/` 是第三方输入，`codol-ember/` 是另一项目的克隆；四个目录均不纳入本仓库。
+## 公开内容
 
-不提交游戏二进制、归档、密钥、凭据或第三方资料。`evidence/client-inventory.json` 只保存原始客户端的文件名、大小与摘要及本机输入路径，用于本项目私有复核。未来如需公开成果，应重新审阅文件、去除本机路径和运行数据，并按适用 Build、方法、结果及限制整理。
+| 路径 | 内容与使用边界 |
+| --- | --- |
+| `server319/` | 本项目自建 Auth、LSG 和登录侧源码。 |
+| `server1649370/` | Build 1649370 游戏服、gamestate、快照和可选可靠命令实验代码。 |
+| `tools/` | 构造、解析、启动与诊断脚本；有些工具需要使用者自己准备同 Build 客户端和资源。 |
+| `docs/`、`1649370-HANDOFF-CURRENT.md`、`1649370-STATUS.md`、`PROJECT_STATUS.md` | 当前目标、字段边界、失败实验及交接。顶部更新优先于旧段落。 |
+| `evidence/` | 已审阅的实验摘要和选出的非敏感截图；原始日志和用户档案不作为公开证据上传。 |
+| `resources/1649370/README.md`、`manifest.json` | 本机资源来源与校验索引，仅含元数据；其中的本机路径不是发布包依赖。 |
 
-每个可复用增量先更新 `PROJECT_STATUS.md`、`MILESTONES.md` 和必要的证据，再提交。运行后像保留在本机 `runs/`，在提交说明中引用相对路径和哈希即可。
+源码按仓库根目录 [LICENSE](LICENSE) 的 GPL-3.0 许可发布。社区资料、商业客户端、fastfile、地图及其他第三方文件仍遵守各自权利和来源，不因本仓库许可而改变。
 
-阶段提交、标签与恢复步骤见 [CHECKPOINTS.md](CHECKPOINTS.md)。`evidence/experiments/` 保存审阅后的机器摘要；原始运行证据继续只放本机 `runs/`。
+## 不公开的本机资料
+
+`runtime/`、`runs/` 的原始运行后像、`resources/1649370/local/`、`codol-ember/`、`他人文件参考/`、`codol_server/`、账号数据库与原游戏二进制不属于本仓库的公开源码。仓库中若出现旧路径引用，只用来定位原实验；贡献者不必复制 15 GB 的运行时，也不应把第三方整库或原游戏资产加入本仓库。
+
+本项目允许将专为可复现本地测试签发、且可安全公开的开发 CA 密钥单独发布；**当前活用的证书私钥、账号文件、Git/GitHub/Gitea token、SSH 私钥、个人凭据仍不纳入公开快照**。本机 `resources/1649370/local/` 整目录继续保持忽略；需要测试证书时按本机说明自行生成或在单独审核后发布明确标为测试用途的证书材料。不能把“允许测试 CA”解释成允许上传任何私有密钥。
+
+## 更新与验证
+
+每次公开提交都应说明真实 Build、发送端与客户端的直接证据、复现范围和未验证项。完整五项验收见 [长程目标](docs/1649370-DEEPSEEK-LONGTERM-GOAL.md)；当前进度见 [交接入口](1649370-HANDOFF-CURRENT.md)。有效连接、彩色地图、可靠命令 ACK、Tab 界面、背包与原生射击分别记录，不用一项推断另一项。贡献前先读 [AGENTS.md](AGENTS.md)，不要提交 `runs/` 新日志或客户端资源。
