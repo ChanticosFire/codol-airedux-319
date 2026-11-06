@@ -1,0 +1,44 @@
+{
+  "scope": "Build 1649370 本服 stats 上传只读探针的协议完成判定；未发布或持久化档案",
+  "hypothesis": "同版分片和精确 zlib 校验通过后，即使不符合 2697 的 CRC 规则，传输也应记为完成；若客户端上传确为公开配装档案，其头部应与活库公开档案相符",
+  "reference": {
+    "same_build_receiver": "他人文件参考/CODOL-Member-Preview-20261026/source/server/native/retained_engine/overlay/src/codol/stats/codol_stats.c:93-123",
+    "local_probe": "server1649370/stats164.py:Stats164Upload.feed",
+    "prior_runs": "evidence/experiments/20261105-r836-r839-stats-assembly-boundary.json"
+  },
+  "prior_short_packets": {
+    "r837_bridge": "runs/r837-stats-header-a-bridge.out: 2 个完整上传后有 2 个短记录；环槽前缀从 stats\\0\\x00\\xd9 变成 stats\\0\\xff\\xd9，桥接器在 NUL 处截为 9 字节",
+    "r839_bridge": "runs/r839-stats-header-c-bridge.out: 3 个完整上传后有 3 个短记录；前缀从 stats\\0\\x00\\xe1 变成 stats\\0\\xff\\xe1，同样截为 9 字节",
+    "boundary": "环槽 offset 10 的 0xff 可直接观察，但 offset 11 随此前压缩长度而变，槽内残留与实际包长尚未区分；不能把 9 字节服务端记录认作完整原生报文，也不能宣称 0xff 的协议语义"
+  },
+  "change": "移除 2697 CRC 作为 1649370 传输完成条件；精确校验 zlib 流和 32768 字节后标记 validation_level=wire_only。最终无效分片不提交到 chunks/wire_length；不改 statResponse、玩家身份或公开配装发布。",
+  "live_runs": {
+    "r840": {
+      "server_log": "runs/r840-stats-wire-complete-a-gs.jsonl:13",
+      "server_log_sha256": "3b0e5e2c8ef4c6cad6891de151142454da5ed5fee53de832711378afbe68520c",
+      "wire_length": 991,
+      "inflated_size": 32768,
+      "upload_complete_wire_only": true,
+      "version": 0,
+      "schema": 0,
+      "crc_matches_2697": false,
+      "net_state": 10,
+      "short_stats_after_upload": 2
+    },
+    "r841": {
+      "server_log": "runs/r841-stats-wire-complete-b-gs.jsonl:13",
+      "server_log_sha256": "8e76cba10500bebc7fdc0dce02362bf8cf87cd298424ffe9bfee24e36b026692",
+      "wire_length": 991,
+      "inflated_size": 32768,
+      "upload_complete_wire_only": true,
+      "version": 0,
+      "schema": 0,
+      "crc_matches_2697": false,
+      "net_state": 10,
+      "short_stats_after_upload": 0
+    }
+  },
+  "tests": "python -m unittest server1649370.test_stats164 -v: 3 passed；验证单片压缩、错误尾随字节不提交且可重试、27 片原始上传及冲突重复片拒绝",
+  "interpretation": "两轮独立真实连接均证明客户端上传的分片传输完整，但 0/0 头与活库公开档案 233/0x4a6cc345 不符。上传字节的用途、客户端槽身份、公开配装数据来源仍未证实。此改动只修复探针表述，不修复 ESC 背包、Tab 数据板或原生射击。",
+  "cleanup": "两轮只复用 E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime。实验客户端、游戏服、桥接和本轮启动的 LSG 均按精确 PID 结束；活库 data/v1649370/local.sqlite3 的 SHA-256 保持 06f7a93bc8f818461fc0267f464bb3fa0e3801ac999462fc54eb8cc512af2f70，无 28969/29023 监听残留。未将上传原文或私有库纳入 Git。"
+}

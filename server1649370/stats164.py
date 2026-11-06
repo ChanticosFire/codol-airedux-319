@@ -39,16 +39,16 @@ class Stats164Upload:
         old = self.chunks.get(chunk)
         if old is not None and old != part:
             return {"accepted": False, "reason": "duplicate_differs"}
-        if self.wire_length is None:
-            self.wire_length = wire_length
-        self.chunks[chunk] = part
-        missing = ((1 << count) - 1) & ~sum(1 << index for index in self.chunks)
+        pending = {**self.chunks, chunk: part}
+        missing = ((1 << count) - 1) & ~sum(1 << index for index in pending)
         result = {"accepted": True, "chunk": chunk, "wire_length": wire_length,
-                  "received_count": len(self.chunks), "required_count": count,
+                  "received_count": len(pending), "required_count": count,
                   "missing_mask": missing, "complete": self.profile is not None}
         if missing or self.profile is not None:
+            self.wire_length = wire_length
+            self.chunks[chunk] = part
             return result
-        wire = b"".join(self.chunks[index] for index in range(count))
+        wire = b"".join(pending[index] for index in range(count))
         if wire_length:
             decoder = zlib.decompressobj()
             try:
@@ -67,14 +67,14 @@ class Stats164Upload:
         version = struct.unpack_from("<I", profile, 4)[0]
         schema = struct.unpack_from("<I", profile, 8)[0]
         crc = struct.unpack_from("<I", profile)[0]
-        if crc != zlib.crc32(profile[4:]) & 0xFFFFFFFF:
-            # Historical 1649370 uploads are known to differ from the 2697
-            # archive CRC convention.  Report the decoded header without
-            # publishing unverified profile bytes to the match state.
-            return {**result, "inflated_size": len(profile),
-                    "profile_version": version, "profile_schema": schema,
-                    "crc_matches_2697": False, "reason": "native_crc_unverified"}
+        # The same-build community receiver accepts the exact wire stream
+        # without applying the unrelated 2697 archive CRC.  Completion here
+        # means transport assembly only: gameserver logs the metadata but does
+        # not bind these bytes to a player or publish a loadout.
+        self.wire_length = wire_length
+        self.chunks[chunk] = part
         self.profile = profile
         return {**result, "complete": True, "profile_size": len(profile),
                 "profile_version": version, "profile_schema": schema,
-                "crc_matches_2697": True}
+                "crc_matches_2697": crc == zlib.crc32(profile[4:]) & 0xFFFFFFFF,
+                "validation_level": "wire_only"}
