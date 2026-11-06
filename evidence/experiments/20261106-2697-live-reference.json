@@ -1,0 +1,107 @@
+{
+  "date": "2026-11-06",
+  "build": "2.6.9.7",
+  "sample_count": 1,
+  "account": "CodexProbe1106 (isolated test)",
+  "run": "CODOL2697\\fbe7c395\\server2697\\room-match-1793942103996503200",
+  "client_trace": "CODOL2697\\fbe7c395\\localhost2697-candidate-20261106-131503-a3bc0c",
+  "server_log_sha256": "fc199ac8ffb3beea501db1a2ca358661c3792dc4e1560c71563386d97bf33bbb",
+  "room_events": [
+    {
+      "sequence": 1,
+      "map": "mp_seatown",
+      "ready": true
+    }
+  ],
+  "selected_server_lines": [
+    {
+      "line": 1392,
+      "text": "CoDOL secure profile for client 0 (uid 4294967297): attached from lobby file"
+    },
+    {
+      "line": 1417,
+      "text": "^2SV packet 127.0.0.1:58963: gamestateupdate 1"
+    },
+    {
+      "line": 1445,
+      "text": "^2CoDOL spawn: client 0 session 2 origin (-491 -921 335) angles (0 93 0)"
+    },
+    {
+      "line": 1786,
+      "text": "^2CoDOL spawn: client 0 session 0 origin (-1827 1514 200) angles (0 270 0)"
+    },
+    {
+      "line": 1790,
+      "text": "^2CoDOL profile equipment: client 0 class 0 member lethal item 60008"
+    },
+    {
+      "line": 1791,
+      "text": "^2CoDOL profile equipment: client 0 class 0 member tactical item 60004"
+    },
+    {
+      "line": 1808,
+      "text": "CoDOL player wire: client 0 weapon 253 arms 676 hands 897 viewheight 60.0 linkWeaponEnt 2047"
+    },
+    {
+      "line": 1998,
+      "text": "CoDOL player wire: client 0 weapon 247 arms 0 hands 982 viewheight 60.0 linkWeaponEnt 2047"
+    },
+    {
+      "line": 1452,
+      "text": "^2CoDOL2697 scoreboard: viewer=0 commands=1 score=0 kills=0 deaths=0 assists=0 teams=0/0"
+    },
+    {
+      "line": 1464,
+      "text": "^2CoDOL2697 scoreboard: viewer=0 commands=1 score=0 kills=0 deaths=0 assists=0 teams=0/0"
+    }
+  ],
+  "progress_samples": 64,
+  "progress_state_values": [
+    0
+  ],
+  "secure_profile_published": true,
+  "public_upload": {
+    "size": 32768,
+    "crc_valid": true,
+    "header": [
+      "0x962d34f2",
+      "0xe9",
+      "0x70cd4cc5",
+      "0x0"
+    ],
+    "sha256": "52fffba766dd6dce10b8bd9ef530aad1128005ab4756540d2f0dca822b6326f9"
+  },
+  "script_errors": 0,
+  "snapshot_warnings": 0,
+  "command_conversion_errors": [],
+  "exit": {
+    "method": "exact PID forced after in-game exit UI did not terminate client",
+    "engine_errors": [
+      [
+        "",
+        "EXE_DISCONNECTED",
+        "|\u0003�)\u0001",
+        "���W�ս\u000b\t\u0002�"
+      ]
+    ],
+    "normal_exit_verified": false
+  },
+  "raw_udp_capture": {
+    "obtained": false,
+    "reason": "pktmon driver access denied without administrator rights"
+  },
+  "screenshots": [
+    {
+      "path": "evidence/experiments/20261106-2697-live-esc-loadout.png",
+      "sha256": "a28a0d660ff44611d8aa39b64e916c64f11e5475279d386fc0dd3f90fe38ad97"
+    },
+    {
+      "path": "evidence/experiments/20261106-2697-live-weapon-hud.png",
+      "sha256": "1e95a229d630cceb8fa45f957a02ec4f45b6d914be4246c1e28574e2fa54c033"
+    },
+    {
+      "path": "evidence/experiments/20261106-2697-live-return-inventory.png",
+      "sha256": "397cc84b73400d91c9b4e39e94361c515f1edd95053003fbc2c7432619a98829"
+    }
+  ]
+}
