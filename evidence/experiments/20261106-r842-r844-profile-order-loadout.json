@@ -1,0 +1,52 @@
+{
+  "experiment_date": "2026-11-06",
+  "recorded_date": "2026-11-09",
+  "build": "1649370",
+  "runtime": "E:/GAME/COD/1649370/workspaces/offline-runs/r107flow/runtime",
+  "runtime_exe_sha256": "141215dd38754d39a45e9b112345049293579006ea98573a0ba51cc4d55ad380",
+  "hypothesis": "Connecting before local_profile_phase after causes zeroed native stats upload and empty ESC loadout.",
+  "runs": [
+    {
+      "name": "r842-profile-order-observe",
+      "order": "before_profile_ready",
+      "profile_phase": "none_during_match",
+      "server_connect_count": 1,
+      "inband_count": 890,
+      "stats_packet_count": 0,
+      "stats_complete_header": null
+    },
+    {
+      "name": "r844-profile-before-connect",
+      "order": "after_profile_ready",
+      "profile_phase": "prepare_then_after_before_connect",
+      "server_connect_count": 1,
+      "inband_count": 1984,
+      "stats_packet_count": 6,
+      "stats_complete_header": {
+        "complete": true,
+        "profile_size": 32768,
+        "profile_version": 233,
+        "profile_schema": 1248641861,
+        "validation_level": "wire_only"
+      }
+    }
+  ],
+  "native_ui": {
+    "r844_net_state": 10,
+    "esc_loadout_visible": true,
+    "screenshot": "evidence/experiments/20261106-r844-profile-ready-esc-loadout.png",
+    "visible_items": "primary,secondary,melee,combat knife,attachments,equipment and perks",
+    "limitation": "Only one after-ready UI session; this does not establish server-authoritative loadout persistence or complete match."
+  },
+  "inference": "The 0/0 upload was caused by startup ordering in these runs; the client already holds a valid local public profile before connecting in r844. The server still has no verified UID-bound player profile authority.",
+  "limits": [
+    "r842 had no stats packet; zero-header comparisons use earlier independent r840/r841 evidence",
+    "r844 is one after-ready positive run, not a reproducibility claim",
+    "Tab scoreboard, first-person weapon, native firing, match completion remain unverified"
+  ],
+  "profile_db_after": {
+    "revision": 1244,
+    "integrity": "ok",
+    "profile_rows": 2
+  }
+}
